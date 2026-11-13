@@ -37,7 +37,7 @@ Document::Document(QObject *parent)
     : QObject(parent)
 {
     m_undoStack.setUndoLimit(UNDO_LIMIT);
-    reset(newDesign(QLatin1String(NEW_PROJECT_NAME)), QString());
+    startNew();
 }
 
 bool Document::isModified() const
@@ -54,6 +54,11 @@ void Document::change(const QString &text, const Design &changed)
     if (after == m_design)
         return;
     m_undoStack.push(new DesignCommand(this, text, m_design, after));
+}
+
+void Document::startNew()
+{
+    startNew(QLatin1String(NEW_PROJECT_NAME));
 }
 
 void Document::startNew(const QString &baseName)

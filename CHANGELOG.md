@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: The window opens, creates and saves projects and shows the schematic sheets and the board on tabs over the canvas
 - I: Library gets two resistor footprints: with 10.16 mm between the pads and standing upright
 - I: Core gets the open project with Undo and Redo over the schematic and the board, and saves only the files that changed
 - I: Core gets the project (title block, net classes, routing rules, grid) with the .ppcb file, and reads and writes the three files of a project together

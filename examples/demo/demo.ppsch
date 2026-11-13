@@ -1,0 +1,64 @@
+{
+  "type": "pocketpcb-schematic",
+  "format": 1,
+  "symbols": {
+    "resistor": {
+      "graphics": [
+        {"kind": "rect", "from": [-2.54, -1.016], "to": [2.54, 1.016]}
+      ],
+      "pins": [
+        {"number": "1", "at": [-5.08, 0], "side": "left"},
+        {"number": "2", "at": [5.08, 0], "side": "right"}
+      ],
+      "refAt": [0, -2.54],
+      "valueAt": [0, 2.54],
+      "showPinNumbers": false,
+      "showPinNames": false
+    }
+  },
+  "sheets": [
+    {
+      "id": "5c1a00000001",
+      "title": "Divider",
+      "paper": "A4",
+      "components": [
+        {
+          "id": "5c1a00000011", "part": "resistor", "symbol": "resistor",
+          "footprint": "resistor-10.16", "designator": "R1", "value": "10k",
+          "prefix": "R", "prefixGost": "R", "connector": false, "offBoard": false,
+          "at": [101.6, 76.2], "rotation": 0, "mirrored": false,
+          "refAt": [0, -2.54], "valueAt": [0, 2.54]
+        },
+        {
+          "id": "5c1a00000012", "part": "resistor", "symbol": "resistor",
+          "footprint": "resistor-vertical", "designator": "R2", "value": "4.7k",
+          "prefix": "R", "prefixGost": "R", "connector": false, "offBoard": false,
+          "at": [116.84, 88.9], "rotation": 90, "mirrored": false,
+          "refAt": [5.08, -1.27], "valueAt": [5.08, 1.27]
+        }
+      ],
+      "wires": [
+        {"id": "5c1a00000021", "points": [[91.44, 76.2], [96.52, 76.2]]},
+        {"id": "5c1a00000022", "points": [[106.68, 76.2], [116.84, 76.2], [116.84, 83.82]]},
+        {"id": "5c1a00000023", "points": [[116.84, 76.2], [127, 76.2]]},
+        {"id": "5c1a00000024", "points": [[116.84, 93.98], [116.84, 99.06]]}
+      ],
+      "buses": [],
+      "labels": [
+        {"id": "5c1a00000031", "at": [119.38, 76.2], "text": "OUT", "scope": "global",
+         "rotation": 0, "netClass": ""}
+      ],
+      "power": [
+        {"id": "5c1a00000041", "at": [91.44, 76.2], "name": "+5V", "rotation": 0},
+        {"id": "5c1a00000042", "at": [116.84, 99.06], "name": "GND", "rotation": 180}
+      ],
+      "noConnects": [],
+      "graphics": [
+        {"id": "5c1a00000061", "kind": "rect", "from": [83.82, 60.96], "to": [134.62, 109.22],
+         "dashed": true},
+        {"id": "5c1a00000062", "kind": "text", "at": [86.36, 64.77], "text": "Divider 5 V to 1.6 V",
+         "height": 2, "align": "left"}
+      ]
+    }
+  ]
+}

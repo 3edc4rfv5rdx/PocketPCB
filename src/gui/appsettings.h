@@ -38,6 +38,10 @@ public:
     static QString lastLibraryFolder();
     static void setLastLibraryFolder(const QString &folder);
 
+    // Folder the last project was opened from or saved into.
+    static QString lastProjectFolder();
+    static void setLastProjectFolder(const QString &folder);
+
     static QByteArray windowGeometry();
     static void setWindowGeometry(const QByteArray &geometry);
 

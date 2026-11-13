@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 
 #include "canvasview.h"
+#include "designviewitem.h"
+#include "document.h"
 #include "format.h"
 #include "grid.h"
 #include "libraryviewitem.h"
@@ -16,8 +18,13 @@
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
+#include <QShowEvent>
+#include <QSignalBlocker>
 #include <QStatusBar>
+#include <QTabBar>
 #include <QTimer>
+#include <QUndoStack>
+#include <QVBoxLayout>
 
 namespace ppcb {
 
@@ -28,18 +35,45 @@ const int DEFAULT_HEIGHT = 750;
 // Wait after a change of the watched file before reading it, milliseconds.
 const int RELOAD_DELAY_MS = 150;
 
+const char APP_TITLE[] = "PocketPCB";
+
 } // namespace
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    setWindowTitle(QStringLiteral("PocketPCB"));
-
     m_canvas = new CanvasView(this);
     m_canvas->setGridStyle(AppSettings::gridStyle());
     m_canvas->setCursorStyle(AppSettings::cursorStyle());
     m_canvas->setZoomCenterAndWarp(AppSettings::zoomCenterAndWarp());
-    setCentralWidget(m_canvas);
+
+    // The pages of the project as tabs over the canvas.
+    m_tabs = new QTabBar(this);
+    m_tabs->setExpanding(false);
+    m_tabs->setDrawBase(false);
+    QWidget *central = new QWidget(this);
+    QVBoxLayout *layout = new QVBoxLayout(central);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    layout->addWidget(m_tabs);
+    layout->addWidget(m_canvas);
+    setCentralWidget(central);
+
+    m_document = new Document(this);
+    m_designItem = new DesignViewItem(m_document, m_canvas->scene()->sceneRect());
+    m_canvas->scene()->addItem(m_designItem);
+    connect(m_document, &Document::designChanged, this, &MainWindow::projectChanged);
+    connect(m_document, &Document::modifiedChanged, this, &MainWindow::updateTitle);
+    // 'currentChanged' covers the keyboard; 'tabBarClicked' adds the click
+    // on the current tab, which brings the project back from a library file.
+    connect(m_tabs, &QTabBar::currentChanged, this, [this](int index) {
+        if (index >= 0)
+            showPage(index);
+    });
+    connect(m_tabs, &QTabBar::tabBarClicked, this, [this](int index) {
+        if (index >= 0)
+            showPage(index);
+    });
 
     m_libraryWatcher = new QFileSystemWatcher(this);
     m_reloadTimer = new QTimer(this);
@@ -51,6 +85,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     createMenus();
     createStatusBar();
+    projectChanged();
+    updateTitle();
 
     resize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
     // Both do nothing when given data that was never saved.
@@ -65,9 +101,44 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
 }
 
+void MainWindow::showEvent(QShowEvent *event)
+{
+    QMainWindow::showEvent(event);
+    if (m_shownOnce)
+        return;
+    m_shownOnce = true;
+    // Once the window has been laid out and the canvas knows its size.
+    QTimer::singleShot(0, this, [this] {
+        if (m_designItem->isVisible())
+            m_canvas->fitRect(m_designItem->pageBounds());
+    });
+}
+
 void MainWindow::createMenus()
 {
     QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+
+    QAction *newAction = fileMenu->addAction(tr("&New project"));
+    newAction->setObjectName(QStringLiteral("actionNewProject"));
+    newAction->setShortcut(QKeySequence::New);
+    connect(newAction, &QAction::triggered, this, &MainWindow::newProject);
+
+    QAction *openAction = fileMenu->addAction(tr("&Open project") + QStringLiteral("…"));
+    openAction->setObjectName(QStringLiteral("actionOpenProject"));
+    openAction->setShortcut(QKeySequence::Open);
+    connect(openAction, &QAction::triggered, this, &MainWindow::chooseProjectToOpen);
+
+    QAction *saveAction = fileMenu->addAction(tr("&Save"));
+    saveAction->setObjectName(QStringLiteral("actionSaveProject"));
+    saveAction->setShortcut(QKeySequence::Save);
+    connect(saveAction, &QAction::triggered, this, &MainWindow::saveProject);
+
+    QAction *saveAsAction = fileMenu->addAction(tr("Save &as") + QStringLiteral("…"));
+    saveAsAction->setObjectName(QStringLiteral("actionSaveProjectAs"));
+    saveAsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
+    connect(saveAsAction, &QAction::triggered, this, &MainWindow::chooseProjectToSaveAs);
+    fileMenu->addSeparator();
+
     QAction *openLibraryAction = fileMenu->addAction(tr("Open library file") + QStringLiteral("…"));
     openLibraryAction->setObjectName(QStringLiteral("actionOpenLibraryFile"));
     openLibraryAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_L));
@@ -78,6 +149,18 @@ void MainWindow::createMenus()
     quitAction->setObjectName(QStringLiteral("actionQuit"));
     quitAction->setShortcut(QKeySequence::Quit);
     connect(quitAction, &QAction::triggered, this, &QWidget::close);
+
+    // The stack's own actions: they carry the name of the step ("Undo Move")
+    // and switch themselves off when there is nothing to undo.
+    QMenu *editMenu = menuBar()->addMenu(tr("&Edit"));
+    QAction *undoAction = m_document->undoStack()->createUndoAction(this, tr("Undo"));
+    undoAction->setObjectName(QStringLiteral("actionUndo"));
+    undoAction->setShortcut(QKeySequence::Undo);
+    editMenu->addAction(undoAction);
+    QAction *redoAction = m_document->undoStack()->createRedoAction(this, tr("Redo"));
+    redoAction->setObjectName(QStringLiteral("actionRedo"));
+    redoAction->setShortcut(QKeySequence::Redo);
+    editMenu->addAction(redoAction);
 
     QMenu *viewMenu = menuBar()->addMenu(tr("&View"));
 
@@ -182,6 +265,125 @@ void MainWindow::applyZoomCenterAndWarp(bool on)
     AppSettings::setZoomCenterAndWarp(on);
 }
 
+void MainWindow::newProject()
+{
+    m_document->startNew();
+    showPage(0);
+    updateTitle();
+    statusBar()->clearMessage();
+}
+
+bool MainWindow::openProject(const QString &path)
+{
+    QString error;
+    if (!m_document->open(path, error)) {
+        statusBar()->showMessage(error);
+        return false;
+    }
+    showPage(0);
+    updateTitle();
+    statusBar()->showMessage(path);
+    return true;
+}
+
+bool MainWindow::saveProjectAs(const QString &path)
+{
+    QString error;
+    if (!m_document->saveAs(path, error)) {
+        statusBar()->showMessage(error);
+        return false;
+    }
+    updateTitle();
+    statusBar()->showMessage(path);
+    return true;
+}
+
+void MainWindow::chooseProjectToOpen()
+{
+    const QString path = QFileDialog::getOpenFileName(
+        this, tr("Open project"), AppSettings::lastProjectFolder(),
+        tr("PocketPCB projects") + QStringLiteral(" (*") + QLatin1String(FILE_EXT_PROJECT)
+            + QLatin1Char(')'));
+    if (path.isEmpty())
+        return;
+    AppSettings::setLastProjectFolder(QFileInfo(path).absolutePath());
+    openProject(path);
+}
+
+void MainWindow::saveProject()
+{
+    if (m_document->projectPath().isEmpty()) {
+        chooseProjectToSaveAs();
+        return;
+    }
+    QString error;
+    if (m_document->save(error))
+        statusBar()->showMessage(m_document->projectPath());
+    else
+        statusBar()->showMessage(error);
+}
+
+void MainWindow::chooseProjectToSaveAs()
+{
+    QString path = QFileDialog::getSaveFileName(
+        this, tr("Save project as"), AppSettings::lastProjectFolder(),
+        tr("PocketPCB projects") + QStringLiteral(" (*") + QLatin1String(FILE_EXT_PROJECT)
+            + QLatin1Char(')'));
+    if (path.isEmpty())
+        return;
+    if (!path.endsWith(QLatin1String(FILE_EXT_PROJECT), Qt::CaseInsensitive))
+        path += QLatin1String(FILE_EXT_PROJECT);
+    AppSettings::setLastProjectFolder(QFileInfo(path).absolutePath());
+    saveProjectAs(path);
+}
+
+void MainWindow::showPage(int page)
+{
+    showProject();
+    m_designItem->setPage(page);
+    {
+        // The tab follows the page, not the other way round.
+        const QSignalBlocker blocker(m_tabs);
+        m_tabs->setCurrentIndex(m_designItem->page());
+    }
+    m_canvas->fitRect(m_designItem->pageBounds());
+}
+
+void MainWindow::showProject()
+{
+    // The library file is let go: nothing of it is shown or watched.
+    if (m_libraryItem != nullptr)
+        m_libraryItem->setVisible(false);
+    m_libraryPath.clear();
+    watchLibraryFile();
+    m_designItem->setVisible(true);
+}
+
+void MainWindow::projectChanged()
+{
+    m_designItem->contentChanged();
+
+    const Design &design = m_document->design();
+    const QSignalBlocker blocker(m_tabs);
+    while (m_tabs->count() > 0)
+        m_tabs->removeTab(0);
+    for (int i = 0; i < design.schematic.sheets.size(); ++i) {
+        const QString title = design.schematic.sheets.at(i).title;
+        m_tabs->addTab(title.isEmpty() ? tr("Sheet %1").arg(i + 1) : title);
+    }
+    m_tabs->addTab(tr("Board"));
+    m_tabs->setCurrentIndex(m_designItem->page());
+}
+
+void MainWindow::updateTitle()
+{
+    const QString path = m_document->projectPath();
+    const QString name = path.isEmpty() ? tr("untitled") : QFileInfo(path).fileName();
+    // "[*]" is where Qt puts the mark of unsaved changes.
+    setWindowTitle(name + QStringLiteral("[*] — ") + QLatin1String(APP_TITLE));
+    setWindowModified(m_document->isModified());
+}
+
 void MainWindow::chooseLibraryFile()
 {
     const QString path = QFileDialog::getOpenFileName(
@@ -228,6 +430,9 @@ bool MainWindow::showLibraryFile(const QString &path)
     } else {
         m_libraryItem->setContent(content);
     }
+    // The library file takes the place of the project on the canvas.
+    m_libraryItem->setVisible(true);
+    m_designItem->setVisible(false);
 
     const QString name = QFileInfo(path).fileName();
     QString message;

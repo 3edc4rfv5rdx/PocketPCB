@@ -21,6 +21,7 @@ const char KEY_GRID_STYLE[] = "view/gridStyle";
 const char KEY_CURSOR_STYLE[] = "view/cursorStyle";
 const char KEY_ZOOM_WARP[] = "view/zoomCenterAndWarp";
 const char KEY_LAST_LIBRARY_FOLDER[] = "library/lastFolder";
+const char KEY_LAST_PROJECT_FOLDER[] = "project/lastFolder";
 const char KEY_WINDOW_GEOMETRY[] = "window/geometry";
 const char KEY_WINDOW_STATE[] = "window/state";
 
@@ -123,6 +124,16 @@ QString AppSettings::lastLibraryFolder()
 void AppSettings::setLastLibraryFolder(const QString &folder)
 {
     writeValue(KEY_LAST_LIBRARY_FOLDER, folder);
+}
+
+QString AppSettings::lastProjectFolder()
+{
+    return readValue(KEY_LAST_PROJECT_FOLDER, QString()).toString();
+}
+
+void AppSettings::setLastProjectFolder(const QString &folder)
+{
+    writeValue(KEY_LAST_PROJECT_FOLDER, folder);
 }
 
 QByteArray AppSettings::windowGeometry()

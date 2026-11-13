@@ -1,0 +1,44 @@
+{
+  "type": "pocketpcb-project",
+  "format": 1,
+  "schematic": "demo.ppsch",
+  "board": "demo.ppbrd",
+  "titleBlock": {
+    "title": "Demo: voltage divider",
+    "author": "",
+    "organization": "",
+    "contacts": "",
+    "revision": "A",
+    "date": "2026-11-13",
+    "note": "Example project of PocketPCB"
+  },
+  "designatorStyle": "international",
+  "netClasses": [
+    {"name": "Signal", "trackWidth": 0.5, "clearance": 0.3, "viaDrill": 0.6, "viaSize": 1.2},
+    {"name": "Power", "trackWidth": 1.5, "clearance": 0.3, "viaDrill": 0.6, "viaSize": 1.2}
+  ],
+  "nets": {
+    "+5V": "Power",
+    "GND": "Power"
+  },
+  "rules": {
+    "set": "production",
+    "trackWidths": [0.3, 0.5, 0.8, 1, 1.5],
+    "defaultTrackWidth": 0.5,
+    "clearance": 0.3,
+    "viaDrill": 0.6,
+    "viaSize": 1.2,
+    "annularRing": 0.3,
+    "edgeClearance": 0.5,
+    "maskExpansion": 0.1,
+    "viasCovered": true,
+    "checks": {
+      "clearance": "error",
+      "annularRing": "warning",
+      "classWidth": "warning",
+      "minimumWidth": "error",
+      "edgeClearance": "warning"
+    }
+  },
+  "grid": {"schematic": 2.54, "board": 2.54}
+}

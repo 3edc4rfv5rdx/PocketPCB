@@ -1,5 +1,7 @@
 #include "appsettings.h"
 #include "canvasview.h"
+#include "designviewitem.h"
+#include "document.h"
 #include "grid.h"
 #include "libraryfile.h"
 #include "libraryviewitem.h"
@@ -11,10 +13,48 @@
 #include <QGraphicsScene>
 #include <QStandardPaths>
 #include <QStatusBar>
+#include <QTabBar>
 #include <QTemporaryDir>
 #include <QtTest>
 
 using namespace ppcb;
+
+namespace {
+
+// How many items of the canvas are on show.
+int visibleItems(const MainWindow &window)
+{
+    int count = 0;
+    const QList<QGraphicsItem *> items = window.canvas()->scene()->items();
+    for (const QGraphicsItem *item : items) {
+        if (item->isVisible())
+            ++count;
+    }
+    return count;
+}
+
+QStringList tabTexts(const MainWindow &window)
+{
+    const QTabBar *tabs = window.findChild<QTabBar *>();
+    QStringList texts;
+    for (int i = 0; tabs != nullptr && i < tabs->count(); ++i)
+        texts.append(tabs->tabText(i));
+    return texts;
+}
+
+// A project of two sheets, the second one named.
+Design twoSheetDesign()
+{
+    Design design = newDesign(QStringLiteral("amp"));
+    Sheet second;
+    second.id = newObjectId();
+    second.title = QStringLiteral("Питание");
+    second.paper = PaperSize::A3;
+    design.schematic.sheets.append(second);
+    return design;
+}
+
+} // namespace
 
 // The program starts and its main window works, without a display.
 class TestSmoke : public QObject
@@ -112,7 +152,10 @@ private slots:
         QCOMPARE(window.libraryFilePath(), path);
         QVERIFY(window.libraryItem() != nullptr);
         QVERIFY(window.libraryItem()->content().kind == LibraryKind::Symbol);
-        QCOMPARE(window.canvas()->scene()->items().size(), 1);
+        // The library file is shown in the place of the project.
+        QCOMPARE(visibleItems(window), 1);
+        QVERIFY(window.libraryItem()->isVisible());
+        QVERIFY(!window.designItem()->isVisible());
         QVERIFY(window.statusBar()->currentMessage().contains(QStringLiteral("item.json")));
 
         // The file becomes a footprint: a reload shows it, in the same item.
@@ -121,7 +164,7 @@ private slots:
         QVERIFY2(LibraryFile::write(path, footprint, error), qPrintable(error));
         QVERIFY(window.reloadLibraryFile());
         QVERIFY(window.libraryItem()->content().kind == LibraryKind::Footprint);
-        QCOMPARE(window.canvas()->scene()->items().size(), 1);
+        QCOMPARE(visibleItems(window), 1);
 
         // A damaged file: the last good drawing stays, the reason is shown.
         QFile file(path);
@@ -160,6 +203,143 @@ private slots:
 
         QVERIFY2(LibraryFile::write(path, symbol, error), qPrintable(error));
         QTRY_VERIFY(window.libraryItem()->content().kind == LibraryKind::Symbol);
+    }
+
+    void windowStartsWithANewProject()
+    {
+        MainWindow window;
+        QVERIFY(window.document() != nullptr);
+        QVERIFY(window.document()->projectPath().isEmpty());
+        QVERIFY(window.designItem()->isVisible());
+        QCOMPARE(visibleItems(window), 1);
+        QCOMPARE(tabTexts(window), QStringList({QStringLiteral("Sheet 1"), QStringLiteral("Board")}));
+        QVERIFY2(window.windowTitle().startsWith(QStringLiteral("untitled")),
+                 qPrintable(window.windowTitle()));
+        QVERIFY(!window.isWindowModified());
+        for (const char *name : {"actionNewProject", "actionOpenProject", "actionSaveProject",
+                                 "actionSaveProjectAs", "actionUndo", "actionRedo"}) {
+            QVERIFY2(window.findChild<QAction *>(QLatin1String(name)) != nullptr, name);
+        }
+    }
+
+    void projectIsOpenedAndItsPagesAreTabs()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("amp.ppcb"));
+        QString error;
+        QVERIFY2(DesignFiles::write(path, twoSheetDesign(), error), qPrintable(error));
+
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QVERIFY(window.openProject(path));
+        QCOMPARE(window.document()->projectPath(), path);
+        QCOMPARE(tabTexts(window), QStringList({QStringLiteral("Sheet 1"), QStringLiteral("Питание"),
+                                                QStringLiteral("Board")}));
+        QVERIFY2(window.windowTitle().startsWith(QStringLiteral("amp.ppcb")),
+                 qPrintable(window.windowTitle()));
+        QCOMPARE(window.designItem()->page(), 0);
+
+        // The board is the last page; the tab follows the page.
+        QTabBar *tabs = window.findChild<QTabBar *>();
+        QVERIFY(tabs != nullptr);
+        window.showPage(2);
+        QCOMPARE(window.designItem()->page(), window.designItem()->boardPage());
+        QCOMPARE(tabs->currentIndex(), 2);
+        // And the page follows the tab.
+        tabs->setCurrentIndex(1);
+        QCOMPARE(window.designItem()->page(), 1);
+        // A page that is not there is the nearest one.
+        window.showPage(9);
+        QCOMPARE(window.designItem()->page(), 2);
+
+        // A file that cannot be read changes nothing.
+        QVERIFY(!window.openProject(dir.filePath(QStringLiteral("absent.ppcb"))));
+        QCOMPARE(window.document()->projectPath(), path);
+        QCOMPARE(tabTexts(window).size(), 3);
+        QVERIFY(!window.statusBar()->currentMessage().isEmpty());
+
+        // A new project drops the file and the second sheet.
+        window.newProject();
+        QVERIFY(window.document()->projectPath().isEmpty());
+        QCOMPARE(tabTexts(window).size(), 2);
+        QCOMPARE(window.designItem()->page(), 0);
+    }
+
+    void projectIsSavedUnderAName()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("first.ppcb"));
+
+        MainWindow window;
+        QVERIFY(window.saveProjectAs(path));
+        QVERIFY(QFile::exists(path));
+        QVERIFY(QFile::exists(dir.filePath(QStringLiteral("first.ppsch"))));
+        QVERIFY(QFile::exists(dir.filePath(QStringLiteral("first.ppbrd"))));
+        QVERIFY2(window.windowTitle().startsWith(QStringLiteral("first.ppcb")),
+                 qPrintable(window.windowTitle()));
+
+        QVERIFY(!window.saveProjectAs(dir.filePath(QStringLiteral("nowhere/second.ppcb"))));
+        QCOMPARE(window.document()->projectPath(), path);
+        QVERIFY(!window.statusBar()->currentMessage().isEmpty());
+    }
+
+    void undoActionsAndTitleFollowTheDocument()
+    {
+        MainWindow window;
+        QAction *undo = window.findChild<QAction *>(QStringLiteral("actionUndo"));
+        QAction *redo = window.findChild<QAction *>(QStringLiteral("actionRedo"));
+        QVERIFY(undo != nullptr && redo != nullptr);
+        QVERIFY(!undo->isEnabled());
+        QVERIFY(!redo->isEnabled());
+
+        Design design = window.document()->design();
+        design.schematic.sheets[0].title = QStringLiteral("Вход");
+        window.document()->change(QStringLiteral("Rename sheet"), design);
+        QVERIFY(undo->isEnabled());
+        QVERIFY(window.isWindowModified());
+        QCOMPARE(tabTexts(window).at(0), QStringLiteral("Вход"));
+
+        undo->trigger();
+        QVERIFY(!window.isWindowModified());
+        QCOMPARE(tabTexts(window).at(0), QStringLiteral("Sheet 1"));
+        QVERIFY(redo->isEnabled());
+        redo->trigger();
+        QCOMPARE(tabTexts(window).at(0), QStringLiteral("Вход"));
+    }
+
+    void libraryFileAndProjectTakeTurnsOnTheCanvas()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("item.json"));
+        LibraryItem footprint;
+        footprint.kind = LibraryKind::Footprint;
+        QString error;
+        QVERIFY2(LibraryFile::write(path, footprint, error), qPrintable(error));
+
+        MainWindow window;
+        QVERIFY(window.openLibraryFile(path));
+        QVERIFY(!window.designItem()->isVisible());
+
+        // Showing a page brings the project back and lets the file go.
+        window.showPage(1);
+        QVERIFY(window.designItem()->isVisible());
+        QVERIFY(!window.libraryItem()->isVisible());
+        QCOMPARE(visibleItems(window), 1);
+        QVERIFY(window.libraryFilePath().isEmpty());
+        QVERIFY(!window.reloadLibraryFile());
+        QVERIFY(window.designItem()->isVisible());
+
+        // And the file can be shown again.
+        QVERIFY(window.openLibraryFile(path));
+        QVERIFY(window.libraryItem()->isVisible());
+        QVERIFY(!window.designItem()->isVisible());
+        window.newProject();
+        QVERIFY(window.designItem()->isVisible());
+        QVERIFY(!window.libraryItem()->isVisible());
     }
 
     void partFileIsDescribedInTheStatusBar()

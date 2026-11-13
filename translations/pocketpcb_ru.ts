@@ -211,6 +211,13 @@
     </message>
 </context>
 <context>
+    <name>ppcb::Paint</name>
+    <message>
+        <source>Sheet %1 of %2</source>
+        <translation>Лист %1 из %2</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::LibraryFile</name>
     <message>
         <source>this is not a PocketPCB library file</source>
@@ -302,6 +309,58 @@
     <message>
         <source>footprints</source>
         <translation>посадочные места</translation>
+    </message>
+    <message>
+        <source>&amp;New project</source>
+        <translation>&amp;Новый проект</translation>
+    </message>
+    <message>
+        <source>&amp;Open project</source>
+        <translation>&amp;Открыть проект</translation>
+    </message>
+    <message>
+        <source>&amp;Save</source>
+        <translation>&amp;Сохранить</translation>
+    </message>
+    <message>
+        <source>Save &amp;as</source>
+        <translation>Сохранить &amp;как</translation>
+    </message>
+    <message>
+        <source>&amp;Edit</source>
+        <translation>&amp;Правка</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Отменить</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Повторить</translation>
+    </message>
+    <message>
+        <source>Open project</source>
+        <translation>Открыть проект</translation>
+    </message>
+    <message>
+        <source>Save project as</source>
+        <translation>Сохранить проект как</translation>
+    </message>
+    <message>
+        <source>PocketPCB projects</source>
+        <translation>Проекты PocketPCB</translation>
+    </message>
+    <message>
+        <source>Sheet %1</source>
+        <translation>Лист %1</translation>
+    </message>
+    <message>
+        <source>Board</source>
+        <translation>Плата</translation>
+    </message>
+    <message>
+        <source>untitled</source>
+        <translation>без имени</translation>
     </message>
 </context>
 </TS>

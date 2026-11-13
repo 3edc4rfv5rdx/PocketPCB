@@ -99,6 +99,113 @@ Graphic thickArc(int start, int span)
 double arcX(int degrees) { return 5.0 * std::cos(degrees * PI / 180.0); }
 double arcY(int degrees) { return 5.0 * std::sin(degrees * PI / 180.0); }
 
+
+// A picture made by 'paint', which gets the painter set up as above.
+template <typename Paint>
+QImage renderWith(Paint paint)
+{
+    QImage image = newImage();
+    QPainter painter(&image);
+    setUp(painter);
+    paint(painter);
+    return image;
+}
+
+QImage render(const Board &board)
+{
+    return renderWith([&board](QPainter &painter) { paintBoard(painter, board); });
+}
+
+// A schematic of one sheet with nothing on it.
+Schematic emptySchematic()
+{
+    Schematic schematic;
+    schematic.sheets.append(Sheet());
+    return schematic;
+}
+
+QImage render(const Schematic &schematic)
+{
+    return renderWith(
+        [&schematic](QPainter &painter) { paintSheet(painter, schematic, 0, TitleBlock()); });
+}
+
+// Whether any pixel of the rectangle (millimetres) has the colour.
+bool anyColor(const QImage &image, double left, double top, double right, double bottom,
+              const QColor &color)
+{
+    const double step = 1.0 / PIXELS_PER_MM;
+    for (double y = top; y <= bottom; y += step) {
+        for (double x = left; x <= right; x += step) {
+            if (isColor(colorAt(image, x, y), color))
+                return true;
+        }
+    }
+    return false;
+}
+
+// A symbol of one thick line that runs from 1 to 4 mm to the right of the
+// origin: it shows which way the symbol is turned.
+Symbol arrowSymbol()
+{
+    Graphic line;
+    line.kind = GraphicKind::Line;
+    line.a = Point{1000000, 0};
+    line.b = Point{4000000, 0};
+    line.width = 600000;
+    Symbol symbol;
+    symbol.graphics.append(line);
+    return symbol;
+}
+
+// A sheet with one component of the given symbol at -5, -5 mm: away from
+// the frame, whose lines run through the positive quarter of the picture.
+Schematic schematicWith(const Symbol &symbol, int rotation, bool mirrored)
+{
+    Schematic schematic = emptySchematic();
+    schematic.symbols.insert(QStringLiteral("s"), symbol);
+    Component component;
+    component.symbol = QStringLiteral("s");
+    component.at = Point{-5000000, -5000000};
+    component.rotation = rotation;
+    component.mirrored = mirrored;
+    schematic.sheets[0].components.append(component);
+    return schematic;
+}
+
+// A board with one footprint placed at the origin: a single pad without a
+// hole, 2 mm across, 3 mm to the right of the footprint's origin.
+Board boardWithPad(int rotation, BoardSide side)
+{
+    Pad pad;
+    pad.at = Point{3000000, 0};
+    pad.sizeX = 2000000;
+    pad.sizeY = 2000000;
+    pad.layers = PadLayers::Front;
+    Footprint footprint;
+    footprint.pads.append(pad);
+
+    Board board;
+    board.footprints.insert(QStringLiteral("f"), footprint);
+    Placement placement;
+    placement.footprint = QStringLiteral("f");
+    placement.rotation = rotation;
+    placement.side = side;
+    placement.showRef = false;
+    board.placements.append(placement);
+    return board;
+}
+
+// A square outline of 16 mm around the origin; its top right corner is rounded.
+Board boardWithOutline(Coord radius)
+{
+    const Coord half = 8000000;
+    Board board;
+    board.outline = {OutlineCorner{Point{-half, -half}, 0}, OutlineCorner{Point{half, -half}, radius},
+                     OutlineCorner{Point{half, half}, 0}, OutlineCorner{Point{-half, half}, 0}};
+    return board;
+}
+
 } // namespace
 
 class TestPaint : public QObject
@@ -231,6 +338,344 @@ private slots:
         thin.graphics.append(line);
         QVERIFY(isColor(colorAt(render(thin), -4.75, 0), paintcolor::symbol()));
         QVERIFY(isColor(colorAt(render(thin), -3.5, 0), paintcolor::background()));
+    }
+
+    void componentIsTurnedClockwiseAndMirrored()
+    {
+        // The line of the symbol is looked for 2.5 mm from the component.
+        struct Case { int rotation; bool mirrored; double x; double y; };
+        const Case cases[] = {
+            {0, false, -2.5, -5.0},  {90, false, -5.0, -2.5}, {180, false, -7.5, -5.0},
+            {270, false, -5.0, -7.5}, {0, true, -7.5, -5.0},
+            // Mirrored first, turned after: left becomes up.
+            {90, true, -5.0, -7.5},
+        };
+        const double spots[4][2] = {{-2.5, -5.0}, {-5.0, -2.5}, {-7.5, -5.0}, {-5.0, -7.5}};
+        for (const Case &c : cases) {
+            const QImage image = render(schematicWith(arrowSymbol(), c.rotation, c.mirrored));
+            for (const double *spot : spots) {
+                const bool expected = spot[0] == c.x && spot[1] == c.y;
+                QVERIFY2(isColor(colorAt(image, spot[0], spot[1]), paintcolor::symbol()) == expected,
+                         qPrintable(QStringLiteral("rotation %1 mirrored %2 at %3, %4")
+                                        .arg(c.rotation).arg(c.mirrored).arg(spot[0]).arg(spot[1])));
+            }
+        }
+    }
+
+    // A text of a symbol stays readable however the symbol is placed.
+    void symbolTextStaysReadable()
+    {
+        Graphic text;
+        text.kind = GraphicKind::Text;
+        text.text = QStringLiteral("LF");
+        text.height = 2000000;
+        Symbol centred;
+        centred.graphics.append(text);
+
+        // Centred on the origin, it looks the same turned over or mirrored...
+        const QImage plain = render(schematicWith(centred, 0, false));
+        QVERIFY(anyColor(plain, -8, -7, -2, -3, paintcolor::symbol()));
+        QCOMPARE(render(schematicWith(centred, 180, false)), plain);
+        QCOMPARE(render(schematicWith(centred, 0, true)), plain);
+        QCOMPARE(render(schematicWith(centred, 180, true)), plain);
+        // ...and reads bottom to top on its side, whichever side that is.
+        const QImage upward = render(schematicWith(centred, 270, false));
+        QVERIFY(upward != plain);
+        QCOMPARE(render(schematicWith(centred, 90, false)), upward);
+        QCOMPARE(render(schematicWith(centred, 90, true)), upward);
+
+        // A text that starts at its anchor keeps the anchor: mirrored, it
+        // ends there instead.
+        text.align = TextAlign::Left;
+        Symbol anchored;
+        anchored.graphics.append(text);
+        const QImage right = render(schematicWith(anchored, 0, false));
+        QVERIFY(anyColor(right, -4.8, -7, -1, -3, paintcolor::symbol()));
+        QVERIFY(!anyColor(right, -9.5, -7, -5.2, -3, paintcolor::symbol()));
+        const QImage left = render(schematicWith(anchored, 0, true));
+        QVERIFY(anyColor(left, -9.5, -7, -5.2, -3, paintcolor::symbol()));
+        QVERIFY(!anyColor(left, -4.8, -7, -1, -3, paintcolor::symbol()));
+    }
+
+    void sheetObjectsAreDrawn()
+    {
+        Schematic schematic = emptySchematic();
+        Sheet &sheet = schematic.sheets[0];
+
+        Wire wire;
+        wire.points = {Point{-8000000, -8000000}, Point{-2000000, -8000000}};
+        sheet.wires.append(wire);
+        Bus bus;
+        bus.points = {Point{-8000000, -6000000}, Point{-2000000, -6000000}};
+        sheet.buses.append(bus);
+        NoConnect mark;
+        mark.at = Point{-8000000, -3000000};
+        sheet.noConnects.append(mark);
+        PowerSymbol up;
+        up.at = Point{-5000000, -2000000};
+        sheet.powerSymbols.append(up);
+        PowerSymbol down;
+        down.at = Point{-2000000, -4000000};
+        down.rotation = 180;
+        sheet.powerSymbols.append(down);
+
+        const QImage image = render(schematic);
+        QVERIFY(isColor(colorAt(image, -5, -8), paintcolor::wire()));
+        QVERIFY(isColor(colorAt(image, -5, -6), paintcolor::bus()));
+        // The bus is the thicker of the two.
+        QVERIFY(isColor(colorAt(image, -5, -6.2), paintcolor::bus()));
+        QVERIFY(isColor(colorAt(image, -5, -8.2), paintcolor::background()));
+        QVERIFY(isColor(colorAt(image, -8, -3), paintcolor::noConnect()));
+        // The stem of a power symbol points up, or down when turned over.
+        QVERIFY(isColor(colorAt(image, -5, -3.3), paintcolor::symbol()));
+        QVERIFY(isColor(colorAt(image, -5, -0.7), paintcolor::background()));
+        QVERIFY(isColor(colorAt(image, -2, -2.7), paintcolor::symbol()));
+        QVERIFY(isColor(colorAt(image, -2, -5.3), paintcolor::background()));
+
+        // The frame: 5 mm inside the paper, whose corner is the origin.
+        QVERIFY(isColor(colorAt(image, 5, 8), paintcolor::sheetFrame()));
+        QVERIFY(isColor(colorAt(image, 8, 5), paintcolor::sheetFrame()));
+        QVERIFY(isColor(colorAt(image, 8, 8), paintcolor::background()));
+
+        // A sheet that is not there draws nothing at all.
+        const QImage nothing = renderWith([&schematic](QPainter &painter) {
+            paintSheet(painter, schematic, 1, TitleBlock());
+            paintSheet(painter, schematic, -1, TitleBlock());
+        });
+        QCOMPARE(nothing, newImage());
+    }
+
+    void paperSizes()
+    {
+        QCOMPARE(paperRect(PaperSize::A4), QRectF(0, 0, 297, 210));
+        QCOMPARE(paperRect(PaperSize::A3), QRectF(0, 0, 420, 297));
+    }
+
+    // The title block grows by a row for every field that is filled in.
+    void titleBlockHasARowPerField()
+    {
+        const Schematic schematic = emptySchematic();
+        // The picture's middle is put on the given point of the sheet.
+        const auto renderAround = [&schematic](double x, double y, const TitleBlock &block) {
+            return renderWith([&](QPainter &painter) {
+                painter.translate(-x, -y);
+                paintSheet(painter, schematic, 0, block);
+            });
+        };
+        // The corner of the A4 frame is at 292, 205. The block is 90 mm wide
+        // and ends there; a row is 6 mm high. Seen around 285, 195, the top
+        // of the last row is 4 mm below the middle, the rows above it end at
+        // -2 and -8.
+        TitleBlock block;
+        const QImage oneRow = renderAround(285, 195, block);
+        QVERIFY(isColor(colorAt(oneRow, 0, 4), paintcolor::sheetFrame()));
+        QVERIFY(isColor(colorAt(oneRow, 0, -2), paintcolor::background()));
+
+        block.title = QStringLiteral("Amp");
+        block.note = QStringLiteral("draft");
+        const QImage threeRows = renderAround(285, 195, block);
+        QVERIFY(isColor(colorAt(threeRows, 0, 4), paintcolor::sheetFrame()));
+        QVERIFY(isColor(colorAt(threeRows, 0, -2), paintcolor::sheetFrame()));
+        QVERIFY(isColor(colorAt(threeRows, 0, -8), paintcolor::sheetFrame()));
+        QVERIFY(isColor(colorAt(threeRows, 0, -5), paintcolor::background()));
+        QVERIFY(isColor(colorAt(threeRows, 0, -9.5), paintcolor::background()));
+
+        // The texts start at the block's left side, which is at 202: seen
+        // around 210, 195, the first row lies between -8 and -2.
+        const QImage texts = renderAround(210, 195, block);
+        QVERIFY(anyColor(texts, -7, -7, 5, -3, paintcolor::sheetFrame()));
+        block.title.clear();
+        const QImage twoRows = renderAround(210, 195, block);
+        QVERIFY(!anyColor(twoRows, -7, -7, 5, -3, paintcolor::sheetFrame()));
+    }
+
+    void topCopperCoversBottomCopper()
+    {
+        Board board;
+        Track bottom;
+        bottom.side = BoardSide::Bottom;
+        bottom.width = 1000000;
+        bottom.from = Point{-8000000, -5000000};
+        bottom.to = Point{-2000000, -5000000};
+        board.tracks.append(bottom);
+        Track top;
+        top.side = BoardSide::Top;
+        top.width = 1000000;
+        top.from = Point{-5000000, -8000000};
+        top.to = Point{-5000000, -2000000};
+        // Top first in the list: the order of drawing is by side, not by list.
+        board.tracks.prepend(top);
+
+        const QImage image = render(board);
+        QVERIFY(isColor(colorAt(image, -7, -5), paintcolor::padBack()));
+        QVERIFY(isColor(colorAt(image, -5, -7), paintcolor::padFront()));
+        QVERIFY(isColor(colorAt(image, -5, -5), paintcolor::padFront()));
+        QVERIFY(isColor(colorAt(image, -7, -7), paintcolor::background()));
+    }
+
+    void viasAndMountingHoles()
+    {
+        Board board;
+        Via via;
+        via.at = Point{5000000, -5000000};
+        via.drill = 1000000;
+        via.size = 2000000;
+        board.vias.append(via);
+        MountingHole plated;
+        plated.at = Point{5000000, 5000000};
+        plated.drill = 2000000;
+        plated.plated = true;
+        plated.ring = 1000000;
+        board.holes.append(plated);
+        MountingHole bare;
+        bare.at = Point{-5000000, 5000000};
+        bare.drill = 3000000;
+        board.holes.append(bare);
+
+        const QImage image = render(board);
+        QVERIFY(isColor(colorAt(image, 5.75, -5), paintcolor::padBoth()));
+        QVERIFY(isColor(colorAt(image, 5, -5), paintcolor::background()));
+        QVERIFY(isColor(colorAt(image, 6.25, -5), paintcolor::background()));
+        // The ring is 1 mm of copper around a hole of 2 mm.
+        QVERIFY(isColor(colorAt(image, 6.5, 5), paintcolor::padBoth()));
+        QVERIFY(isColor(colorAt(image, 5, 5), paintcolor::background()));
+        QVERIFY(isColor(colorAt(image, 7.25, 5), paintcolor::background()));
+        // A hole without plating has no copper anywhere.
+        QVERIFY(!anyColor(image, -8, 2, -2, 8, paintcolor::padBoth()));
+        QVERIFY(anyColor(image, -7, 4.9, -6, 5.1, paintcolor::bareHole()));
+    }
+
+    void placementIsTurnedAndFlipped()
+    {
+        struct Case { int rotation; BoardSide side; double x; double y; };
+        const Case cases[] = {
+            {0, BoardSide::Top, 3, 0},   {90, BoardSide::Top, 0, 3},
+            {180, BoardSide::Top, -3, 0}, {270, BoardSide::Top, 0, -3},
+            {0, BoardSide::Bottom, -3, 0},
+            // Flipped first, turned after.
+            {90, BoardSide::Bottom, 0, -3},
+        };
+        const double spots[4][2] = {{3, 0}, {0, 3}, {-3, 0}, {0, -3}};
+        for (const Case &c : cases) {
+            const QImage image = render(boardWithPad(c.rotation, c.side));
+            // The pad's Front is the side the part is on.
+            const QColor copper = c.side == BoardSide::Top ? paintcolor::padFront()
+                                                          : paintcolor::padBack();
+            for (const double *spot : spots) {
+                const bool expected = spot[0] == c.x && spot[1] == c.y;
+                QVERIFY2(isColor(colorAt(image, spot[0], spot[1]), copper) == expected,
+                         qPrintable(QStringLiteral("rotation %1 bottom %2 at %3, %4")
+                                        .arg(c.rotation).arg(c.side == BoardSide::Bottom)
+                                        .arg(spot[0]).arg(spot[1])));
+            }
+        }
+    }
+
+    void designatorOnTheBoard()
+    {
+        Board board = boardWithPad(0, BoardSide::Top);
+        board.placements[0].designator = QStringLiteral("R1");
+        board.placements[0].value = QStringLiteral("10k");
+        board.placements[0].refAt = Point{0, -6000000};
+        board.placements[0].valueAt = Point{0, 6000000};
+
+        // Neither is asked for.
+        QVERIFY(!anyColor(render(board), -4, -8, 4, -4, paintcolor::silkscreen()));
+        QVERIFY(!anyColor(render(board), -4, 4, 4, 8, paintcolor::silkscreen()));
+
+        board.placements[0].showRef = true;
+        QVERIFY(anyColor(render(board), -4, -8, 4, -4, paintcolor::silkscreen()));
+        QVERIFY(!anyColor(render(board), -4, 4, 4, 8, paintcolor::silkscreen()));
+        board.placements[0].showValue = true;
+        QVERIFY(anyColor(render(board), -4, 4, 4, 8, paintcolor::silkscreen()));
+
+        // On the bottom side the silkscreen has its own colour.
+        board.placements[0].side = BoardSide::Bottom;
+        QVERIFY(anyColor(render(board), -4, -8, 4, -4, paintcolor::silkscreenBottom()));
+        QVERIFY(!anyColor(render(board), -4, -8, 4, -4, paintcolor::silkscreen()));
+    }
+
+    // The author's text on the bottom side is mirrored about its anchor.
+    void bottomTextIsMirrored()
+    {
+        BoardGraphic item;
+        item.graphic.kind = GraphicKind::Text;
+        item.graphic.a = Point{0, -5000000};
+        item.graphic.text = QStringLiteral("LLLL");
+        item.graphic.height = 2000000;
+        item.graphic.align = TextAlign::Left;
+
+        Board top;
+        top.graphics.append(item);
+        const QImage topImage = render(top);
+        QVERIFY(anyColor(topImage, 0.2, -7, 9, -3, paintcolor::silkscreen()));
+        QVERIFY(!anyColor(topImage, -9, -7, -0.2, -3, paintcolor::silkscreen()));
+
+        item.side = BoardSide::Bottom;
+        Board bottom;
+        bottom.graphics.append(item);
+        const QImage bottomImage = render(bottom);
+        QVERIFY(anyColor(bottomImage, -9, -7, -0.2, -3, paintcolor::silkscreenBottom()));
+        QVERIFY(!anyColor(bottomImage, 0.2, -7, 9, -3, paintcolor::silkscreenBottom()));
+    }
+
+    void outlineCornersAreRounded()
+    {
+        // A sharp corner: the outline goes through it.
+        const QImage sharp = render(boardWithOutline(0));
+        QVERIFY(isColor(colorAt(sharp, 0, -8), paintcolor::boardOutline()));
+        QVERIFY(isColor(colorAt(sharp, 8, 0), paintcolor::boardOutline()));
+        QVERIFY(isColor(colorAt(sharp, 8, -8), paintcolor::boardOutline()));
+        QVERIFY(isColor(colorAt(sharp, 0, 0), paintcolor::background()));
+
+        // Rounded with 4 mm: the arc's middle is 4 mm from its centre at 4, -4.
+        const double onArc = 4 + 4 * std::cos(PI / 4);
+        const QImage round = render(boardWithOutline(4000000));
+        QVERIFY(isColor(colorAt(round, 8, -8), paintcolor::background()));
+        QVERIFY(isColor(colorAt(round, onArc, -onArc), paintcolor::boardOutline()));
+        // The straight parts and the other corners stay.
+        QVERIFY(isColor(colorAt(round, 0, -8), paintcolor::boardOutline()));
+        QVERIFY(isColor(colorAt(round, 8, 0), paintcolor::boardOutline()));
+        QVERIFY(isColor(colorAt(round, -8, -8), paintcolor::boardOutline()));
+
+        // A radius too large for the sides is cut to half a side: 8 mm,
+        // around the middle of the board.
+        const double onLargeArc = 8 * std::cos(PI / 4);
+        const QImage large = render(boardWithOutline(100000000));
+        QVERIFY(isColor(colorAt(large, onLargeArc, -onLargeArc), paintcolor::boardOutline()));
+        QVERIFY(isColor(colorAt(large, onArc, -onArc), paintcolor::background()));
+        QVERIFY(isColor(colorAt(large, -4, -8), paintcolor::boardOutline()));
+        QVERIFY(isColor(colorAt(large, 8, 4), paintcolor::boardOutline()));
+    }
+
+    void boardBoundsHoldTheBoard()
+    {
+        // Something to fit the view to even when the board is empty.
+        const QRectF empty = boardBounds(Board());
+        QVERIFY(empty.width() > 0 && empty.height() > 0);
+
+        Board board = boardWithOutline(0);
+        QCOMPARE(boardBounds(board), QRectF(-8, -8, 16, 16));
+
+        // What sticks out of the outline counts too.
+        Via via;
+        via.at = Point{12000000, 0};
+        via.size = 2000000;
+        via.drill = 1000000;
+        board.vias.append(via);
+        Track track;
+        track.width = 1000000;
+        track.from = Point{0, 0};
+        track.to = Point{0, 15000000};
+        board.tracks.append(track);
+        const QRectF bounds = boardBounds(board);
+        QVERIFY(bounds.contains(QRectF(-8, -8, 21, 23.5)));
+
+        // A placed footprint counts where it is placed, turned as it is.
+        Board placed = boardWithPad(90, BoardSide::Top);
+        placed.placements[0].at = Point{20000000, 0};
+        QVERIFY(boardBounds(placed).contains(QPointF(20, 3)));
+        QVERIFY(!boardBounds(placed).contains(QPointF(0, 0)));
     }
 
     void textIsDrawn()

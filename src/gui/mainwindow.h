@@ -11,10 +11,13 @@ class QTimer;
 class QComboBox;
 class QLabel;
 class QMenu;
+class QTabBar;
 
 namespace ppcb {
 
 class CanvasView;
+class DesignViewItem;
+class Document;
 class LibraryViewItem;
 
 class MainWindow : public QMainWindow
@@ -26,8 +29,22 @@ public:
 
     CanvasView *canvas() const { return m_canvas; }
 
-    // Shows a symbol or footprint file of the library on the canvas and
-    // keeps watching it: the drawing follows every save of the file.
+    // The open project. The window starts with a new one; its pages (the
+    // sheets, then the board) are the tabs over the canvas.
+    Document *document() const { return m_document; }
+    DesignViewItem *designItem() const { return m_designItem; }
+    void newProject();
+    // Both return false, with the reason in the status bar, on failure; what
+    // was open before stays.
+    bool openProject(const QString &path);
+    bool saveProjectAs(const QString &path);
+    // Shows page 'page' of the project and fits the view to it.
+    void showPage(int page);
+
+    // Shows a symbol or footprint file of the library on the canvas in the
+    // place of the project and keeps watching it: the drawing follows every
+    // save of the file. The project comes back with newProject(),
+    // openProject() or a click on a tab.
     // Returns false, with the reason in the status bar, when the file cannot
     // be read; what was shown before stays.
     bool openLibraryFile(const QString &path);
@@ -40,6 +57,7 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 
 private:
     void createMenus();
@@ -51,6 +69,15 @@ private:
     void applyCursorStyle(CursorStyle style);
     void applyZoomCenterAndWarp(bool on);
 
+    void chooseProjectToOpen();
+    void saveProject();
+    void chooseProjectToSaveAs();
+    // Puts the project on the canvas in the place of a library file.
+    void showProject();
+    // Brings the tabs and the drawing in line with the project's content.
+    void projectChanged();
+    void updateTitle();
+
     void chooseLibraryFile();
     // Reads 'path' and puts it on the canvas; the common part of opening
     // and reloading.
@@ -61,6 +88,12 @@ private:
     void showGridStep(Coord step);
 
     CanvasView *m_canvas = nullptr;
+    QTabBar *m_tabs = nullptr;
+    Document *m_document = nullptr;
+    // Owned by the canvas scene.
+    DesignViewItem *m_designItem = nullptr;
+    // The view is fitted to the page after the window is first shown.
+    bool m_shownOnce = false;
     QLabel *m_positionLabel = nullptr;
     QComboBox *m_gridStepBox = nullptr;
 

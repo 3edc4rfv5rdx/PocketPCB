@@ -2,6 +2,7 @@
 add_library(pocketpcb_gui STATIC
     appsettings.h appsettings.cpp
     canvasview.h canvasview.cpp
+    designviewitem.h designviewitem.cpp
     format.h format.cpp
     language.h language.cpp
     libraryviewitem.h libraryviewitem.cpp

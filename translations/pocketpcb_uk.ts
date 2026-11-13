@@ -211,6 +211,13 @@
     </message>
 </context>
 <context>
+    <name>ppcb::Paint</name>
+    <message>
+        <source>Sheet %1 of %2</source>
+        <translation>Аркуш %1 з %2</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::LibraryFile</name>
     <message>
         <source>this is not a PocketPCB library file</source>
@@ -302,6 +309,58 @@
     <message>
         <source>footprints</source>
         <translation>посадкові місця</translation>
+    </message>
+    <message>
+        <source>&amp;New project</source>
+        <translation>&amp;Новий проєкт</translation>
+    </message>
+    <message>
+        <source>&amp;Open project</source>
+        <translation>&amp;Відкрити проєкт</translation>
+    </message>
+    <message>
+        <source>&amp;Save</source>
+        <translation>&amp;Зберегти</translation>
+    </message>
+    <message>
+        <source>Save &amp;as</source>
+        <translation>Зберегти &amp;як</translation>
+    </message>
+    <message>
+        <source>&amp;Edit</source>
+        <translation>&amp;Редагування</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Скасувати</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Повторити</translation>
+    </message>
+    <message>
+        <source>Open project</source>
+        <translation>Відкрити проєкт</translation>
+    </message>
+    <message>
+        <source>Save project as</source>
+        <translation>Зберегти проєкт як</translation>
+    </message>
+    <message>
+        <source>PocketPCB projects</source>
+        <translation>Проєкти PocketPCB</translation>
+    </message>
+    <message>
+        <source>Sheet %1</source>
+        <translation>Аркуш %1</translation>
+    </message>
+    <message>
+        <source>Board</source>
+        <translation>Плата</translation>
+    </message>
+    <message>
+        <source>untitled</source>
+        <translation>без назви</translation>
     </message>
 </context>
 </TS>

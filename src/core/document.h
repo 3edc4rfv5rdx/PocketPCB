@@ -43,7 +43,9 @@ public:
     // menu ("Undo <text>"). Does nothing when 'changed' brings no change.
     void change(const QString &text, const Design &changed);
 
-    // Drops the content and the history for a new project.
+    // Drops the content and the history for a new project; without a name
+    // it is "untitled".
+    void startNew();
     void startNew(const QString &baseName);
     // Reads a project. On failure returns false, puts a message for the user
     // into 'error' and leaves the document as it was.

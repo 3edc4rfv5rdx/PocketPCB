@@ -1,11 +1,15 @@
 #include "paint.h"
 
+#include <QCoreApplication>
 #include <QFont>
 #include <QFontMetricsF>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPolygonF>
+#include <QTransform>
 
 #include <algorithm>
+#include <cmath>
 
 namespace ppcb {
 
@@ -32,6 +36,37 @@ const double DASH_GAP = 1.0;
 // QPainter measures angles in sixteenths of a degree.
 const int QT_ANGLE_UNITS = 16;
 
+
+// The schematic sheet.
+const double A4_LONG_SIDE = 297.0;
+const double A4_SHORT_SIDE = 210.0;
+const double A3_LONG_SIDE = 420.0;
+const double A3_SHORT_SIDE = 297.0;
+const double FRAME_MARGIN = 5.0;
+const double FRAME_LINE_WIDTH = 0.3;
+const double TITLE_BLOCK_WIDTH = 90.0;
+const double TITLE_ROW_HEIGHT = 6.0;
+const double TITLE_TEXT_HEIGHT = 2.5;
+const double TITLE_TEXT_MARGIN = 2.0;
+const double WIRE_WIDTH = 0.15;
+const double BUS_WIDTH = 0.5;
+const double LABEL_TEXT_HEIGHT = 1.27;
+const double LABEL_GAP = 0.4;
+const double POWER_STEM = 2.54;
+const double POWER_BAR_HALF = 1.27;
+const double NO_CONNECT_HALF = 0.635;
+
+// The board.
+const double OUTLINE_WIDTH = 0.15;
+const double ZONE_LINE_WIDTH = 0.15;
+// A rounded corner of the outline is drawn with this many straight pieces.
+const int CORNER_PIECES = 12;
+// What an empty board is fitted to.
+const double EMPTY_BOARD_WIDTH = 100.0;
+const double EMPTY_BOARD_HEIGHT = 80.0;
+const double HALF_TURN = 180.0;
+const double PI = 3.14159265358979323846;
+
 const char REF_PLACEHOLDER[] = "REF";
 const char VALUE_PLACEHOLDER[] = "VALUE";
 
@@ -49,13 +84,35 @@ double capHeightOf(const QFontMetricsF &metrics)
 }
 
 // Text whose capitals are 'height' mm tall, vertically centred on 'at'.
+// 'upright' keeps it readable inside a turned or mirrored drawing: it runs
+// left to right or bottom to top and is never mirrored; the anchor stays.
 void drawText(QPainter &painter, const QPointF &at, const QString &text, double height,
-              TextAlign align, const QColor &color)
+              TextAlign align, const QColor &color, bool upright = false)
 {
     const QFont font = drawingFont();
     const QFontMetricsF metrics(font);
     const double capHeight = capHeightOf(metrics);
     const double width = metrics.horizontalAdvance(text);
+
+    painter.save();
+    painter.translate(at);
+    if (upright) {
+        // Where the text's own X axis points on screen.
+        const QTransform world = painter.worldTransform();
+        const bool runsLeft = world.m11() < 0 && !qFuzzyIsNull(world.m11());
+        const bool runsDown = qFuzzyIsNull(world.m11()) && world.m12() > 0;
+        if (runsLeft || runsDown) {
+            painter.rotate(HALF_TURN);
+            if (align == TextAlign::Left)
+                align = TextAlign::Right;
+            else if (align == TextAlign::Right)
+                align = TextAlign::Left;
+        }
+        // The text is centred on its line, so flipping it over the line
+        // undoes a mirror without moving it.
+        if (painter.worldTransform().determinant() < 0)
+            painter.scale(1, -1);
+    }
 
     double left = 0;
     if (align == TextAlign::Center)
@@ -63,8 +120,6 @@ void drawText(QPainter &painter, const QPointF &at, const QString &text, double 
     else if (align == TextAlign::Right)
         left = -width;
 
-    painter.save();
-    painter.translate(at);
     painter.scale(height / capHeight, height / capHeight);
     painter.setFont(font);
     painter.setPen(color);
@@ -112,7 +167,9 @@ QRectF circleRect(const QPointF &center, double radius)
     return QRectF(center.x() - radius, center.y() - radius, 2 * radius, 2 * radius);
 }
 
-void paintGraphic(QPainter &painter, const Graphic &graphic, const QColor &color)
+// 'upright': see drawText().
+void paintGraphic(QPainter &painter, const Graphic &graphic, const QColor &color,
+                  bool upright = false)
 {
     const QPointF a = toMm(graphic.a);
     const QPointF b = toMm(graphic.b);
@@ -139,7 +196,7 @@ void paintGraphic(QPainter &painter, const Graphic &graphic, const QColor &color
                         -graphic.spanAngle * QT_ANGLE_UNITS);
         break;
     case GraphicKind::Text:
-        drawText(painter, a, graphic.text, nmToMm(graphic.height), graphic.align, color);
+        drawText(painter, a, graphic.text, nmToMm(graphic.height), graphic.align, color, upright);
         break;
     case GraphicKind::Polygon: {
         QPolygonF polygon;
@@ -201,6 +258,7 @@ public:
     }
 
     QRectF rect() const { return m_rect; }
+    bool isEmpty() const { return m_empty; }
 
 private:
     QRectF m_rect;
@@ -237,7 +295,7 @@ bool isHorizontal(const Pin &pin)
     return pin.side == PinSide::Left || pin.side == PinSide::Right;
 }
 
-void paintPin(QPainter &painter, const Pin &pin, bool showNumber, bool showName)
+void paintPin(QPainter &painter, const Pin &pin, bool showNumber, bool showName, bool upright)
 {
     const QPointF at = toMm(pin.at);
     const QPointF end = toMm(pinBodyEnd(pin));
@@ -254,10 +312,10 @@ void paintPin(QPainter &painter, const Pin &pin, bool showNumber, bool showName)
         // Above a horizontal pin, to the left of a vertical one.
         if (isHorizontal(pin)) {
             drawText(painter, middle - QPointF(0, offset), pin.number, PIN_TEXT_HEIGHT,
-                     TextAlign::Center, paintcolor::pinText());
+                     TextAlign::Center, paintcolor::pinText(), upright);
         } else {
             drawText(painter, middle - QPointF(PIN_TEXT_GAP, 0), pin.number, PIN_TEXT_HEIGHT,
-                     TextAlign::Right, paintcolor::pinText());
+                     TextAlign::Right, paintcolor::pinText(), upright);
         }
     }
     if (showName && !pin.name.isEmpty()) {
@@ -265,33 +323,45 @@ void paintPin(QPainter &painter, const Pin &pin, bool showNumber, bool showName)
         switch (pin.side) {
         case PinSide::Left:
             drawText(painter, end + QPointF(PIN_TEXT_GAP, 0), pin.name, PIN_TEXT_HEIGHT,
-                     TextAlign::Left, paintcolor::pinText());
+                     TextAlign::Left, paintcolor::pinText(), upright);
             break;
         case PinSide::Right:
             drawText(painter, end - QPointF(PIN_TEXT_GAP, 0), pin.name, PIN_TEXT_HEIGHT,
-                     TextAlign::Right, paintcolor::pinText());
+                     TextAlign::Right, paintcolor::pinText(), upright);
             break;
         case PinSide::Up:
             drawText(painter, end + QPointF(0, offset), pin.name, PIN_TEXT_HEIGHT,
-                     TextAlign::Center, paintcolor::pinText());
+                     TextAlign::Center, paintcolor::pinText(), upright);
             break;
         case PinSide::Down:
             drawText(painter, end - QPointF(0, offset), pin.name, PIN_TEXT_HEIGHT,
-                     TextAlign::Center, paintcolor::pinText());
+                     TextAlign::Center, paintcolor::pinText(), upright);
             break;
         }
     }
 }
 
-QColor padColor(PadLayers layers)
+// Copper of one side of the board.
+QColor copperColor(BoardSide side)
+{
+    return side == BoardSide::Top ? paintcolor::padFront() : paintcolor::padBack();
+}
+
+BoardSide otherSide(BoardSide side)
+{
+    return side == BoardSide::Top ? BoardSide::Bottom : BoardSide::Top;
+}
+
+// 'partSide' is the side the part is mounted on: a pad's Front is that side.
+QColor padColor(PadLayers layers, BoardSide partSide)
 {
     switch (layers) {
     case PadLayers::Both:
         return paintcolor::padBoth();
     case PadLayers::Front:
-        return paintcolor::padFront();
+        return copperColor(partSide);
     case PadLayers::Back:
-        return paintcolor::padBack();
+        return copperColor(otherSide(partSide));
     }
     return paintcolor::padBoth();
 }
@@ -304,13 +374,14 @@ QRectF padRect(const Pad &pad)
     return QRectF(at.x() - width / 2, at.y() - height / 2, width, height);
 }
 
-void paintPad(QPainter &painter, const Pad &pad)
+void paintPad(QPainter &painter, const Pad &pad, BoardSide partSide = BoardSide::Top,
+              bool upright = false)
 {
     const QRectF rect = padRect(pad);
     const double smaller = std::min(rect.width(), rect.height());
 
     painter.setPen(Qt::NoPen);
-    painter.setBrush(padColor(pad.layers));
+    painter.setBrush(padColor(pad.layers, partSide));
     switch (pad.shape) {
     case PadShape::Circle:
         painter.drawEllipse(rect);
@@ -329,8 +400,316 @@ void paintPad(QPainter &painter, const Pad &pad)
     }
     if (!pad.number.isEmpty()) {
         drawText(painter, rect.center(), pad.number, smaller * PAD_TEXT_SHARE, TextAlign::Center,
-                 pad.hole > 0 ? paintcolor::symbol() : paintcolor::padText());
+                 pad.hole > 0 ? paintcolor::symbol() : paintcolor::padText(), upright);
     }
+}
+
+
+// The graphics and the pins of a symbol, without the marks of the library view.
+void paintSymbolBody(QPainter &painter, const Symbol &symbol, bool upright)
+{
+    for (const Graphic &graphic : symbol.graphics)
+        paintGraphic(painter, graphic, paintcolor::symbol(), upright);
+    for (const Pin &pin : symbol.pins)
+        paintPin(painter, pin, symbol.showPinNumbers, symbol.showPinNames, upright);
+}
+
+// From the coordinates of a symbol to those of the sheet: the symbol is
+// mirrored left to right first, then turned clockwise, then moved.
+QTransform componentTransform(const Component &component)
+{
+    QTransform transform;
+    transform.translate(nmToMm(component.at.x), nmToMm(component.at.y));
+    transform.rotate(component.rotation);
+    if (component.mirrored)
+        transform.scale(-1, 1);
+    return transform;
+}
+
+// The same for a footprint on the board; one on the bottom side is flipped.
+QTransform placementTransform(const Placement &placement)
+{
+    QTransform transform;
+    transform.translate(nmToMm(placement.at.x), nmToMm(placement.at.y));
+    transform.rotate(placement.rotation);
+    if (placement.side == BoardSide::Bottom)
+        transform.scale(-1, 1);
+    return transform;
+}
+
+QPolygonF toPolygon(const QList<Point> &points)
+{
+    QPolygonF polygon;
+    for (const Point &point : points)
+        polygon.append(toMm(point));
+    return polygon;
+}
+
+void paintComponent(QPainter &painter, const Schematic &schematic, const Component &component)
+{
+    painter.save();
+    painter.setTransform(componentTransform(component), true);
+    paintSymbolBody(painter, schematic.symbols.value(component.symbol), true);
+    painter.restore();
+
+    drawText(painter, toMm(component.at + component.refAt), component.designator,
+             PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center, paintcolor::symbol());
+    if (!component.value.isEmpty()) {
+        drawText(painter, toMm(component.at + component.valueAt), component.value,
+                 PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center, paintcolor::symbol());
+    }
+}
+
+// The text lies along the label's direction, just above its point.
+void paintLabel(QPainter &painter, const Label &label)
+{
+    painter.save();
+    painter.translate(toMm(label.at));
+    painter.rotate(label.rotation);
+    drawText(painter, QPointF(0, -(LABEL_TEXT_HEIGHT / 2 + LABEL_GAP)), label.text,
+             LABEL_TEXT_HEIGHT, TextAlign::Left, paintcolor::label(), true);
+    painter.restore();
+}
+
+// A stem from the connection point, a bar across its end and the name
+// beyond the bar. Not turned, the stem points up.
+void paintPowerSymbol(QPainter &painter, const PowerSymbol &power)
+{
+    painter.save();
+    painter.translate(toMm(power.at));
+    painter.rotate(power.rotation);
+    painter.setPen(linePen(paintcolor::symbol(), WIRE_WIDTH));
+    painter.drawLine(QPointF(0, 0), QPointF(0, -POWER_STEM));
+    painter.drawLine(QPointF(-POWER_BAR_HALF, -POWER_STEM), QPointF(POWER_BAR_HALF, -POWER_STEM));
+    drawText(painter, QPointF(0, -(POWER_STEM + LABEL_TEXT_HEIGHT / 2 + LABEL_GAP)), power.name,
+             LABEL_TEXT_HEIGHT, TextAlign::Center, paintcolor::symbol(), true);
+    painter.restore();
+}
+
+void paintNoConnect(QPainter &painter, const NoConnect &mark)
+{
+    const QPointF at = toMm(mark.at);
+    const double half = NO_CONNECT_HALF;
+    painter.setPen(linePen(paintcolor::noConnect(), WIRE_WIDTH));
+    painter.drawLine(at + QPointF(-half, -half), at + QPointF(half, half));
+    painter.drawLine(at + QPointF(-half, half), at + QPointF(half, -half));
+}
+
+// The frame inside the paper's edge and the title block in its bottom right
+// corner: one row for every field that is not empty.
+void paintFrame(QPainter &painter, const Schematic &schematic, int index,
+                const TitleBlock &titleBlock)
+{
+    const Sheet &sheet = schematic.sheets.at(index);
+    const QRectF paper = paperRect(sheet.paper);
+    const QRectF frame = paper.adjusted(FRAME_MARGIN, FRAME_MARGIN, -FRAME_MARGIN, -FRAME_MARGIN);
+
+    QStringList rows;
+    const QStringList fields = {
+        titleBlock.title,    sheet.title,         titleBlock.author, titleBlock.organization,
+        titleBlock.contacts, titleBlock.revision, titleBlock.date,
+    };
+    for (const QString &field : fields) {
+        if (!field.isEmpty())
+            rows.append(field);
+    }
+    rows.append(QCoreApplication::translate("ppcb::Paint", "Sheet %1 of %2")
+                    .arg(index + 1)
+                    .arg(schematic.sheets.size()));
+    if (!titleBlock.note.isEmpty())
+        rows.append(titleBlock.note);
+
+    const QRectF block(frame.right() - TITLE_BLOCK_WIDTH,
+                       frame.bottom() - rows.size() * TITLE_ROW_HEIGHT, TITLE_BLOCK_WIDTH,
+                       rows.size() * TITLE_ROW_HEIGHT);
+
+    // The paper's edge as a hairline, the frame and the block as real lines.
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(QPen(paintcolor::sheetFrame(), 0));
+    painter.drawRect(paper);
+    painter.setPen(linePen(paintcolor::sheetFrame(), FRAME_LINE_WIDTH));
+    painter.drawRect(frame);
+    painter.drawRect(block);
+    for (int row = 0; row < rows.size(); ++row) {
+        const double top = block.top() + row * TITLE_ROW_HEIGHT;
+        if (row > 0) {
+            painter.setPen(linePen(paintcolor::sheetFrame(), FRAME_LINE_WIDTH));
+            painter.drawLine(QPointF(block.left(), top), QPointF(block.right(), top));
+        }
+        drawText(painter, QPointF(block.left() + TITLE_TEXT_MARGIN, top + TITLE_ROW_HEIGHT / 2),
+                 rows.at(row), TITLE_TEXT_HEIGHT, TextAlign::Left, paintcolor::sheetFrame());
+    }
+}
+
+double lengthOf(const QPointF &vector)
+{
+    return std::hypot(vector.x(), vector.y());
+}
+
+// The points that draw corner 'corner' of an outline coming from 'from' and
+// going on to 'to': the corner itself, or an arc of 'radius' that touches
+// both sides. An arc too large for its sides is made as large as fits.
+QList<QPointF> cornerPoints(const QPointF &from, const QPointF &corner, const QPointF &to,
+                            double radius)
+{
+    const double lengthIn = lengthOf(from - corner);
+    const double lengthOut = lengthOf(to - corner);
+    if (radius <= 0 || qFuzzyIsNull(lengthIn) || qFuzzyIsNull(lengthOut))
+        return {corner};
+
+    const QPointF in = (from - corner) / lengthIn;
+    const QPointF out = (to - corner) / lengthOut;
+    const double cosine = qBound(-1.0, in.x() * out.x() + in.y() * out.y(), 1.0);
+    const double halfAngle = std::acos(cosine) / 2;
+    // No corner to round when the sides go straight on or fold back.
+    if (qFuzzyIsNull(std::sin(halfAngle)) || qFuzzyIsNull(std::cos(halfAngle)))
+        return {corner};
+
+    // An arc may take at most half of each side: the other half belongs to
+    // the corner at the side's other end.
+    const double fromCorner = std::min(radius / std::tan(halfAngle),
+                                       std::min(lengthIn, lengthOut) / 2);
+    const double fitted = fromCorner * std::tan(halfAngle);
+    const QPointF start = corner + in * fromCorner;
+    const QPointF end = corner + out * fromCorner;
+    const QPointF bisector = in + out;
+    const QPointF center = corner + bisector / lengthOf(bisector) * (fitted / std::sin(halfAngle));
+
+    const double startAngle = std::atan2(start.y() - center.y(), start.x() - center.x());
+    double sweep = std::atan2(end.y() - center.y(), end.x() - center.x()) - startAngle;
+    // The short way round.
+    if (sweep > PI)
+        sweep -= 2 * PI;
+    else if (sweep < -PI)
+        sweep += 2 * PI;
+
+    QList<QPointF> points;
+    for (int piece = 0; piece <= CORNER_PIECES; ++piece) {
+        const double angle = startAngle + sweep * piece / CORNER_PIECES;
+        points.append(center + QPointF(std::cos(angle), std::sin(angle)) * fitted);
+    }
+    return points;
+}
+
+// The closed outline of the board; empty for a board without one.
+QPainterPath outlinePath(const QList<OutlineCorner> &outline)
+{
+    QPainterPath path;
+    const int count = int(outline.size());
+    for (int i = 0; i < count; ++i) {
+        const QPointF from = toMm(outline.at((i + count - 1) % count).at);
+        const QPointF to = toMm(outline.at((i + 1) % count).at);
+        const QList<QPointF> points = cornerPoints(from, toMm(outline.at(i).at), to,
+                                                   nmToMm(outline.at(i).radius));
+        for (const QPointF &point : points) {
+            if (path.elementCount() == 0)
+                path.moveTo(point);
+            else
+                path.lineTo(point);
+        }
+    }
+    if (count > 0)
+        path.closeSubpath();
+    return path;
+}
+
+void paintTracks(QPainter &painter, const Board &board, BoardSide side)
+{
+    for (const Track &track : board.tracks) {
+        if (track.side != side)
+            continue;
+        painter.setPen(linePen(copperColor(side), nmToMm(track.width)));
+        painter.drawLine(toMm(track.from), toMm(track.to));
+    }
+}
+
+// A filled circle of copper with a hole in it.
+void paintRing(QPainter &painter, const QPointF &at, double copperDiameter, double holeDiameter)
+{
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(paintcolor::padBoth());
+    painter.drawEllipse(at, copperDiameter / 2, copperDiameter / 2);
+    painter.setBrush(paintcolor::background());
+    painter.drawEllipse(at, holeDiameter / 2, holeDiameter / 2);
+}
+
+void paintMountingHole(QPainter &painter, const MountingHole &hole)
+{
+    const QPointF at = toMm(hole.at);
+    const double drill = nmToMm(hole.drill);
+    if (hole.plated) {
+        paintRing(painter, at, drill + 2 * nmToMm(hole.ring), drill);
+        return;
+    }
+    painter.setPen(linePen(paintcolor::bareHole(), OUTLINE_WIDTH));
+    painter.setBrush(paintcolor::background());
+    painter.drawEllipse(at, drill / 2, drill / 2);
+}
+
+QColor silkscreenColor(BoardSide side)
+{
+    return side == BoardSide::Top ? paintcolor::silkscreen() : paintcolor::silkscreenBottom();
+}
+
+void paintPlacementPads(QPainter &painter, const Board &board, const Placement &placement)
+{
+    painter.save();
+    painter.setTransform(placementTransform(placement), true);
+    for (const Pad &pad : board.footprints.value(placement.footprint).pads)
+        paintPad(painter, pad, placement.side, true);
+    painter.restore();
+}
+
+// A text of the placement's silkscreen at 'at' on the board; mirrored on
+// the bottom side.
+void paintPlacementText(QPainter &painter, const Placement &placement, const Point &at,
+                        const QString &text)
+{
+    painter.save();
+    painter.translate(toMm(at));
+    if (placement.side == BoardSide::Bottom)
+        painter.scale(-1, 1);
+    drawText(painter, QPointF(0, 0), text, PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center,
+             silkscreenColor(placement.side));
+    painter.restore();
+}
+
+void paintPlacementSilkscreen(QPainter &painter, const Board &board, const Placement &placement)
+{
+    painter.save();
+    painter.setTransform(placementTransform(placement), true);
+    for (const Graphic &graphic : board.footprints.value(placement.footprint).graphics)
+        paintGraphic(painter, graphic, silkscreenColor(placement.side));
+    painter.restore();
+
+    const Point refAt = placement.at + placement.refAt;
+    const Point valueAt = placement.at + placement.valueAt;
+    if (placement.showRef)
+        paintPlacementText(painter, placement, refAt, placement.designator);
+    if (placement.showValue && !placement.value.isEmpty())
+        paintPlacementText(painter, placement, valueAt, placement.value);
+}
+
+// The author's drawing on the silkscreen; mirrored on the bottom side.
+void paintBoardGraphic(QPainter &painter, const BoardGraphic &item)
+{
+    if (item.side == BoardSide::Top || item.graphic.kind != GraphicKind::Text) {
+        paintGraphic(painter, item.graphic, silkscreenColor(item.side));
+        return;
+    }
+    // Only a text shows which way it is read; it is mirrored about its anchor.
+    Graphic text = item.graphic;
+    text.a = Point();
+    painter.save();
+    painter.translate(toMm(item.graphic.a));
+    painter.scale(-1, 1);
+    paintGraphic(painter, text, silkscreenColor(item.side));
+    painter.restore();
+}
+
+QRectF squareAround(const QPointF &center, double size)
+{
+    return circleRect(center, size / 2);
 }
 
 } // namespace
@@ -389,10 +768,7 @@ void paintSymbol(QPainter &painter, const Symbol &symbol)
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
     paintOriginMark(painter);
-    for (const Graphic &graphic : symbol.graphics)
-        paintGraphic(painter, graphic, paintcolor::symbol());
-    for (const Pin &pin : symbol.pins)
-        paintPin(painter, pin, symbol.showPinNumbers, symbol.showPinNames);
+    paintSymbolBody(painter, symbol, false);
     paintPlaceholders(painter, symbol.refAt, symbol.valueAt);
     painter.restore();
 }
@@ -408,6 +784,116 @@ void paintFootprint(QPainter &painter, const Footprint &footprint)
         paintGraphic(painter, graphic, paintcolor::silkscreen());
     paintOriginMark(painter);
     paintPlaceholders(painter, footprint.refAt, footprint.valueAt);
+    painter.restore();
+}
+
+QRectF paperRect(PaperSize paper)
+{
+    if (paper == PaperSize::A3)
+        return QRectF(0, 0, A3_LONG_SIDE, A3_SHORT_SIDE);
+    return QRectF(0, 0, A4_LONG_SIDE, A4_SHORT_SIDE);
+}
+
+void paintSheet(QPainter &painter, const Schematic &schematic, int index,
+                const TitleBlock &titleBlock)
+{
+    if (index < 0 || index >= schematic.sheets.size())
+        return;
+    const Sheet &sheet = schematic.sheets.at(index);
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    paintFrame(painter, schematic, index, titleBlock);
+    for (const SheetGraphic &item : sheet.graphics)
+        paintGraphic(painter, item.graphic, paintcolor::sheetGraphic());
+
+    painter.setBrush(Qt::NoBrush);
+    for (const Bus &bus : sheet.buses) {
+        painter.setPen(linePen(paintcolor::bus(), BUS_WIDTH));
+        painter.drawPolyline(toPolygon(bus.points));
+        // The name sits above the bus's first point.
+        const QPointF nameAt = toMm(bus.points.value(0))
+                               - QPointF(0, LABEL_TEXT_HEIGHT / 2 + BUS_WIDTH + LABEL_GAP);
+        drawText(painter, nameAt, bus.name, LABEL_TEXT_HEIGHT, TextAlign::Left, paintcolor::bus());
+    }
+    for (const Wire &wire : sheet.wires) {
+        painter.setPen(linePen(paintcolor::wire(), WIRE_WIDTH));
+        painter.drawPolyline(toPolygon(wire.points));
+    }
+    for (const Component &component : sheet.components)
+        paintComponent(painter, schematic, component);
+    for (const PowerSymbol &power : sheet.powerSymbols)
+        paintPowerSymbol(painter, power);
+    for (const Label &label : sheet.labels)
+        paintLabel(painter, label);
+    for (const NoConnect &mark : sheet.noConnects)
+        paintNoConnect(painter, mark);
+    painter.restore();
+}
+
+QRectF boardBounds(const Board &board)
+{
+    Bounds bounds;
+    for (const OutlineCorner &corner : board.outline)
+        bounds.add(QRectF(toMm(corner.at), QSizeF(0, 0)));
+    for (const Placement &placement : board.placements) {
+        const Footprint footprint = board.footprints.value(placement.footprint);
+        bounds.add(placementTransform(placement).mapRect(footprintBounds(footprint)));
+    }
+    for (const Track &track : board.tracks) {
+        const double half = nmToMm(track.width) / 2;
+        bounds.add(QRectF(toMm(track.from), toMm(track.to))
+                       .normalized()
+                       .adjusted(-half, -half, half, half));
+    }
+    for (const Via &via : board.vias)
+        bounds.add(squareAround(toMm(via.at), nmToMm(via.size)));
+    for (const MountingHole &hole : board.holes)
+        bounds.add(squareAround(toMm(hole.at), nmToMm(hole.drill) + 2 * nmToMm(hole.ring)));
+    for (const BoardGraphic &item : board.graphics) {
+        // A text on the bottom is mirrored about its anchor: room on both sides.
+        const QRectF rect = graphicBounds(item.graphic);
+        const double x = nmToMm(item.graphic.a.x);
+        bounds.add(rect);
+        bounds.add(QRectF(2 * x - rect.right(), rect.top(), rect.width(), rect.height()));
+    }
+    for (const Zone &zone : board.zones)
+        bounds.add(toPolygon(zone.points).boundingRect());
+
+    if (bounds.isEmpty())
+        return QRectF(0, 0, EMPTY_BOARD_WIDTH, EMPTY_BOARD_HEIGHT);
+    return bounds.rect();
+}
+
+void paintBoard(QPainter &painter, const Board &board)
+{
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    // Zones are only outlined: nothing fills them yet.
+    painter.setBrush(Qt::NoBrush);
+    for (const Zone &zone : board.zones) {
+        painter.setPen(dashedPen(copperColor(zone.side), ZONE_LINE_WIDTH));
+        painter.drawPolygon(toPolygon(zone.points));
+    }
+
+    paintTracks(painter, board, BoardSide::Bottom);
+    paintTracks(painter, board, BoardSide::Top);
+    for (const Placement &placement : board.placements)
+        paintPlacementPads(painter, board, placement);
+    for (const Via &via : board.vias)
+        paintRing(painter, toMm(via.at), nmToMm(via.size), nmToMm(via.drill));
+    for (const MountingHole &hole : board.holes)
+        paintMountingHole(painter, hole);
+
+    for (const Placement &placement : board.placements)
+        paintPlacementSilkscreen(painter, board, placement);
+    for (const BoardGraphic &item : board.graphics)
+        paintBoardGraphic(painter, item);
+
+    painter.setPen(linePen(paintcolor::boardOutline(), OUTLINE_WIDTH));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawPath(outlinePath(board.outline));
     painter.restore();
 }
 
