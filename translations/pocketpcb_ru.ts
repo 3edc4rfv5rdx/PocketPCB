@@ -127,16 +127,16 @@
         <translation>символа нет в списке символов</translation>
     </message>
     <message>
-        <source>a wire needs at least two points</source>
-        <translation>проводу нужно не менее двух точек</translation>
+        <source>at least two points are expected</source>
+        <translation>ожидается не менее двух точек</translation>
     </message>
     <message>
-        <source>neighbouring points of a wire coincide</source>
-        <translation>соседние точки провода совпадают</translation>
+        <source>neighbouring points coincide</source>
+        <translation>соседние точки совпадают</translation>
     </message>
     <message>
-        <source>a wire segment is not at 0 45 or 90 degrees</source>
-        <translation>отрезок провода идёт не под углом 0 45 или 90 градусов</translation>
+        <source>a segment is not at 0 45 or 90 degrees</source>
+        <translation>отрезок идёт не под углом 0 45 или 90 градусов</translation>
     </message>
     <message>
         <source>a schematic needs at least one sheet</source>

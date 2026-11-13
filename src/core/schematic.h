@@ -48,6 +48,16 @@ struct Wire
     QList<Point> points;
 };
 
+// A bus: a line with a name like "D[0..7]", a chain of points under the
+// rules of a wire. It connects nothing by itself: a wire that ends on it is
+// joined to the others only by its label ("D0", "D1").
+struct Bus
+{
+    ObjectId id;
+    QList<Point> points;
+    QString name;
+};
+
 enum class LabelScope { Global, Local };
 
 // A net label: wires with the same label are one net.
@@ -94,6 +104,7 @@ struct Sheet
     PaperSize paper = PaperSize::A4;
     QList<Component> components;
     QList<Wire> wires;
+    QList<Bus> buses;
     QList<Label> labels;
     QList<PowerSymbol> powerSymbols;
     QList<NoConnect> noConnects;
@@ -112,6 +123,7 @@ struct Schematic
 
 bool operator==(const Component &a, const Component &b);
 bool operator==(const Wire &a, const Wire &b);
+bool operator==(const Bus &a, const Bus &b);
 bool operator==(const Label &a, const Label &b);
 bool operator==(const PowerSymbol &a, const PowerSymbol &b);
 bool operator==(const NoConnect &a, const NoConnect &b);

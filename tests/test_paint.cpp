@@ -202,6 +202,37 @@ private slots:
         QVERIFY(isColor(colorAt(render(filled), 0, 2.0), paintcolor::background()));
     }
 
+    void dashedLineHasGaps()
+    {
+        // 1.5 mm of line, 1 mm of gap, from the left end at x = -8.
+        Graphic line;
+        line.kind = GraphicKind::Line;
+        line.a = Point{-8000000, 0};
+        line.b = Point{8000000, 0};
+        line.width = 400000;
+
+        Symbol solid = emptySymbol();
+        solid.graphics.append(line);
+        QVERIFY(isColor(colorAt(render(solid), -7.25, 0), paintcolor::symbol()));
+        QVERIFY(isColor(colorAt(render(solid), -6.0, 0), paintcolor::symbol()));
+
+        line.dashed = true;
+        Symbol dashed = emptySymbol();
+        dashed.graphics.append(line);
+        const QImage image = render(dashed);
+        QVERIFY(isColor(colorAt(image, -7.25, 0), paintcolor::symbol()));
+        QVERIFY(isColor(colorAt(image, -6.0, 0), paintcolor::background()));
+        QVERIFY(isColor(colorAt(image, -4.75, 0), paintcolor::symbol()));
+        QVERIFY(isColor(colorAt(image, -3.5, 0), paintcolor::background()));
+
+        // The dashes do not depend on the line width.
+        line.width = 200000;
+        Symbol thin = emptySymbol();
+        thin.graphics.append(line);
+        QVERIFY(isColor(colorAt(render(thin), -4.75, 0), paintcolor::symbol()));
+        QVERIFY(isColor(colorAt(render(thin), -3.5, 0), paintcolor::background()));
+    }
+
     void textIsDrawn()
     {
         Graphic text;

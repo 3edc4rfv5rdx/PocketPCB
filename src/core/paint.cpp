@@ -26,6 +26,9 @@ const int FONT_PIXELS = 100;
 const double FALLBACK_CAP_SHARE = 0.7;
 // Width of a letter as a share of the text height, for bounds only.
 const double LETTER_WIDTH_SHARE = 1.0;
+// A dashed line: the length of a dash and of the gap after it.
+const double DASH_LENGTH = 1.5;
+const double DASH_GAP = 1.0;
 // QPainter measures angles in sixteenths of a degree.
 const int QT_ANGLE_UNITS = 16;
 
@@ -89,6 +92,21 @@ QPen linePen(const QColor &color, double width)
     return pen;
 }
 
+// Dashes of the same length whatever the line width. Their ends are cut
+// flat: round ends would eat into the gaps.
+QPen dashedPen(const QColor &color, double width)
+{
+    QPen pen(color, width);
+    pen.setCapStyle(Qt::FlatCap);
+    pen.setJoinStyle(Qt::RoundJoin);
+    // QPen counts a dash pattern in line widths.
+    if (width > 0)
+        pen.setDashPattern({DASH_LENGTH / width, DASH_GAP / width});
+    else
+        pen.setStyle(Qt::DashLine);
+    return pen;
+}
+
 QRectF circleRect(const QPointF &center, double radius)
 {
     return QRectF(center.x() - radius, center.y() - radius, 2 * radius, 2 * radius);
@@ -100,7 +118,8 @@ void paintGraphic(QPainter &painter, const Graphic &graphic, const QColor &color
     const QPointF b = toMm(graphic.b);
     const double radius = nmToMm(graphic.radius);
 
-    painter.setPen(linePen(color, nmToMm(graphic.width)));
+    const double width = nmToMm(graphic.width);
+    painter.setPen(graphic.dashed ? dashedPen(color, width) : linePen(color, width));
     painter.setBrush(Qt::NoBrush);
 
     switch (graphic.kind) {

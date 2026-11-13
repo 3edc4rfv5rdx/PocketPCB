@@ -56,6 +56,13 @@ Schematic fullSchematic()
                    Point{2 * PIN_GRID, -PIN_GRID}, Point{PIN_GRID, -2 * PIN_GRID}};
     first.wires.append(wire);
 
+    Bus bus;
+    bus.id = id(0x17);
+    bus.points = {Point{0, 8 * PIN_GRID}, Point{4 * PIN_GRID, 8 * PIN_GRID},
+                  Point{5 * PIN_GRID, 9 * PIN_GRID}};
+    bus.name = QStringLiteral("D[0..7]");
+    first.buses.append(bus);
+
     Label label;
     label.id = id(0x13);
     label.at = Point{PIN_GRID, 0};
@@ -83,6 +90,7 @@ Schematic fullSchematic()
     frame.graphic.a = Point{-1000000, -1000000};
     frame.graphic.b = Point{9000000, 5000000};
     frame.graphic.width = 250000;
+    frame.graphic.dashed = true;
     first.graphics.append(frame);
 
     schematic.sheets.append(first);
@@ -195,6 +203,11 @@ private slots:
         CHANGED(other.sheets[0].wires[0].points[1].y += 1);
         CHANGED(other.sheets[0].wires[0].points.removeLast());
 
+        CHANGED(other.sheets[0].buses[0].id = id(1));
+        CHANGED(other.sheets[0].buses[0].points[1].y += 1);
+        CHANGED(other.sheets[0].buses[0].name = QStringLiteral("A[0..3]"));
+        CHANGED(other.sheets[0].buses.clear());
+
         CHANGED(other.sheets[0].labels[0].id = id(1));
         CHANGED(other.sheets[0].labels[0].at.x += 1);
         CHANGED(other.sheets[0].labels[0].text = QStringLiteral("DATA"));
@@ -212,6 +225,7 @@ private slots:
 
         CHANGED(other.sheets[0].graphics[0].id = id(1));
         CHANGED(other.sheets[0].graphics[0].graphic.width += 1);
+        CHANGED(other.sheets[0].graphics[0].graphic.dashed = false);
 #undef CHANGED
     }
 
@@ -350,6 +364,45 @@ private slots:
             error = errorOfChange("wires", "points", wirePoints({Point{g, g}, Point{g, g} + direction}));
             QCOMPARE(error, QString());
         }
+    }
+
+    void busRules()
+    {
+        const Coord g = PIN_GRID;
+        QString error = errorOfChange("buses", "name", QStringLiteral(""));
+        QVERIFY2(error.startsWith(QStringLiteral("sheets[0].buses[0].name: ")), qPrintable(error));
+
+        error = errorOfChange("buses", "name", QJsonValue(QJsonValue::Undefined));
+        QVERIFY2(error.startsWith(QStringLiteral("sheets[0].buses[0].name: ")), qPrintable(error));
+
+        // A bus takes the id of the wire of the same sheet.
+        error = errorOfChange("buses", "id", idToJson(id(0x12)));
+        QVERIFY2(error.startsWith(QStringLiteral("sheets[0].buses[0].id: ")), qPrintable(error));
+
+        // The points follow the rules of a wire.
+        error = errorOfChange("buses", "points", wirePoints({Point{0, 0}}));
+        QVERIFY2(error.startsWith(QStringLiteral("sheets[0].buses[0].points: ")), qPrintable(error));
+
+        error = errorOfChange("buses", "points", wirePoints({Point{0, 0}, Point{0, 0}}));
+        QVERIFY2(error.startsWith(QStringLiteral("sheets[0].buses[0].points[1]: ")),
+                 qPrintable(error));
+
+        error = errorOfChange("buses", "points", wirePoints({Point{0, 0}, Point{g, 3 * g}}));
+        QVERIFY2(error.startsWith(QStringLiteral("sheets[0].buses[0].points[1]: ")),
+                 qPrintable(error));
+
+        error = errorOfChange("buses", "points", wirePoints({Point{0, 0}, Point{g, -g}}));
+        QCOMPARE(error, QString());
+
+        // A sheet written before buses existed is not read.
+        QJsonObject root = schematicToJson(fullSchematic());
+        QJsonArray sheets = root.value(QStringLiteral("sheets")).toArray();
+        QJsonObject sheet = sheets.at(0).toObject();
+        sheet.remove(QStringLiteral("buses"));
+        sheets.replace(0, sheet);
+        root.insert(QStringLiteral("sheets"), sheets);
+        readBack(root, error);
+        QVERIFY2(error.startsWith(QStringLiteral("sheets[0].buses: ")), qPrintable(error));
     }
 
     void labelAndPowerErrors()

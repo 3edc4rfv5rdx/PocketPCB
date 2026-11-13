@@ -17,6 +17,7 @@ const char KEY_TITLE[] = "title";
 const char KEY_PAPER[] = "paper";
 const char KEY_COMPONENTS[] = "components";
 const char KEY_WIRES[] = "wires";
+const char KEY_BUSES[] = "buses";
 const char KEY_LABELS[] = "labels";
 const char KEY_POWER[] = "power";
 const char KEY_NO_CONNECTS[] = "noConnects";
@@ -41,7 +42,8 @@ const char KEY_SCOPE[] = "scope";
 const char KEY_NET_CLASS[] = "netClass";
 const char KEY_NAME[] = "name";
 
-const int MIN_WIRE_POINTS = 2;
+// A wire or a bus.
+const int MIN_CHAIN_POINTS = 2;
 
 // In the order of LabelScope.
 const QStringList &scopeNames()
@@ -114,41 +116,71 @@ Component componentFromJson(const QJsonObject &object, const QString &where, Rea
     return component;
 }
 
-QJsonObject wireToJson(const Wire &wire)
+QJsonArray chainToJson(const QList<Point> &chain)
 {
     QJsonArray points;
-    for (const Point &point : wire.points)
+    for (const Point &point : chain)
         points.append(pointToJson(point));
+    return points;
+}
+
+// The points of a wire or of a bus: at least two, every segment horizontal,
+// vertical or at 45 degrees.
+QList<Point> chainFromJson(const QJsonObject &object, const QString &where, JsonReader &reader)
+{
+    const QList<Point> chain = reader.pointList(object, KEY_POINTS, where);
+    if (!reader.ok())
+        return chain;
+
+    const QString pointsWhere = JsonReader::pathOf(where, KEY_POINTS);
+    if (chain.size() < MIN_CHAIN_POINTS) {
+        reader.fail(pointsWhere, JsonReader::tr("at least two points are expected"));
+        return chain;
+    }
+    for (int i = 1; i < chain.size(); ++i) {
+        const Point step = chain.at(i) - chain.at(i - 1);
+        const QString stepWhere = JsonReader::pathOf(pointsWhere, i);
+        if (step.x == 0 && step.y == 0) {
+            reader.fail(stepWhere, JsonReader::tr("neighbouring points coincide"));
+        } else if (step.x != 0 && step.y != 0 && std::llabs(step.x) != std::llabs(step.y)) {
+            reader.fail(stepWhere, JsonReader::tr("a segment is not at 0 45 or 90 degrees"));
+        }
+    }
+    return chain;
+}
+
+QJsonObject wireToJson(const Wire &wire)
+{
     QJsonObject object;
     object.insert(QLatin1String(KEY_ID), idToJson(wire.id));
-    object.insert(QLatin1String(KEY_POINTS), points);
+    object.insert(QLatin1String(KEY_POINTS), chainToJson(wire.points));
     return object;
 }
 
 Wire wireFromJson(const QJsonObject &object, const QString &where, ReadContext &context)
 {
-    JsonReader &reader = context.reader;
     Wire wire;
-    wire.id = reader.uniqueId(object, KEY_ID, where, context.ids);
-    wire.points = reader.pointList(object, KEY_POINTS, where);
-    if (!reader.ok())
-        return wire;
-
-    const QString pointsWhere = JsonReader::pathOf(where, KEY_POINTS);
-    if (wire.points.size() < MIN_WIRE_POINTS) {
-        reader.fail(pointsWhere, JsonReader::tr("a wire needs at least two points"));
-        return wire;
-    }
-    for (int i = 1; i < wire.points.size(); ++i) {
-        const Point step = wire.points.at(i) - wire.points.at(i - 1);
-        const QString stepWhere = JsonReader::pathOf(pointsWhere, i);
-        if (step.x == 0 && step.y == 0) {
-            reader.fail(stepWhere, JsonReader::tr("neighbouring points of a wire coincide"));
-        } else if (step.x != 0 && step.y != 0 && std::llabs(step.x) != std::llabs(step.y)) {
-            reader.fail(stepWhere, JsonReader::tr("a wire segment is not at 0 45 or 90 degrees"));
-        }
-    }
+    wire.id = context.reader.uniqueId(object, KEY_ID, where, context.ids);
+    wire.points = chainFromJson(object, where, context.reader);
     return wire;
+}
+
+QJsonObject busToJson(const Bus &bus)
+{
+    QJsonObject object;
+    object.insert(QLatin1String(KEY_ID), idToJson(bus.id));
+    object.insert(QLatin1String(KEY_POINTS), chainToJson(bus.points));
+    object.insert(QLatin1String(KEY_NAME), bus.name);
+    return object;
+}
+
+Bus busFromJson(const QJsonObject &object, const QString &where, ReadContext &context)
+{
+    Bus bus;
+    bus.id = context.reader.uniqueId(object, KEY_ID, where, context.ids);
+    bus.points = chainFromJson(object, where, context.reader);
+    bus.name = context.reader.nonEmptyString(object, KEY_NAME, where);
+    return bus;
 }
 
 QJsonObject labelToJson(const Label &label)
@@ -262,6 +294,7 @@ QJsonObject sheetToJson(const Sheet &sheet)
     object.insert(QLatin1String(KEY_PAPER), paperNames().at(int(sheet.paper)));
     object.insert(QLatin1String(KEY_COMPONENTS), listToJson(sheet.components, componentToJson));
     object.insert(QLatin1String(KEY_WIRES), listToJson(sheet.wires, wireToJson));
+    object.insert(QLatin1String(KEY_BUSES), listToJson(sheet.buses, busToJson));
     object.insert(QLatin1String(KEY_LABELS), listToJson(sheet.labels, labelToJson));
     object.insert(QLatin1String(KEY_POWER), listToJson(sheet.powerSymbols, powerSymbolToJson));
     object.insert(QLatin1String(KEY_NO_CONNECTS), listToJson(sheet.noConnects, noConnectToJson));
@@ -279,6 +312,7 @@ Sheet sheetFromJson(const QJsonObject &object, const QString &where, ReadContext
     sheet.components = listFromJson<Component>(object, KEY_COMPONENTS, where, context,
                                                componentFromJson);
     sheet.wires = listFromJson<Wire>(object, KEY_WIRES, where, context, wireFromJson);
+    sheet.buses = listFromJson<Bus>(object, KEY_BUSES, where, context, busFromJson);
     sheet.labels = listFromJson<Label>(object, KEY_LABELS, where, context, labelFromJson);
     sheet.powerSymbols = listFromJson<PowerSymbol>(object, KEY_POWER, where, context,
                                                    powerSymbolFromJson);
@@ -305,6 +339,11 @@ bool operator==(const Wire &a, const Wire &b)
     return a.id == b.id && a.points == b.points;
 }
 
+bool operator==(const Bus &a, const Bus &b)
+{
+    return a.id == b.id && a.points == b.points && a.name == b.name;
+}
+
 bool operator==(const Label &a, const Label &b)
 {
     return a.id == b.id && a.at == b.at && a.text == b.text && a.scope == b.scope
@@ -329,7 +368,8 @@ bool operator==(const SheetGraphic &a, const SheetGraphic &b)
 bool operator==(const Sheet &a, const Sheet &b)
 {
     return a.id == b.id && a.title == b.title && a.paper == b.paper
-           && a.components == b.components && a.wires == b.wires && a.labels == b.labels
+           && a.components == b.components && a.wires == b.wires && a.buses == b.buses
+           && a.labels == b.labels
            && a.powerSymbols == b.powerSymbols && a.noConnects == b.noConnects
            && a.graphics == b.graphics;
 }

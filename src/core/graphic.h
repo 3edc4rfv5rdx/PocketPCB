@@ -14,7 +14,8 @@ enum class TextAlign { Left, Center, Right };
 // Line width used when a file does not give one.
 constexpr Coord DEFAULT_LINE_WIDTH = 150000; // 0.15 mm
 
-// One drawing primitive of a symbol or of a footprint's silkscreen.
+// One drawing primitive of a symbol, of a footprint's silkscreen or of the
+// free drawing on a schematic sheet.
 // Which fields are used depends on 'kind'; the others keep their defaults.
 struct Graphic
 {
@@ -46,6 +47,8 @@ struct Graphic
 
     // Line width. All kinds except Text.
     Coord width = DEFAULT_LINE_WIDTH;
+    // The line is drawn dashed. All kinds except Text.
+    bool dashed = false;
 };
 
 bool operator==(const Graphic &a, const Graphic &b);

@@ -37,6 +37,7 @@ Symbol fullSymbol()
     line.a = Point{-1000000, 2000000};
     line.b = Point{3000000, -4000000};
     line.width = 250000;
+    line.dashed = true;
     symbol.graphics.append(line);
 
     Graphic rect;
@@ -191,6 +192,7 @@ private slots:
 
         other = symbol; other.graphics[0].b.x += 1;       QVERIFY(other != symbol);
         other = symbol; other.graphics[0].width += 1;     QVERIFY(other != symbol);
+        other = symbol; other.graphics[0].dashed = false; QVERIFY(other != symbol);
         other = symbol; other.graphics[2].radius += 1;    QVERIFY(other != symbol);
         other = symbol; other.graphics[3].startAngle = 0; QVERIFY(other != symbol);
         other = symbol; other.graphics[3].spanAngle = 90; QVERIFY(other != symbol);
@@ -303,6 +305,8 @@ private slots:
             << QByteArray(R"({"kind":"line","from":[0,0],"to":[1,1],"width":0})") << "width";
         QTest::newRow("line negative width")
             << QByteArray(R"({"kind":"line","from":[0,0],"to":[1,1],"width":-0.1})") << "width";
+        QTest::newRow("line dashed is not a flag")
+            << QByteArray(R"({"kind":"line","from":[0,0],"to":[1,1],"dashed":1})") << "dashed";
         QTest::newRow("circle no radius") << QByteArray(R"({"kind":"circle","center":[0,0]})") << "radius";
         QTest::newRow("circle zero radius")
             << QByteArray(R"({"kind":"circle","center":[0,0],"radius":0})") << "radius";
@@ -355,6 +359,19 @@ private slots:
         QCOMPARE(arc.startAngle, 359);
         QCOMPARE(arc.spanAngle, 360);
         QCOMPARE(arc.width, DEFAULT_LINE_WIDTH);
+        QCOMPARE(arc.dashed, false);
+
+        const Graphic rect = graphicFromJson(
+            parse(R"({"kind":"rect","from":[0,0],"to":[5,5],"dashed":true})"), QString(), reader);
+        QVERIFY2(reader.ok(), qPrintable(reader.error()));
+        QCOMPARE(rect.dashed, true);
+
+        // Text has no line: the field is not read, not even to complain.
+        const Graphic note = graphicFromJson(
+            parse(R"({"kind":"text","at":[0,0],"text":"&","height":1,"dashed":true})"), QString(),
+            reader);
+        QVERIFY2(reader.ok(), qPrintable(reader.error()));
+        QCOMPARE(note.dashed, false);
 
         const Graphic polygon = graphicFromJson(
             parse(R"({"kind":"polygon","points":[[0,0],[1.27,0.635],[0,1.27]]})"), QString(), reader);
@@ -373,7 +390,7 @@ private slots:
         circle.a = Point{1270000, 0};
         circle.radius = 635000;
         QCOMPARE(QJsonDocument(graphicToJson(circle)).toJson(QJsonDocument::Compact),
-                 QByteArray(R"({"center":[1.27,0],"kind":"circle","radius":0.635,"width":0.15})"));
+                 QByteArray(R"({"center":[1.27,0],"dashed":false,"kind":"circle","radius":0.635,"width":0.15})"));
 
         Graphic text;
         text.kind = GraphicKind::Text;
@@ -387,7 +404,7 @@ private slots:
         polygon.points = {Point{0, 0}, Point{1270000, 635000}, Point{0, 1270000}};
         polygon.filled = true;
         QCOMPARE(QJsonDocument(graphicToJson(polygon)).toJson(QJsonDocument::Compact),
-                 QByteArray(R"({"filled":true,"kind":"polygon","points":[[0,0],[1.27,0.635],[0,1.27]],"width":0.15})"));
+                 QByteArray(R"({"dashed":false,"filled":true,"kind":"polygon","points":[[0,0],[1.27,0.635],[0,1.27]],"width":0.15})"));
     }
 };
 

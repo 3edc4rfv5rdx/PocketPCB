@@ -18,6 +18,7 @@ const char KEY_ALIGN[] = "align";
 const char KEY_WIDTH[] = "width";
 const char KEY_POINTS[] = "points";
 const char KEY_FILLED[] = "filled";
+const char KEY_DASHED[] = "dashed";
 
 const int FULL_TURN = 360;
 const int MIN_POLYGON_POINTS = 3;
@@ -48,7 +49,7 @@ bool operator==(const Graphic &a, const Graphic &b)
     return a.kind == b.kind && a.a == b.a && a.b == b.b && a.radius == b.radius
            && a.startAngle == b.startAngle && a.spanAngle == b.spanAngle && a.text == b.text
            && a.height == b.height && a.align == b.align && a.points == b.points
-           && a.filled == b.filled && a.width == b.width;
+           && a.filled == b.filled && a.width == b.width && a.dashed == b.dashed;
 }
 
 QJsonObject graphicToJson(const Graphic &graphic)
@@ -88,8 +89,10 @@ QJsonObject graphicToJson(const Graphic &graphic)
     }
     }
 
-    if (graphic.kind != GraphicKind::Text)
+    if (graphic.kind != GraphicKind::Text) {
         object.insert(QLatin1String(KEY_WIDTH), mmToJson(graphic.width));
+        object.insert(QLatin1String(KEY_DASHED), graphic.dashed);
+    }
     return object;
 }
 
@@ -136,9 +139,15 @@ Graphic graphicFromJson(const QJsonObject &object, const QString &where, JsonRea
         break;
     }
 
-    // Optional: the default width when absent. Text has no line width.
-    if (graphic.kind != GraphicKind::Text && object.contains(QLatin1String(KEY_WIDTH)))
+    // Text has no line, so neither a width nor dashes.
+    if (graphic.kind == GraphicKind::Text)
+        return graphic;
+    // Optional: the default width when absent.
+    if (object.contains(QLatin1String(KEY_WIDTH)))
         graphic.width = reader.positiveMm(object, KEY_WIDTH, where);
+    // Optional: a solid line when absent.
+    if (object.contains(QLatin1String(KEY_DASHED)))
+        graphic.dashed = reader.boolean(object, KEY_DASHED, where);
     return graphic;
 }
 
