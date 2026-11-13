@@ -234,6 +234,26 @@ QJsonObject JsonReader::object(const QJsonObject &object, const char *key, const
     return value.toObject();
 }
 
+QStringList JsonReader::nameList(const QJsonObject &object, const char *key, const QString &where)
+{
+    const QJsonArray items = array(object, key, where);
+    QStringList result;
+    for (int i = 0; i < items.size(); ++i) {
+        const QString itemWhere = pathOf(pathOf(where, key), i);
+        const QString name = items.at(i).toString();
+        if (!items.at(i).isString())
+            fail(itemWhere, tr("text is expected"));
+        else if (name.isEmpty())
+            fail(itemWhere, tr("the text must not be empty"));
+        else if (result.contains(name))
+            fail(itemWhere, tr("the name is used twice"));
+        if (!ok())
+            return QStringList();
+        result.append(name);
+    }
+    return result;
+}
+
 Coord JsonReader::positiveMm(const QJsonObject &object, const char *key, const QString &where)
 {
     const Coord nm = mm(object, key, where);

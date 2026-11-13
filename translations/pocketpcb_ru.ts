@@ -98,6 +98,22 @@
         <source>at least three points are expected</source>
         <translation>ожидается не менее трёх точек</translation>
     </message>
+    <message>
+        <source>a round pad must have equal width and height</source>
+        <translation>у круглой площадки ширина и высота должны быть равны</translation>
+    </message>
+    <message>
+        <source>the hole must be smaller than the pad</source>
+        <translation>отверстие должно быть меньше площадки</translation>
+    </message>
+    <message>
+        <source>a pad without a hole must be on one layer</source>
+        <translation>площадка без отверстия должна быть на одном слое</translation>
+    </message>
+    <message>
+        <source>the name is used twice</source>
+        <translation>имя повторяется</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::MainWindow</name>

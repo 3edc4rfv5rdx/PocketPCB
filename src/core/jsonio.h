@@ -65,6 +65,9 @@ public:
     // A list of coordinate pairs.
     QList<Point> pointList(const QJsonObject &object, const char *key, const QString &where);
 
+    // A list of texts, none empty and none repeated.
+    QStringList nameList(const QJsonObject &object, const char *key, const QString &where);
+
     // A size that must be greater than zero / must not be negative.
     Coord positiveMm(const QJsonObject &object, const char *key, const QString &where);
     Coord nonNegativeMm(const QJsonObject &object, const char *key, const QString &where);

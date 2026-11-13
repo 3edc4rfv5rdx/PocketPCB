@@ -2,10 +2,12 @@
 add_library(pocketpcb_core STATIC
     units.h units.cpp
     version.h version.cpp
+    footprint.h footprint.cpp
     graphic.h graphic.cpp
     grid.h grid.cpp
     jsonio.h jsonio.cpp
     objectid.h objectid.cpp
+    part.h part.cpp
     point.h
     symbol.h symbol.cpp
 )
