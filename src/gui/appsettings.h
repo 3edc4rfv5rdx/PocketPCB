@@ -34,6 +34,10 @@ public:
     static bool zoomCenterAndWarp();
     static void setZoomCenterAndWarp(bool on);
 
+    // Folder the last library file was opened from; empty before the first one.
+    static QString lastLibraryFolder();
+    static void setLastLibraryFolder(const QString &folder);
+
     static QByteArray windowGeometry();
     static void setWindowGeometry(const QByteArray &geometry);
 

@@ -26,7 +26,8 @@ const char KEY_APP[] = "app";
 
 const int POINT_SIZE = 2; // [x, y]
 
-// "<place>: <message>", or the message alone when there is no place.
+} // namespace
+
 QString withPlace(const QString &place, const QString &message)
 {
     if (place.isEmpty())
@@ -34,7 +35,10 @@ QString withPlace(const QString &place, const QString &message)
     return place + QLatin1String(": ") + message;
 }
 
-} // namespace
+QString fileTypeOf(const QJsonObject &root)
+{
+    return root.value(QLatin1String(KEY_TYPE)).toString();
+}
 
 QJsonValue mmToJson(Coord nm)
 {
@@ -68,8 +72,7 @@ void JsonReader::header(const QJsonObject &root, const char *expectedFileType)
 {
     // A missing or different type is the same problem for the user:
     // this is not the kind of file that was asked for.
-    const QJsonValue type = root.value(QLatin1String(KEY_TYPE));
-    if (!type.isString() || type.toString() != QLatin1String(expectedFileType)) {
+    if (fileTypeOf(root) != QLatin1String(expectedFileType)) {
         fail(QString(), tr("this is not a PocketPCB file of the expected kind"));
         return;
     }

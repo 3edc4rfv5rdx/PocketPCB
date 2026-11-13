@@ -36,6 +36,10 @@ public:
     void setCursorStyle(ppcb::CursorStyle style);
     void setZoomCenterAndWarp(bool on);
 
+    // Zooms and scrolls so that 'rect' (scene millimetres) fills most of the
+    // view. Does nothing for an empty rectangle.
+    void fitRect(const QRectF &rect);
+
 signals:
     void gridStepChanged(ppcb::Coord step);
     // Cursor position snapped to the grid.

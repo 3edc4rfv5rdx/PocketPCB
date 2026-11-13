@@ -1,6 +1,7 @@
 #include "canvasview.h"
 
 #include "grid.h"
+#include "paint.h"
 
 #include <QApplication>
 #include <QContextMenuEvent>
@@ -11,6 +12,7 @@
 #include <QScrollBar>
 #include <QWheelEvent>
 
+#include <algorithm>
 #include <cmath>
 
 namespace ppcb {
@@ -26,8 +28,9 @@ const double GRID_DOT_PIXELS = 2.0;
 const double SMALL_CROSS_HALF_PIXELS = 12.0;
 // Wheel angle of one notch, in the units of QWheelEvent::angleDelta().
 const double WHEEL_NOTCH = 120.0;
+// fitRect() leaves this share of the view to the rectangle; the rest is margin.
+const double FIT_SHARE = 0.8;
 
-const QColor BACKGROUND_COLOR(255, 255, 255);
 const QColor GRID_LINE_COLOR(224, 224, 224);
 const QColor GRID_DOT_COLOR(150, 150, 150);
 const QColor CURSOR_COLOR(60, 60, 60);
@@ -89,9 +92,23 @@ void CanvasView::setZoomCenterAndWarp(bool on)
     m_zoomCenterAndWarp = on;
 }
 
+void CanvasView::fitRect(const QRectF &rect)
+{
+    if (rect.width() <= 0 || rect.height() <= 0)
+        return;
+    const QSize view = viewport()->size();
+    const double wanted = FIT_SHARE * std::min(view.width() / rect.width(),
+                                               view.height() / rect.height());
+    const double target = qBound(MIN_PIXELS_PER_MM, wanted, MAX_PIXELS_PER_MM);
+    const double current = pixelsPerMm();
+    scale(target / current, target / current);
+    centerOn(rect.center());
+    updateCursor();
+}
+
 void CanvasView::drawBackground(QPainter *painter, const QRectF &rect)
 {
-    painter->fillRect(rect, BACKGROUND_COLOR);
+    painter->fillRect(rect, paintcolor::background());
 
     const double step = nmToMm(m_gridStep);
     if (step * pixelsPerMm() < MIN_GRID_PIXELS)

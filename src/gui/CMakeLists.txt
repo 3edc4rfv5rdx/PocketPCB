@@ -4,6 +4,7 @@ add_library(pocketpcb_gui STATIC
     canvasview.h canvasview.cpp
     format.h format.cpp
     language.h language.cpp
+    libraryviewitem.h libraryviewitem.cpp
     mainwindow.h mainwindow.cpp
 )
 target_include_directories(pocketpcb_gui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

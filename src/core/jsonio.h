@@ -23,6 +23,12 @@ extern const char FILE_TYPE_SYMBOL[];
 extern const char FILE_TYPE_FOOTPRINT[];
 extern const char FILE_TYPE_PART[];
 
+// "<place>: <message>", or the message alone when there is no place.
+QString withPlace(const QString &place, const QString &message);
+
+// The "type" field of a file's root object; empty when it has none.
+QString fileTypeOf(const QJsonObject &root);
+
 // Writing: sizes go to the files in millimetres.
 QJsonValue mmToJson(Coord nm);
 QJsonArray pointToJson(const Point &point);

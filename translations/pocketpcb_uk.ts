@@ -116,6 +116,13 @@
     </message>
 </context>
 <context>
+    <name>ppcb::LibraryFile</name>
+    <message>
+        <source>this is not a PocketPCB library file</source>
+        <translation>це не файл бібліотеки PocketPCB</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::MainWindow</name>
     <message>
         <source>&amp;File</source>
@@ -172,6 +179,34 @@
     <message>
         <source>mm</source>
         <translation>мм</translation>
+    </message>
+    <message>
+        <source>Open library file</source>
+        <translation>Відкрити файл бібліотеки</translation>
+    </message>
+    <message>
+        <source>Library files</source>
+        <translation>Файли бібліотеки</translation>
+    </message>
+    <message>
+        <source>Symbol</source>
+        <translation>Символ</translation>
+    </message>
+    <message>
+        <source>Footprint</source>
+        <translation>Посадкове місце</translation>
+    </message>
+    <message>
+        <source>Part</source>
+        <translation>Деталь</translation>
+    </message>
+    <message>
+        <source>symbol</source>
+        <translation>символ</translation>
+    </message>
+    <message>
+        <source>footprints</source>
+        <translation>посадкові місця</translation>
     </message>
 </context>
 </TS>

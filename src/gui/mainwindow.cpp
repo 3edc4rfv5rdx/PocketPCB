@@ -3,15 +3,21 @@
 #include "canvasview.h"
 #include "format.h"
 #include "grid.h"
+#include "libraryviewitem.h"
 
 #include <QAction>
 #include <QActionGroup>
 #include <QCloseEvent>
 #include <QComboBox>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QFileSystemWatcher>
+#include <QGraphicsScene>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
 #include <QStatusBar>
+#include <QTimer>
 
 namespace ppcb {
 
@@ -19,6 +25,8 @@ namespace {
 
 const int DEFAULT_WIDTH = 1100;
 const int DEFAULT_HEIGHT = 750;
+// Wait after a change of the watched file before reading it, milliseconds.
+const int RELOAD_DELAY_MS = 150;
 
 } // namespace
 
@@ -32,6 +40,14 @@ MainWindow::MainWindow(QWidget *parent)
     m_canvas->setCursorStyle(AppSettings::cursorStyle());
     m_canvas->setZoomCenterAndWarp(AppSettings::zoomCenterAndWarp());
     setCentralWidget(m_canvas);
+
+    m_libraryWatcher = new QFileSystemWatcher(this);
+    m_reloadTimer = new QTimer(this);
+    m_reloadTimer->setSingleShot(true);
+    m_reloadTimer->setInterval(RELOAD_DELAY_MS);
+    connect(m_libraryWatcher, &QFileSystemWatcher::fileChanged, m_reloadTimer,
+            qOverload<>(&QTimer::start));
+    connect(m_reloadTimer, &QTimer::timeout, this, &MainWindow::reloadLibraryFile);
 
     createMenus();
     createStatusBar();
@@ -52,6 +68,12 @@ void MainWindow::closeEvent(QCloseEvent *event)
 void MainWindow::createMenus()
 {
     QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+    QAction *openLibraryAction = fileMenu->addAction(tr("Open library file") + QStringLiteral("…"));
+    openLibraryAction->setObjectName(QStringLiteral("actionOpenLibraryFile"));
+    openLibraryAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_L));
+    connect(openLibraryAction, &QAction::triggered, this, &MainWindow::chooseLibraryFile);
+    fileMenu->addSeparator();
+
     QAction *quitAction = fileMenu->addAction(tr("&Quit"));
     quitAction->setObjectName(QStringLiteral("actionQuit"));
     quitAction->setShortcut(QKeySequence::Quit);
@@ -158,6 +180,84 @@ void MainWindow::applyZoomCenterAndWarp(bool on)
 {
     m_canvas->setZoomCenterAndWarp(on);
     AppSettings::setZoomCenterAndWarp(on);
+}
+
+void MainWindow::chooseLibraryFile()
+{
+    const QString path = QFileDialog::getOpenFileName(
+        this, tr("Open library file"), AppSettings::lastLibraryFolder(),
+        tr("Library files") + QStringLiteral(" (*.json)"));
+    if (path.isEmpty())
+        return;
+    AppSettings::setLastLibraryFolder(QFileInfo(path).absolutePath());
+    openLibraryFile(path);
+}
+
+bool MainWindow::openLibraryFile(const QString &path)
+{
+    if (!showLibraryFile(path))
+        return false;
+    m_libraryPath = path;
+    watchLibraryFile();
+    m_canvas->fitRect(m_libraryItem->boundingRect());
+    return true;
+}
+
+bool MainWindow::reloadLibraryFile()
+{
+    if (m_libraryPath.isEmpty())
+        return false;
+    // An editor that saves by replacing the file ends the watch on the old
+    // one, so the watch is set again on every reload.
+    watchLibraryFile();
+    return showLibraryFile(m_libraryPath);
+}
+
+bool MainWindow::showLibraryFile(const QString &path)
+{
+    LibraryItem content;
+    QString error;
+    if (!LibraryFile::read(path, content, error)) {
+        statusBar()->showMessage(error);
+        return false;
+    }
+
+    if (m_libraryItem == nullptr) {
+        m_libraryItem = new LibraryViewItem(content);
+        m_canvas->scene()->addItem(m_libraryItem);
+    } else {
+        m_libraryItem->setContent(content);
+    }
+
+    const QString name = QFileInfo(path).fileName();
+    QString message;
+    switch (content.kind) {
+    case LibraryKind::Symbol:
+        message = tr("Symbol") + QLatin1String(": ") + name;
+        break;
+    case LibraryKind::Footprint:
+        message = tr("Footprint") + QLatin1String(": ") + name;
+        break;
+    case LibraryKind::Part:
+        message = tr("Part") + QLatin1String(": ") + name + QStringLiteral(" — ") + tr("symbol")
+                  + QLatin1Char(' ') + content.part.symbol + QStringLiteral(" — ")
+                  + tr("footprints") + QLatin1Char(' ')
+                  + content.part.footprints.join(QLatin1String(", "));
+        break;
+    }
+    statusBar()->showMessage(message);
+    return true;
+}
+
+void MainWindow::watchLibraryFile()
+{
+    const QStringList watched = m_libraryWatcher->files();
+    for (const QString &path : watched) {
+        if (path != m_libraryPath)
+            m_libraryWatcher->removePath(path);
+    }
+    if (!watched.contains(m_libraryPath) && QFileInfo::exists(m_libraryPath))
+        m_libraryWatcher->addPath(m_libraryPath);
 }
 
 void MainWindow::showCursorPosition(Coord x, Coord y)

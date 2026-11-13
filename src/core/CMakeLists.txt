@@ -6,12 +6,14 @@ add_library(pocketpcb_core STATIC
     graphic.h graphic.cpp
     grid.h grid.cpp
     jsonio.h jsonio.cpp
+    libraryfile.h libraryfile.cpp
     objectid.h objectid.cpp
+    paint.h paint.cpp
     part.h part.cpp
     point.h
     symbol.h symbol.cpp
 )
 target_include_directories(pocketpcb_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(pocketpcb_core PUBLIC Qt6::Core)
+target_link_libraries(pocketpcb_core PUBLIC Qt6::Core Qt6::Gui)
 # The version is compiled into version.cpp only; everything else calls appVersion().
 target_compile_definitions(pocketpcb_core PRIVATE PPCB_VERSION="${PROJECT_VERSION}")
