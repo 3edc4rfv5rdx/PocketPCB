@@ -1,3 +1,4 @@
 /build*/
 /ADD/
 CMakeLists.txt.user*
+/OUT/

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
 # Configure, build and test PocketPCB (Release build in ./build).
+# A build that passed its tests is copied to ./OUT/pocketpcb.
 #
 #   Build and test:   ./00-Make.sh
 #   Fresh build:      ./00-Make.sh --clean
@@ -9,11 +10,13 @@ set -uo pipefail
 cd "$(dirname "$0")" || exit 1
 
 BUILD_DIR=build
+OUT_DIR=OUT
+BINARY=src/app/pocketpcb
 
 if [[ "${1:-}" == "--clean" ]]; then
     rm -rf "$BUILD_DIR"
 elif [[ $# -gt 0 ]]; then
-    sed -n '2,7p' "$0"
+    sed -n '2,8p' "$0"
     exit 1
 fi
 
@@ -34,6 +37,8 @@ step() { # step <name> <command...>
 step "Configure" cmake -S . -B "$BUILD_DIR" "${GENERATOR[@]}" -DCMAKE_BUILD_TYPE=Release
 [[ $status -eq 0 ]] && step "Build" cmake --build "$BUILD_DIR" --parallel
 [[ $status -eq 0 ]] && step "Test" ctest --test-dir "$BUILD_DIR" --output-on-failure
+# Only a tested build gets out; after a failure OUT keeps the last good one.
+[[ $status -eq 0 ]] && step "Copy to $OUT_DIR" install -D "$BUILD_DIR/$BINARY" "$OUT_DIR/pocketpcb"
 
 echo
 if [[ $status -eq 0 ]]; then
