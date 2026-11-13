@@ -41,7 +41,7 @@ private slots:
         window.show();
         QVERIFY(QTest::qWaitForWindowExposed(&window));
         QVERIFY(window.canvas() != nullptr);
-        QCOMPARE(QCoreApplication::applicationName(), QStringLiteral("pocketpcb"));
+        QCOMPARE(QCoreApplication::applicationName(), QStringLiteral("PocketPCB"));
         QVERIFY(!QCoreApplication::applicationVersion().isEmpty());
     }
 

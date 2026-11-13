@@ -12,7 +12,8 @@ namespace ppcb {
 
 namespace {
 
-const char APP_NAME[] = "pocketpcb";
+// Names the settings and data folders: ~/.config/PocketPCB, ~/.local/share/PocketPCB.
+const char APP_NAME[] = "PocketPCB";
 const char SETTINGS_FILE[] = "pocketpcb.ini";
 
 const char KEY_LANGUAGE[] = "general/language";
@@ -47,7 +48,7 @@ void writeValue(const char *key, const QVariant &value)
 void AppSettings::initApplication()
 {
     // No organization name on purpose: it would add a folder level to the
-    // configuration and data paths (~/.config/<org>/pocketpcb).
+    // configuration and data paths (~/.config/<org>/PocketPCB).
     QCoreApplication::setApplicationName(QLatin1String(APP_NAME));
     QCoreApplication::setApplicationVersion(QLatin1String(appVersion()));
 }

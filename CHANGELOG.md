@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Settings and data folders are named PocketPCB instead of pocketpcb
 - I: 00-Make.sh takes the next build number in build_number.txt on every run
 - N: Open library file shows a symbol or footprint JSON on the canvas and redraws it whenever the file is saved
 - I: Core gets the footprint with its pads and the library part, read from and written to JSON
