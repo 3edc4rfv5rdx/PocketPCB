@@ -12,6 +12,7 @@ add_library(pocketpcb_core STATIC
     paint.h paint.cpp
     part.h part.cpp
     point.h
+    project.h project.cpp
     schematic.h schematic.cpp
     symbol.h symbol.cpp
 )

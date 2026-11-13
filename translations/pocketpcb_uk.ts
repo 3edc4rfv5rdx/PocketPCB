@@ -170,6 +170,34 @@
         <source>a hole without plating has no net</source>
         <translation>в отвору без металізації немає кола</translation>
     </message>
+    <message>
+        <source>a file name without a folder is expected</source>
+        <translation>очікується назва файлу без теки</translation>
+    </message>
+    <message>
+        <source>a file name ending in %1 is expected</source>
+        <translation>очікується назва файлу із закінченням %1</translation>
+    </message>
+    <message>
+        <source>a project needs at least one net class</source>
+        <translation>у проєкті має бути принаймні один клас кіл</translation>
+    </message>
+    <message>
+        <source>the net class is not in the list of net classes</source>
+        <translation>класу кіл немає у списку класів кіл</translation>
+    </message>
+    <message>
+        <source>at least one track width is expected</source>
+        <translation>очікується принаймні одна ширина доріжки</translation>
+    </message>
+    <message>
+        <source>every track width must be greater than the one before it</source>
+        <translation>кожна ширина доріжки має бути більшою за попередню</translation>
+    </message>
+    <message>
+        <source>the width is not in the list of track widths</source>
+        <translation>ширини немає у списку ширин доріжок</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::LibraryFile</name>

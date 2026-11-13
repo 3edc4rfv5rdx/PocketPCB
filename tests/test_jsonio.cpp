@@ -162,6 +162,43 @@ private slots:
         QCOMPARE(JsonReader::pathOf(QString(), QStringLiteral("symbols")), QStringLiteral("symbols"));
     }
 
+    void listOfSizes()
+    {
+        const QJsonObject object = parse(R"({"w":[0.3,0.5,-1,0],"none":[],"bad":[0.3,"0.5"]})");
+        JsonReader reader;
+        QCOMPARE(reader.mmList(object, "w", QString()),
+                 QList<Coord>({300000, 500000, -1000000, 0}));
+        QVERIFY(reader.mmList(object, "none", QString()).isEmpty());
+        QVERIFY2(reader.ok(), qPrintable(reader.error()));
+
+        QVERIFY(reader.mmList(object, "bad", QStringLiteral("rules")).isEmpty());
+        QVERIFY2(reader.error().startsWith(QStringLiteral("rules.bad[1]: ")),
+                 qPrintable(reader.error()));
+    }
+
+    void tableOfNamesByName()
+    {
+        const QJsonObject object = parse(R"({"nets":{"GND":"Power","":"Signal"},"none":{},
+                                             "number":{"a":"x","b":5},"blank":{"a":""}})");
+        JsonReader reader;
+        const QMap<QString, QString> nets = reader.nameMap(object, "nets", QString());
+        QVERIFY2(reader.ok(), qPrintable(reader.error()));
+        QCOMPARE(nets.size(), 2);
+        QCOMPARE(nets.value(QStringLiteral("GND")), QStringLiteral("Power"));
+        // An empty name is the caller's to judge.
+        QCOMPARE(nets.value(QString()), QStringLiteral("Signal"));
+        QVERIFY(reader.nameMap(object, "none", QString()).isEmpty());
+        QVERIFY2(reader.ok(), qPrintable(reader.error()));
+
+        QVERIFY(reader.nameMap(object, "number", QStringLiteral("p")).isEmpty());
+        QVERIFY2(reader.error().startsWith(QStringLiteral("p.number.b: ")),
+                 qPrintable(reader.error()));
+
+        JsonReader second;
+        QVERIFY(second.nameMap(object, "blank", QString()).isEmpty());
+        QVERIFY2(second.error().startsWith(QStringLiteral("blank.a: ")), qPrintable(second.error()));
+    }
+
     void tableOfObjectsByName()
     {
         const QJsonObject object = parse(R"({"table":{"b":{"k":2},"a":{"k":1}},"empty":{},

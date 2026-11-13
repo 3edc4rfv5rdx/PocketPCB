@@ -267,6 +267,21 @@ int JsonReader::rightAngle(const QJsonObject &object, const char *key, const QSt
     return degrees;
 }
 
+QList<Coord> JsonReader::mmList(const QJsonObject &object, const char *key, const QString &where)
+{
+    const QJsonArray items = array(object, key, where);
+    QList<Coord> result;
+    for (int i = 0; i < items.size(); ++i) {
+        Coord nm = 0;
+        if (!toNm(items.at(i), nm)) {
+            fail(pathOf(pathOf(where, key), i), tr("a size in millimetres is expected"));
+            return QList<Coord>();
+        }
+        result.append(nm);
+    }
+    return result;
+}
+
 QStringList JsonReader::nameList(const QJsonObject &object, const char *key, const QString &where)
 {
     const QJsonArray items = array(object, key, where);
@@ -349,6 +364,24 @@ QMap<QString, QJsonObject> JsonReader::objectMap(const QJsonObject &object, cons
             return QMap<QString, QJsonObject>();
         }
         result.insert(it.key(), it.value().toObject());
+    }
+    return result;
+}
+
+QMap<QString, QString> JsonReader::nameMap(const QJsonObject &object, const char *key,
+                                           const QString &where)
+{
+    const QJsonObject members = this->object(object, key, where);
+    QMap<QString, QString> result;
+    for (auto it = members.constBegin(); it != members.constEnd(); ++it) {
+        const QString memberWhere = pathOf(pathOf(where, key), it.key());
+        if (!it.value().isString())
+            fail(memberWhere, tr("text is expected"));
+        else if (it.value().toString().isEmpty())
+            fail(memberWhere, tr("the text must not be empty"));
+        if (!ok())
+            return QMap<QString, QString>();
+        result.insert(it.key(), it.value().toString());
     }
     return result;
 }

@@ -138,20 +138,14 @@ QJsonObject placementToJson(const Placement &placement)
 QMap<QString, QString> padNetsFromJson(const QJsonObject &object, const QString &where,
                                        const QStringList &padNumbers, JsonReader &reader)
 {
-    const QJsonObject nets = reader.object(object, KEY_NETS, where);
+    const QMap<QString, QString> padNets = reader.nameMap(object, KEY_NETS, where);
     const QString netsWhere = JsonReader::pathOf(where, KEY_NETS);
-    QMap<QString, QString> padNets;
-    for (auto it = nets.constBegin(); it != nets.constEnd(); ++it) {
-        const QString netWhere = JsonReader::pathOf(netsWhere, it.key());
+    for (auto it = padNets.constBegin(); it != padNets.constEnd(); ++it) {
         // A pad without a number is tied to no pin, so it cannot be named here.
-        if (it.key().isEmpty() || !padNumbers.contains(it.key()))
-            reader.fail(netWhere, JsonReader::tr("the footprint has no pad with this number"));
-        else if (!it.value().isString())
-            reader.fail(netWhere, JsonReader::tr("text is expected"));
-        else if (it.value().toString().isEmpty())
-            reader.fail(netWhere, JsonReader::tr("the text must not be empty"));
-        else
-            padNets.insert(it.key(), it.value().toString());
+        if (it.key().isEmpty() || !padNumbers.contains(it.key())) {
+            reader.fail(JsonReader::pathOf(netsWhere, it.key()),
+                        JsonReader::tr("the footprint has no pad with this number"));
+        }
     }
     return padNets;
 }

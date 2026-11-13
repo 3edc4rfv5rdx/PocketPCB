@@ -170,6 +170,34 @@
         <source>a hole without plating has no net</source>
         <translation>у отверстия без металлизации нет цепи</translation>
     </message>
+    <message>
+        <source>a file name without a folder is expected</source>
+        <translation>ожидается имя файла без папки</translation>
+    </message>
+    <message>
+        <source>a file name ending in %1 is expected</source>
+        <translation>ожидается имя файла с окончанием %1</translation>
+    </message>
+    <message>
+        <source>a project needs at least one net class</source>
+        <translation>в проекте должен быть хотя бы один класс цепей</translation>
+    </message>
+    <message>
+        <source>the net class is not in the list of net classes</source>
+        <translation>класса цепей нет в списке классов цепей</translation>
+    </message>
+    <message>
+        <source>at least one track width is expected</source>
+        <translation>ожидается хотя бы одна ширина дорожки</translation>
+    </message>
+    <message>
+        <source>every track width must be greater than the one before it</source>
+        <translation>каждая ширина дорожки должна быть больше предыдущей</translation>
+    </message>
+    <message>
+        <source>the width is not in the list of track widths</source>
+        <translation>ширины нет в списке ширин дорожек</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::LibraryFile</name>

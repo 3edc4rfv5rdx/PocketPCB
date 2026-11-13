@@ -79,6 +79,9 @@ public:
     // A list of coordinate pairs.
     QList<Point> pointList(const QJsonObject &object, const char *key, const QString &where);
 
+    // A list of sizes in millimetres.
+    QList<Coord> mmList(const QJsonObject &object, const char *key, const QString &where);
+
     // A list of texts, none empty and none repeated.
     QStringList nameList(const QJsonObject &object, const char *key, const QString &where);
 
@@ -97,6 +100,10 @@ public:
     // The path of member 'name' is pathOf(pathOf(where, key), name).
     QMap<QString, QJsonObject> objectMap(const QJsonObject &object, const char *key,
                                          const QString &where);
+    // An object whose members are all texts, none empty: names by name.
+    // Paths as in objectMap().
+    QMap<QString, QString> nameMap(const QJsonObject &object, const char *key,
+                                   const QString &where);
 
     // "<where>.<key>", or just the key at the root.
     static QString pathOf(const QString &where, const char *key);
