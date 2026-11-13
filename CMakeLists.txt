@@ -22,10 +22,12 @@ elseif(MSVC)
     add_compile_options(/W4)
 endif()
 
-find_package(Qt6 6.4 REQUIRED COMPONENTS Core Test)
+find_package(Qt6 6.4 REQUIRED COMPONENTS Core Widgets Test)
 qt_standard_project_setup()
 
 enable_testing()
 
 add_subdirectory(src/core)
+add_subdirectory(src/gui)
+add_subdirectory(src/app)
 add_subdirectory(tests)

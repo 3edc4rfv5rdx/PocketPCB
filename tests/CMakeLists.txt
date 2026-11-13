@@ -5,5 +5,15 @@ function(ppcb_add_test name)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
+# The same for tests that need the GUI library; they run without a display.
+function(ppcb_add_gui_test name)
+    ppcb_add_test(${name})
+    target_link_libraries(${name} PRIVATE pocketpcb_gui)
+    set_tests_properties(${name} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endfunction()
+
 ppcb_add_test(test_units)
 ppcb_add_test(test_grid)
+ppcb_add_gui_test(test_guiutils)
+ppcb_add_gui_test(test_canvas)
+ppcb_add_gui_test(test_smoke)
