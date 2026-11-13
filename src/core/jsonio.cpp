@@ -123,12 +123,38 @@ Point JsonReader::point(const QJsonObject &object, const char *key, const QStrin
     QJsonValue value;
     if (!find(object, key, where, value))
         return Point();
+    Point result;
+    if (!toPoint(value, result)) {
+        fail(pathOf(where, key), tr("a pair of coordinates in millimetres is expected"));
+        return Point();
+    }
+    return result;
+}
+
+bool JsonReader::toPoint(const QJsonValue &value, Point &point)
+{
     const QJsonArray pair = value.toArray();
     Point result;
     if (!value.isArray() || pair.size() != POINT_SIZE || !toNm(pair.at(0), result.x)
         || !toNm(pair.at(1), result.y)) {
-        fail(pathOf(where, key), tr("a pair of coordinates in millimetres is expected"));
-        return Point();
+        return false;
+    }
+    point = result;
+    return true;
+}
+
+QList<Point> JsonReader::pointList(const QJsonObject &object, const char *key, const QString &where)
+{
+    const QJsonArray items = array(object, key, where);
+    QList<Point> result;
+    for (int i = 0; i < items.size(); ++i) {
+        Point point;
+        if (!toPoint(items.at(i), point)) {
+            fail(pathOf(pathOf(where, key), i),
+                 tr("a pair of coordinates in millimetres is expected"));
+            return QList<Point>();
+        }
+        result.append(point);
     }
     return result;
 }

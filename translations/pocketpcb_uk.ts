@@ -94,6 +94,10 @@
         <source>the pin number is used twice</source>
         <translation>номер виводу повторюється</translation>
     </message>
+    <message>
+        <source>at least three points are expected</source>
+        <translation>очікується не менше трьох точок</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::MainWindow</name>

@@ -70,6 +70,13 @@ Symbol fullSymbol()
     text.align = TextAlign::Right;
     symbol.graphics.append(text);
 
+    Graphic polygon;
+    polygon.kind = GraphicKind::Polygon;
+    polygon.points = {Point{0, 0}, Point{1270000, 635000}, Point{0, 1270000}};
+    polygon.filled = true;
+    polygon.width = 120000;
+    symbol.graphics.append(polygon);
+
     Pin pin;
     pin.number = QStringLiteral("A1");
     pin.name = QStringLiteral("CLK");
@@ -191,6 +198,9 @@ private slots:
         other = symbol; other.graphics[4].height += 1;    QVERIFY(other != symbol);
         other = symbol; other.graphics[4].align = TextAlign::Left; QVERIFY(other != symbol);
         other = symbol; other.graphics[4].kind = GraphicKind::Line; QVERIFY(other != symbol);
+        other = symbol; other.graphics[5].points[1].x += 1; QVERIFY(other != symbol);
+        other = symbol; other.graphics[5].points.removeLast(); QVERIFY(other != symbol);
+        other = symbol; other.graphics[5].filled = false; QVERIFY(other != symbol);
         other = symbol; other.graphics.removeLast();      QVERIFY(other != symbol);
         other = symbol; other.pins[0].number = QStringLiteral("B"); QVERIFY(other != symbol);
         other = symbol; other.pins[0].name.clear();       QVERIFY(other != symbol);
@@ -278,7 +288,15 @@ private slots:
         QTest::addColumn<QString>("key");
 
         QTest::newRow("no kind") << QByteArray(R"({"from":[0,0],"to":[1,1]})") << "kind";
-        QTest::newRow("unknown kind") << QByteArray(R"({"kind":"polygon"})") << "kind";
+        QTest::newRow("unknown kind") << QByteArray(R"({"kind":"spline"})") << "kind";
+        QTest::newRow("polygon no points") << QByteArray(R"({"kind":"polygon"})") << "points";
+        QTest::newRow("polygon two points")
+            << QByteArray(R"({"kind":"polygon","points":[[0,0],[1,1]]})") << "points";
+        QTest::newRow("polygon bad point")
+            << QByteArray(R"({"kind":"polygon","points":[[0,0],[1,1],[2]]})") << "points[2]";
+        QTest::newRow("polygon filled is not a flag")
+            << QByteArray(R"({"kind":"polygon","points":[[0,0],[1,1],[2,0]],"filled":"yes"})")
+            << "filled";
         QTest::newRow("line no to") << QByteArray(R"({"kind":"line","from":[0,0]})") << "to";
         QTest::newRow("rect no from") << QByteArray(R"({"kind":"rect","to":[0,0]})") << "from";
         QTest::newRow("line zero width")
@@ -337,6 +355,14 @@ private slots:
         QCOMPARE(arc.startAngle, 359);
         QCOMPARE(arc.spanAngle, 360);
         QCOMPARE(arc.width, DEFAULT_LINE_WIDTH);
+
+        const Graphic polygon = graphicFromJson(
+            parse(R"({"kind":"polygon","points":[[0,0],[1.27,0.635],[0,1.27]]})"), QString(), reader);
+        QVERIFY2(reader.ok(), qPrintable(reader.error()));
+        QCOMPARE(polygon.points.size(), 3);
+        QVERIFY(polygon.points.at(1) == (Point{1270000, 635000}));
+        QCOMPARE(polygon.filled, false);
+        QCOMPARE(polygon.width, DEFAULT_LINE_WIDTH);
     }
 
     // A written graphic carries only the fields of its kind.
@@ -355,6 +381,13 @@ private slots:
         text.height = 1500000;
         QCOMPARE(QJsonDocument(graphicToJson(text)).toJson(QJsonDocument::Compact),
                  QByteArray(R"({"align":"center","at":[0,0],"height":1.5,"kind":"text","text":"&"})"));
+
+        Graphic polygon;
+        polygon.kind = GraphicKind::Polygon;
+        polygon.points = {Point{0, 0}, Point{1270000, 635000}, Point{0, 1270000}};
+        polygon.filled = true;
+        QCOMPARE(QJsonDocument(graphicToJson(polygon)).toJson(QJsonDocument::Compact),
+                 QByteArray(R"({"filled":true,"kind":"polygon","points":[[0,0],[1.27,0.635],[0,1.27]],"width":0.15})"));
     }
 };
 

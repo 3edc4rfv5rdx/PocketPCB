@@ -16,15 +16,18 @@ const char KEY_TEXT[] = "text";
 const char KEY_HEIGHT[] = "height";
 const char KEY_ALIGN[] = "align";
 const char KEY_WIDTH[] = "width";
+const char KEY_POINTS[] = "points";
+const char KEY_FILLED[] = "filled";
 
 const int FULL_TURN = 360;
+const int MIN_POLYGON_POINTS = 3;
 
 // In the order of GraphicKind.
 const QStringList &kindNames()
 {
     static const QStringList names = {
         QStringLiteral("line"), QStringLiteral("rect"), QStringLiteral("circle"),
-        QStringLiteral("arc"), QStringLiteral("text"),
+        QStringLiteral("arc"), QStringLiteral("text"), QStringLiteral("polygon"),
     };
     return names;
 }
@@ -44,7 +47,8 @@ bool operator==(const Graphic &a, const Graphic &b)
 {
     return a.kind == b.kind && a.a == b.a && a.b == b.b && a.radius == b.radius
            && a.startAngle == b.startAngle && a.spanAngle == b.spanAngle && a.text == b.text
-           && a.height == b.height && a.align == b.align && a.width == b.width;
+           && a.height == b.height && a.align == b.align && a.points == b.points
+           && a.filled == b.filled && a.width == b.width;
 }
 
 QJsonObject graphicToJson(const Graphic &graphic)
@@ -74,6 +78,14 @@ QJsonObject graphicToJson(const Graphic &graphic)
         object.insert(QLatin1String(KEY_HEIGHT), mmToJson(graphic.height));
         object.insert(QLatin1String(KEY_ALIGN), alignNames().at(int(graphic.align)));
         break;
+    case GraphicKind::Polygon: {
+        QJsonArray points;
+        for (const Point &point : graphic.points)
+            points.append(pointToJson(point));
+        object.insert(QLatin1String(KEY_POINTS), points);
+        object.insert(QLatin1String(KEY_FILLED), graphic.filled);
+        break;
+    }
     }
 
     if (graphic.kind != GraphicKind::Text)
@@ -111,6 +123,16 @@ Graphic graphicFromJson(const QJsonObject &object, const QString &where, JsonRea
         // Optional: centred when absent.
         if (object.contains(QLatin1String(KEY_ALIGN)))
             graphic.align = TextAlign(reader.choice(object, KEY_ALIGN, where, alignNames()));
+        break;
+    case GraphicKind::Polygon:
+        graphic.points = reader.pointList(object, KEY_POINTS, where);
+        if (reader.ok() && graphic.points.size() < MIN_POLYGON_POINTS) {
+            reader.fail(JsonReader::pathOf(where, KEY_POINTS),
+                        JsonReader::tr("at least three points are expected"));
+        }
+        // Optional: outline only when absent.
+        if (object.contains(QLatin1String(KEY_FILLED)))
+            graphic.filled = reader.boolean(object, KEY_FILLED, where);
         break;
     }
 

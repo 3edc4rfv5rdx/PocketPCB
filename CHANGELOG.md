@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- I: Symbol graphics get a polygon with an optional fill
 - I: Core gets the schematic symbol with its graphics and pins, read from and written to JSON
 - I: Core gets points, object identifiers and JSON reading and writing with error messages that name the place in the file
 - N: The interface is translated into Ukrainian and Russian and follows the system language

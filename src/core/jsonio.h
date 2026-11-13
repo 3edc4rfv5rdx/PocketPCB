@@ -62,6 +62,9 @@ public:
     QJsonArray array(const QJsonObject &object, const char *key, const QString &where);
     QJsonObject object(const QJsonObject &object, const char *key, const QString &where);
 
+    // A list of coordinate pairs.
+    QList<Point> pointList(const QJsonObject &object, const char *key, const QString &where);
+
     // A size that must be greater than zero / must not be negative.
     Coord positiveMm(const QJsonObject &object, const char *key, const QString &where);
     Coord nonNegativeMm(const QJsonObject &object, const char *key, const QString &where);
@@ -84,6 +87,8 @@ private:
     bool find(const QJsonObject &object, const char *key, const QString &where, QJsonValue &value);
     // A JSON number converted to nanometres; false when it is not a valid size.
     bool toNm(const QJsonValue &value, Coord &nm);
+    // A JSON pair [x, y] converted to a point; false when it is not one.
+    bool toPoint(const QJsonValue &value, Point &point);
 
     QString m_error;
 };

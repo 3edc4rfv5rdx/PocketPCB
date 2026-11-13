@@ -3,11 +3,12 @@
 #include "jsonio.h"
 #include "point.h"
 
+#include <QList>
 #include <QString>
 
 namespace ppcb {
 
-enum class GraphicKind { Line, Rect, Circle, Arc, Text };
+enum class GraphicKind { Line, Rect, Circle, Arc, Text, Polygon };
 enum class TextAlign { Left, Center, Right };
 
 // Line width used when a file does not give one.
@@ -37,6 +38,11 @@ struct Graphic
     QString text;
     Coord height = 0;
     TextAlign align = TextAlign::Center;
+
+    // Polygon: its corners, at least three; the last one is joined to the
+    // first. 'filled' paints the inside as well as the outline.
+    QList<Point> points;
+    bool filled = false;
 
     // Line width. All kinds except Text.
     Coord width = DEFAULT_LINE_WIDTH;
