@@ -114,6 +114,34 @@
         <source>the name is used twice</source>
         <translation>назва повторюється</translation>
     </message>
+    <message>
+        <source>the identifier is used twice</source>
+        <translation>ідентифікатор повторюється</translation>
+    </message>
+    <message>
+        <source>one of the angles 0 90 180 270 is expected</source>
+        <translation>очікується один із кутів 0 90 180 270</translation>
+    </message>
+    <message>
+        <source>the symbol is not in the list of symbols</source>
+        <translation>символу немає у списку символів</translation>
+    </message>
+    <message>
+        <source>a wire needs at least two points</source>
+        <translation>проводу потрібно щонайменше дві точки</translation>
+    </message>
+    <message>
+        <source>neighbouring points of a wire coincide</source>
+        <translation>сусідні точки проводу збігаються</translation>
+    </message>
+    <message>
+        <source>a wire segment is not at 0 45 or 90 degrees</source>
+        <translation>відрізок проводу йде не під кутом 0 45 або 90 градусів</translation>
+    </message>
+    <message>
+        <source>a schematic needs at least one sheet</source>
+        <translation>у схемі має бути принаймні один аркуш</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::LibraryFile</name>

@@ -114,6 +114,34 @@
         <source>the name is used twice</source>
         <translation>имя повторяется</translation>
     </message>
+    <message>
+        <source>the identifier is used twice</source>
+        <translation>идентификатор повторяется</translation>
+    </message>
+    <message>
+        <source>one of the angles 0 90 180 270 is expected</source>
+        <translation>ожидается один из углов 0 90 180 270</translation>
+    </message>
+    <message>
+        <source>the symbol is not in the list of symbols</source>
+        <translation>символа нет в списке символов</translation>
+    </message>
+    <message>
+        <source>a wire needs at least two points</source>
+        <translation>проводу нужно не менее двух точек</translation>
+    </message>
+    <message>
+        <source>neighbouring points of a wire coincide</source>
+        <translation>соседние точки провода совпадают</translation>
+    </message>
+    <message>
+        <source>a wire segment is not at 0 45 or 90 degrees</source>
+        <translation>отрезок провода идёт не под углом 0 45 или 90 градусов</translation>
+    </message>
+    <message>
+        <source>a schematic needs at least one sheet</source>
+        <translation>в схеме должен быть хотя бы один лист</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::LibraryFile</name>

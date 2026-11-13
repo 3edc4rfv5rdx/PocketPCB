@@ -7,6 +7,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QList>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 
@@ -67,6 +68,12 @@ public:
     ObjectId id(const QJsonObject &object, const char *key, const QString &where);
     QJsonArray array(const QJsonObject &object, const char *key, const QString &where);
     QJsonObject object(const QJsonObject &object, const char *key, const QString &where);
+
+    // An object identifier that is not in 'seen' yet; it is added there.
+    ObjectId uniqueId(const QJsonObject &object, const char *key, const QString &where,
+                      QSet<ObjectId> &seen);
+    // A rotation in degrees: 0, 90, 180 or 270.
+    int rightAngle(const QJsonObject &object, const char *key, const QString &where);
 
     // A list of coordinate pairs.
     QList<Point> pointList(const QJsonObject &object, const char *key, const QString &where);

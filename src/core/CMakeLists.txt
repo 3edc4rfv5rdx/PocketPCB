@@ -11,6 +11,7 @@ add_library(pocketpcb_core STATIC
     paint.h paint.cpp
     part.h part.cpp
     point.h
+    schematic.h schematic.cpp
     symbol.h symbol.cpp
 )
 target_include_directories(pocketpcb_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

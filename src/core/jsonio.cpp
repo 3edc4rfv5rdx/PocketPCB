@@ -25,6 +25,8 @@ const char KEY_FORMAT[] = "format";
 const char KEY_APP[] = "app";
 
 const int POINT_SIZE = 2; // [x, y]
+const int RIGHT_ANGLE = 90;
+const int LAST_RIGHT_ANGLE = 270;
 
 } // namespace
 
@@ -235,6 +237,27 @@ QJsonObject JsonReader::object(const QJsonObject &object, const char *key, const
         return QJsonObject();
     }
     return value.toObject();
+}
+
+ObjectId JsonReader::uniqueId(const QJsonObject &object, const char *key, const QString &where,
+                              QSet<ObjectId> &seen)
+{
+    const ObjectId result = id(object, key, where);
+    if (ok() && seen.contains(result))
+        fail(pathOf(where, key), tr("the identifier is used twice"));
+    if (!result.isNull())
+        seen.insert(result);
+    return result;
+}
+
+int JsonReader::rightAngle(const QJsonObject &object, const char *key, const QString &where)
+{
+    const int degrees = integer(object, key, where, 0, LAST_RIGHT_ANGLE);
+    if (ok() && degrees % RIGHT_ANGLE != 0) {
+        fail(pathOf(where, key), tr("one of the angles 0 90 180 270 is expected"));
+        return 0;
+    }
+    return degrees;
 }
 
 QStringList JsonReader::nameList(const QJsonObject &object, const char *key, const QString &where)
