@@ -2,6 +2,17 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
 <context>
+    <name>ppcb::Document</name>
+    <message>
+        <source>the project file needs a name</source>
+        <translation>файлу проекта нужно имя</translation>
+    </message>
+    <message>
+        <source>the project has no file yet</source>
+        <translation>у проекта ещё нет файла</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::JsonFile</name>
     <message>
         <source>cannot open the file</source>

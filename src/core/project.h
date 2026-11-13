@@ -158,6 +158,10 @@ Design newDesign(const QString &baseName);
 class DesignFiles
 {
 public:
+    // Where the schematic and the board of the project file 'projectPath' lie.
+    static QString schematicPath(const QString &projectPath, const Project &project);
+    static QString boardPath(const QString &projectPath, const Project &project);
+
     // Changes 'design' only when all three files were read.
     static bool read(const QString &projectPath, Design &design, QString &error);
     // Writes the schematic and the board first and the project last. A

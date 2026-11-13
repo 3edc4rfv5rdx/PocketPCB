@@ -462,19 +462,25 @@ Design newDesign(const QString &baseName)
     return design;
 }
 
+QString DesignFiles::schematicPath(const QString &projectPath, const Project &project)
+{
+    return besideProject(projectPath, project.schematicFile);
+}
+
+QString DesignFiles::boardPath(const QString &projectPath, const Project &project)
+{
+    return besideProject(projectPath, project.boardFile);
+}
+
 bool DesignFiles::read(const QString &projectPath, Design &design, QString &error)
 {
     Design result;
     if (!ProjectFile::read(projectPath, result.project, error))
         return false;
-    if (!SchematicFile::read(besideProject(projectPath, result.project.schematicFile),
-                             result.schematic, error)) {
+    if (!SchematicFile::read(schematicPath(projectPath, result.project), result.schematic, error))
         return false;
-    }
-    if (!BoardFile::read(besideProject(projectPath, result.project.boardFile), result.board,
-                         error)) {
+    if (!BoardFile::read(boardPath(projectPath, result.project), result.board, error))
         return false;
-    }
     design = result;
     return true;
 }
@@ -482,10 +488,9 @@ bool DesignFiles::read(const QString &projectPath, Design &design, QString &erro
 bool DesignFiles::write(const QString &projectPath, const Design &design, QString &error)
 {
     // The project goes last, so that it never names a file that is not there.
-    return SchematicFile::write(besideProject(projectPath, design.project.schematicFile),
-                                design.schematic, error)
-           && BoardFile::write(besideProject(projectPath, design.project.boardFile), design.board,
-                               error)
+    return SchematicFile::write(schematicPath(projectPath, design.project), design.schematic,
+                                error)
+           && BoardFile::write(boardPath(projectPath, design.project), design.board, error)
            && ProjectFile::write(projectPath, design.project, error);
 }
 

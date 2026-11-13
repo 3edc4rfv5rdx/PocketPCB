@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- I: Core gets the open project with Undo and Redo over the schematic and the board, and saves only the files that changed
 - I: Core gets the project (title block, net classes, routing rules, grid) with the .ppcb file, and reads and writes the three files of a project together
 - I: Core gets the board model (outline, placed footprints, tracks, vias, mounting holes, silkscreen drawing, zones) and the .ppbrd file
 - I: Schematic model gets buses, and graphics get a dashed line

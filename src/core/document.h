@@ -1,0 +1,85 @@
+#pragma once
+
+#include "project.h"
+
+#include <QObject>
+#include <QUndoStack>
+
+namespace ppcb {
+
+// The project that is open: its content, its place on disk and the history
+// of its changes. One Undo/Redo history serves the project, the schematic
+// and the board together.
+//
+// A change is made by handing over the whole changed content; a step of the
+// history keeps the content before and after it. Unchanged lists are shared
+// between the copies, so a step costs about as much as what it changed.
+//
+// The names of the schematic and the board files belong to the document, not
+// to the history: change() and Undo/Redo never alter them, only startNew(),
+// open() and saveAs() do.
+class Document : public QObject
+{
+    Q_OBJECT
+
+public:
+    // The history keeps this many last steps.
+    static constexpr int UNDO_LIMIT = 200;
+
+    // Starts as a new project named "untitled".
+    explicit Document(QObject *parent = nullptr);
+
+    const Design &design() const { return m_design; }
+    // Empty until the project is opened from a file or saved into one.
+    QString projectPath() const { return m_projectPath; }
+    // The content differs from what the files hold. A new project is not
+    // modified until it is changed.
+    bool isModified() const;
+
+    // For the Undo and Redo actions. Push nothing here: use change().
+    QUndoStack *undoStack() { return &m_undoStack; }
+
+    // Replaces the content as one step of the history, named 'text' for the
+    // menu ("Undo <text>"). Does nothing when 'changed' brings no change.
+    void change(const QString &text, const Design &changed);
+
+    // Drops the content and the history for a new project.
+    void startNew(const QString &baseName);
+    // Reads a project. On failure returns false, puts a message for the user
+    // into 'error' and leaves the document as it was.
+    bool open(const QString &projectPath, QString &error);
+    // Writes the files that changed since they were read or written, and
+    // those that are missing. On failure returns false with a message; what
+    // was written before the failure counts as saved.
+    bool save(QString &error);
+    // Writes all three files at a new place and names the schematic and the
+    // board after the project file. The history is kept. After a failure the
+    // document still belongs to the old place.
+    bool saveAs(const QString &projectPath, QString &error);
+
+signals:
+    // The content was replaced: by change(), Undo, Redo, startNew() or open().
+    void designChanged();
+    void modifiedChanged(bool modified);
+
+private:
+    friend class DesignCommand;
+
+    // Makes 'design' the content, keeping the file names (see above).
+    void install(const Design &design);
+    // Makes the content, taken as it is, the one of a project just read or
+    // just started: no history, not modified.
+    void reset(const Design &design, const QString &projectPath);
+    bool write(const QString &projectPath, bool everything, QString &error);
+    // Emits modifiedChanged() when the answer of isModified() has changed.
+    void noteModified();
+
+    Design m_design;
+    // The content of the files, or of the new project as it was started.
+    Design m_saved;
+    QString m_projectPath;
+    QUndoStack m_undoStack;
+    bool m_wasModified = false;
+};
+
+} // namespace ppcb
