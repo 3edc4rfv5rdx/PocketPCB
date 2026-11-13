@@ -1,5 +1,7 @@
 #include "appsettings.h"
 
+#include "version.h"
+
 #include <QCoreApplication>
 #include <QDir>
 #include <QSettings>
@@ -46,7 +48,7 @@ void AppSettings::initApplication()
     // No organization name on purpose: it would add a folder level to the
     // configuration and data paths (~/.config/<org>/pocketpcb).
     QCoreApplication::setApplicationName(QLatin1String(APP_NAME));
-    QCoreApplication::setApplicationVersion(QStringLiteral(PPCB_VERSION));
+    QCoreApplication::setApplicationVersion(QLatin1String(appVersion()));
 }
 
 QString AppSettings::filePath()

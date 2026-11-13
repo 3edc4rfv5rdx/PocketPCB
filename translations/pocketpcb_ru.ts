@@ -2,6 +2,76 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
 <context>
+    <name>ppcb::JsonFile</name>
+    <message>
+        <source>cannot open the file</source>
+        <translation>не удалось открыть файл</translation>
+    </message>
+    <message>
+        <source>this is not a PocketPCB file</source>
+        <translation>это не файл PocketPCB</translation>
+    </message>
+    <message>
+        <source>cannot write the file</source>
+        <translation>не удалось записать файл</translation>
+    </message>
+    <message>
+        <source>the file is damaged</source>
+        <translation>файл повреждён</translation>
+    </message>
+    <message>
+        <source>line %1</source>
+        <translation>строка %1</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::JsonReader</name>
+    <message>
+        <source>this is not a PocketPCB file of the expected kind</source>
+        <translation>это не файл PocketPCB нужного вида</translation>
+    </message>
+    <message>
+        <source>the file was made by a newer version of PocketPCB</source>
+        <translation>файл создан более новой версией PocketPCB</translation>
+    </message>
+    <message>
+        <source>the value is missing</source>
+        <translation>значение отсутствует</translation>
+    </message>
+    <message>
+        <source>a size in millimetres is expected</source>
+        <translation>ожидается размер в миллиметрах</translation>
+    </message>
+    <message>
+        <source>a pair of coordinates in millimetres is expected</source>
+        <translation>ожидается пара координат в миллиметрах</translation>
+    </message>
+    <message>
+        <source>a whole number from %1 to %2 is expected</source>
+        <translation>ожидается целое число от %1 до %2</translation>
+    </message>
+    <message>
+        <source>text is expected</source>
+        <translation>ожидается текст</translation>
+    </message>
+    <message>
+        <source>true or false is expected</source>
+        <translation>ожидается true или false</translation>
+    </message>
+    <message>
+        <source>an object identifier is expected</source>
+        <translation>ожидается идентификатор объекта</translation>
+    </message>
+    <message>
+        <source>a list is expected</source>
+        <translation>ожидается список</translation>
+    </message>
+    <message>
+        <source>an object is expected</source>
+        <translation>ожидается объект</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::MainWindow</name>
     <message>
         <source>&amp;File</source>
