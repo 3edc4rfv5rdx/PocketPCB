@@ -7,6 +7,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QList>
+#include <QMap>
 #include <QSet>
 #include <QString>
 #include <QStringList>
@@ -92,9 +93,15 @@ public:
     // A list whose elements are all objects. The path of element i is
     // pathOf(pathOf(where, key), i).
     QList<QJsonObject> objectList(const QJsonObject &object, const char *key, const QString &where);
+    // An object whose members are all objects: a table of things by name.
+    // The path of member 'name' is pathOf(pathOf(where, key), name).
+    QMap<QString, QJsonObject> objectMap(const QJsonObject &object, const char *key,
+                                         const QString &where);
 
     // "<where>.<key>", or just the key at the root.
     static QString pathOf(const QString &where, const char *key);
+    // The same for a key that is a name taken from the file.
+    static QString pathOf(const QString &where, const QString &key);
     // "<where>[<index>]" for an element of a list.
     static QString pathOf(const QString &where, int index);
 
@@ -108,6 +115,31 @@ private:
 
     QString m_error;
 };
+
+// Writes a list with the given function for one element.
+template <typename Item, typename ToJson>
+QJsonArray listToJson(const QList<Item> &items, ToJson toJson)
+{
+    QJsonArray array;
+    for (const Item &item : items)
+        array.append(toJson(item));
+    return array;
+}
+
+// Reads the list 'key' of 'object' with the given function for one element:
+// fromJson(element, path of the element, context). 'context' is whatever the
+// file's reading carries around; it must have the JsonReader as 'reader'.
+template <typename Item, typename Context, typename FromJson>
+QList<Item> listFromJson(const QJsonObject &object, const char *key, const QString &where,
+                         Context &context, FromJson fromJson)
+{
+    const QList<QJsonObject> objects = context.reader.objectList(object, key, where);
+    const QString listWhere = JsonReader::pathOf(where, key);
+    QList<Item> items;
+    for (int i = 0; i < objects.size(); ++i)
+        items.append(fromJson(objects.at(i), JsonReader::pathOf(listWhere, i), context));
+    return items;
+}
 
 // Whole files. On failure they return false and put a message for the user
 // into 'error'.

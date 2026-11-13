@@ -1,7 +1,5 @@
 #include "schematic.h"
 
-#include <cstdlib>
-
 namespace ppcb {
 
 namespace {
@@ -142,7 +140,7 @@ QList<Point> chainFromJson(const QJsonObject &object, const QString &where, Json
         const QString stepWhere = JsonReader::pathOf(pointsWhere, i);
         if (step.x == 0 && step.y == 0) {
             reader.fail(stepWhere, JsonReader::tr("neighbouring points coincide"));
-        } else if (step.x != 0 && step.y != 0 && std::llabs(step.x) != std::llabs(step.y)) {
+        } else if (!isStraightOrDiagonal(step)) {
             reader.fail(stepWhere, JsonReader::tr("a segment is not at 0 45 or 90 degrees"));
         }
     }
@@ -263,29 +261,6 @@ SheetGraphic sheetGraphicFromJson(const QJsonObject &object, const QString &wher
     return item;
 }
 
-// Writes a list with the given function for one element.
-template <typename Item, typename ToJson>
-QJsonArray listToJson(const QList<Item> &items, ToJson toJson)
-{
-    QJsonArray array;
-    for (const Item &item : items)
-        array.append(toJson(item));
-    return array;
-}
-
-// Reads the list 'key' of 'object' with the given function for one element.
-template <typename Item, typename FromJson>
-QList<Item> listFromJson(const QJsonObject &object, const char *key, const QString &where,
-                         ReadContext &context, FromJson fromJson)
-{
-    const QList<QJsonObject> objects = context.reader.objectList(object, key, where);
-    const QString listWhere = JsonReader::pathOf(where, key);
-    QList<Item> items;
-    for (int i = 0; i < objects.size(); ++i)
-        items.append(fromJson(objects.at(i), JsonReader::pathOf(listWhere, i), context));
-    return items;
-}
-
 QJsonObject sheetToJson(const Sheet &sheet)
 {
     QJsonObject object;
@@ -397,15 +372,10 @@ Schematic schematicFromJson(const QJsonObject &root, JsonReader &reader)
     ReadContext context{reader, {}, {}};
 
     // Symbols first: components are checked against their names.
-    const QJsonObject symbols = reader.object(root, KEY_SYMBOLS, QString());
+    const QMap<QString, QJsonObject> symbols = reader.objectMap(root, KEY_SYMBOLS, QString());
     for (auto it = symbols.constBegin(); it != symbols.constEnd(); ++it) {
-        const QString where = JsonReader::pathOf(QLatin1String(KEY_SYMBOLS),
-                                                 it.key().toUtf8().constData());
-        if (!it.value().isObject()) {
-            reader.fail(where, JsonReader::tr("an object is expected"));
-            break;
-        }
-        schematic.symbols.insert(it.key(), symbolFromJson(it.value().toObject(), where, reader));
+        const QString where = JsonReader::pathOf(QLatin1String(KEY_SYMBOLS), it.key());
+        schematic.symbols.insert(it.key(), symbolFromJson(it.value(), where, reader));
     }
     context.symbolNames = schematic.symbols.keys();
 

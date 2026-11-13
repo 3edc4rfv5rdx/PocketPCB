@@ -142,6 +142,34 @@
         <source>a schematic needs at least one sheet</source>
         <translation>у схемі має бути принаймні один аркуш</translation>
     </message>
+    <message>
+        <source>the footprint is not in the list of footprints</source>
+        <translation>посадкового місця немає у списку посадкових місць</translation>
+    </message>
+    <message>
+        <source>the footprint has no pad with this number</source>
+        <translation>у посадкового місця немає площадки з таким номером</translation>
+    </message>
+    <message>
+        <source>the ends of a track coincide</source>
+        <translation>кінці доріжки збігаються</translation>
+    </message>
+    <message>
+        <source>the hole must be smaller than the via</source>
+        <translation>отвір має бути меншим за перехідний</translation>
+    </message>
+    <message>
+        <source>a plated hole needs a copper ring</source>
+        <translation>металізованому отвору потрібне мідне кільце</translation>
+    </message>
+    <message>
+        <source>a hole without plating has no copper ring</source>
+        <translation>в отвору без металізації немає мідного кільця</translation>
+    </message>
+    <message>
+        <source>a hole without plating has no net</source>
+        <translation>в отвору без металізації немає кола</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::LibraryFile</name>

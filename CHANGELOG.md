@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- I: Core gets the board model (outline, placed footprints, tracks, vias, mounting holes, silkscreen drawing, zones) and the .ppbrd file
 - I: Schematic model gets buses, and graphics get a dashed line
 - I: Core gets the schematic model (sheets, components, wires, labels, power symbols) and the .ppsch file
 - F: Settings and data folders are named PocketPCB instead of pocketpcb

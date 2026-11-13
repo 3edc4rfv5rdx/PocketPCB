@@ -77,6 +77,21 @@ private slots:
         QVERIFY(Point() == (Point{0, 0}));
     }
 
+    void straightAndDiagonalDirections()
+    {
+        const Coord distant = 900000000000; // squaring it would not fit 64 bits
+        QVERIFY(isStraightOrDiagonal(Point{5, 0}));
+        QVERIFY(isStraightOrDiagonal(Point{0, -5}));
+        QVERIFY(isStraightOrDiagonal(Point{5, 5}));
+        QVERIFY(isStraightOrDiagonal(Point{-5, 5}));
+        QVERIFY(isStraightOrDiagonal(Point{5, -5}));
+        QVERIFY(isStraightOrDiagonal(Point{-distant, -distant}));
+        QVERIFY(isStraightOrDiagonal(Point{0, 0}));
+        QVERIFY(!isStraightOrDiagonal(Point{5, 4}));
+        QVERIFY(!isStraightOrDiagonal(Point{-1, 2}));
+        QVERIFY(!isStraightOrDiagonal(Point{distant, distant - 1}));
+    }
+
     void sizesAreWrittenInReadableMillimetres()
     {
         QJsonObject object;
@@ -141,6 +156,36 @@ private slots:
         QCOMPARE(JsonReader::pathOf(QStringLiteral("sheets"), 2), QStringLiteral("sheets[2]"));
         QCOMPARE(JsonReader::pathOf(QStringLiteral("sheets[2]"), "wires"),
                  QStringLiteral("sheets[2].wires"));
+        // A name from the file, not only Latin letters.
+        QCOMPARE(JsonReader::pathOf(QStringLiteral("symbols"), QStringLiteral("резистор")),
+                 QStringLiteral("symbols.резистор"));
+        QCOMPARE(JsonReader::pathOf(QString(), QStringLiteral("symbols")), QStringLiteral("symbols"));
+    }
+
+    void tableOfObjectsByName()
+    {
+        const QJsonObject object = parse(R"({"table":{"b":{"k":2},"a":{"k":1}},"empty":{},
+                                             "mixed":{"a":{},"b":5},"list":[]})");
+        JsonReader reader;
+        const QMap<QString, QJsonObject> table = reader.objectMap(object, "table", QString());
+        QVERIFY2(reader.ok(), qPrintable(reader.error()));
+        QCOMPARE(table.keys(), QStringList({QStringLiteral("a"), QStringLiteral("b")}));
+        QCOMPARE(table.value(QStringLiteral("b")).value(QStringLiteral("k")).toInt(), 2);
+        QVERIFY(reader.objectMap(object, "empty", QString()).isEmpty());
+        QVERIFY2(reader.ok(), qPrintable(reader.error()));
+
+        // One member that is not an object spoils the whole table.
+        QVERIFY(reader.objectMap(object, "mixed", QStringLiteral("root")).isEmpty());
+        QVERIFY2(reader.error().startsWith(QStringLiteral("root.mixed.b: ")),
+                 qPrintable(reader.error()));
+
+        JsonReader second;
+        QVERIFY(second.objectMap(object, "list", QString()).isEmpty());
+        QVERIFY2(second.error().startsWith(QStringLiteral("list: ")), qPrintable(second.error()));
+
+        JsonReader third;
+        QVERIFY(third.objectMap(object, "missing", QString()).isEmpty());
+        QVERIFY2(third.error().startsWith(QStringLiteral("missing: ")), qPrintable(third.error()));
     }
 
     void onlyTheFirstErrorIsKept()

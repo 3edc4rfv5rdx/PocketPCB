@@ -90,6 +90,13 @@ QString JsonReader::pathOf(const QString &where, const char *key)
     return where + QLatin1Char('.') + QLatin1String(key);
 }
 
+QString JsonReader::pathOf(const QString &where, const QString &key)
+{
+    if (where.isEmpty())
+        return key;
+    return where + QLatin1Char('.') + key;
+}
+
 QString JsonReader::pathOf(const QString &where, int index)
 {
     return where + QLatin1Char('[') + QString::number(index) + QLatin1Char(']');
@@ -327,6 +334,21 @@ QList<QJsonObject> JsonReader::objectList(const QJsonObject &object, const char 
             return QList<QJsonObject>();
         }
         result.append(items.at(i).toObject());
+    }
+    return result;
+}
+
+QMap<QString, QJsonObject> JsonReader::objectMap(const QJsonObject &object, const char *key,
+                                                 const QString &where)
+{
+    const QJsonObject members = this->object(object, key, where);
+    QMap<QString, QJsonObject> result;
+    for (auto it = members.constBegin(); it != members.constEnd(); ++it) {
+        if (!it.value().isObject()) {
+            fail(pathOf(pathOf(where, key), it.key()), tr("an object is expected"));
+            return QMap<QString, QJsonObject>();
+        }
+        result.insert(it.key(), it.value().toObject());
     }
     return result;
 }
