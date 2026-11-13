@@ -208,6 +208,57 @@ QJsonObject JsonReader::object(const QJsonObject &object, const char *key, const
     return value.toObject();
 }
 
+Coord JsonReader::positiveMm(const QJsonObject &object, const char *key, const QString &where)
+{
+    const Coord nm = mm(object, key, where);
+    if (ok() && nm <= 0)
+        fail(pathOf(where, key), tr("a size greater than zero is expected"));
+    return ok() ? nm : 0;
+}
+
+Coord JsonReader::nonNegativeMm(const QJsonObject &object, const char *key, const QString &where)
+{
+    const Coord nm = mm(object, key, where);
+    if (ok() && nm < 0)
+        fail(pathOf(where, key), tr("a size that is not negative is expected"));
+    return ok() ? nm : 0;
+}
+
+QString JsonReader::nonEmptyString(const QJsonObject &object, const char *key, const QString &where)
+{
+    const QString text = string(object, key, where);
+    if (ok() && text.isEmpty())
+        fail(pathOf(where, key), tr("the text must not be empty"));
+    return text;
+}
+
+int JsonReader::choice(const QJsonObject &object, const char *key, const QString &where,
+                       const QStringList &names)
+{
+    const QString text = string(object, key, where);
+    const int index = int(names.indexOf(text));
+    if (ok() && index < 0) {
+        fail(pathOf(where, key),
+             tr("one of these is expected") + QLatin1String(": ") + names.join(QLatin1String(", ")));
+    }
+    return index < 0 ? 0 : index;
+}
+
+QList<QJsonObject> JsonReader::objectList(const QJsonObject &object, const char *key,
+                                          const QString &where)
+{
+    const QJsonArray items = array(object, key, where);
+    QList<QJsonObject> result;
+    for (int i = 0; i < items.size(); ++i) {
+        if (!items.at(i).isObject()) {
+            fail(pathOf(pathOf(where, key), i), tr("an object is expected"));
+            return QList<QJsonObject>();
+        }
+        result.append(items.at(i).toObject());
+    }
+    return result;
+}
+
 bool JsonFile::read(const QString &path, QJsonObject &root, QString &error)
 {
     QFile file(path);

@@ -6,7 +6,9 @@
 #include <QCoreApplication>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QList>
 #include <QString>
+#include <QStringList>
 
 namespace ppcb {
 
@@ -59,6 +61,18 @@ public:
     ObjectId id(const QJsonObject &object, const char *key, const QString &where);
     QJsonArray array(const QJsonObject &object, const char *key, const QString &where);
     QJsonObject object(const QJsonObject &object, const char *key, const QString &where);
+
+    // A size that must be greater than zero / must not be negative.
+    Coord positiveMm(const QJsonObject &object, const char *key, const QString &where);
+    Coord nonNegativeMm(const QJsonObject &object, const char *key, const QString &where);
+    // Text that must not be empty.
+    QString nonEmptyString(const QJsonObject &object, const char *key, const QString &where);
+    // One of 'names'; returns its index in the list, or 0 after a failure.
+    int choice(const QJsonObject &object, const char *key, const QString &where,
+               const QStringList &names);
+    // A list whose elements are all objects. The path of element i is
+    // pathOf(pathOf(where, key), i).
+    QList<QJsonObject> objectList(const QJsonObject &object, const char *key, const QString &where);
 
     // "<where>.<key>", or just the key at the root.
     static QString pathOf(const QString &where, const char *key);

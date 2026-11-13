@@ -70,6 +70,30 @@
         <source>an object is expected</source>
         <translation>очікується об’єкт</translation>
     </message>
+    <message>
+        <source>a size greater than zero is expected</source>
+        <translation>очікується розмір більше нуля</translation>
+    </message>
+    <message>
+        <source>a size that is not negative is expected</source>
+        <translation>очікується невід’ємний розмір</translation>
+    </message>
+    <message>
+        <source>the text must not be empty</source>
+        <translation>текст не має бути порожнім</translation>
+    </message>
+    <message>
+        <source>one of these is expected</source>
+        <translation>очікується одне зі значень</translation>
+    </message>
+    <message>
+        <source>the pin is not on the pin grid</source>
+        <translation>вивід не на сітці виводів</translation>
+    </message>
+    <message>
+        <source>the pin number is used twice</source>
+        <translation>номер виводу повторюється</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::MainWindow</name>

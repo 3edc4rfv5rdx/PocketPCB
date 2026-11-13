@@ -70,6 +70,30 @@
         <source>an object is expected</source>
         <translation>ожидается объект</translation>
     </message>
+    <message>
+        <source>a size greater than zero is expected</source>
+        <translation>ожидается размер больше нуля</translation>
+    </message>
+    <message>
+        <source>a size that is not negative is expected</source>
+        <translation>ожидается неотрицательный размер</translation>
+    </message>
+    <message>
+        <source>the text must not be empty</source>
+        <translation>текст не должен быть пустым</translation>
+    </message>
+    <message>
+        <source>one of these is expected</source>
+        <translation>ожидается одно из значений</translation>
+    </message>
+    <message>
+        <source>the pin is not on the pin grid</source>
+        <translation>вывод не на сетке выводов</translation>
+    </message>
+    <message>
+        <source>the pin number is used twice</source>
+        <translation>номер вывода повторяется</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::MainWindow</name>
