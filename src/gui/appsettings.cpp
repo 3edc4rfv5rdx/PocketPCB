@@ -13,6 +13,7 @@ namespace {
 const char APP_NAME[] = "pocketpcb";
 const char SETTINGS_FILE[] = "pocketpcb.ini";
 
+const char KEY_LANGUAGE[] = "general/language";
 const char KEY_GRID_STYLE[] = "view/gridStyle";
 const char KEY_CURSOR_STYLE[] = "view/cursorStyle";
 const char KEY_ZOOM_WARP[] = "view/zoomCenterAndWarp";
@@ -52,6 +53,16 @@ QString AppSettings::filePath()
 {
     const QString folder = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
     return QDir(folder).filePath(QLatin1String(SETTINGS_FILE));
+}
+
+QString AppSettings::language()
+{
+    return readValue(KEY_LANGUAGE, QString()).toString();
+}
+
+void AppSettings::setLanguage(const QString &language)
+{
+    writeValue(KEY_LANGUAGE, language);
 }
 
 GridStyle AppSettings::gridStyle()

@@ -1,8 +1,10 @@
 #include "appsettings.h"
 #include "format.h"
+#include "language.h"
 
 #include <QSettings>
 #include <QStandardPaths>
+#include <QTranslator>
 #include <QtTest>
 
 using namespace ppcb;
@@ -56,8 +58,58 @@ private slots:
         QCOMPARE(shortText, QStringLiteral("5"));
     }
 
+    void languageFollowsTheSystem()
+    {
+        QCOMPARE(chooseLanguage(QString(), {"ru-RU", "en-US"}), QStringLiteral("ru"));
+        QCOMPARE(chooseLanguage(QString(), {"uk_UA"}), QStringLiteral("uk"));
+        QCOMPARE(chooseLanguage(QString(), {"en"}), QStringLiteral("en"));
+        // The first supported language of the list wins.
+        QCOMPARE(chooseLanguage(QString(), {"de-DE", "ru", "uk"}), QStringLiteral("ru"));
+        // Nothing supported, an empty list, the "C" locale: English.
+        QCOMPARE(chooseLanguage(QString(), {"de-DE", "fr"}), QStringLiteral("en"));
+        QCOMPARE(chooseLanguage(QString(), {}), QStringLiteral("en"));
+        QCOMPARE(chooseLanguage(QString(), {"C"}), QStringLiteral("en"));
+    }
+
+    void languageSettingWinsOverTheSystem()
+    {
+        QCOMPARE(chooseLanguage(QStringLiteral("uk"), {"ru-RU"}), QStringLiteral("uk"));
+        QCOMPARE(chooseLanguage(QStringLiteral("en"), {"ru-RU"}), QStringLiteral("en"));
+        QCOMPARE(chooseLanguage(QStringLiteral(" RU_ru "), {"en"}), QStringLiteral("ru"));
+        // An unknown setting falls back to the system.
+        QCOMPARE(chooseLanguage(QStringLiteral("xx"), {"ru-RU"}), QStringLiteral("ru"));
+    }
+
+    void everyTranslationLoads()
+    {
+        const QStringList languages = supportedLanguages();
+        QCOMPARE(languages.first(), QStringLiteral("en"));
+        for (const QString &language : languages) {
+            QTranslator translator;
+            // The source language has no translation file; all others must.
+            const bool expected = language != languages.first();
+            QVERIFY2(loadTranslation(translator, language) == expected, qPrintable(language));
+        }
+    }
+
+    void translationsAreComplete()
+    {
+        // One of each kind of string: a menu, a choice, the unit.
+        const char *samples[] = {"&File", "Lines", "Full-window cross", "mm"};
+        for (const QString &language : {QStringLiteral("uk"), QStringLiteral("ru")}) {
+            QTranslator translator;
+            QVERIFY(loadTranslation(translator, language));
+            for (const char *sample : samples) {
+                const QString text = translator.translate("ppcb::MainWindow", sample);
+                QVERIFY2(!text.isEmpty(), sample);
+                QVERIFY2(text != QLatin1String(sample), sample);
+            }
+        }
+    }
+
     void settingsDefaults()
     {
+        QVERIFY(AppSettings::language().isEmpty());
         QCOMPARE(AppSettings::gridStyle(), GridStyle::Lines);
         QCOMPARE(AppSettings::cursorStyle(), CursorStyle::SmallCross);
         QCOMPARE(AppSettings::zoomCenterAndWarp(), true);
@@ -80,6 +132,9 @@ private slots:
 
         AppSettings::setZoomCenterAndWarp(false);
         QCOMPARE(AppSettings::zoomCenterAndWarp(), false);
+
+        AppSettings::setLanguage(QStringLiteral("uk"));
+        QCOMPARE(AppSettings::language(), QStringLiteral("uk"));
 
         const QByteArray bytes("\x00\x01\xff geometry", 12);
         AppSettings::setWindowGeometry(bytes);

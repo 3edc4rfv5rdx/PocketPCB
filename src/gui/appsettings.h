@@ -19,6 +19,10 @@ public:
 
     static QString filePath();
 
+    // Interface language code ("en", "uk", "ru"); empty: follow the system.
+    static QString language();
+    static void setLanguage(const QString &language);
+
     static GridStyle gridStyle();
     static void setGridStyle(GridStyle style);
 

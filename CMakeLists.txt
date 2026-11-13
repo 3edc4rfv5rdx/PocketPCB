@@ -22,7 +22,7 @@ elseif(MSVC)
     add_compile_options(/W4)
 endif()
 
-find_package(Qt6 6.4 REQUIRED COMPONENTS Core Widgets Test)
+find_package(Qt6 6.4 REQUIRED COMPONENTS Core Widgets LinguistTools Test)
 qt_standard_project_setup()
 
 enable_testing()
