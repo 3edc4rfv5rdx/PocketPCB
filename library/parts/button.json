@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "button",
+  "footprints": ["button-6x6"],
+  "prefix": "SW",
+  "prefixGost": "SB",
+  "value": "",
+  "connector": false,
+  "name": {"en": "Push button", "uk": "Кнопка", "ru": "Кнопка"}
+}

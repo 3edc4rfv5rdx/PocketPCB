@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "crystal",
+  "footprints": ["crystal-hc49"],
+  "prefix": "Y",
+  "prefixGost": "ZQ",
+  "value": "16MHz",
+  "connector": false,
+  "name": {"en": "Crystal", "uk": "Кварцовий резонатор", "ru": "Кварцевый резонатор"}
+}

@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "thyristor",
+  "footprints": ["to220-kag", "to92-kga"],
+  "prefix": "Q",
+  "prefixGost": "VS",
+  "value": "BT151",
+  "connector": false,
+  "name": {"en": "Thyristor", "uk": "Тиристор", "ru": "Тиристор"}
+}

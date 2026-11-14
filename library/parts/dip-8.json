@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "dip-8",
+  "footprints": ["dip-8-7.62"],
+  "prefix": "U",
+  "prefixGost": "DD",
+  "value": "",
+  "connector": false,
+  "name": {"en": "Chip DIP-8", "uk": "Мікросхема DIP-8", "ru": "Микросхема DIP-8"}
+}

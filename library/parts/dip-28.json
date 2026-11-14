@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "dip-28",
+  "footprints": ["dip-28-7.62", "dip-28-15.24"],
+  "prefix": "U",
+  "prefixGost": "DD",
+  "value": "",
+  "connector": false,
+  "name": {"en": "Chip DIP-28", "uk": "Мікросхема DIP-28", "ru": "Микросхема DIP-28"}
+}

@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "dip-40",
+  "footprints": ["dip-40-15.24"],
+  "prefix": "U",
+  "prefixGost": "DD",
+  "value": "",
+  "connector": false,
+  "name": {"en": "Chip DIP-40", "uk": "Мікросхема DIP-40", "ru": "Микросхема DIP-40"}
+}

@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "dip-18",
+  "footprints": ["dip-18-7.62"],
+  "prefix": "U",
+  "prefixGost": "DD",
+  "value": "",
+  "connector": false,
+  "name": {"en": "Chip DIP-18", "uk": "Мікросхема DIP-18", "ru": "Микросхема DIP-18"}
+}

@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "fuse",
+  "footprints": ["fuse-tr5", "resistor-10.16"],
+  "prefix": "F",
+  "prefixGost": "FU",
+  "value": "",
+  "connector": false,
+  "name": {"en": "Fuse", "uk": "Запобіжник", "ru": "Предохранитель"}
+}

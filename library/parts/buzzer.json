@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "buzzer",
+  "footprints": ["buzzer-12mm"],
+  "prefix": "BZ",
+  "prefixGost": "HA",
+  "value": "",
+  "connector": false,
+  "name": {"en": "Buzzer", "uk": "Зумер", "ru": "Зуммер"}
+}
