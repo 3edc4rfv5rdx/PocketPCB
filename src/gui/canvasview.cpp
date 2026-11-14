@@ -5,13 +5,8 @@
 
 #include <QApplication>
 #include <QContextMenuEvent>
-#include <QDragEnterEvent>
-#include <QDragLeaveEvent>
-#include <QDragMoveEvent>
-#include <QDropEvent>
 #include <QCursor>
 #include <QGraphicsScene>
-#include <QMimeData>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QScrollBar>
@@ -61,8 +56,6 @@ CanvasView::CanvasView(QWidget *parent)
     setFrameShape(QFrame::NoFrame);
     setMouseTracking(true);
     viewport()->setMouseTracking(true);
-    // What may be dropped is said by setDropType().
-    setAcceptDrops(true);
 
     scale(INITIAL_PIXELS_PER_MM, INITIAL_PIXELS_PER_MM);
     centerOn(0.0, 0.0);
@@ -286,39 +279,22 @@ bool CanvasView::viewportEvent(QEvent *event)
     return QGraphicsView::viewportEvent(event);
 }
 
-void CanvasView::dragEnterEvent(QDragEnterEvent *event)
+void CanvasView::followGlobalPos(const QPoint &globalPos)
 {
-    if (m_dropType.isEmpty() || !event->mimeData()->hasFormat(m_dropType)) {
-        event->ignore();
-        return;
-    }
-    event->acceptProposedAction();
-    m_cursorViewPos = event->position().toPoint();
-    m_cursorInside = true;
-    emit dragEntered(event->mimeData()->data(m_dropType));
+    const QPoint pos = viewport()->mapFromGlobal(globalPos);
+    m_cursorInside = viewport()->rect().contains(pos);
+    if (m_cursorInside)
+        m_cursorViewPos = pos;
     updateCursor();
 }
 
-void CanvasView::dragMoveEvent(QDragMoveEvent *event)
+bool CanvasView::sceneAtGlobal(const QPoint &globalPos, QPointF &scenePos) const
 {
-    event->acceptProposedAction();
-    m_cursorViewPos = event->position().toPoint();
-    m_cursorInside = true;
-    updateCursor();
-}
-
-void CanvasView::dragLeaveEvent(QDragLeaveEvent *event)
-{
-    event->accept();
-    m_cursorInside = false;
-    emit dragLeft();
-    viewport()->update();
-}
-
-void CanvasView::dropEvent(QDropEvent *event)
-{
-    event->acceptProposedAction();
-    emit dropped(mapToScene(event->position().toPoint()));
+    const QPoint pos = viewport()->mapFromGlobal(globalPos);
+    if (!viewport()->rect().contains(pos))
+        return false;
+    scenePos = mapToScene(pos);
+    return true;
 }
 
 void CanvasView::updateCursor()

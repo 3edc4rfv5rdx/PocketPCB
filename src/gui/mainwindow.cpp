@@ -25,7 +25,6 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
-#include <QMimeData>
 #include <QShowEvent>
 #include <QSignalBlocker>
 #include <QStatusBar>
@@ -84,27 +83,10 @@ MainWindow::MainWindow(QWidget *parent)
     // The part being placed follows the cursor.
     connect(m_canvas, &CanvasView::cursorMoved, m_sheetEditor,
             [this](Coord x, Coord y) { m_sheetEditor->hover(Point{x, y}); });
-    // A part dragged from the panel follows the cursor too; a drop places it
-    // and placing goes on, as after a double click.
-    m_canvas->setDropType(LibraryPanel::partMimeType());
-    connect(m_canvas, &CanvasView::dragEntered, this, [this](const QByteArray &bytes) {
-        QMimeData data;
-        data.setData(LibraryPanel::partMimeType(), bytes);
-        LibraryPanel::Source source;
-        QString part;
-        QString footprint;
-        if (LibraryPanel::readPartMimeData(&data, source, part, footprint))
-            placePart(source, part, footprint);
-    });
-    connect(m_canvas, &CanvasView::dragLeft, m_sheetEditor, &SheetEditor::stopPlacing);
     // A short right click ends placing, as Esc does.
     connect(m_canvas, &CanvasView::contextMenuRequested, m_sheetEditor, [this] {
         if (m_sheetEditor->isPlacing())
             m_sheetEditor->stopPlacing();
-    });
-    connect(m_canvas, &CanvasView::dropped, this, [this](const QPointF &at) {
-        if (m_sheetEditor->isPlacing())
-            m_sheetEditor->press(at, false);
     });
     connect(m_document, &Document::designChanged, this, &MainWindow::projectChanged);
     connect(m_document, &Document::modifiedChanged, this, &MainWindow::updateTitle);
@@ -135,6 +117,23 @@ MainWindow::MainWindow(QWidget *parent)
     addDockWidget(Qt::RightDockWidgetArea, m_libraryDock);
     connect(m_libraryPanel, &LibraryPanel::reloadRequested, this, &MainWindow::loadLibrary);
     connect(m_libraryPanel, &LibraryPanel::placeRequested, this, &MainWindow::placePart);
+    // A part dragged out of the panel is placed the same way: it follows the
+    // mouse, R and X turn it, and letting go over the sheet puts it down and
+    // placing goes on; letting go anywhere else calls it off.
+    connect(m_libraryPanel, &LibraryPanel::dragStarted, this, &MainWindow::placePart);
+    connect(m_libraryPanel, &LibraryPanel::dragMoved, this, [this](const QPoint &at) {
+        if (m_sheetEditor->isPlacing())
+            m_canvas->followGlobalPos(at);
+    });
+    connect(m_libraryPanel, &LibraryPanel::dragEnded, this, [this](const QPoint &at) {
+        if (!m_sheetEditor->isPlacing())
+            return;
+        QPointF scenePos;
+        if (m_canvas->sceneAtGlobal(at, scenePos))
+            m_sheetEditor->press(scenePos, false);
+        else
+            m_sheetEditor->stopPlacing();
+    });
 
     createMenus();
     createStatusBar();

@@ -8,12 +8,37 @@
 #include <functional>
 
 class QComboBox;
-class QMimeData;
+class QMouseEvent;
 class QLineEdit;
 class QTreeWidget;
 class QTreeWidgetItem;
 
 namespace ppcb {
+
+// A press of the left button and a move far enough, turned into the drag of
+// a part out of the library panel. The drag is not Qt's drag and drop: that
+// takes the keyboard while it lasts, and R and X must turn the part on the
+// way. The widget keeps the mouse while the button is down, so the moves
+// come here wherever the mouse goes.
+struct PartDragGesture
+{
+    // Once the move is long enough: 'pressPos' is where the button went
+    // down. False when there is nothing to drag there.
+    std::function<bool(const QPoint &pressPos)> start;
+    // Where the mouse is, and where it was let go, on the screen.
+    std::function<void(const QPoint &globalPos)> moved;
+    std::function<void(const QPoint &globalPos)> ended;
+
+    void press(const QMouseEvent *event);
+    // Both return true when the event belongs to a drag and is used up.
+    bool move(QWidget *widget, const QMouseEvent *event);
+    bool release(QWidget *widget, const QMouseEvent *event);
+
+private:
+    QPoint m_pressPos;
+    bool m_pressed = false;
+    bool m_dragging = false;
+};
 
 // The drawing of one part: its symbol above, one of its footprints below.
 class PartPreview : public QWidget
@@ -26,17 +51,16 @@ public:
     // Null for what is not there; the pointers must stay valid while shown.
     void setContent(const Symbol *symbol, const Footprint *footprint);
 
-    // What dragging the drawing carries off: the part shown; null when
-    // there is nothing to drag.
-    std::function<QMimeData *()> makeMimeData;
+    // Dragging the drawing drags the part shown.
+    PartDragGesture drag;
 
 protected:
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
 
 private:
-    QPoint m_pressPos;
     const Symbol *m_symbol = nullptr;
     const Footprint *m_footprint = nullptr;
 };
@@ -74,14 +98,6 @@ public:
     QString currentPart() const;
     Source currentSource() const;
 
-    // A part dragged out of the list: its source, its name and the
-    // footprint chosen for it.
-    static QString partMimeType();
-    static QMimeData *partMimeData(Source source, const QString &part, const QString &footprint);
-    // False when 'data' holds no part.
-    static bool readPartMimeData(const QMimeData *data, Source &source, QString &part,
-                                 QString &footprint);
-
     QTreeWidget *tree() const { return m_tree; }
     PartPreview *preview() const { return m_preview; }
     QComboBox *footprintBox() const { return m_footprintBox; }
@@ -92,6 +108,12 @@ signals:
     // A part was double-clicked: it is to be placed on the sheet.
     void placeRequested(ppcb::LibraryPanel::Source source, const QString &part,
                         const QString &footprint);
+    // A part is dragged out of the list or the drawing: it is to be placed,
+    // following the mouse, and put down where the button is let go.
+    void dragStarted(ppcb::LibraryPanel::Source source, const QString &part,
+                     const QString &footprint);
+    void dragMoved(const QPoint &globalPos);
+    void dragEnded(const QPoint &globalPos);
 
 private:
     void rebuild();

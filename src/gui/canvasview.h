@@ -44,9 +44,13 @@ public:
     Coord cursorX() const { return m_cursorX; }
     Coord cursorY() const { return m_cursorY; }
 
-    // Dragged data of this type may be dropped on the canvas; while it is
-    // dragged over it the cursor is followed as for the mouse.
-    void setDropType(const QString &mimeType) { m_dropType = mimeType; }
+    // Follows a mouse that another widget holds (a part dragged out of the
+    // library panel), as if it moved over the canvas: the cursor and
+    // cursorMoved(). A point off the canvas hides the cursor.
+    void followGlobalPos(const QPoint &globalPos);
+    // The scene point (millimetres) under a point of the screen; false when
+    // that point is off the canvas.
+    bool sceneAtGlobal(const QPoint &globalPos, QPointF &scenePos) const;
 
 signals:
     void gridStepChanged(ppcb::Coord step);
@@ -54,11 +58,6 @@ signals:
     void cursorMoved(ppcb::Coord x, ppcb::Coord y);
     // A short right click without movement.
     void contextMenuRequested(const QPoint &globalPos);
-    // Data of the drop type came over the canvas, left it, or was dropped
-    // at 'scenePos' (millimetres).
-    void dragEntered(const QByteArray &data);
-    void dragLeft();
-    void dropped(const QPointF &scenePos);
 
 protected:
     void drawBackground(QPainter *painter, const QRectF &rect) override;
@@ -69,10 +68,6 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
     bool viewportEvent(QEvent *event) override;
-    void dragEnterEvent(QDragEnterEvent *event) override;
-    void dragMoveEvent(QDragMoveEvent *event) override;
-    void dragLeaveEvent(QDragLeaveEvent *event) override;
-    void dropEvent(QDropEvent *event) override;
 
 private:
     void zoomAt(const QPoint &viewPos, double factor);
@@ -92,8 +87,6 @@ private:
     // Snapped cursor position; valid while m_cursorInside.
     Coord m_cursorX = 0;
     Coord m_cursorY = 0;
-
-    QString m_dropType;
 
     // Panning: the button that started it, or Qt::NoButton.
     Qt::MouseButton m_panButton = Qt::NoButton;

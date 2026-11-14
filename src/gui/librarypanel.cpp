@@ -6,12 +6,10 @@
 
 #include <QApplication>
 #include <QComboBox>
-#include <QDrag>
 #include <QFont>
 #include <QHBoxLayout>
 #include <QLineEdit>
 #include <QMouseEvent>
-#include <QMimeData>
 #include <QPainter>
 #include <QScrollBar>
 #include <QSignalBlocker>
@@ -33,28 +31,28 @@ namespace {
 const int PART_ROLE = Qt::UserRole;
 const int SOURCE_ROLE = Qt::UserRole + 1;
 
-const char PART_MIME_TYPE[] = "application/x-pocketpcb-part";
-
 // The list of parts, from which a part can be dragged onto a sheet.
 class PartTree : public QTreeWidget
 {
 public:
     using QTreeWidget::QTreeWidget;
-    std::function<QMimeData *(const QTreeWidgetItem *)> makeMimeData;
+    PartDragGesture drag;
 
 protected:
-    // Without the picture of the row a list drags by default: it would hide
-    // the part, which follows the cursor on the sheet itself.
-    void startDrag(Qt::DropActions actions) override
+    void mousePressEvent(QMouseEvent *event) override
     {
-        Q_UNUSED(actions);
-        const QTreeWidgetItem *item = currentItem();
-        QMimeData *data = item == nullptr || !makeMimeData ? nullptr : makeMimeData(item);
-        if (data == nullptr)
-            return;
-        QDrag *drag = new QDrag(this);
-        drag->setMimeData(data);
-        drag->exec(Qt::CopyAction);
+        drag.press(event);
+        QTreeWidget::mousePressEvent(event);
+    }
+    void mouseMoveEvent(QMouseEvent *event) override
+    {
+        if (!drag.move(this, event))
+            QTreeWidget::mouseMoveEvent(event);
+    }
+    void mouseReleaseEvent(QMouseEvent *event) override
+    {
+        if (!drag.release(this, event))
+            QTreeWidget::mouseReleaseEvent(event);
     }
 };
 
@@ -95,27 +93,62 @@ void PartPreview::setContent(const Symbol *symbol, const Footprint *footprint)
     update();
 }
 
+void PartDragGesture::press(const QMouseEvent *event)
+{
+    m_pressed = event->button() == Qt::LeftButton;
+    m_dragging = false;
+    m_pressPos = event->position().toPoint();
+}
+
+bool PartDragGesture::move(QWidget *widget, const QMouseEvent *event)
+{
+    if (!m_pressed || !(event->buttons() & Qt::LeftButton))
+        return false;
+    if (!m_dragging) {
+        if ((event->position().toPoint() - m_pressPos).manhattanLength()
+            < QApplication::startDragDistance()) {
+            return false;
+        }
+        m_pressed = start && start(m_pressPos);
+        if (!m_pressed)
+            return false;
+        m_dragging = true;
+        widget->setCursor(Qt::ClosedHandCursor);
+    }
+    if (moved)
+        moved(event->globalPosition().toPoint());
+    return true;
+}
+
+bool PartDragGesture::release(QWidget *widget, const QMouseEvent *event)
+{
+    const bool wasDragging = m_dragging && event->button() == Qt::LeftButton;
+    m_pressed = false;
+    m_dragging = false;
+    if (!wasDragging)
+        return false;
+    widget->unsetCursor();
+    if (ended)
+        ended(event->globalPosition().toPoint());
+    return true;
+}
+
 void PartPreview::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton)
-        m_pressPos = event->position().toPoint();
+    drag.press(event);
     QWidget::mousePressEvent(event);
 }
 
 void PartPreview::mouseMoveEvent(QMouseEvent *event)
 {
-    if (!(event->buttons() & Qt::LeftButton) || !makeMimeData
-        || (event->position().toPoint() - m_pressPos).manhattanLength()
-               < QApplication::startDragDistance()) {
+    if (!drag.move(this, event))
         QWidget::mouseMoveEvent(event);
-        return;
-    }
-    QMimeData *data = makeMimeData();
-    if (data == nullptr)
-        return;
-    QDrag *drag = new QDrag(this);
-    drag->setMimeData(data);
-    drag->exec(Qt::CopyAction);
+}
+
+void PartPreview::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (!drag.release(this, event))
+        QWidget::mouseReleaseEvent(event);
 }
 
 void PartPreview::paintEvent(QPaintEvent *event)
@@ -166,14 +199,16 @@ LibraryPanel::LibraryPanel(QWidget *parent)
     searchRow->addWidget(reloadButton);
 
     PartTree *tree = new PartTree(this);
-    tree->makeMimeData = [this](const QTreeWidgetItem *item) -> QMimeData * {
-        const QString part = item->data(0, PART_ROLE).toString();
+    tree->drag.start = [this, tree](const QPoint &pressPos) {
+        const QTreeWidgetItem *item = tree->itemAt(pressPos);
+        const QString part = item == nullptr ? QString() : item->data(0, PART_ROLE).toString();
         if (part.isEmpty())
-            return nullptr;
-        return partMimeData(Source(item->data(0, SOURCE_ROLE).toInt()), part, footprintFor(item));
+            return false;
+        emit dragStarted(Source(item->data(0, SOURCE_ROLE).toInt()), part, footprintFor(item));
+        return true;
     };
-    tree->setDragEnabled(true);
-    tree->setDragDropMode(QAbstractItemView::DragOnly);
+    tree->drag.moved = [this](const QPoint &at) { emit dragMoved(at); };
+    tree->drag.ended = [this](const QPoint &at) { emit dragEnded(at); };
     m_tree = tree;
     m_tree->setHeaderHidden(true);
     m_tree->setColumnCount(1);
@@ -181,12 +216,15 @@ LibraryPanel::LibraryPanel(QWidget *parent)
     m_footprintBox = new QComboBox(this);
     m_footprintBox->setObjectName(QStringLiteral("libraryFootprint"));
     m_preview = new PartPreview(this);
-    m_preview->makeMimeData = [this]() -> QMimeData * {
+    m_preview->drag.start = [this](const QPoint &) {
         const QString part = currentPart();
         if (part.isEmpty())
-            return nullptr;
-        return partMimeData(currentSource(), part, m_footprintBox->currentText());
+            return false;
+        emit dragStarted(currentSource(), part, m_footprintBox->currentText());
+        return true;
     };
+    m_preview->drag.moved = [this](const QPoint &at) { emit dragMoved(at); };
+    m_preview->drag.ended = [this](const QPoint &at) { emit dragEnded(at); };
 
     QWidget *previewBox = new QWidget(this);
     QVBoxLayout *previewLayout = new QVBoxLayout(previewBox);
@@ -408,34 +446,6 @@ QString LibraryPanel::footprintFor(const QTreeWidgetItem *item) const
     const Library &library = source == Source::Project ? m_project : m_library.items;
     const Part *part = library.findPart(item->data(0, PART_ROLE).toString());
     return part == nullptr ? QString() : part->footprints.value(0);
-}
-
-QString LibraryPanel::partMimeType()
-{
-    return QLatin1String(PART_MIME_TYPE);
-}
-
-QMimeData *LibraryPanel::partMimeData(Source source, const QString &part, const QString &footprint)
-{
-    QMimeData *data = new QMimeData;
-    const QStringList fields = {QString::number(int(source)), part, footprint};
-    data->setData(partMimeType(), fields.join(QLatin1Char('\n')).toUtf8());
-    return data;
-}
-
-bool LibraryPanel::readPartMimeData(const QMimeData *data, Source &source, QString &part,
-                                    QString &footprint)
-{
-    if (data == nullptr || !data->hasFormat(partMimeType()))
-        return false;
-    const QStringList fields = QString::fromUtf8(data->data(partMimeType())).split(QLatin1Char('\n'));
-    if (fields.size() != 3 || fields.at(1).isEmpty())
-        return false;
-    source = fields.at(0) == QString::number(int(Source::Project)) ? Source::Project
-                                                                    : Source::Library;
-    part = fields.at(1);
-    footprint = fields.at(2);
-    return true;
 }
 
 const Library &LibraryPanel::currentLibrary() const
