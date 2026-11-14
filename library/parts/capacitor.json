@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "capacitor",
+  "footprints": ["capacitor-2.54", "capacitor-5.08"],
+  "prefix": "C",
+  "prefixGost": "C",
+  "value": "100n",
+  "connector": false,
+  "name": {"en": "Capacitor", "uk": "Конденсатор", "ru": "Конденсатор"}
+}

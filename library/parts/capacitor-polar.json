@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "capacitor-polar",
+  "footprints": ["capacitor-polar-2.5", "capacitor-polar-5.0"],
+  "prefix": "C",
+  "prefixGost": "C",
+  "value": "10u",
+  "connector": false,
+  "name": {"en": "Electrolytic capacitor", "uk": "Електролітичний конденсатор", "ru": "Электролитический конденсатор"}
+}
