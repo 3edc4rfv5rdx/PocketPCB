@@ -265,6 +265,29 @@
     </message>
 </context>
 <context>
+    <name>ppcb::LibraryPanel</name>
+    <message>
+        <source>Search</source>
+        <translation>Пошук</translation>
+    </message>
+    <message>
+        <source>Read the library again</source>
+        <translation>Перечитати бібліотеку</translation>
+    </message>
+    <message>
+        <source>Library</source>
+        <translation>Бібліотека</translation>
+    </message>
+    <message>
+        <source>Project</source>
+        <translation>Проєкт</translation>
+    </message>
+    <message>
+        <source>replaced by the user's library</source>
+        <translation>замінено бібліотекою користувача</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::LibraryFolder</name>
     <message>
         <source>the file does not belong in this folder</source>

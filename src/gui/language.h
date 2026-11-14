@@ -20,8 +20,14 @@ QString chooseLanguage(const QString &preferred, const QStringList &systemLangua
 // Returns false when there is none; the source language has none by design.
 bool loadTranslation(QTranslator &translator, const QString &language);
 
-// Applies the language chosen from the settings and the system to the
-// running application. Returns the language code used.
+// The language chosen from the settings and the system.
+QString currentLanguage();
+
+// The languages a name given in several languages is looked up in, most
+// wanted first: the interface language, then the language of the code.
+QStringList nameLanguages();
+
+// Applies currentLanguage() to the running application and returns it.
 QString installLanguage();
 
 } // namespace ppcb

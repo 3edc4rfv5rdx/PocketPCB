@@ -4,6 +4,7 @@
 #include "document.h"
 #include "grid.h"
 #include "libraryfile.h"
+#include "librarypanel.h"
 #include "libraryviewitem.h"
 #include "mainwindow.h"
 #include "saveprojectdialog.h"
@@ -22,6 +23,7 @@
 #include <QStandardPaths>
 #include <QStatusBar>
 #include <QTabBar>
+#include <QTreeWidget>
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QtTest>
@@ -121,7 +123,7 @@ private slots:
         MainWindow window;
         QAction *next = window.findChild<QAction *>(QStringLiteral("actionGridNext"));
         QAction *previous = window.findChild<QAction *>(QStringLiteral("actionGridPrevious"));
-        QComboBox *stepBox = window.findChild<QComboBox *>();
+        QComboBox *stepBox = window.findChild<QComboBox *>(QStringLiteral("gridStepBox"));
         QVERIFY(next != nullptr);
         QVERIFY(previous != nullptr);
         QVERIFY(stepBox != nullptr);
@@ -455,6 +457,52 @@ private slots:
         // The default is written for the user to see.
         QVERIFY(QSettings(AppSettings::filePath(), QSettings::IniFormat)
                     .contains(QStringLiteral("library/folder")));
+    }
+
+    void libraryPanelShowsTheParts()
+    {
+        // A part of the user's own, with a GOST prefix of its own.
+        const QDir user(AppSettings::userLibraryFolder());
+        QVERIFY(user.mkpath(QStringLiteral("parts")));
+        LibraryItem diode;
+        diode.kind = LibraryKind::Part;
+        diode.part.symbol = QStringLiteral("resistor");
+        diode.part.prefix = QStringLiteral("D");
+        diode.part.prefixGost = QStringLiteral("VD");
+        diode.part.name.insert(QStringLiteral("en"), QStringLiteral("Diode"));
+        QString error;
+        QVERIFY2(LibraryFile::write(user.filePath(QStringLiteral("parts/diode.json")), diode, error),
+                 qPrintable(error));
+
+        MainWindow window;
+        LibraryPanel *panel = window.libraryPanel();
+        QTreeWidget *tree = panel->tree();
+        QCOMPARE(tree->topLevelItemCount(), 1);
+        const QTreeWidgetItem *section = tree->topLevelItem(0);
+        QStringList groups;
+        for (int i = 0; i < section->childCount(); ++i)
+            groups.append(section->child(i)->text(0));
+        QCOMPARE(groups, QStringList({QStringLiteral("D"), QStringLiteral("R")}));
+
+        // Choosing a part draws it, with its first footprint.
+        // Its shown name is in the interface language, which follows the system.
+        const QTreeWidgetItem *resistor = section->child(1)->child(0);
+        tree->setCurrentItem(const_cast<QTreeWidgetItem *>(resistor));
+        QCOMPARE(panel->currentPart(), QStringLiteral("resistor"));
+        QCOMPARE(panel->footprintBox()->currentText(), QStringLiteral("resistor-10.16"));
+
+        // The search hides what does not match: by name, by prefix.
+        panel->setFilter(QStringLiteral("diod"));
+        QVERIFY(section->child(1)->isHidden());
+        QVERIFY(!section->child(0)->isHidden());
+        panel->setFilter(QStringLiteral("r"));
+        QVERIFY(!section->child(1)->isHidden());
+        panel->setFilter(QString());
+
+        // The open project's parts are a section of their own.
+        QVERIFY(window.openProject(QStringLiteral(PPCB_SOURCE_DIR "/examples/demo/demo.ppcb")));
+        QCOMPARE(tree->topLevelItemCount(), 2);
+        QCOMPARE(tree->topLevelItem(1)->text(0), QStringLiteral("Project"));
     }
 
     void undoActionsAndTitleFollowTheDocument()

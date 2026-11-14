@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Library panel on the right: parts of the library and of the open project grouped by prefix, a search field and a drawing of the chosen part
 - I: Library gets the resistor symbol and part, and a test that every part has its symbol and footprints
 - N: The built-in and the user's library are loaded on start, the user's library folder is made and opened from the File menu
 - R: The library types are named for any library folder, not for the project's alone

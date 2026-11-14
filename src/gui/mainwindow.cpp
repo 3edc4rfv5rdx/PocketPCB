@@ -5,6 +5,7 @@
 #include "document.h"
 #include "format.h"
 #include "grid.h"
+#include "librarypanel.h"
 #include "libraryviewitem.h"
 #include "saveprojectdialog.h"
 
@@ -13,6 +14,7 @@
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QDesktopServices>
+#include <QDockWidget>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -93,6 +95,14 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_libraryWatcher, &QFileSystemWatcher::fileChanged, m_reloadTimer,
             qOverload<>(&QTimer::start));
     connect(m_reloadTimer, &QTimer::timeout, this, &MainWindow::reloadLibraryFile);
+
+    m_libraryPanel = new LibraryPanel(this);
+    m_libraryDock = new QDockWidget(LibraryPanel::libraryTitle(), this);
+    // The name keeps the dock's place in the saved window state.
+    m_libraryDock->setObjectName(QStringLiteral("libraryDock"));
+    m_libraryDock->setWidget(m_libraryPanel);
+    addDockWidget(Qt::RightDockWidgetArea, m_libraryDock);
+    connect(m_libraryPanel, &LibraryPanel::reloadRequested, this, &MainWindow::loadLibrary);
 
     createMenus();
     createStatusBar();
@@ -227,6 +237,9 @@ void MainWindow::createMenus()
 
     viewMenu->addSeparator();
 
+    viewMenu->addAction(m_libraryDock->toggleViewAction());
+    viewMenu->addSeparator();
+
     QAction *warpAction = viewMenu->addAction(tr("Center and warp cursor on zoom"));
     warpAction->setCheckable(true);
     warpAction->setChecked(m_canvas->zoomCenterAndWarp());
@@ -239,6 +252,7 @@ void MainWindow::createStatusBar()
     statusBar()->addPermanentWidget(m_positionLabel);
 
     m_gridStepBox = new QComboBox(this);
+    m_gridStepBox->setObjectName(QStringLiteral("gridStepBox"));
     for (Coord step : gridSteps()) {
         m_gridStepBox->addItem(formatMmShort(step) + QLatin1Char(' ') + tr("mm"),
                                QVariant::fromValue<qlonglong>(step));
@@ -460,6 +474,7 @@ void MainWindow::projectChanged()
     }
     m_tabs->addTab(tr("Board"));
     m_tabs->setCurrentIndex(m_designItem->page());
+    updateLibraryPanel();
 }
 
 void MainWindow::updateTitle()
@@ -473,17 +488,22 @@ void MainWindow::updateTitle()
 
 void MainWindow::loadLibrary()
 {
-    QString error;
-    if (!AppSettings::makeUserLibraryFolders(error)) {
-        statusBar()->showMessage(error);
-        return;
-    }
     QStringList problems;
+    QString error;
+    if (!AppSettings::makeUserLibraryFolders(error))
+        problems.append(error);
     const Library builtIn = LibraryFolder::read(AppSettings::builtInLibraryFolder(), problems);
     const Library user = LibraryFolder::read(AppSettings::userLibraryFolder(), problems);
     m_library = mergeLibraries(builtIn, user);
+    updateLibraryPanel();
     if (!problems.isEmpty())
         statusBar()->showMessage(problems.first());
+}
+
+void MainWindow::updateLibraryPanel()
+{
+    const Design &design = m_document->design();
+    m_libraryPanel->setLibraries(m_library, design.library, design.project.designatorStyle);
 }
 
 void MainWindow::openLibraryFolder()

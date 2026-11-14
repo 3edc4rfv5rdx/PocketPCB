@@ -10,6 +10,7 @@ class QActionGroup;
 class QFileSystemWatcher;
 class QTimer;
 class QComboBox;
+class QDockWidget;
 class QLabel;
 class QMenu;
 class QTabBar;
@@ -19,6 +20,7 @@ namespace ppcb {
 class CanvasView;
 class DesignViewItem;
 class Document;
+class LibraryPanel;
 class LibraryViewItem;
 
 class MainWindow : public QMainWindow
@@ -62,6 +64,8 @@ public:
     QString libraryFilePath() const { return m_libraryPath; }
     LibraryViewItem *libraryItem() const { return m_libraryItem; }
 
+    LibraryPanel *libraryPanel() const { return m_libraryPanel; }
+
     // The built-in library with the user's over it, as last loaded.
     const MergedLibrary &library() const { return m_library; }
     // Reads both libraries again. What cannot be read is told in the status
@@ -99,6 +103,8 @@ private:
 
     void chooseLibraryFile();
     void openLibraryFolder();
+    // Shows the loaded libraries and the open project's in the panel.
+    void updateLibraryPanel();
     // Reads 'path' and puts it on the canvas; the common part of opening
     // and reloading.
     bool showLibraryFile(const QString &path);
@@ -123,6 +129,8 @@ private:
     QTimer *m_autosaveTimer = nullptr;
 
     MergedLibrary m_library;
+    LibraryPanel *m_libraryPanel = nullptr;
+    QDockWidget *m_libraryDock = nullptr;
 
     QFileSystemWatcher *m_libraryWatcher = nullptr;
     // Delays the reload a little: editors often save in several steps.

@@ -57,9 +57,21 @@ bool loadTranslation(QTranslator &translator, const QString &language)
     return translator.load(QStringLiteral(":/i18n/pocketpcb_%1.qm").arg(language));
 }
 
+QString currentLanguage()
+{
+    return chooseLanguage(AppSettings::language(), QLocale::system().uiLanguages());
+}
+
+QStringList nameLanguages()
+{
+    QStringList languages = {currentLanguage(), supportedLanguages().first()};
+    languages.removeDuplicates();
+    return languages;
+}
+
 QString installLanguage()
 {
-    const QString language = chooseLanguage(AppSettings::language(), QLocale::system().uiLanguages());
+    const QString language = currentLanguage();
     QTranslator *translator = new QTranslator(QCoreApplication::instance());
     if (loadTranslation(*translator, language))
         QCoreApplication::installTranslator(translator);
