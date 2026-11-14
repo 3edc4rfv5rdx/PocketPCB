@@ -60,3 +60,4 @@ Do not build, run tests or install — not even to check that it compiles. The a
 ## Small conventions
 
 - Temporary debug logging starts with `>>> ` so it can be grepped out.
+- No duplication, in code or in translations: a value, a function or a user-visible message lives in one place, and shared ones go to one common file. Qt groups `tr()` strings by class, so the same text written in two classes is two entries to translate; a message several classes need is one shared function instead.
