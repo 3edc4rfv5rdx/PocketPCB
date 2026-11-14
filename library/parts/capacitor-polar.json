@@ -2,7 +2,7 @@
   "type": "pocketpcb-part",
   "format": 1,
   "symbol": "capacitor-polar",
-  "footprints": ["capacitor-polar-2.5", "capacitor-polar-5.0"],
+  "footprints": ["capacitor-polar-2.54", "capacitor-polar-5.08"],
   "prefix": "C",
   "prefixGost": "C",
   "value": "10u",
