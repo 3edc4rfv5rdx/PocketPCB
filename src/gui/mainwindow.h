@@ -2,6 +2,7 @@
 
 #include "appsettings.h"
 #include "library.h"
+#include "librarypanel.h"
 #include "units.h"
 
 #include <QMainWindow>
@@ -49,6 +50,9 @@ public:
     // or stay. True when the project may go; always true without changes.
     bool confirmLeavingProject();
     SheetEditor *sheetEditor() const { return m_sheetEditor; }
+    // Starts placing a part from the panel on the sheet shown. False, with
+    // the reason in the status bar, when no sheet is shown.
+    bool placePart(LibraryPanel::Source source, const QString &part, const QString &footprint);
     // Shows page 'page' of the project and, when 'fit', fits the view to it.
     void showPage(int page, bool fit = true);
 

@@ -227,6 +227,76 @@ private slots:
         QVERIFY(withoutObjects(sheet, allIds()) == Sheet());
     }
 
+    void designatorsAreNumberedOn()
+    {
+        Schematic schematic;
+        schematic.sheets.append(fullSheet());
+        schematic.sheets.append(Sheet());
+        QCOMPARE(nextDesignator(schematic, QStringLiteral("R")), QStringLiteral("R2"));
+        QCOMPARE(nextDesignator(schematic, QStringLiteral("C")), QStringLiteral("C1"));
+        // A gap is filled, and every sheet counts.
+        Component c3 = schematic.sheets[0].components.at(0);
+        c3.designator = QStringLiteral("R3");
+        schematic.sheets[1].components.append(c3);
+        QCOMPARE(nextDesignator(schematic, QStringLiteral("R")), QStringLiteral("R2"));
+        Component r2 = c3;
+        r2.designator = QStringLiteral("R2");
+        schematic.sheets[1].components.append(r2);
+        QCOMPARE(nextDesignator(schematic, QStringLiteral("R")), QStringLiteral("R4"));
+        // RV1 is not an R.
+        QCOMPARE(nextDesignator(schematic, QStringLiteral("RV")), QStringLiteral("RV1"));
+
+        Part part;
+        part.prefix = QStringLiteral("D");
+        part.prefixGost = QStringLiteral("VD");
+        QCOMPARE(designatorPrefix(part, DesignatorStyle::International), QStringLiteral("D"));
+        QCOMPARE(designatorPrefix(part, DesignatorStyle::Gost), QStringLiteral("VD"));
+    }
+
+    void newComponentTakesWhatThePartSays()
+    {
+        Library library = resistorLibrary();
+        library.parts[QStringLiteral("resistor")].value = QStringLiteral("10k");
+        library.parts[QStringLiteral("resistor")].footprints = {QStringLiteral("r-7.62")};
+        library.symbols[QStringLiteral("resistor")].refAt = Point{0, -3 * MM};
+        const Component component = newComponent(library, QStringLiteral("resistor"),
+                                                 QStringLiteral("r-7.62"));
+        QVERIFY(!component.id.isNull());
+        QCOMPARE(component.value, QStringLiteral("10k"));
+        QCOMPARE(component.footprint, QStringLiteral("r-7.62"));
+        QCOMPARE(component.refAt, Point({0, -3 * MM}));
+        QVERIFY(!component.offBoard);
+        // A part without footprints stays off the board.
+        QVERIFY(newComponent(resistorLibrary(), QStringLiteral("resistor"), QString()).offBoard);
+        QVERIFY(newComponent(library, QStringLiteral("resistor"), QString()).id
+                != component.id);
+    }
+
+    void partIsCopiedIntoTheProjectOnce()
+    {
+        Library source = resistorLibrary();
+        source.parts[QStringLiteral("resistor")].footprints = {QStringLiteral("a"),
+                                                               QStringLiteral("b")};
+        source.footprints.insert(QStringLiteral("a"), Footprint());
+        Footprint b;
+        b.refAt = Point{1, 1};
+        source.footprints.insert(QStringLiteral("b"), b);
+        source.parts.insert(QStringLiteral("other"), Part());
+
+        const Library project = withPartFrom(Library(), source, QStringLiteral("resistor"));
+        QCOMPARE(project.parts.keys(), QStringList({QStringLiteral("resistor")}));
+        QCOMPARE(project.symbols.keys(), QStringList({QStringLiteral("resistor")}));
+        QCOMPARE(project.footprints.keys(), QStringList({QStringLiteral("a"), QStringLiteral("b")}));
+
+        // What the project has stays: the library changed, the project did not.
+        Library changed = source;
+        changed.symbols[QStringLiteral("resistor")].showPinNames = false;
+        changed.footprints[QStringLiteral("b")].refAt = Point{2, 2};
+        QVERIFY(withPartFrom(project, changed, QStringLiteral("resistor")) == project);
+        // A part the source lacks changes nothing.
+        QVERIFY(withPartFrom(project, source, QStringLiteral("absent")) == project);
+    }
+
     void undoAndRedoTellWhereTheStepWasMade()
     {
         Document document;

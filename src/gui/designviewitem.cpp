@@ -62,10 +62,12 @@ void DesignViewItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *op
         paintSelection(*painter, design.schematic.sheets.at(m_page));
         return;
     }
-    // A drag in progress: the sheet as it would be.
+    // A drag or a placing in progress: the sheet as it would be.
     Schematic schematic = design.schematic;
     schematic.sheets[m_page] = *preview;
-    paintSheet(*painter, schematic, design.library, m_page, design.project.titleBlock);
+    const Library *library = editor->previewLibrary();
+    paintSheet(*painter, schematic, library != nullptr ? *library : design.library, m_page,
+               design.project.titleBlock);
     paintSelection(*painter, *preview);
 }
 

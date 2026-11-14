@@ -2,11 +2,13 @@
 
 #include "language.h"
 #include "paint.h"
+#include "sheetedit.h"
 
 #include <QComboBox>
 #include <QFont>
 #include <QHBoxLayout>
 #include <QLineEdit>
+#include <QMimeData>
 #include <QPainter>
 #include <QScrollBar>
 #include <QSignalBlocker>
@@ -17,6 +19,7 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <functional>
 
 namespace ppcb {
 
@@ -27,14 +30,27 @@ namespace {
 const int PART_ROLE = Qt::UserRole;
 const int SOURCE_ROLE = Qt::UserRole + 1;
 
+const char PART_MIME_TYPE[] = "application/x-pocketpcb-part";
+
+// The list of parts, from which a part can be dragged onto a sheet.
+class PartTree : public QTreeWidget
+{
+public:
+    using QTreeWidget::QTreeWidget;
+    std::function<QMimeData *(const QTreeWidgetItem *)> makeMimeData;
+
+protected:
+    QStringList mimeTypes() const override { return {QLatin1String(PART_MIME_TYPE)}; }
+    QMimeData *mimeData(const QList<QTreeWidgetItem *> &items) const override
+    {
+        if (items.size() != 1 || !makeMimeData)
+            return nullptr;
+        return makeMimeData(items.first());
+    }
+};
+
 // Room around the drawings, as a share of the preview's size.
 const double PREVIEW_MARGIN_SHARE = 0.1;
-
-// The prefix the parts are grouped by in the given style.
-QString prefixOf(const Part &part, DesignatorStyle style)
-{
-    return style == DesignatorStyle::Gost ? part.prefixGost : part.prefix;
-}
 
 // Draws 'paint' scaled to fit 'bounds' (millimetres) into 'area' (pixels).
 template <typename Paint>
@@ -117,7 +133,16 @@ LibraryPanel::LibraryPanel(QWidget *parent)
     searchRow->addWidget(collapseButton);
     searchRow->addWidget(reloadButton);
 
-    m_tree = new QTreeWidget(this);
+    PartTree *tree = new PartTree(this);
+    tree->makeMimeData = [this](const QTreeWidgetItem *item) -> QMimeData * {
+        const QString part = item->data(0, PART_ROLE).toString();
+        if (part.isEmpty())
+            return nullptr;
+        return partMimeData(Source(item->data(0, SOURCE_ROLE).toInt()), part, footprintFor(item));
+    };
+    tree->setDragEnabled(true);
+    tree->setDragDropMode(QAbstractItemView::DragOnly);
+    m_tree = tree;
     m_tree->setHeaderHidden(true);
     m_tree->setColumnCount(1);
 
@@ -146,6 +171,11 @@ LibraryPanel::LibraryPanel(QWidget *parent)
     connect(collapseButton, &QToolButton::clicked, this,
             [this] { setAllGroupsExpanded(false); });
     connect(m_tree, &QTreeWidget::currentItemChanged, this, &LibraryPanel::showCurrentPart);
+    connect(m_tree, &QTreeWidget::itemDoubleClicked, this, [this](QTreeWidgetItem *item) {
+        const QString part = item->data(0, PART_ROLE).toString();
+        if (!part.isEmpty())
+            emit placeRequested(Source(item->data(0, SOURCE_ROLE).toInt()), part, footprintFor(item));
+    });
     connect(m_tree, &QTreeWidget::itemExpanded, this,
             [this](QTreeWidgetItem *item) { noteExpanded(item, true); });
     connect(m_tree, &QTreeWidget::itemCollapsed, this,
@@ -270,7 +300,7 @@ void LibraryPanel::addSection(const QString &title, const Library &library, Sour
     // Prefixes in order, parts by their shown name inside each.
     QMap<QString, QList<QPair<QString, QString>>> groups;
     for (auto it = library.parts.constBegin(); it != library.parts.constEnd(); ++it) {
-        groups[prefixOf(it.value(), m_style)].append(
+        groups[designatorPrefix(it.value(), m_style)].append(
             {it.value().displayName(languages, it.key()), it.key()});
     }
     for (auto group = groups.begin(); group != groups.end(); ++group) {
@@ -330,6 +360,44 @@ void LibraryPanel::applyFilter()
         }
         section->setHidden(sectionShown == 0);
     }
+}
+
+QString LibraryPanel::footprintFor(const QTreeWidgetItem *item) const
+{
+    if (item == m_tree->currentItem())
+        return m_footprintBox->currentText();
+    const Source source = Source(item->data(0, SOURCE_ROLE).toInt());
+    const Library &library = source == Source::Project ? m_project : m_library.items;
+    const Part *part = library.findPart(item->data(0, PART_ROLE).toString());
+    return part == nullptr ? QString() : part->footprints.value(0);
+}
+
+QString LibraryPanel::partMimeType()
+{
+    return QLatin1String(PART_MIME_TYPE);
+}
+
+QMimeData *LibraryPanel::partMimeData(Source source, const QString &part, const QString &footprint)
+{
+    QMimeData *data = new QMimeData;
+    const QStringList fields = {QString::number(int(source)), part, footprint};
+    data->setData(partMimeType(), fields.join(QLatin1Char('\n')).toUtf8());
+    return data;
+}
+
+bool LibraryPanel::readPartMimeData(const QMimeData *data, Source &source, QString &part,
+                                    QString &footprint)
+{
+    if (data == nullptr || !data->hasFormat(partMimeType()))
+        return false;
+    const QStringList fields = QString::fromUtf8(data->data(partMimeType())).split(QLatin1Char('\n'));
+    if (fields.size() != 3 || fields.at(1).isEmpty())
+        return false;
+    source = fields.at(0) == QString::number(int(Source::Project)) ? Source::Project
+                                                                    : Source::Library;
+    part = fields.at(1);
+    footprint = fields.at(2);
+    return true;
 }
 
 const Library &LibraryPanel::currentLibrary() const

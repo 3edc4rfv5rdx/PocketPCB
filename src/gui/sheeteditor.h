@@ -28,7 +28,7 @@ public:
     static QString sheetName(const Sheet &sheet, int index);
 
     // What is done to a selection: the name of the menu item and of the step.
-    enum class Action { Move, Rotate, Mirror, Delete };
+    enum class Action { Move, Rotate, Mirror, Delete, Place };
     static QString actionName(Action action);
 
     // The sheet being edited, or -1 when the page shown is not a sheet.
@@ -40,9 +40,22 @@ public:
     // Keeps only the ids of objects on the sheet.
     void setSelection(const QSet<ObjectId> &ids);
 
-    // What the canvas shows instead of the sheet while dragging; null when
-    // nothing is dragged.
-    const Sheet *preview() const { return m_dragging ? &m_preview : nullptr; }
+    // What the canvas shows instead of the sheet while dragging or placing;
+    // null when neither is going on.
+    const Sheet *preview() const { return m_dragging || m_placing ? &m_preview : nullptr; }
+    // The library to draw the preview with: the project's, with the part
+    // being placed; null when nothing is placed.
+    const Library *previewLibrary() const { return m_placing ? &m_placeLibrary : nullptr; }
+
+    // Placing: the part 'part' of 'source' with 'footprint' follows the
+    // cursor; every click places one more, numbered on, until cancel().
+    // R and X turn and mirror the one that follows. Does nothing when no
+    // sheet is edited or 'source' lacks the part.
+    void startPlacing(const Library &source, const QString &part, const QString &footprint);
+    void stopPlacing();
+    bool isPlacing() const { return m_placing; }
+    // Where the cursor is, on the grid: the part being placed follows it.
+    void hover(const Point &at);
     // The rectangle being drawn to choose with; empty when there is none.
     QRectF rubberBand() const { return m_rubberBanding ? m_rubberBand : QRectF(); }
 
@@ -51,7 +64,7 @@ public:
     void press(const QPointF &at, bool adding);
     void move(const QPointF &at);
     void release(const QPointF &at);
-    // Esc: a drag is called off, else the selection is dropped.
+    // Esc: placing ends, or a drag is called off, or the selection is dropped.
     void cancel();
 
     void selectAll();
@@ -69,6 +82,9 @@ private:
     // The grid point things are turned and mirrored about: a single
     // component's own point, else the middle of the selection.
     Point selectionCenter() const;
+    // Builds the preview of the part following the cursor, numbered on.
+    void updateGhost();
+    void placeGhost();
     // Makes 'edited' the sheet as one step of the history named 'action'.
     void apply(const QString &action, const Sheet &edited);
     // "Move R1, C2 (Sheet 1)": the step's name in the Edit menu.
@@ -95,6 +111,13 @@ private:
 
     bool m_rubberBanding = false;
     QRectF m_rubberBand;
+
+    // Placing: the part, where it comes from, and the next one to place.
+    bool m_placing = false;
+    Library m_placeSource;
+    QString m_placePart;
+    Component m_ghost;
+    Library m_placeLibrary;
 };
 
 } // namespace ppcb

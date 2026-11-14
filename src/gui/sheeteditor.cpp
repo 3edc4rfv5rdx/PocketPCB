@@ -30,6 +30,7 @@ SheetEditor::SheetEditor(Document *document, CanvasView *canvas, QObject *parent
 void SheetEditor::setSheet(int sheet)
 {
     m_sheet = sheet;
+    m_placing = false;
     m_selection.clear();
     m_pressed = false;
     m_dragging = false;
@@ -78,6 +79,11 @@ void SheetEditor::press(const QPointF &at, bool adding)
 {
     if (currentSheet() == nullptr)
         return;
+    if (m_placing) {
+        hover(snapped(at));
+        placeGhost();
+        return;
+    }
     m_pressed = true;
     m_pressAt = at;
     m_pressAdding = adding;
@@ -104,6 +110,10 @@ void SheetEditor::press(const QPointF &at, bool adding)
 void SheetEditor::move(const QPointF &at)
 {
     const Sheet *sheet = currentSheet();
+    if (m_placing) {
+        hover(snapped(at));
+        return;
+    }
     if (!m_pressed || sheet == nullptr)
         return;
     if (!m_dragging && !m_rubberBanding) {
@@ -126,6 +136,8 @@ void SheetEditor::move(const QPointF &at)
 
 void SheetEditor::release(const QPointF &at)
 {
+    if (m_placing)
+        return;
     move(at);
     if (m_dragging && m_dragDelta != Point()) {
         const Sheet moved = m_preview;
@@ -146,6 +158,10 @@ void SheetEditor::release(const QPointF &at)
 
 void SheetEditor::cancel()
 {
+    if (m_placing) {
+        stopPlacing();
+        return;
+    }
     if (m_dragging || m_rubberBanding) {
         m_dragging = false;
         m_rubberBanding = false;
@@ -178,6 +194,13 @@ Point SheetEditor::selectionCenter() const
 
 void SheetEditor::rotateSelection()
 {
+    if (m_placing) {
+        Sheet ghost;
+        ghost.components.append(m_ghost);
+        m_ghost = rotatedObjects(ghost, {m_ghost.id}, m_ghost.at).components.first();
+        updateGhost();
+        return;
+    }
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr || m_selection.isEmpty())
         return;
@@ -186,6 +209,13 @@ void SheetEditor::rotateSelection()
 
 void SheetEditor::mirrorSelection()
 {
+    if (m_placing) {
+        Sheet ghost;
+        ghost.components.append(m_ghost);
+        m_ghost = mirroredObjects(ghost, {m_ghost.id}, m_ghost.at).components.first();
+        updateGhost();
+        return;
+    }
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr || m_selection.isEmpty())
         return;
@@ -205,6 +235,73 @@ void SheetEditor::deleteSelection()
     m_selection.clear();
     m_document->change(name, design, m_sheet, deleted);
     emit changed();
+}
+
+void SheetEditor::startPlacing(const Library &source, const QString &part,
+                               const QString &footprint)
+{
+    if (currentSheet() == nullptr || source.findPart(part) == nullptr)
+        return;
+    m_placing = true;
+    m_dragging = false;
+    m_rubberBanding = false;
+    m_pressed = false;
+    m_selection.clear();
+    m_placeSource = source;
+    m_placePart = part;
+    const Point at = m_ghost.at;
+    m_ghost = newComponent(source, part, footprint);
+    m_ghost.at = at;
+    updateGhost();
+}
+
+void SheetEditor::stopPlacing()
+{
+    m_placing = false;
+    emit changed();
+}
+
+void SheetEditor::hover(const Point &at)
+{
+    if (!m_placing || m_ghost.at == at)
+        return;
+    m_ghost.at = at;
+    updateGhost();
+}
+
+void SheetEditor::updateGhost()
+{
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr) {
+        m_placing = false;
+        emit changed();
+        return;
+    }
+    const Design &design = m_document->design();
+    m_placeLibrary = withPartFrom(design.library, m_placeSource, m_placePart);
+    // Numbered as it would be if placed now: the project's own part says
+    // the prefix.
+    const Part *part = m_placeLibrary.findPart(m_placePart);
+    m_ghost.designator =
+        nextDesignator(design.schematic, designatorPrefix(*part, design.project.designatorStyle));
+    m_preview = *sheet;
+    m_preview.components.append(m_ghost);
+    emit changed();
+}
+
+void SheetEditor::placeGhost()
+{
+    Design design = m_document->design();
+    design.library = m_placeLibrary;
+    design.schematic.sheets[m_sheet].components.append(m_ghost);
+    const QString name = actionName(Action::Place) + QLatin1Char(' ') + m_ghost.designator
+                         + QStringLiteral(" (")
+                         + sheetName(design.schematic.sheets.at(m_sheet), m_sheet)
+                         + QLatin1Char(')');
+    m_document->change(name, design, m_sheet, {m_ghost.id});
+    // The next one: a new object, numbered on, turned the same way.
+    m_ghost.id = newObjectId();
+    updateGhost();
 }
 
 void SheetEditor::apply(const QString &action, const Sheet &edited)
@@ -252,6 +349,8 @@ QString SheetEditor::actionName(Action action)
         return tr("Mirror");
     case Action::Delete:
         return tr("Delete");
+    case Action::Place:
+        return tr("Place");
     }
     return QString();
 }

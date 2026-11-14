@@ -6,6 +6,7 @@
 #include <QWidget>
 
 class QComboBox;
+class QMimeData;
 class QLineEdit;
 class QTreeWidget;
 class QTreeWidgetItem;
@@ -41,6 +42,7 @@ class LibraryPanel : public QWidget
 public:
     // Where a part in the list comes from.
     enum class Source { Library, Project };
+    Q_ENUM(Source)
 
     explicit LibraryPanel(QWidget *parent = nullptr);
 
@@ -63,6 +65,14 @@ public:
     QString currentPart() const;
     Source currentSource() const;
 
+    // A part dragged out of the list: its source, its name and the
+    // footprint chosen for it.
+    static QString partMimeType();
+    static QMimeData *partMimeData(Source source, const QString &part, const QString &footprint);
+    // False when 'data' holds no part.
+    static bool readPartMimeData(const QMimeData *data, Source &source, QString &part,
+                                 QString &footprint);
+
     QTreeWidget *tree() const { return m_tree; }
     PartPreview *preview() const { return m_preview; }
     QComboBox *footprintBox() const { return m_footprintBox; }
@@ -70,6 +80,9 @@ public:
 signals:
     // The reload button was pressed: the libraries should be read again.
     void reloadRequested();
+    // A part was double-clicked: it is to be placed on the sheet.
+    void placeRequested(ppcb::LibraryPanel::Source source, const QString &part,
+                        const QString &footprint);
 
 private:
     void rebuild();
@@ -82,6 +95,9 @@ private:
     void showCurrentFootprint();
     // The library the chosen part comes from.
     const Library &currentLibrary() const;
+    // The footprint a part item is placed with: the one chosen below the
+    // list for the current part, else the part's first.
+    QString footprintFor(const QTreeWidgetItem *item) const;
     // Notes a group the user opened or closed, while no search is on.
     void noteExpanded(QTreeWidgetItem *item, bool expanded);
     // The key a group is remembered by: its section and its prefix.

@@ -597,6 +597,55 @@ private slots:
         QCOMPARE(editor->sheet(), -1);
     }
 
+    void partsArePlacedUntilEsc()
+    {
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QVERIFY(window.openProject(QStringLiteral(PPCB_SOURCE_DIR "/examples/demo/demo.ppcb")));
+        SheetEditor *editor = window.sheetEditor();
+        const auto components = [&window]() {
+            return window.document()->design().schematic.sheets.at(0).components;
+        };
+        const int before = int(components().size());
+
+        // A capacitor the project does not have yet: it is copied in.
+        QVERIFY(window.placePart(LibraryPanel::Source::Library, QStringLiteral("capacitor"),
+                                 QStringLiteral("capacitor-5.08")));
+        QVERIFY(editor->isPlacing());
+        QVERIFY(editor->preview() != nullptr);
+        editor->hover(Point{mmToNm(50.8), mmToNm(50.8)});
+        editor->press(QPointF(50.8, 50.8), false);
+        window.findChild<QAction *>(QStringLiteral("actionRotate"))->trigger();
+        editor->press(QPointF(60.96, 50.8), false);
+        QVERIFY(editor->isPlacing());
+        window.findChild<QAction *>(QStringLiteral("actionDeselect"))->trigger();
+        QVERIFY(!editor->isPlacing());
+
+        QCOMPARE(int(components().size()), before + 2);
+        const Component first = components().at(before);
+        const Component second = components().at(before + 1);
+        QCOMPARE(first.designator, QStringLiteral("C1"));
+        QCOMPARE(first.footprint, QStringLiteral("capacitor-5.08"));
+        QCOMPARE(first.at, Point({mmToNm(50.8), mmToNm(50.8)}));
+        QCOMPARE(first.rotation, 0);
+        QCOMPARE(second.designator, QStringLiteral("C2"));
+        QCOMPARE(second.rotation, 90);
+        QVERIFY(first.id != second.id);
+        const Library &project = window.document()->design().library;
+        QVERIFY(project.findPart(QStringLiteral("capacitor")) != nullptr);
+        QVERIFY(project.findFootprint(QStringLiteral("capacitor-2.54")) != nullptr);
+
+        // Each one is a step of its own.
+        window.document()->undoStack()->undo();
+        QCOMPARE(int(components().size()), before + 1);
+
+        // Nothing is placed on the board.
+        window.showPage(window.designItem()->boardPage());
+        QVERIFY(!window.placePart(LibraryPanel::Source::Library, QStringLiteral("capacitor"),
+                                  QStringLiteral("capacitor-5.08")));
+    }
+
     void gridStepIsKeptInTheProject()
     {
         MainWindow window;

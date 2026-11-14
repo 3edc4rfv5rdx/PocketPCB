@@ -25,6 +25,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QMimeData>
 #include <QShowEvent>
 #include <QSignalBlocker>
 #include <QStatusBar>
@@ -80,6 +81,28 @@ MainWindow::MainWindow(QWidget *parent)
     m_designItem->setEditor(m_sheetEditor);
     connect(m_sheetEditor, &SheetEditor::changed, this, [this] { m_designItem->update(); });
     connect(m_document, &Document::stepApplied, this, &MainWindow::showStep);
+    // The part being placed follows the cursor.
+    connect(m_canvas, &CanvasView::cursorMoved, m_sheetEditor,
+            [this](Coord x, Coord y) { m_sheetEditor->hover(Point{x, y}); });
+    // A part dragged from the panel follows the cursor too, and a drop
+    // places it once.
+    m_canvas->setDropType(LibraryPanel::partMimeType());
+    connect(m_canvas, &CanvasView::dragEntered, this, [this](const QByteArray &bytes) {
+        QMimeData data;
+        data.setData(LibraryPanel::partMimeType(), bytes);
+        LibraryPanel::Source source;
+        QString part;
+        QString footprint;
+        if (LibraryPanel::readPartMimeData(&data, source, part, footprint))
+            placePart(source, part, footprint);
+    });
+    connect(m_canvas, &CanvasView::dragLeft, m_sheetEditor, &SheetEditor::stopPlacing);
+    connect(m_canvas, &CanvasView::dropped, this, [this](const QPointF &at) {
+        if (!m_sheetEditor->isPlacing())
+            return;
+        m_sheetEditor->press(at, false);
+        m_sheetEditor->stopPlacing();
+    });
     connect(m_document, &Document::designChanged, this, &MainWindow::projectChanged);
     connect(m_document, &Document::modifiedChanged, this, &MainWindow::updateTitle);
     // 'currentChanged' covers the keyboard; 'tabBarClicked' adds the click
@@ -108,6 +131,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_libraryDock->setWidget(m_libraryPanel);
     addDockWidget(Qt::RightDockWidgetArea, m_libraryDock);
     connect(m_libraryPanel, &LibraryPanel::reloadRequested, this, &MainWindow::loadLibrary);
+    connect(m_libraryPanel, &LibraryPanel::placeRequested, this, &MainWindow::placePart);
 
     createMenus();
     createStatusBar();
@@ -570,6 +594,21 @@ void MainWindow::loadLibrary()
     updateLibraryPanel();
     if (!problems.isEmpty())
         statusBar()->showMessage(problems.first());
+}
+
+bool MainWindow::placePart(LibraryPanel::Source source, const QString &part,
+                           const QString &footprint)
+{
+    if (!m_designItem->isVisible() || m_sheetEditor->sheet() < 0) {
+        statusBar()->showMessage(tr("Open a sheet to place parts on"));
+        return false;
+    }
+    const Library &library =
+        source == LibraryPanel::Source::Project ? m_document->design().library : m_library.items;
+    m_sheetEditor->startPlacing(library, part, footprint);
+    m_sheetEditor->hover(Point{m_canvas->cursorX(), m_canvas->cursorY()});
+    m_canvas->setFocus();
+    return m_sheetEditor->isPlacing();
 }
 
 void MainWindow::updateLibraryPanel()

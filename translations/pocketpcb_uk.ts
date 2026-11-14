@@ -476,6 +476,10 @@
         <source>Grid step</source>
         <translation>Крок сітки</translation>
     </message>
+    <message>
+        <source>Open a sheet to place parts on</source>
+        <translation>Відкрийте аркуш, щоб ставити на нього деталі</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>
@@ -502,6 +506,10 @@
     <message>
         <source>Sheet %1</source>
         <translation>Аркуш %1</translation>
+    </message>
+    <message>
+        <source>Place</source>
+        <translation>Поставити</translation>
     </message>
 </context>
 <context>

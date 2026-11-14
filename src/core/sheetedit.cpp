@@ -217,6 +217,67 @@ Sheet mirroredObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point
     return transformed(sheet, ids, transform);
 }
 
+QString designatorPrefix(const Part &part, DesignatorStyle style)
+{
+    return style == DesignatorStyle::Gost ? part.prefixGost : part.prefix;
+}
+
+QString nextDesignator(const Schematic &schematic, const QString &prefix)
+{
+    QSet<int> taken;
+    for (const Sheet &sheet : schematic.sheets) {
+        for (const Component &component : sheet.components) {
+            if (!component.designator.startsWith(prefix))
+                continue;
+            bool ok = false;
+            const int number = component.designator.mid(prefix.size()).toInt(&ok);
+            // "R1" is taken for "R", but "RV1" is not.
+            if (ok && number > 0 && component.designator == prefix + QString::number(number))
+                taken.insert(number);
+        }
+    }
+    int number = 1;
+    while (taken.contains(number))
+        ++number;
+    return prefix + QString::number(number);
+}
+
+Component newComponent(const Library &library, const QString &partName, const QString &footprint)
+{
+    Component component;
+    component.id = newObjectId();
+    component.part = partName;
+    component.footprint = footprint;
+    if (const Part *part = library.findPart(partName)) {
+        component.value = part->value;
+        component.offBoard = part->footprints.isEmpty();
+    }
+    if (const Symbol *symbol = library.findSymbolOfPart(partName)) {
+        component.refAt = symbol->refAt;
+        component.valueAt = symbol->valueAt;
+    }
+    return component;
+}
+
+Library withPartFrom(const Library &project, const Library &source, const QString &partName)
+{
+    Library result = project;
+    const Part *part = source.findPart(partName);
+    if (part == nullptr)
+        return result;
+    if (!result.parts.contains(partName))
+        result.parts.insert(partName, *part);
+    // The part as the project has it names what else it needs.
+    const Part &kept = result.parts.value(partName);
+    if (!result.symbols.contains(kept.symbol) && source.symbols.contains(kept.symbol))
+        result.symbols.insert(kept.symbol, source.symbols.value(kept.symbol));
+    for (const QString &footprint : kept.footprints) {
+        if (!result.footprints.contains(footprint) && source.footprints.contains(footprint))
+            result.footprints.insert(footprint, source.footprints.value(footprint));
+    }
+    return result;
+}
+
 Sheet withoutObjects(const Sheet &sheet, const QSet<ObjectId> &ids)
 {
     Sheet result = sheet;
