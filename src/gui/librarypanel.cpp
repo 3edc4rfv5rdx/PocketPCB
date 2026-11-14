@@ -8,6 +8,7 @@
 #include <QHBoxLayout>
 #include <QLineEdit>
 #include <QPainter>
+#include <QScrollBar>
 #include <QSignalBlocker>
 #include <QSplitter>
 #include <QToolButton>
@@ -131,6 +132,10 @@ LibraryPanel::LibraryPanel(QWidget *parent)
     connect(m_search, &QLineEdit::textChanged, this, &LibraryPanel::applyFilter);
     connect(reloadButton, &QToolButton::clicked, this, &LibraryPanel::reloadRequested);
     connect(m_tree, &QTreeWidget::currentItemChanged, this, &LibraryPanel::showCurrentPart);
+    connect(m_tree, &QTreeWidget::itemExpanded, this,
+            [this](QTreeWidgetItem *item) { noteExpanded(item, true); });
+    connect(m_tree, &QTreeWidget::itemCollapsed, this,
+            [this](QTreeWidgetItem *item) { noteExpanded(item, false); });
     connect(m_footprintBox, &QComboBox::currentIndexChanged, this,
             &LibraryPanel::showCurrentFootprint);
     showCurrentPart();
@@ -178,6 +183,7 @@ void LibraryPanel::rebuild()
     // The chosen part is kept across the rebuild when it is still there.
     const QString part = currentPart();
     const Source source = currentSource();
+    const int scroll = m_tree->verticalScrollBar()->value();
 
     m_tree->clear();
     addSection(libraryTitle(), m_library.items, Source::Library, m_library.replacedParts);
@@ -193,6 +199,29 @@ void LibraryPanel::rebuild()
     }
     applyFilter();
     showCurrentPart();
+    // Laid out now, so that the scroll bar has its range back.
+    m_tree->doItemsLayout();
+    m_tree->verticalScrollBar()->setValue(scroll);
+}
+
+QString LibraryPanel::groupKey(const QTreeWidgetItem *group)
+{
+    return QString::number(group->parent()->data(0, SOURCE_ROLE).toInt()) + QLatin1Char('/')
+           + group->text(0);
+}
+
+void LibraryPanel::noteExpanded(QTreeWidgetItem *item, bool expanded)
+{
+    // Only groups, and only the user's own choice: a search opens groups by
+    // itself.
+    if (item->parent() == nullptr || !item->data(0, PART_ROLE).toString().isEmpty()
+        || !m_search->text().trimmed().isEmpty()) {
+        return;
+    }
+    if (expanded)
+        m_expandedGroups.insert(groupKey(item));
+    else
+        m_expandedGroups.remove(groupKey(item));
 }
 
 void LibraryPanel::addSection(const QString &title, const Library &library, Source source,
@@ -257,8 +286,11 @@ void LibraryPanel::applyFilter()
                 groupShown += shown ? 1 : 0;
             }
             group->setHidden(groupShown == 0);
-            // While searching, every group that has something is open.
-            group->setExpanded(!text.isEmpty() && groupShown > 0);
+            // While searching, every group that has something is open;
+            // without a search, those the user keeps open.
+            const QSignalBlocker blocker(m_tree);
+            group->setExpanded(text.isEmpty() ? m_expandedGroups.contains(groupKey(group))
+                                              : groupShown > 0);
             sectionShown += groupShown;
         }
         section->setHidden(sectionShown == 0);

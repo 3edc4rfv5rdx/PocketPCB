@@ -461,43 +461,66 @@ private slots:
 
     void libraryPanelShowsTheParts()
     {
-        // A part of the user's own, with a GOST prefix of its own.
+        // A part of the user's own, under a prefix of its own.
         const QDir user(AppSettings::userLibraryFolder());
         QVERIFY(user.mkpath(QStringLiteral("parts")));
-        LibraryItem diode;
-        diode.kind = LibraryKind::Part;
-        diode.part.symbol = QStringLiteral("resistor");
-        diode.part.prefix = QStringLiteral("D");
-        diode.part.prefixGost = QStringLiteral("VD");
-        diode.part.name.insert(QStringLiteral("en"), QStringLiteral("Diode"));
+        const QString ownPath = user.filePath(QStringLiteral("parts/test-own.json"));
+        const QString secondPath = user.filePath(QStringLiteral("parts/test-second.json"));
+        LibraryItem own;
+        own.kind = LibraryKind::Part;
+        own.part.symbol = QStringLiteral("resistor");
+        own.part.prefix = QStringLiteral("TST");
+        own.part.prefixGost = QStringLiteral("TSTG");
+        own.part.name.insert(QStringLiteral("en"), QStringLiteral("Own part"));
         QString error;
-        QVERIFY2(LibraryFile::write(user.filePath(QStringLiteral("parts/diode.json")), diode, error),
-                 qPrintable(error));
+        QVERIFY2(LibraryFile::write(ownPath, own, error), qPrintable(error));
 
         MainWindow window;
         LibraryPanel *panel = window.libraryPanel();
         QTreeWidget *tree = panel->tree();
         QCOMPARE(tree->topLevelItemCount(), 1);
-        const QTreeWidgetItem *section = tree->topLevelItem(0);
-        QStringList groups;
-        for (int i = 0; i < section->childCount(); ++i)
-            groups.append(section->child(i)->text(0));
-        QCOMPARE(groups, QStringList({QStringLiteral("D"), QStringLiteral("R")}));
+        // The group of a prefix in the first section, as it is now.
+        const auto group = [tree](const QString &prefix) -> QTreeWidgetItem * {
+            QTreeWidgetItem *section = tree->topLevelItem(0);
+            for (int i = 0; i < section->childCount(); ++i) {
+                if (section->child(i)->text(0) == prefix)
+                    return section->child(i);
+            }
+            return nullptr;
+        };
+        QVERIFY(group(QStringLiteral("TST")) != nullptr);
+        QVERIFY(group(QStringLiteral("R")) != nullptr);
 
         // Choosing a part draws it, with its first footprint.
-        // Its shown name is in the interface language, which follows the system.
-        const QTreeWidgetItem *resistor = section->child(1)->child(0);
-        tree->setCurrentItem(const_cast<QTreeWidgetItem *>(resistor));
+        tree->setCurrentItem(group(QStringLiteral("R"))->child(0));
         QCOMPARE(panel->currentPart(), QStringLiteral("resistor"));
         QCOMPARE(panel->footprintBox()->currentText(), QStringLiteral("resistor-10.16"));
 
-        // The search hides what does not match: by name, by prefix.
-        panel->setFilter(QStringLiteral("diod"));
-        QVERIFY(section->child(1)->isHidden());
-        QVERIFY(!section->child(0)->isHidden());
-        panel->setFilter(QStringLiteral("r"));
-        QVERIFY(!section->child(1)->isHidden());
+        // A group the user opened stays open when the library is read again
+        // with something new in it, and after a search.
+        tree->expandItem(group(QStringLiteral("R")));
+        LibraryItem second = own;
+        second.part.name.insert(QStringLiteral("en"), QStringLiteral("Second part"));
+        QVERIFY2(LibraryFile::write(secondPath, second, error), qPrintable(error));
+        window.loadLibrary();
+        QCOMPARE(group(QStringLiteral("TST"))->childCount(), 2);
+        QVERIFY(group(QStringLiteral("R"))->isExpanded());
+        QVERIFY(!group(QStringLiteral("TST"))->isExpanded());
+        QCOMPARE(panel->currentPart(), QStringLiteral("resistor"));
+        panel->setFilter(QStringLiteral("second"));
+        QVERIFY(group(QStringLiteral("TST"))->isExpanded());
+        QVERIFY(group(QStringLiteral("R"))->isHidden());
         panel->setFilter(QString());
+        QVERIFY(group(QStringLiteral("R"))->isExpanded());
+        QVERIFY(!group(QStringLiteral("TST"))->isExpanded());
+
+        // The search goes by prefix too.
+        panel->setFilter(QStringLiteral("tst"));
+        QVERIFY(!group(QStringLiteral("TST"))->isHidden());
+        QVERIFY(group(QStringLiteral("R"))->isHidden());
+        panel->setFilter(QString());
+        QVERIFY(QFile::remove(ownPath));
+        QVERIFY(QFile::remove(secondPath));
 
         // The open project's parts are a section of their own.
         QVERIFY(window.openProject(QStringLiteral(PPCB_SOURCE_DIR "/examples/demo/demo.ppcb")));

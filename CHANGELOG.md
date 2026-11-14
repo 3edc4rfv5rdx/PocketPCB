@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Library panel keeps the groups the user opened, the chosen part and the scroll when the library is read again
 - I: Library gets a diode, an LED, NPN and PNP transistors, JFETs and MOSFETs with TO-92 and TO-220 footprints
 - I: Library gets a capacitor, an electrolytic capacitor, a trimmer resistor and an inductor
 - N: Library panel on the right: parts of the library and of the open project grouped by prefix, a search field and a drawing of the chosen part

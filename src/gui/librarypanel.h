@@ -78,11 +78,18 @@ private:
     void showCurrentFootprint();
     // The library the chosen part comes from.
     const Library &currentLibrary() const;
+    // Notes a group the user opened or closed, while no search is on.
+    void noteExpanded(QTreeWidgetItem *item, bool expanded);
+    // The key a group is remembered by: its section and its prefix.
+    static QString groupKey(const QTreeWidgetItem *group);
 
     MergedLibrary m_library;
     Library m_project;
     DesignatorStyle m_style = DesignatorStyle::International;
     bool m_hasLibraries = false;
+    // The groups the user keeps open, by groupKey(); they stay open when
+    // the list is built again and when a search ends.
+    QSet<QString> m_expandedGroups;
 
     QLineEdit *m_search = nullptr;
     QTreeWidget *m_tree = nullptr;
