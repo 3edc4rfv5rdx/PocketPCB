@@ -5,7 +5,7 @@
   "footprints": ["crystal-hc49"],
   "prefix": "Y",
   "prefixGost": "ZQ",
-  "value": "16MHz",
+  "value": "",
   "connector": false,
   "name": {"en": "Crystal", "uk": "Кварцовий резонатор", "ru": "Кварцевый резонатор"}
 }

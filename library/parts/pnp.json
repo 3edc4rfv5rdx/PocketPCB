@@ -5,7 +5,7 @@
   "footprints": ["to92-cbe", "to92-ebc", "to220-bce"],
   "prefix": "Q",
   "prefixGost": "VT",
-  "value": "BC557",
+  "value": "",
   "connector": false,
   "name": {"en": "PNP transistor", "uk": "Транзистор PNP", "ru": "Транзистор PNP"}
 }

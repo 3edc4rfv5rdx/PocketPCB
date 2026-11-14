@@ -5,7 +5,7 @@
   "footprints": [],
   "prefix": "RV",
   "prefixGost": "R",
-  "value": "10k",
+  "value": "",
   "connector": false,
   "name": {"en": "Potentiometer", "uk": "Потенціометр", "ru": "Потенциометр"}
 }

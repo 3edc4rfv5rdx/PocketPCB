@@ -5,7 +5,7 @@
   "footprints": ["trimmer-2.54"],
   "prefix": "RV",
   "prefixGost": "R",
-  "value": "10k",
+  "value": "",
   "connector": false,
   "name": {"en": "Trimmer resistor", "uk": "Підстроювальний резистор", "ru": "Подстроечный резистор"}
 }

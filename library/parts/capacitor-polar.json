@@ -5,7 +5,7 @@
   "footprints": ["capacitor-polar-2.54", "capacitor-polar-5.08"],
   "prefix": "C",
   "prefixGost": "C",
-  "value": "10u",
+  "value": "",
   "connector": false,
   "name": {"en": "Electrolytic capacitor", "uk": "Електролітичний конденсатор", "ru": "Электролитический конденсатор"}
 }

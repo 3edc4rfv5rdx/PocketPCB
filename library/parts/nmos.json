@@ -5,7 +5,7 @@
   "footprints": ["to92-sgd", "to220-gds"],
   "prefix": "Q",
   "prefixGost": "VT",
-  "value": "2N7000",
+  "value": "",
   "connector": false,
   "name": {"en": "N-channel MOSFET", "uk": "MOSFET, канал N", "ru": "MOSFET, канал N"}
 }

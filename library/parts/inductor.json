@@ -5,7 +5,7 @@
   "footprints": ["resistor-10.16", "resistor-vertical"],
   "prefix": "L",
   "prefixGost": "L",
-  "value": "100u",
+  "value": "",
   "connector": false,
   "name": {"en": "Inductor", "uk": "Котушка індуктивності", "ru": "Катушка индуктивности"}
 }

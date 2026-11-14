@@ -5,7 +5,7 @@
   "footprints": ["resistor-10.16", "resistor-vertical"],
   "prefix": "R",
   "prefixGost": "R",
-  "value": "10k",
+  "value": "",
   "connector": false,
   "name": {"en": "Resistor", "uk": "Резистор", "ru": "Резистор"}
 }

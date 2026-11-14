@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Parts in the library have no value until one is typed in
 - N: Parts are placed from the library panel by a double click, one after another until Esc, or by dragging one onto the sheet; the part is copied into the project and numbered on
 - N: Sheet editing: choose with a click, Ctrl and a click or a rectangle, drag along the grid, turn (R), mirror (X) and delete; Undo goes to the step's sheet and chooses what it touched, and the project keeps its grid steps
 ## v0.2.23 (2026-11-14)

@@ -5,7 +5,7 @@
   "footprints": ["capacitor-2.54", "capacitor-5.08"],
   "prefix": "C",
   "prefixGost": "C",
-  "value": "100n",
+  "value": "",
   "connector": false,
   "name": {"en": "Capacitor", "uk": "Конденсатор", "ru": "Конденсатор"}
 }

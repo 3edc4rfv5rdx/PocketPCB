@@ -5,7 +5,7 @@
   "footprints": [],
   "prefix": "BT",
   "prefixGost": "GB",
-  "value": "9V",
+  "value": "",
   "connector": false,
   "name": {"en": "Battery", "uk": "Батарея", "ru": "Батарея"}
 }
