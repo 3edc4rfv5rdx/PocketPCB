@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "toggle",
+  "footprints": [],
+  "prefix": "SW",
+  "prefixGost": "SA",
+  "value": "",
+  "connector": false,
+  "name": {"en": "Toggle switch", "uk": "Тумблер", "ru": "Тумблер"}
+}

@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "jack-trs",
+  "footprints": [],
+  "prefix": "J",
+  "prefixGost": "XS",
+  "value": "3.5",
+  "connector": false,
+  "name": {"en": "Audio jack 3.5", "uk": "Аудіогніздо 3.5", "ru": "Аудиогнездо 3.5"}
+}

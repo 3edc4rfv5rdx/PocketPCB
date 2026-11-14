@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "potentiometer",
+  "footprints": [],
+  "prefix": "RV",
+  "prefixGost": "R",
+  "value": "10k",
+  "connector": false,
+  "name": {"en": "Potentiometer", "uk": "Потенціометр", "ru": "Потенциометр"}
+}

@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "jack-trs",
+  "footprints": [],
+  "prefix": "J",
+  "prefixGost": "XS",
+  "value": "6.3",
+  "connector": false,
+  "name": {"en": "Audio jack 6.3", "uk": "Аудіогніздо 6.3", "ru": "Аудиогнездо 6.3"}
+}

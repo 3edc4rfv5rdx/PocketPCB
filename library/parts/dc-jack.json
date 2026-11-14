@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "dc-jack",
+  "footprints": [],
+  "prefix": "J",
+  "prefixGost": "XS",
+  "value": "",
+  "connector": false,
+  "name": {"en": "DC power jack", "uk": "Гніздо живлення", "ru": "Гнездо питания"}
+}

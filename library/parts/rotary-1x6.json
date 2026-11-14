@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "rotary-1x6",
+  "footprints": [],
+  "prefix": "SW",
+  "prefixGost": "SA",
+  "value": "",
+  "connector": false,
+  "name": {"en": "Rotary switch, 6 positions", "uk": "Галетний перемикач, 6 положень", "ru": "Галетный переключатель, 6 положений"}
+}

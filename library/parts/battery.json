@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "battery",
+  "footprints": [],
+  "prefix": "BT",
+  "prefixGost": "GB",
+  "value": "9V",
+  "connector": false,
+  "name": {"en": "Battery", "uk": "Батарея", "ru": "Батарея"}
+}

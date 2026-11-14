@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- I: Library gets parts that stay off the board: a power jack, audio jacks, a toggle and a rotary switch, a potentiometer, a speaker and a battery
 - I: Library gets DIP chips from 8 to 40 pins, a crystal, a fuse, a push button, a buzzer and a thyristor
 - I: Library gets pin headers 1×1 to 1×10, screw terminals for 2 and 3 wires and a wire pad
 - F: Electrolytic capacitor footprints have their pads on the 2.54 grid

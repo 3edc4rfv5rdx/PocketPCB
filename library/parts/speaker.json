@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "speaker",
+  "footprints": [],
+  "prefix": "LS",
+  "prefixGost": "BA",
+  "value": "8R",
+  "connector": false,
+  "name": {"en": "Speaker", "uk": "Гучномовець", "ru": "Динамик"}
+}
