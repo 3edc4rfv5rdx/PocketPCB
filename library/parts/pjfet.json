@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "pjfet",
+  "footprints": ["to92-dsg"],
+  "prefix": "Q",
+  "prefixGost": "VT",
+  "value": "2N5460",
+  "connector": false,
+  "name": {"en": "P-channel JFET", "uk": "Польовий транзистор з p-n переходом, канал P", "ru": "Полевой транзистор с p-n переходом, канал P"}
+}

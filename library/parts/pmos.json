@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "pmos",
+  "footprints": ["to92-sgd", "to220-gds"],
+  "prefix": "Q",
+  "prefixGost": "VT",
+  "value": "IRF9540",
+  "connector": false,
+  "name": {"en": "P-channel MOSFET", "uk": "MOSFET, канал P", "ru": "MOSFET, канал P"}
+}

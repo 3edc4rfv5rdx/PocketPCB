@@ -1,0 +1,14 @@
+{
+  "type": "pocketpcb-footprint",
+  "format": 1,
+  "pads": [
+    {"number": "A", "at": [-1.27, 0], "shape": "circle", "size": [1.6, 1.6], "hole": 0.8},
+    {"number": "K", "at": [1.27, 0], "shape": "rect", "size": [1.6, 1.6], "hole": 0.8}
+  ],
+  "graphics": [
+    {"kind": "arc", "center": [0, 0], "radius": 1.9, "start": 32, "span": 296},
+    {"kind": "line", "from": [1.615, -1.001], "to": [1.615, 1.001]}
+  ],
+  "refAt": [0, -2.9],
+  "valueAt": [0, 2.9]
+}

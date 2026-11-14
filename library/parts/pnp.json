@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "pnp",
+  "footprints": ["to92-cbe", "to92-ebc", "to220-bce"],
+  "prefix": "Q",
+  "prefixGost": "VT",
+  "value": "BC557",
+  "connector": false,
+  "name": {"en": "PNP transistor", "uk": "Транзистор PNP", "ru": "Транзистор PNP"}
+}

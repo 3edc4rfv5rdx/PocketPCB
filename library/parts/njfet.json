@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "njfet",
+  "footprints": ["to92-dsg"],
+  "prefix": "Q",
+  "prefixGost": "VT",
+  "value": "2N5457",
+  "connector": false,
+  "name": {"en": "N-channel JFET", "uk": "Польовий транзистор з p-n переходом, канал N", "ru": "Полевой транзистор с p-n переходом, канал N"}
+}

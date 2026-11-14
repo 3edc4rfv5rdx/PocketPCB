@@ -1,0 +1,20 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "circle", "center": [1.27, 0], "radius": 3.3},
+    {"kind": "line", "from": [0, -1.905], "to": [0, 1.905], "width": 0.3},
+    {"kind": "line", "from": [0, -0.762], "to": [2.54, -2.54]},
+    {"kind": "line", "from": [0, 0.762], "to": [2.54, 2.54]},
+    {"kind": "polygon", "points": [[2.159, 2.273], [1.221, 2.044], [1.622, 1.47]], "filled": true}
+  ],
+  "pins": [
+    {"number": "B", "name": "B", "at": [-5.08, 0], "side": "left", "length": 5.08},
+    {"number": "C", "name": "C", "at": [2.54, -5.08], "side": "up", "length": 2.54},
+    {"number": "E", "name": "E", "at": [2.54, 5.08], "side": "down", "length": 2.54}
+  ],
+  "refAt": [5.08, -1.27],
+  "valueAt": [5.08, 1.27],
+  "showPinNumbers": false,
+  "showPinNames": false
+}

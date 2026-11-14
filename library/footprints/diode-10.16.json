@@ -1,0 +1,16 @@
+{
+  "type": "pocketpcb-footprint",
+  "format": 1,
+  "pads": [
+    {"number": "A", "at": [-5.08, 0], "shape": "circle", "size": [2.0, 2.0], "hole": 1.0},
+    {"number": "K", "at": [5.08, 0], "shape": "rect", "size": [2.0, 2.0], "hole": 1.0}
+  ],
+  "graphics": [
+    {"kind": "rect", "from": [-2.6, -1.35], "to": [2.6, 1.35]},
+    {"kind": "line", "from": [1.9, -1.35], "to": [1.9, 1.35]},
+    {"kind": "line", "from": [-3.9, 0], "to": [-2.6, 0]},
+    {"kind": "line", "from": [2.6, 0], "to": [3.9, 0]}
+  ],
+  "refAt": [0, -2.4],
+  "valueAt": [0, 2.4]
+}

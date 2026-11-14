@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "led",
+  "footprints": ["led-5mm", "led-3mm"],
+  "prefix": "LED",
+  "prefixGost": "HL",
+  "value": "",
+  "connector": false,
+  "name": {"en": "LED", "uk": "Світлодіод", "ru": "Светодиод"}
+}

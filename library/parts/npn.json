@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "npn",
+  "footprints": ["to92-cbe", "to92-ebc", "to220-bce"],
+  "prefix": "Q",
+  "prefixGost": "VT",
+  "value": "BC547",
+  "connector": false,
+  "name": {"en": "NPN transistor", "uk": "Транзистор NPN", "ru": "Транзистор NPN"}
+}
