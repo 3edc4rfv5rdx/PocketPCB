@@ -11,6 +11,9 @@ add_library(pocketpcb_gui STATIC
 )
 target_include_directories(pocketpcb_gui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(pocketpcb_gui PUBLIC pocketpcb_core Qt6::Widgets)
+# Where the program finds the built-in library when it is not installed.
+target_compile_definitions(pocketpcb_gui PRIVATE
+    PPCB_SOURCE_LIBRARY_DIR="${PROJECT_SOURCE_DIR}/library")
 
 # Translations: .ts files are compiled to .qm and embedded as resources under
 # :/i18n. "cmake --build build --target pocketpcb_gui_lupdate" refreshes the

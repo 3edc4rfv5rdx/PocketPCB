@@ -1,10 +1,12 @@
 #include "appsettings.h"
 
 #include "document.h"
+#include "library.h"
 #include "version.h"
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QFileInfo>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QVariant>
@@ -22,11 +24,17 @@ const char KEY_GRID_STYLE[] = "view/gridStyle";
 const char KEY_CURSOR_STYLE[] = "view/cursorStyle";
 const char KEY_ZOOM_WARP[] = "view/zoomCenterAndWarp";
 const char KEY_LAST_LIBRARY_FOLDER[] = "library/lastFolder";
+const char KEY_USER_LIBRARY_FOLDER[] = "library/folder";
 const char KEY_LAST_PROJECT_FOLDER[] = "project/lastFolder";
 const char KEY_BACKUP_COUNT[] = "project/backupCount";
 const char KEY_AUTOSAVE_MINUTES[] = "project/autosaveMinutes";
 
 const int DEFAULT_AUTOSAVE_MINUTES = 5;
+
+// Inside the user's data folder.
+const char USER_LIBRARY_FOLDER[] = "library";
+// Where an AppImage keeps the built-in library, from the program's folder.
+const char INSTALLED_LIBRARY_FOLDER[] = "../share/pocketpcb/library";
 const char KEY_WINDOW_GEOMETRY[] = "window/geometry";
 const char KEY_WINDOW_STATE[] = "window/state";
 
@@ -139,6 +147,34 @@ QString AppSettings::lastLibraryFolder()
 void AppSettings::setLastLibraryFolder(const QString &folder)
 {
     writeValue(KEY_LAST_LIBRARY_FOLDER, folder);
+}
+
+QString AppSettings::userLibraryFolder()
+{
+    const QString dataFolder = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    const QString byDefault = QDir(dataFolder).filePath(QLatin1String(USER_LIBRARY_FOLDER));
+    const QString folder = readValueOrWriteDefault(KEY_USER_LIBRARY_FOLDER, byDefault).toString();
+    return folder.isEmpty() ? byDefault : folder;
+}
+
+bool AppSettings::makeUserLibraryFolders(QString &error)
+{
+    const QDir library(userLibraryFolder());
+    for (const char *kind :
+         {LIBRARY_SYMBOLS_FOLDER, LIBRARY_FOOTPRINTS_FOLDER, LIBRARY_PARTS_FOLDER}) {
+        if (!JsonFile::makeFolder(library.filePath(QLatin1String(kind)), error))
+            return false;
+    }
+    return true;
+}
+
+QString AppSettings::builtInLibraryFolder()
+{
+    const QString installed = QDir(QCoreApplication::applicationDirPath())
+                                  .filePath(QLatin1String(INSTALLED_LIBRARY_FOLDER));
+    if (QFileInfo(installed).isDir())
+        return QDir::cleanPath(installed);
+    return QStringLiteral(PPCB_SOURCE_LIBRARY_DIR);
 }
 
 QString AppSettings::lastProjectFolder()

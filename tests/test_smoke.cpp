@@ -444,6 +444,19 @@ private slots:
         QVERIFY(!Document::hasAutosave(path));
     }
 
+    void librariesAreLoadedOnStart()
+    {
+        MainWindow window;
+        // The user's folders are made, and the built-in library is read.
+        const QDir user(AppSettings::userLibraryFolder());
+        for (const char *kind : {"symbols", "footprints", "parts"})
+            QVERIFY2(user.exists(QLatin1String(kind)), kind);
+        QVERIFY(window.library().items.footprints.contains(QStringLiteral("resistor-10.16")));
+        // The default is written for the user to see.
+        QVERIFY(QSettings(AppSettings::filePath(), QSettings::IniFormat)
+                    .contains(QStringLiteral("library/folder")));
+    }
+
     void undoActionsAndTitleFollowTheDocument()
     {
         MainWindow window;

@@ -12,6 +12,7 @@
 #include <QActionGroup>
 #include <QCloseEvent>
 #include <QComboBox>
+#include <QDesktopServices>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -27,6 +28,7 @@
 #include <QTabBar>
 #include <QTimer>
 #include <QUndoStack>
+#include <QUrl>
 #include <QVBoxLayout>
 
 namespace ppcb {
@@ -94,6 +96,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     createMenus();
     createStatusBar();
+    loadLibrary();
     projectChanged();
     updateTitle();
 
@@ -156,6 +159,9 @@ void MainWindow::createMenus()
     openLibraryAction->setObjectName(QStringLiteral("actionOpenLibraryFile"));
     openLibraryAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_L));
     connect(openLibraryAction, &QAction::triggered, this, &MainWindow::chooseLibraryFile);
+    QAction *libraryFolderAction = fileMenu->addAction(tr("Open library folder"));
+    libraryFolderAction->setObjectName(QStringLiteral("actionOpenLibraryFolder"));
+    connect(libraryFolderAction, &QAction::triggered, this, &MainWindow::openLibraryFolder);
     fileMenu->addSeparator();
 
     QAction *quitAction = fileMenu->addAction(tr("&Quit"));
@@ -463,6 +469,26 @@ void MainWindow::updateTitle()
     // "[*]" is where Qt puts the mark of unsaved changes.
     setWindowTitle(name + QStringLiteral("[*] — ") + QLatin1String(APP_TITLE));
     setWindowModified(m_document->isModified());
+}
+
+void MainWindow::loadLibrary()
+{
+    QString error;
+    if (!AppSettings::makeUserLibraryFolders(error)) {
+        statusBar()->showMessage(error);
+        return;
+    }
+    QStringList problems;
+    const Library builtIn = LibraryFolder::read(AppSettings::builtInLibraryFolder(), problems);
+    const Library user = LibraryFolder::read(AppSettings::userLibraryFolder(), problems);
+    m_library = mergeLibraries(builtIn, user);
+    if (!problems.isEmpty())
+        statusBar()->showMessage(problems.first());
+}
+
+void MainWindow::openLibraryFolder()
+{
+    QDesktopServices::openUrl(QUrl::fromLocalFile(AppSettings::userLibraryFolder()));
 }
 
 void MainWindow::chooseLibraryFile()

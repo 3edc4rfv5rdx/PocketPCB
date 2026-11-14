@@ -6,6 +6,7 @@
 
 #include <QCoreApplication>
 #include <QMap>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 
@@ -38,6 +39,19 @@ struct Library
 
 bool operator==(const Library &a, const Library &b);
 inline bool operator!=(const Library &a, const Library &b) { return !(a == b); }
+
+// The built-in library with the user's over it: a file of the user's
+// replaces the built-in one of the same kind and name.
+struct MergedLibrary
+{
+    Library items;
+    // The names the user's library replaces, by kind.
+    QSet<QString> replacedSymbols;
+    QSet<QString> replacedFootprints;
+    QSet<QString> replacedParts;
+};
+
+MergedLibrary mergeLibraries(const Library &builtIn, const Library &user);
 
 // The files of a library folder: '<folder>/symbols/<name>.json' and so on.
 // A project's library has the format of the user's, so files can be copied

@@ -133,6 +133,32 @@ const Symbol *Library::findSymbolOfPart(const QString &partName) const
     return it == symbols.constEnd() ? nullptr : &*it;
 }
 
+namespace {
+
+// Puts 'user' over 'items' and notes the names it replaces.
+template <typename Item>
+void mergeInto(QMap<QString, Item> &items, const QMap<QString, Item> &user,
+               QSet<QString> &replaced)
+{
+    for (auto it = user.constBegin(); it != user.constEnd(); ++it) {
+        if (items.contains(it.key()))
+            replaced.insert(it.key());
+        items.insert(it.key(), it.value());
+    }
+}
+
+} // namespace
+
+MergedLibrary mergeLibraries(const Library &builtIn, const Library &user)
+{
+    MergedLibrary merged;
+    merged.items = builtIn;
+    mergeInto(merged.items.symbols, user.symbols, merged.replacedSymbols);
+    mergeInto(merged.items.footprints, user.footprints, merged.replacedFootprints);
+    mergeInto(merged.items.parts, user.parts, merged.replacedParts);
+    return merged;
+}
+
 bool operator==(const Library &a, const Library &b)
 {
     return a.symbols == b.symbols && a.footprints == b.footprints && a.parts == b.parts;

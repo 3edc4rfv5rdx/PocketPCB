@@ -433,6 +433,10 @@
         <source>Restore them</source>
         <translation>Восстановить их</translation>
     </message>
+    <message>
+        <source>Open library folder</source>
+        <translation>Открыть папку библиотеки</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SaveProjectDialog</name>

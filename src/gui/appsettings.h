@@ -34,6 +34,17 @@ public:
     static bool zoomCenterAndWarp();
     static void setZoomCenterAndWarp(bool on);
 
+    // The user's library: a folder with symbols/, footprints/ and parts/.
+    // By default "library" in the user's data folder; set in the file by
+    // hand for now, and the first read writes the default there.
+    static QString userLibraryFolder();
+    // Makes the user's library folder and its three folders when missing.
+    static bool makeUserLibraryFolders(QString &error);
+    // The built-in library, read only: beside the program in an AppImage
+    // (<program folder>/../share/pocketpcb/library), else the one in the
+    // source tree the program was built from.
+    static QString builtInLibraryFolder();
+
     // Folder the last library file was opened from; empty before the first one.
     static QString lastLibraryFolder();
     static void setLastLibraryFolder(const QString &folder);

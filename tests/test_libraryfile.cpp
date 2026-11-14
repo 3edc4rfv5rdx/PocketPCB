@@ -1,3 +1,4 @@
+#include "library.h"
 #include "libraryfile.h"
 #include "version.h"
 
@@ -151,6 +152,33 @@ private slots:
         QString error;
         QVERIFY(!LibraryFile::read(dir.filePath(QStringLiteral("absent.json")), item, error));
         QVERIFY(!error.isEmpty());
+    }
+
+    // A user's file replaces the built-in one of its kind and name only.
+    void userLibraryGoesOverTheBuiltIn()
+    {
+        Library builtIn;
+        Symbol plain;
+        builtIn.symbols.insert(QStringLiteral("resistor"), plain);
+        builtIn.footprints.insert(QStringLiteral("resistor"), Footprint());
+        Part part;
+        part.prefix = QStringLiteral("R");
+        builtIn.parts.insert(QStringLiteral("resistor"), part);
+
+        Library user;
+        Symbol own;
+        own.showPinNames = !plain.showPinNames;
+        user.symbols.insert(QStringLiteral("resistor"), own);
+        user.parts.insert(QStringLiteral("diode"), Part());
+
+        const MergedLibrary merged = mergeLibraries(builtIn, user);
+        QVERIFY(merged.items.symbols.value(QStringLiteral("resistor")) == own);
+        QCOMPARE(merged.items.footprints.size(), 1);
+        QCOMPARE(merged.items.parts.keys(),
+                 QStringList({QStringLiteral("diode"), QStringLiteral("resistor")}));
+        QCOMPARE(merged.replacedSymbols, QSet<QString>({QStringLiteral("resistor")}));
+        QVERIFY(merged.replacedFootprints.isEmpty());
+        QVERIFY(merged.replacedParts.isEmpty());
     }
 };
 

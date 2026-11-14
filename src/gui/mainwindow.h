@@ -1,6 +1,7 @@
 #pragma once
 
 #include "appsettings.h"
+#include "library.h"
 #include "units.h"
 
 #include <QMainWindow>
@@ -61,6 +62,12 @@ public:
     QString libraryFilePath() const { return m_libraryPath; }
     LibraryViewItem *libraryItem() const { return m_libraryItem; }
 
+    // The built-in library with the user's over it, as last loaded.
+    const MergedLibrary &library() const { return m_library; }
+    // Reads both libraries again. What cannot be read is told in the status
+    // bar and left out.
+    void loadLibrary();
+
 protected:
     void closeEvent(QCloseEvent *event) override;
     void showEvent(QShowEvent *event) override;
@@ -91,6 +98,7 @@ private:
     void updateTitle();
 
     void chooseLibraryFile();
+    void openLibraryFolder();
     // Reads 'path' and puts it on the canvas; the common part of opening
     // and reloading.
     bool showLibraryFile(const QString &path);
@@ -113,6 +121,8 @@ private:
     // Owned by the canvas scene.
     LibraryViewItem *m_libraryItem = nullptr;
     QTimer *m_autosaveTimer = nullptr;
+
+    MergedLibrary m_library;
 
     QFileSystemWatcher *m_libraryWatcher = nullptr;
     // Delays the reload a little: editors often save in several steps.
