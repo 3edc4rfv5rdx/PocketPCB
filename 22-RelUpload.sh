@@ -108,7 +108,10 @@ elif [[ -f "$BINARY" ]]; then
     # OUT/ keeps the last tested build, which need not be the tagged one. The
     # version is compiled into the program as a string of its own, so it is
     # looked for there whole: a substring test would take 0.1.130 for 0.1.13.
-    strings "$BINARY" | grep -qxF "$VERSION" ||
+    # Not a pipe: grep -q stops at the first match, strings then dies of a
+    # broken pipe, and under pipefail (98-common) the found version reads as
+    # not found.
+    grep -qxF "$VERSION" <(strings "$BINARY") ||
         die "$BINARY is not build $VERSION. Build $TAG with ./00-Make.sh first."
     echo "No AppImage for $TAG; uploading the bare program, which needs Qt 6."
     FILES+=("$BINARY#${PROJECT}-${VERSION}-x86_64")

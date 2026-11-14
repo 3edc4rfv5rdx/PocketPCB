@@ -3,7 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
-## v0.1.13 (2026-11-14)
+- E: 22-RelUpload.sh no longer refuses the build it was asked to upload
 - I: 00-Make.sh moves the version line when a feature waits in CHANGELOG since the last release
 - I: Scripts to push the branch, tag a release and upload it to GitHub
 - F: A project keeps the parts, symbols and footprints it uses as library files in its library folder, and draws a red question mark for one that is missing
