@@ -75,6 +75,10 @@ private:
     void applyCursorStyle(CursorStyle style);
     void applyZoomCenterAndWarp(bool on);
 
+    void autosaveProject();
+    // After a project is opened: offers to take back the changes of a
+    // session that did not end with a save, or drops them.
+    void offerAutosave();
     void chooseNewProject();
     void chooseProjectToOpen();
     // Both return true when the project was saved.
@@ -108,6 +112,8 @@ private:
     QString m_libraryPath;
     // Owned by the canvas scene.
     LibraryViewItem *m_libraryItem = nullptr;
+    QTimer *m_autosaveTimer = nullptr;
+
     QFileSystemWatcher *m_libraryWatcher = nullptr;
     // Delays the reload a little: editors often save in several steps.
     QTimer *m_reloadTimer = nullptr;

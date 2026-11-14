@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: The open project is autosaved every five minutes into its autosave folder, and the changes are offered back when it is opened after a crash
 - N: Saving keeps the three last versions of each project file in the backup folder of the project
 - N: Closing the window, a new project and opening another one ask whether to save unsaved changes
 - I: Project file names its default net class and the class of power nets

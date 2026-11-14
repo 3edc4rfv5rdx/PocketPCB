@@ -24,6 +24,9 @@ const char KEY_ZOOM_WARP[] = "view/zoomCenterAndWarp";
 const char KEY_LAST_LIBRARY_FOLDER[] = "library/lastFolder";
 const char KEY_LAST_PROJECT_FOLDER[] = "project/lastFolder";
 const char KEY_BACKUP_COUNT[] = "project/backupCount";
+const char KEY_AUTOSAVE_MINUTES[] = "project/autosaveMinutes";
+
+const int DEFAULT_AUTOSAVE_MINUTES = 5;
 const char KEY_WINDOW_GEOMETRY[] = "window/geometry";
 const char KEY_WINDOW_STATE[] = "window/state";
 
@@ -37,6 +40,16 @@ const char CURSOR_FULL_CROSS[] = "fullCross";
 QVariant readValue(const char *key, const QVariant &defaultValue)
 {
     QSettings settings(AppSettings::filePath(), QSettings::IniFormat);
+    return settings.value(QLatin1String(key), defaultValue);
+}
+
+// The same, but a key that is not in the file yet is written there with the
+// default value, so the file shows what can be set in it by hand.
+QVariant readValueOrWriteDefault(const char *key, const QVariant &defaultValue)
+{
+    QSettings settings(AppSettings::filePath(), QSettings::IniFormat);
+    if (!settings.contains(QLatin1String(key)))
+        settings.setValue(QLatin1String(key), defaultValue);
     return settings.value(QLatin1String(key), defaultValue);
 }
 
@@ -138,10 +151,17 @@ void AppSettings::setLastProjectFolder(const QString &folder)
     writeValue(KEY_LAST_PROJECT_FOLDER, folder);
 }
 
+int AppSettings::autosaveMinutes()
+{
+    bool ok = false;
+    const int minutes = readValueOrWriteDefault(KEY_AUTOSAVE_MINUTES, DEFAULT_AUTOSAVE_MINUTES).toInt(&ok);
+    return ok && minutes >= 0 ? minutes : DEFAULT_AUTOSAVE_MINUTES;
+}
+
 int AppSettings::backupCount()
 {
     bool ok = false;
-    const int count = readValue(KEY_BACKUP_COUNT, Document::DEFAULT_BACKUP_COUNT).toInt(&ok);
+    const int count = readValueOrWriteDefault(KEY_BACKUP_COUNT, Document::DEFAULT_BACKUP_COUNT).toInt(&ok);
     return ok && count >= 0 ? count : Document::DEFAULT_BACKUP_COUNT;
 }
 

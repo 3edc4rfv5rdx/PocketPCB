@@ -425,6 +425,14 @@
         <source>Save the changes to the project</source>
         <translation>Зберегти зміни в проєкті</translation>
     </message>
+    <message>
+        <source>The project has changes that were not saved last time</source>
+        <translation>У проєкті є зміни, які минулого разу не було збережено</translation>
+    </message>
+    <message>
+        <source>Restore them</source>
+        <translation>Відновити їх</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SaveProjectDialog</name>

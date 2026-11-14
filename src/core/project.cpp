@@ -10,6 +10,7 @@ const char FILE_EXT_SCHEMATIC[] = ".ppsch";
 const char FILE_EXT_BOARD[] = ".ppbrd";
 const char PROJECT_LIBRARY_FOLDER[] = "library";
 const char PROJECT_BACKUP_FOLDER[] = "backup";
+const char PROJECT_AUTOSAVE_FOLDER[] = "autosave";
 
 const char NET_CLASS_SIGNAL[] = "Signal";
 const char NET_CLASS_POWER[] = "Power";
@@ -503,6 +504,12 @@ QString DesignFiles::libraryPath(const QString &projectPath)
 QString DesignFiles::backupPath(const QString &projectPath)
 {
     return besideProject(projectPath, QLatin1String(PROJECT_BACKUP_FOLDER));
+}
+
+QString DesignFiles::autosaveProjectPath(const QString &projectPath)
+{
+    return QDir(besideProject(projectPath, QLatin1String(PROJECT_AUTOSAVE_FOLDER)))
+        .filePath(QFileInfo(projectPath).fileName());
 }
 
 QStringList missingLibraryItems(const Design &design)

@@ -37,6 +37,7 @@ const int DEFAULT_WIDTH = 1100;
 const int DEFAULT_HEIGHT = 750;
 // Wait after a change of the watched file before reading it, milliseconds.
 const int RELOAD_DELAY_MS = 150;
+const int MS_PER_MINUTE = 60 * 1000;
 
 const char APP_TITLE[] = "PocketPCB";
 
@@ -64,6 +65,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_document = new Document(this);
     m_document->setBackupCount(AppSettings::backupCount());
+    m_autosaveTimer = new QTimer(this);
+    connect(m_autosaveTimer, &QTimer::timeout, this, &MainWindow::autosaveProject);
+    if (AppSettings::autosaveMinutes() > 0)
+        m_autosaveTimer->start(AppSettings::autosaveMinutes() * MS_PER_MINUTE);
     m_designItem = new DesignViewItem(m_document, m_canvas->scene()->sceneRect());
     m_canvas->scene()->addItem(m_designItem);
     connect(m_document, &Document::designChanged, this, &MainWindow::projectChanged);
@@ -292,16 +297,13 @@ bool MainWindow::openProject(const QString &path)
     showPage(0);
     updateTitle();
     // The first problem in full, and how many more there are.
-    if (problems.isEmpty()) {
-        statusBar()->showMessage(path);
-        return true;
-    }
-    QString message = problems.first();
+    QString message = problems.value(0, path);
     if (problems.size() > 1) {
         message += QStringLiteral(" — ") + tr("more problems with the project library")
                    + QStringLiteral(": ") + QString::number(problems.size() - 1);
     }
     statusBar()->showMessage(message);
+    offerAutosave();
     return true;
 }
 
@@ -319,8 +321,11 @@ bool MainWindow::saveProjectAs(const QString &parentFolder, const QString &name)
 
 bool MainWindow::confirmLeavingProject()
 {
-    if (!m_document->isModified())
+    if (!m_document->isModified()) {
+        // Changes undone back to the files may have left a copy behind.
+        m_document->dropAutosave();
         return true;
+    }
     QMessageBox box(QMessageBox::Warning, tr("Unsaved changes"),
                     tr("Save the changes to the project") + QLatin1Char('?'),
                     QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel, this);
@@ -331,10 +336,37 @@ bool MainWindow::confirmLeavingProject()
         // A save that failed or was cancelled keeps the project open.
         return saveProject();
     case QMessageBox::Discard:
+        m_document->dropAutosave();
         return true;
     default:
         return false;
     }
+}
+
+void MainWindow::autosaveProject()
+{
+    QString error;
+    if (!m_document->autosave(error))
+        statusBar()->showMessage(error);
+}
+
+void MainWindow::offerAutosave()
+{
+    if (!Document::hasAutosave(m_document->projectPath()))
+        return;
+    QMessageBox box(QMessageBox::Question, tr("Unsaved changes"),
+                    tr("The project has changes that were not saved last time") + QStringLiteral(".\n")
+                        + tr("Restore them") + QLatin1Char('?'),
+                    QMessageBox::Yes | QMessageBox::No, this);
+    box.setObjectName(QStringLiteral("restoreAutosaveBox"));
+    box.setDefaultButton(QMessageBox::Yes);
+    if (box.exec() != QMessageBox::Yes) {
+        m_document->dropAutosave();
+        return;
+    }
+    QString error;
+    if (!m_document->restoreAutosave(error))
+        statusBar()->showMessage(error);
 }
 
 void MainWindow::chooseNewProject()

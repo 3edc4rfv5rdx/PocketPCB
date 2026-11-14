@@ -63,15 +63,20 @@ Design twoSheetDesign()
     return design;
 }
 
-// Presses 'button' in the unsaved changes box as soon as it is shown.
-void answerUnsavedChanges(QMessageBox::StandardButton button)
+// Presses 'button' in the message box named 'name' as soon as it is shown.
+void answerBox(const QString &name, QMessageBox::StandardButton button)
 {
-    QTimer::singleShot(0, [button] {
+    QTimer::singleShot(0, [name, button] {
         auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget());
         QVERIFY(box != nullptr);
-        QCOMPARE(box->objectName(), QStringLiteral("unsavedChangesBox"));
+        QCOMPARE(box->objectName(), name);
         box->button(button)->click();
     });
+}
+
+void answerUnsavedChanges(QMessageBox::StandardButton button)
+{
+    answerBox(QStringLiteral("unsavedChangesBox"), button);
 }
 
 Design withTitle(Design design, const QString &title)
@@ -399,6 +404,44 @@ private slots:
         answerUnsavedChanges(QMessageBox::Save);
         QVERIFY(window.confirmLeavingProject());
         QVERIFY(!window.document()->isModified());
+    }
+
+    void autosaveIsOfferedOnOpening()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("amp.ppcb"));
+        QString error;
+        // A session that ended without saving, twice.
+        const auto crash = [&path] {
+            Document crashed;
+            QString crashError;
+            QVERIFY2(crashed.open(path, crashError), qPrintable(crashError));
+            crashed.change(QStringLiteral("A"),
+                           withTitle(crashed.design(), QStringLiteral("Lost")));
+            QVERIFY2(crashed.autosave(crashError), qPrintable(crashError));
+        };
+        QVERIFY2(DesignFiles::write(path, twoSheetDesign(), error), qPrintable(error));
+        crash();
+
+        MainWindow window;
+        answerBox(QStringLiteral("restoreAutosaveBox"), QMessageBox::Yes);
+        QVERIFY(window.openProject(path));
+        QCOMPARE(window.document()->design().schematic.sheets.at(0).title, QStringLiteral("Lost"));
+        QVERIFY(window.document()->isModified());
+
+        // Not saving drops the copy.
+        answerUnsavedChanges(QMessageBox::Discard);
+        QVERIFY(window.confirmLeavingProject());
+        QVERIFY(!Document::hasAutosave(path));
+
+        // Said no: the changes go, and the question with them.
+        crash();
+        QVERIFY(Document::hasAutosave(path));
+        answerBox(QStringLiteral("restoreAutosaveBox"), QMessageBox::No);
+        QVERIFY(window.openProject(path));
+        QCOMPARE(window.document()->design().schematic.sheets.at(0).title, QString());
+        QVERIFY(!Document::hasAutosave(path));
     }
 
     void undoActionsAndTitleFollowTheDocument()

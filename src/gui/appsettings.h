@@ -43,8 +43,12 @@ public:
     static void setLastProjectFolder(const QString &folder);
 
     // How many earlier versions of each project file a save keeps (see
-    // Document::setBackupCount()). Set in the file by hand for now.
+    // Document::setBackupCount()). Set in the file by hand for now; the
+    // first read writes the default there.
     static int backupCount();
+    // How often the open project is autosaved, in minutes; 0: never. Set in
+    // the file by hand for now; the first read writes the default there.
+    static int autosaveMinutes();
 
     static QByteArray windowGeometry();
     static void setWindowGeometry(const QByteArray &geometry);

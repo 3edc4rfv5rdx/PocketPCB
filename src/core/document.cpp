@@ -122,7 +122,10 @@ bool Document::save(QString &error)
         error = tr("the project has no file yet");
         return false;
     }
-    return write(m_projectPath, false, error);
+    if (!write(m_projectPath, false, error))
+        return false;
+    dropAutosave();
+    return true;
 }
 
 bool Document::saveAs(const QString &projectPath, QString &error)
@@ -148,7 +151,58 @@ bool Document::saveAs(const QString &projectPath, QString &error)
         noteModified();
         return false;
     }
+    // The changes are saved, if elsewhere: the old place has none to restore.
+    dropAutosave();
     m_projectPath = projectPath;
+    return true;
+}
+
+bool Document::autosave(QString &error)
+{
+    if (m_projectPath.isEmpty() || !isModified() || m_design == m_autosaved)
+        return true;
+    const QString path = DesignFiles::autosaveProjectPath(m_projectPath);
+    const QString folder = QFileInfo(path).absolutePath();
+    if (!QDir().mkpath(folder)) {
+        error = withPlace(folder, tr("cannot make the folder"));
+        return false;
+    }
+    if (!DesignFiles::write(path, m_design, error))
+        return false;
+    m_autosaved = m_design;
+    return true;
+}
+
+void Document::dropAutosave()
+{
+    m_autosaved = Design();
+    if (m_projectPath.isEmpty())
+        return;
+    QDir(QFileInfo(DesignFiles::autosaveProjectPath(m_projectPath)).absolutePath())
+        .removeRecursively();
+}
+
+bool Document::hasAutosave(const QString &projectPath)
+{
+    if (projectPath.isEmpty())
+        return false;
+    const QFileInfo copy(DesignFiles::autosaveProjectPath(projectPath));
+    return copy.exists() && copy.lastModified() >= QFileInfo(projectPath).lastModified();
+}
+
+bool Document::restoreAutosave(QString &error, QStringList *problems)
+{
+    if (m_projectPath.isEmpty()) {
+        error = tr("the project has no file yet");
+        return false;
+    }
+    Design design;
+    if (!DesignFiles::read(DesignFiles::autosaveProjectPath(m_projectPath), design, error,
+                           problems)) {
+        return false;
+    }
+    m_autosaved = design;
+    install(design);
     return true;
 }
 
@@ -231,6 +285,7 @@ void Document::reset(const Design &design, const QString &projectPath)
     m_design = design;
     m_saved = design;
     m_projectPath = projectPath;
+    m_autosaved = Design();
     emit designChanged();
     noteModified();
 }

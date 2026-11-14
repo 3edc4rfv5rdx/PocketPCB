@@ -86,6 +86,22 @@ public:
     // was written into it.
     bool saveAsNewFolder(const QString &parentFolder, const QString &name, QString &error);
 
+    // Autosave: a whole copy of the project as it is now, written to
+    // DesignFiles::autosaveProjectPath() while there are unsaved changes; the
+    // project's own files are not touched. Nothing is written for a project
+    // that has no file yet, without changes, or when the copy is up to date.
+    bool autosave(QString &error);
+    // Removes the autosaved copy of the open project, if there is one. A
+    // successful save() or saveAs() does it too.
+    void dropAutosave();
+    // Whether 'projectPath' has an autosaved copy no older than its file:
+    // changes of a session that did not end with a save or a "don't save".
+    static bool hasAutosave(const QString &projectPath);
+    // Takes the autosaved copy of the open project as its content. It counts
+    // as unsaved changes, with no history. On failure returns false with a
+    // message and leaves the content as it was.
+    bool restoreAutosave(QString &error, QStringList *problems = nullptr);
+
 signals:
     // The content was replaced: by change(), Undo, Redo, startNew() or open().
     void designChanged();
@@ -110,6 +126,8 @@ private:
     QUndoStack m_undoStack;
     bool m_wasModified = false;
     int m_backupCount = DEFAULT_BACKUP_COUNT;
+    // The content of the autosaved copy; empty when there is none.
+    Design m_autosaved;
 };
 
 } // namespace ppcb

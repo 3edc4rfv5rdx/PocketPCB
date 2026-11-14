@@ -388,6 +388,77 @@ private slots:
         QCOMPARE(titleIn(copy1), QStringLiteral("C"));
     }
 
+    void autosaveKeepsACopyUntilSaved()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("amp.ppcb"));
+        const QString copy = dir.filePath(QStringLiteral("autosave/amp.ppcb"));
+
+        // A project without a file has no place for a copy.
+        Document document;
+        document.change(QStringLiteral("A"), withSheetTitle(document, QStringLiteral("A")));
+        QString error;
+        QVERIFY2(document.autosave(error), qPrintable(error));
+
+        QVERIFY2(document.saveAs(path, error), qPrintable(error));
+        // Nothing changed: nothing written.
+        QVERIFY2(document.autosave(error), qPrintable(error));
+        QVERIFY(!QFileInfo::exists(copy));
+        QVERIFY(!Document::hasAutosave(path));
+
+        // A change goes to the copy, not to the project's own files.
+        QVERIFY(writeGarbage(dir.filePath(QStringLiteral("amp.ppsch"))));
+        document.change(QStringLiteral("B"), withSheetTitle(document, QStringLiteral("B")));
+        QVERIFY2(document.autosave(error), qPrintable(error));
+        QVERIFY(isGarbage(dir.filePath(QStringLiteral("amp.ppsch"))));
+        QVERIFY(Document::hasAutosave(path));
+        Design copied;
+        QVERIFY2(DesignFiles::read(copy, copied, error), qPrintable(error));
+        QVERIFY(copied == document.design());
+        QVERIFY(document.isModified());
+
+        // An up-to-date copy is not written again.
+        QVERIFY(writeGarbage(copy));
+        QVERIFY2(document.autosave(error), qPrintable(error));
+        QVERIFY(isGarbage(copy));
+
+        // Saving drops it.
+        QVERIFY2(document.save(error), qPrintable(error));
+        QVERIFY(!QFileInfo::exists(dir.filePath(QStringLiteral("autosave"))));
+        QVERIFY(!Document::hasAutosave(path));
+    }
+
+    void autosaveIsRestored()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("amp.ppcb"));
+        QString error;
+        {
+            // A session that ends without saving.
+            Document crashed;
+            QVERIFY2(crashed.saveAs(path, error), qPrintable(error));
+            crashed.change(QStringLiteral("A"), withSheetTitle(crashed, QStringLiteral("Lost")));
+            QVERIFY2(crashed.autosave(error), qPrintable(error));
+        }
+        QVERIFY(Document::hasAutosave(path));
+
+        Document document;
+        QVERIFY2(document.open(path, error), qPrintable(error));
+        QCOMPARE(document.design().schematic.sheets.at(0).title, QString());
+        QVERIFY2(document.restoreAutosave(error), qPrintable(error));
+        QCOMPARE(document.design().schematic.sheets.at(0).title, QStringLiteral("Lost"));
+        QVERIFY(document.isModified());
+        QVERIFY(!document.undoStack()->canUndo());
+
+        // Dropped, it is not offered again.
+        document.dropAutosave();
+        QVERIFY(!Document::hasAutosave(path));
+        QVERIFY(!document.restoreAutosave(error));
+        QVERIFY(!error.isEmpty());
+    }
+
     void saveWritesAMissingFileAgain()
     {
         QTemporaryDir dir;
