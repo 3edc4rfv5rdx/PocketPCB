@@ -567,6 +567,21 @@ private slots:
         QAction *undo = window.findChild<QAction *>(QStringLiteral("actionUndo"));
         QVERIFY2(undo->text().contains(QStringLiteral("R1")), qPrintable(undo->text()));
 
+        // R while dragging turns what is dragged, as often as asked, and the
+        // drop makes one step of it all.
+        const int steps = window.document()->undoStack()->count();
+        const QPointF moved = toMm(sheet().components.at(0).at);
+        editor->press(moved, false);
+        editor->move(moved + QPointF(5.2, 0));
+        window.findChild<QAction *>(QStringLiteral("actionRotate"))->trigger();
+        window.findChild<QAction *>(QStringLiteral("actionRotate"))->trigger();
+        QCOMPARE(editor->preview()->components.at(0).rotation, 180);
+        editor->release(moved + QPointF(5.2, 0));
+        QCOMPARE(sheet().components.at(0).rotation, 180);
+        QCOMPARE(sheet().components.at(0).at, r1.at + Point({2 * 5080000, 0}));
+        QCOMPARE(window.document()->undoStack()->count(), steps + 1);
+        window.document()->undoStack()->undo();
+
         // Undo puts it back and chooses it again.
         editor->cancel();
         QVERIFY(editor->selection().isEmpty());

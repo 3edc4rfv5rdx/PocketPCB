@@ -119,15 +119,16 @@ void SheetEditor::move(const QPointF &at)
     if (!m_dragging && !m_rubberBanding) {
         if (QLineF(at, m_pressAt).length() < pixelsToMm(QApplication::startDragDistance()))
             return;
-        if (m_pressOnSelection)
+        if (m_pressOnSelection) {
             m_dragging = true;
-        else
+            m_dragBase = *sheet;
+        } else
             m_rubberBanding = true;
     }
     if (m_dragging) {
         // The selection moves by whole grid steps, the way the cursor does.
         m_dragDelta = snapped(at) - snapped(m_pressAt);
-        m_preview = movedObjects(*sheet, m_selection, m_dragDelta);
+        m_preview = movedObjects(m_dragBase, m_selection, m_dragDelta);
     } else {
         m_rubberBand = QRectF(m_pressAt, at).normalized();
     }
@@ -139,7 +140,8 @@ void SheetEditor::release(const QPointF &at)
     if (m_placing)
         return;
     move(at);
-    if (m_dragging && m_dragDelta != Point()) {
+    // A drag that came back to where it started may still have turned.
+    if (m_dragging) {
         const Sheet moved = m_preview;
         m_dragging = false;
         apply(actionName(Action::Move), moved);
@@ -180,16 +182,24 @@ void SheetEditor::selectAll()
     emit changed();
 }
 
-Point SheetEditor::selectionCenter() const
+Point SheetEditor::selectionCenter(const Sheet &sheet) const
 {
-    const Sheet *sheet = currentSheet();
-    if (m_selection.size() == 1 && sheet != nullptr) {
-        for (const Component &component : sheet->components) {
+    if (m_selection.size() == 1) {
+        for (const Component &component : sheet.components) {
             if (m_selection.contains(component.id))
                 return component.at;
         }
     }
-    return snapped(selectionBounds(shapes(), m_selection).center());
+    const QList<SheetObjectShape> found = sheetObjectShapes(sheet, m_document->design().library);
+    return snapped(selectionBounds(found, m_selection).center());
+}
+
+void SheetEditor::transformDragged(Sheet (*transform)(const Sheet &, const QSet<ObjectId> &,
+                                                      const Point &))
+{
+    m_dragBase = transform(m_dragBase, m_selection, selectionCenter(m_dragBase));
+    m_preview = movedObjects(m_dragBase, m_selection, m_dragDelta);
+    emit changed();
 }
 
 void SheetEditor::rotateSelection()
@@ -201,10 +211,15 @@ void SheetEditor::rotateSelection()
         updateGhost();
         return;
     }
+    if (m_dragging) {
+        transformDragged(rotatedObjects);
+        return;
+    }
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr || m_selection.isEmpty())
         return;
-    apply(actionName(Action::Rotate), rotatedObjects(*sheet, m_selection, selectionCenter()));
+    apply(actionName(Action::Rotate),
+          rotatedObjects(*sheet, m_selection, selectionCenter(*sheet)));
 }
 
 void SheetEditor::mirrorSelection()
@@ -216,10 +231,15 @@ void SheetEditor::mirrorSelection()
         updateGhost();
         return;
     }
+    if (m_dragging) {
+        transformDragged(mirroredObjects);
+        return;
+    }
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr || m_selection.isEmpty())
         return;
-    apply(actionName(Action::Mirror), mirroredObjects(*sheet, m_selection, selectionCenter()));
+    apply(actionName(Action::Mirror),
+          mirroredObjects(*sheet, m_selection, selectionCenter(*sheet)));
 }
 
 void SheetEditor::deleteSelection()

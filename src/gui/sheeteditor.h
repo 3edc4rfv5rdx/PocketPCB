@@ -79,9 +79,12 @@ signals:
 private:
     const Sheet *currentSheet() const;
     QList<SheetObjectShape> shapes() const;
-    // The grid point things are turned and mirrored about: a single
-    // component's own point, else the middle of the selection.
-    Point selectionCenter() const;
+    // The grid point the selection on 'sheet' is turned and mirrored about:
+    // a single component's own point, else the middle of the selection.
+    Point selectionCenter(const Sheet &sheet) const;
+    // Turns or mirrors what is dragged, on the way, without a step of its own:
+    // the drop makes one step of it all.
+    void transformDragged(Sheet (*transform)(const Sheet &, const QSet<ObjectId> &, const Point &));
     // Builds the preview of the part following the cursor, numbered on.
     void updateGhost();
     void placeGhost();
@@ -106,6 +109,8 @@ private:
     bool m_pressOnSelection = false;
 
     bool m_dragging = false;
+    // The sheet the drag started from, with what was turned on the way.
+    Sheet m_dragBase;
     Sheet m_preview;
     Point m_dragDelta;
 

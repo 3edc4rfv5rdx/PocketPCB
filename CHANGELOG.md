@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: R and X while dragging turn and mirror what is dragged, as often as asked, instead of the objects left behind
 - F: A short right click ends placing, as Esc does
 - F: A part can be dragged onto the sheet from its drawing in the library panel too, and placing goes on after the drop; the dragged row's picture no longer hides it
 - F: Pin ends are circled only in the library view, not on sheets
