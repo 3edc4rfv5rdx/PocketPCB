@@ -1,4 +1,4 @@
-#include "projectlibrary.h"
+#include "library.h"
 
 #include "libraryfile.h"
 
@@ -72,7 +72,7 @@ QMap<QString, Item> readItems(const QString &folder, const char *subfolder, Libr
             continue;
         }
         if (content.kind != kind) {
-            problems.append(withPlace(path, ProjectLibraryFiles::tr(
+            problems.append(withPlace(path, LibraryFolder::tr(
                                                 "the file does not belong in this folder")));
             continue;
         }
@@ -98,7 +98,7 @@ bool writeItems(const QString &folder, const char *subfolder, const QMap<QString
         // Only the library's own folders are made: the project's folder must
         // already be there.
         if (!QFileInfo(folder).dir().exists()) {
-            error = withPlace(dir, ProjectLibraryFiles::tr("the project folder is missing"));
+            error = withPlace(dir, LibraryFolder::tr("the project folder is missing"));
             return false;
         }
         if (!JsonFile::makeFolder(dir, error))
@@ -112,19 +112,19 @@ bool writeItems(const QString &folder, const char *subfolder, const QMap<QString
 
 } // namespace
 
-const Part *ProjectLibrary::findPart(const QString &name) const
+const Part *Library::findPart(const QString &name) const
 {
     const auto it = parts.constFind(name);
     return it == parts.constEnd() ? nullptr : &*it;
 }
 
-const Footprint *ProjectLibrary::findFootprint(const QString &name) const
+const Footprint *Library::findFootprint(const QString &name) const
 {
     const auto it = footprints.constFind(name);
     return it == footprints.constEnd() ? nullptr : &*it;
 }
 
-const Symbol *ProjectLibrary::findSymbolOfPart(const QString &partName) const
+const Symbol *Library::findSymbolOfPart(const QString &partName) const
 {
     const Part *part = findPart(partName);
     if (part == nullptr)
@@ -133,14 +133,14 @@ const Symbol *ProjectLibrary::findSymbolOfPart(const QString &partName) const
     return it == symbols.constEnd() ? nullptr : &*it;
 }
 
-bool operator==(const ProjectLibrary &a, const ProjectLibrary &b)
+bool operator==(const Library &a, const Library &b)
 {
     return a.symbols == b.symbols && a.footprints == b.footprints && a.parts == b.parts;
 }
 
-ProjectLibrary ProjectLibraryFiles::read(const QString &folder, QStringList &problems)
+Library LibraryFolder::read(const QString &folder, QStringList &problems)
 {
-    ProjectLibrary library;
+    Library library;
     library.symbols = readItems<Symbol>(folder, LIBRARY_SYMBOLS_FOLDER, LibraryKind::Symbol,
                                         problems);
     library.footprints = readItems<Footprint>(folder, LIBRARY_FOOTPRINTS_FOLDER,
@@ -149,8 +149,8 @@ ProjectLibrary ProjectLibraryFiles::read(const QString &folder, QStringList &pro
     return library;
 }
 
-bool ProjectLibraryFiles::write(const QString &folder, const ProjectLibrary &library,
-                                ProjectLibrary &saved, bool everything, QString &error)
+bool LibraryFolder::write(const QString &folder, const Library &library,
+                                Library &saved, bool everything, QString &error)
 {
     return writeItems(folder, LIBRARY_SYMBOLS_FOLDER, library.symbols, saved.symbols, everything,
                       error)

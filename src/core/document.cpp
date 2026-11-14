@@ -291,7 +291,7 @@ bool Document::write(const QString &projectPath, bool everything, QString &error
     // The library goes first and the project last, so that no file names
     // one that is not there. Each file counts as saved as soon as it is
     // written, so after a failure the next save writes only the rest.
-    bool ok = ProjectLibraryFiles::write(DesignFiles::libraryPath(projectPath), m_design.library,
+    bool ok = LibraryFolder::write(DesignFiles::libraryPath(projectPath), m_design.library,
                                          m_saved.library, everything, error);
     // Items dropped from the library stay on disk, unused: files are never
     // removed. They no longer count as part of the saved content.

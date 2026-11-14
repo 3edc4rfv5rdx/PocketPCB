@@ -469,7 +469,7 @@ void paintMissing(QPainter &painter, const QPointF &center, double size)
     painter.restore();
 }
 
-void paintComponent(QPainter &painter, const ProjectLibrary &library, const Component &component)
+void paintComponent(QPainter &painter, const Library &library, const Component &component)
 {
     const Symbol *symbol = library.findSymbolOfPart(component.part);
     if (symbol == nullptr) {
@@ -680,7 +680,7 @@ QColor silkscreenColor(BoardSide side)
     return side == BoardSide::Top ? paintcolor::silkscreen() : paintcolor::silkscreenBottom();
 }
 
-void paintPlacementPads(QPainter &painter, const ProjectLibrary &library,
+void paintPlacementPads(QPainter &painter, const Library &library,
                         const Placement &placement)
 {
     const Footprint *footprint = library.findFootprint(placement.footprint);
@@ -709,7 +709,7 @@ void paintPlacementText(QPainter &painter, const Placement &placement, const Poi
     painter.restore();
 }
 
-void paintPlacementSilkscreen(QPainter &painter, const ProjectLibrary &library,
+void paintPlacementSilkscreen(QPainter &painter, const Library &library,
                               const Placement &placement)
 {
     const Footprint *footprint = library.findFootprint(placement.footprint);
@@ -833,7 +833,7 @@ QRectF paperRect(PaperSize paper)
     return QRectF(0, 0, A4_LONG_SIDE, A4_SHORT_SIDE);
 }
 
-void paintSheet(QPainter &painter, const Schematic &schematic, const ProjectLibrary &library,
+void paintSheet(QPainter &painter, const Schematic &schematic, const Library &library,
                 int index, const TitleBlock &titleBlock)
 {
     if (index < 0 || index >= schematic.sheets.size())
@@ -870,7 +870,7 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const ProjectLibr
     painter.restore();
 }
 
-QRectF boardBounds(const Board &board, const ProjectLibrary &library)
+QRectF boardBounds(const Board &board, const Library &library)
 {
     Bounds bounds;
     for (const OutlineCorner &corner : board.outline)
@@ -907,7 +907,7 @@ QRectF boardBounds(const Board &board, const ProjectLibrary &library)
     return bounds.rect();
 }
 
-void paintBoard(QPainter &painter, const Board &board, const ProjectLibrary &library)
+void paintBoard(QPainter &painter, const Board &board, const Library &library)
 {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);

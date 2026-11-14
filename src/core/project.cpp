@@ -521,7 +521,7 @@ QStringList missingLibraryItems(const Design &design)
     };
 
     QStringList files;
-    const ProjectLibrary &library = design.library;
+    const Library &library = design.library;
     for (const Sheet &sheet : design.schematic.sheets) {
         for (const Component &component : sheet.components) {
             const Part *part = library.findPart(component.part);
@@ -542,7 +542,7 @@ QStringList missingLibraryItems(const Design &design)
 
     QStringList messages;
     for (const QString &file : files)
-        messages.append(withPlace(file, ProjectLibraryFiles::tr("the file is missing")));
+        messages.append(withPlace(file, LibraryFolder::tr("the file is missing")));
     return messages;
 }
 
@@ -557,7 +557,7 @@ bool DesignFiles::read(const QString &projectPath, Design &design, QString &erro
     if (!BoardFile::read(boardPath(projectPath, result.project), result.board, error))
         return false;
     QStringList found;
-    result.library = ProjectLibraryFiles::read(libraryPath(projectPath), found);
+    result.library = LibraryFolder::read(libraryPath(projectPath), found);
     found += missingLibraryItems(result);
     if (problems != nullptr)
         *problems = found;
@@ -568,8 +568,8 @@ bool DesignFiles::read(const QString &projectPath, Design &design, QString &erro
 bool DesignFiles::write(const QString &projectPath, const Design &design, QString &error)
 {
     // The project goes last, so that it never names a file that is not there.
-    ProjectLibrary written;
-    return ProjectLibraryFiles::write(libraryPath(projectPath), design.library, written, true,
+    Library written;
+    return LibraryFolder::write(libraryPath(projectPath), design.library, written, true,
                                       error)
            && SchematicFile::write(schematicPath(projectPath, design.project), design.schematic,
                                    error)

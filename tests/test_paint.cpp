@@ -126,14 +126,14 @@ Footprint padFootprint()
 }
 
 // A project library with padFootprint() as "f".
-ProjectLibrary padLibrary()
+Library padLibrary()
 {
-    ProjectLibrary library;
+    Library library;
     library.footprints.insert(QStringLiteral("f"), padFootprint());
     return library;
 }
 
-QImage render(const Board &board, const ProjectLibrary &library = padLibrary())
+QImage render(const Board &board, const Library &library = padLibrary())
 {
     return renderWith(
         [&board, &library](QPainter &painter) { paintBoard(painter, board, library); });
@@ -147,7 +147,7 @@ Schematic emptySchematic()
     return schematic;
 }
 
-QImage render(const Schematic &schematic, const ProjectLibrary &library = ProjectLibrary())
+QImage render(const Schematic &schematic, const Library &library = Library())
 {
     return renderWith([&schematic, &library](QPainter &painter) {
         paintSheet(painter, schematic, library, 0, TitleBlock());
@@ -464,8 +464,8 @@ private slots:
 
         // A sheet that is not there draws nothing at all.
         const QImage nothing = renderWith([&schematic](QPainter &painter) {
-            paintSheet(painter, schematic, ProjectLibrary(), 1, TitleBlock());
-            paintSheet(painter, schematic, ProjectLibrary(), -1, TitleBlock());
+            paintSheet(painter, schematic, Library(), 1, TitleBlock());
+            paintSheet(painter, schematic, Library(), -1, TitleBlock());
         });
         QCOMPARE(nothing, newImage());
     }
@@ -484,7 +484,7 @@ private slots:
         const auto renderAround = [&schematic](double x, double y, const TitleBlock &block) {
             return renderWith([&](QPainter &painter) {
                 painter.translate(-x, -y);
-                paintSheet(painter, schematic, ProjectLibrary(), 0, block);
+                paintSheet(painter, schematic, Library(), 0, block);
             });
         };
         // The corner of the A4 frame is at 292, 205. The block is 90 mm wide
@@ -676,11 +676,11 @@ private slots:
     void boardBoundsHoldTheBoard()
     {
         // Something to fit the view to even when the board is empty.
-        const QRectF empty = boardBounds(Board(), ProjectLibrary());
+        const QRectF empty = boardBounds(Board(), Library());
         QVERIFY(empty.width() > 0 && empty.height() > 0);
 
         Board board = boardWithOutline(0);
-        QCOMPARE(boardBounds(board, ProjectLibrary()), QRectF(-8, -8, 16, 16));
+        QCOMPARE(boardBounds(board, Library()), QRectF(-8, -8, 16, 16));
 
         // What sticks out of the outline counts too.
         Via via;
@@ -693,7 +693,7 @@ private slots:
         track.from = Point{0, 0};
         track.to = Point{0, 15000000};
         board.tracks.append(track);
-        const QRectF bounds = boardBounds(board, ProjectLibrary());
+        const QRectF bounds = boardBounds(board, Library());
         QVERIFY(bounds.contains(QRectF(-8, -8, 21, 23.5)));
 
         // A placed footprint counts where it is placed, turned as it is.
@@ -702,7 +702,7 @@ private slots:
         QVERIFY(boardBounds(placed, padLibrary()).contains(QPointF(20, 3)));
         QVERIFY(!boardBounds(placed, padLibrary()).contains(QPointF(0, 0)));
         // One the library lacks counts as the square drawn in its place.
-        QVERIFY(boardBounds(placed, ProjectLibrary()).contains(QPointF(20, 0)));
+        QVERIFY(boardBounds(placed, Library()).contains(QPointF(20, 0)));
     }
 
     // What the project library lacks is a red square with a question mark,
@@ -720,7 +720,7 @@ private slots:
 
         const Board board = boardWithPad(0, BoardSide::Top);
         QVERIFY(!anyColor(render(board), -1.8, -1.8, 1.8, 1.8, paintcolor::missing()));
-        const QImage missing = render(board, ProjectLibrary());
+        const QImage missing = render(board, Library());
         QVERIFY(anyColor(missing, -1.8, -1.8, 1.8, 1.8, paintcolor::missing()));
         // No pad is drawn.
         QVERIFY(!isColor(colorAt(missing, 3, 0), paintcolor::padFront()));

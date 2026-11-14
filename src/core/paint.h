@@ -63,15 +63,15 @@ QRectF paperRect(PaperSize paper);
 // everything placed on the sheet. Texts stay readable whatever way a symbol
 // is turned or mirrored. An index out of range draws nothing. Symbols come
 // from 'library'; one it lacks is drawn as a red square with a question mark.
-void paintSheet(QPainter &painter, const Schematic &schematic, const ProjectLibrary &library,
+void paintSheet(QPainter &painter, const Schematic &schematic, const Library &library,
                 int index, const TitleBlock &titleBlock);
 
 // A rectangle that holds everything paintBoard() draws; never empty.
-QRectF boardBounds(const Board &board, const ProjectLibrary &library);
+QRectF boardBounds(const Board &board, const Library &library);
 // The board as seen from the top: bottom copper under top copper, the
 // silkscreen and the outline over them. What lies on the bottom side is
 // mirrored, texts included, as it is on the real board. Footprints come
 // from 'library'; one it lacks is drawn as a red square with a question mark.
-void paintBoard(QPainter &painter, const Board &board, const ProjectLibrary &library);
+void paintBoard(QPainter &painter, const Board &board, const Library &library);
 
 } // namespace ppcb

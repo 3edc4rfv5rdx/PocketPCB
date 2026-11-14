@@ -2,7 +2,7 @@
 
 #include "board.h"
 #include "grid.h"
-#include "projectlibrary.h"
+#include "library.h"
 #include "schematic.h"
 
 #include <QList>
@@ -154,7 +154,7 @@ struct Design
     Project project;
     Schematic schematic;
     Board board;
-    ProjectLibrary library;
+    Library library;
 };
 
 bool operator==(const Design &a, const Design &b);

@@ -8,7 +8,7 @@
 namespace ppcb {
 
 // A part placed on a sheet. The part, its symbol and its footprint are
-// found in the project library by name (see ProjectLibrary).
+// found in the project library by name (see Library).
 struct Component
 {
     ObjectId id;

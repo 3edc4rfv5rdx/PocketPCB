@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- R: The library types are named for any library folder, not for the project's alone
 - R: Folders are made by one shared function with one message
 - N: The open project is autosaved every five minutes into its autosave folder, and the changes are offered back when it is opened after a crash
 - N: Saving keeps the three last versions of each project file in the backup folder of the project

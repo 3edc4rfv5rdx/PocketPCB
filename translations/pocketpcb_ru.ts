@@ -265,7 +265,7 @@
     </message>
 </context>
 <context>
-    <name>ppcb::ProjectLibraryFiles</name>
+    <name>ppcb::LibraryFolder</name>
     <message>
         <source>the file does not belong in this folder</source>
         <translation>этому файлу не место в этой папке</translation>

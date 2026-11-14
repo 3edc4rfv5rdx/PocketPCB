@@ -26,7 +26,7 @@ struct Placement
     // The schematic component it stands for. Renumbering the schematic does
     // not break this tie.
     ObjectId component;
-    // Name of its footprint in the project library (see ProjectLibrary).
+    // Name of its footprint in the project library (see Library).
     QString footprint;
     // Copied from the component when the board is updated from the schematic.
     QString designator;
