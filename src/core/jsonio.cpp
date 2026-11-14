@@ -2,6 +2,7 @@
 
 #include "version.h"
 
+#include <QDir>
 #include <QFile>
 #include <QJsonDocument>
 #include <QSaveFile>
@@ -384,6 +385,14 @@ QMap<QString, QString> JsonReader::nameMap(const QJsonObject &object, const char
         result.insert(it.key(), it.value().toString());
     }
     return result;
+}
+
+bool JsonFile::makeFolder(const QString &folder, QString &error)
+{
+    if (QDir().mkpath(folder))
+        return true;
+    error = withPlace(folder, tr("cannot make the folder"));
+    return false;
 }
 
 bool JsonFile::read(const QString &path, QJsonObject &root, QString &error)

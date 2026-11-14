@@ -97,10 +97,12 @@ bool writeItems(const QString &folder, const char *subfolder, const QMap<QString
         }
         // Only the library's own folders are made: the project's folder must
         // already be there.
-        if (!QFileInfo(folder).dir().exists() || !QDir().mkpath(dir)) {
-            error = withPlace(dir, ProjectLibraryFiles::tr("cannot make the folder"));
+        if (!QFileInfo(folder).dir().exists()) {
+            error = withPlace(dir, ProjectLibraryFiles::tr("the project folder is missing"));
             return false;
         }
+        if (!JsonFile::makeFolder(dir, error))
+            return false;
         if (!LibraryFile::write(path, toLibraryItem(it.value()), error))
             return false;
         saved.insert(it.key(), it.value());

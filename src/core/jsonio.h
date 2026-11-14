@@ -158,6 +158,9 @@ public:
     static bool read(const QString &path, QJsonObject &root, QString &error);
     // Writes through a temporary file, so a failure leaves the old file intact.
     static bool write(const QString &path, const QJsonObject &root, QString &error);
+    // Makes 'folder' with the folders above it that are missing; nothing to
+    // do when it is there.
+    static bool makeFolder(const QString &folder, QString &error);
 };
 
 } // namespace ppcb

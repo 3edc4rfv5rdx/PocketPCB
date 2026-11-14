@@ -52,10 +52,6 @@
         <translation>папка уже существует и не пуста</translation>
     </message>
     <message>
-        <source>cannot make the folder</source>
-        <translation>не удалось создать папку</translation>
-    </message>
-    <message>
         <source>cannot make the backup copy</source>
         <translation>не удалось создать резервную копию</translation>
     </message>
@@ -81,6 +77,10 @@
     <message>
         <source>line %1</source>
         <translation>строка %1</translation>
+    </message>
+    <message>
+        <source>cannot make the folder</source>
+        <translation>не удалось создать папку</translation>
     </message>
 </context>
 <context>
@@ -271,12 +271,12 @@
         <translation>этому файлу не место в этой папке</translation>
     </message>
     <message>
-        <source>cannot make the folder</source>
-        <translation>не удалось создать папку</translation>
-    </message>
-    <message>
         <source>the file is missing</source>
         <translation>файла нет</translation>
+    </message>
+    <message>
+        <source>the project folder is missing</source>
+        <translation>нет папки проекта</translation>
     </message>
 </context>
 <context>

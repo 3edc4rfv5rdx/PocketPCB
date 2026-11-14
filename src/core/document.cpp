@@ -26,10 +26,8 @@ bool backUp(const QString &path, const QString &folder, int count, QString &erro
 {
     if (count <= 0 || !QFileInfo::exists(path))
         return true;
-    if (!QDir().mkpath(folder)) {
-        error = withPlace(folder, Document::tr("cannot make the folder"));
+    if (!JsonFile::makeFolder(folder, error))
         return false;
-    }
     const QString name = QFileInfo(path).fileName();
     const auto copyPath = [&folder, &name](int number) {
         return QDir(folder).filePath(name + QLatin1Char('.') + QString::number(number)
@@ -162,11 +160,8 @@ bool Document::autosave(QString &error)
     if (m_projectPath.isEmpty() || !isModified() || m_design == m_autosaved)
         return true;
     const QString path = DesignFiles::autosaveProjectPath(m_projectPath);
-    const QString folder = QFileInfo(path).absolutePath();
-    if (!QDir().mkpath(folder)) {
-        error = withPlace(folder, tr("cannot make the folder"));
+    if (!JsonFile::makeFolder(QFileInfo(path).absolutePath(), error))
         return false;
-    }
     if (!DesignFiles::write(path, m_design, error))
         return false;
     m_autosaved = m_design;
@@ -260,11 +255,8 @@ bool Document::saveAsNewFolder(const QString &parentFolder, const QString &name,
     error = newFolderProblem(parentFolder, name);
     if (!error.isEmpty())
         return false;
-    const QString folder = QDir(parentFolder).filePath(name);
-    if (!QDir().mkpath(folder)) {
-        error = withPlace(folder, tr("cannot make the folder"));
+    if (!JsonFile::makeFolder(QDir(parentFolder).filePath(name), error))
         return false;
-    }
     return saveAs(projectPathInFolder(parentFolder, name), error);
 }
 
