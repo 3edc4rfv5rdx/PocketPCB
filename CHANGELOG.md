@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+## v0.2.23 (2026-11-14)
 - F: Library panel has buttons to expand and to collapse all groups
 - I: Library gets parts that stay off the board: a power jack, audio jacks, a toggle and a rotary switch, a potentiometer, a speaker and a battery
 - I: Library gets DIP chips from 8 to 40 pins, a crystal, a fuse, a push button, a buzzer and a thyristor
