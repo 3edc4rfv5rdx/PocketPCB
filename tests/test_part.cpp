@@ -18,7 +18,8 @@ const char DIODE_JSON[] = R"({
     "prefix": "D",
     "prefixGost": "VD",
     "value": "1N4148",
-    "connector": false
+    "connector": false,
+    "name": {"en": "Diode", "uk": "Діод", "ru": "Диод"}
 })";
 
 QString errorOf(const QByteArray &json)
@@ -46,6 +47,8 @@ private slots:
         QCOMPARE(part.prefixGost, QStringLiteral("VD"));
         QCOMPARE(part.value, QStringLiteral("1N4148"));
         QCOMPARE(part.connector, false);
+        QCOMPARE(part.name.size(), 3);
+        QCOMPARE(part.name.value(QStringLiteral("uk")), QStringLiteral("Діод"));
     }
 
     // A panel-mount part: no footprints, no value.
@@ -58,6 +61,20 @@ private slots:
         QVERIFY(part.footprints.isEmpty());
         QVERIFY(part.value.isEmpty());
         QCOMPARE(part.connector, false);
+        QVERIFY(part.name.isEmpty());
+    }
+
+    void displayNameFallsBack()
+    {
+        Part part;
+        part.name.insert(QStringLiteral("en"), QStringLiteral("Diode"));
+        part.name.insert(QStringLiteral("ru"), QStringLiteral("Диод"));
+        const QString file = QStringLiteral("diode");
+        QCOMPARE(part.displayName({"ru", "en"}, file), QStringLiteral("Диод"));
+        QCOMPARE(part.displayName({"uk", "en"}, file), QStringLiteral("Diode"));
+        QCOMPARE(part.displayName({"uk"}, file), file);
+        part.name.clear();
+        QCOMPARE(part.displayName({"ru", "en"}, file), file);
     }
 
     void everyFieldSurvivesTheFile()
@@ -69,6 +86,8 @@ private slots:
         part.prefixGost = QStringLiteral("X");
         part.value = QStringLiteral("Питание ґ");
         part.connector = true;
+        part.name.insert(QStringLiteral("en"), QStringLiteral("Pin header"));
+        part.name.insert(QStringLiteral("uk"), QStringLiteral("Штирьовий роз'єм"));
 
         const QByteArray text = QJsonDocument(partToJson(part)).toJson();
         JsonReader reader;
@@ -98,6 +117,8 @@ private slots:
         other = part; other.prefixGost = QStringLiteral("D"); QVERIFY(other != part);
         other = part; other.value.clear();                  QVERIFY(other != part);
         other = part; other.connector = true;               QVERIFY(other != part);
+        other = part; other.name.remove(QStringLiteral("ru")); QVERIFY(other != part);
+        other = part; other.name[QStringLiteral("en")] += QLatin1Char('x'); QVERIFY(other != part);
     }
 
     void errors()
@@ -119,6 +140,15 @@ private slots:
 
         error = errorOf(R"({"symbol":"diode","prefix":"D","prefixGost":"VD","connector":"yes"})");
         QVERIFY2(error.startsWith(QStringLiteral("part.connector: ")), qPrintable(error));
+
+        error = errorOf(R"({"symbol":"diode","prefix":"D","prefixGost":"VD","name":"Diode"})");
+        QVERIFY2(error.startsWith(QStringLiteral("part.name: ")), qPrintable(error));
+
+        error = errorOf(R"({"symbol":"diode","prefix":"D","prefixGost":"VD","name":{"en":5}})");
+        QVERIFY2(error.startsWith(QStringLiteral("part.name.en: ")), qPrintable(error));
+
+        error = errorOf(R"({"symbol":"diode","prefix":"D","prefixGost":"VD","name":{"ru":""}})");
+        QVERIFY2(error.startsWith(QStringLiteral("part.name.ru: ")), qPrintable(error));
     }
 
     void footprintListErrors()

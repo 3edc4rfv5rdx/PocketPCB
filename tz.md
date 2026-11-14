@@ -56,7 +56,7 @@ Three kinds of objects, each in its own JSON file:
 
 1. **Symbol:** graphics (lines, rectangles, circles, arcs, text) and pins. Each pin has a number, name, position and direction (the side the wire connects from). Pins sit on the 2.54 mm grid.
 2. **Footprint:** pads (number, shape, size, hole, layers) and a body outline for the silkscreen.
-3. **Part:** links a symbol to one or more allowed footprints and sets the reference designator prefix (R, C, Q, U …) and the default value. Connectors and wire pads have a "connector" flag (used by ERC). Pins are mapped to pads by number (pin 1 → pad 1).
+3. **Part:** links a symbol to one or more allowed footprints and sets the reference designator prefix (R, C, Q, U …), the default value and the name for the library panel in every interface language (`"name": {"en": …, "uk": …, "ru": …}`; without a translation the English name is shown, without that the file name) (2026-11-14). Connectors and wire pads have a "connector" flag (used by ERC). Pins are mapped to pads by number (pin 1 → pad 1).
 
 In the first version an IC is a single symbol with all its pins (2026-11-13).
 

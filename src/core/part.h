@@ -2,6 +2,7 @@
 
 #include "jsonio.h"
 
+#include <QMap>
 #include <QString>
 #include <QStringList>
 
@@ -24,6 +25,13 @@ struct Part
     QString value;
     // Connectors and wire pads: they carry nets off the board (used by ERC).
     bool connector = false;
+    // Name shown in the library panel, by interface language code
+    // ("en", "uk", "ru"); may be empty.
+    QMap<QString, QString> name;
+
+    // The name in the first of 'languages' that has one; 'fallback' (the
+    // library name of the part) when none has.
+    QString displayName(const QStringList &languages, const QString &fallback) const;
 };
 
 bool operator==(const Part &a, const Part &b);
