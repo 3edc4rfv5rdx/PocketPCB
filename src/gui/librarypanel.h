@@ -55,6 +55,10 @@ public:
     // Hides the parts whose name, file name or prefixes do not hold 'text'.
     void setFilter(const QString &text);
 
+    // Opens or closes every group that is shown. Without a search on, the
+    // groups stay so when the list is built again.
+    void setAllGroupsExpanded(bool expanded);
+
     // The chosen part and where it is from; an empty name when none is.
     QString currentPart() const;
     Source currentSource() const;

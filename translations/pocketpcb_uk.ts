@@ -286,6 +286,14 @@
         <source>replaced by the user's library</source>
         <translation>замінено бібліотекою користувача</translation>
     </message>
+    <message>
+        <source>Expand all</source>
+        <translation>Розгорнути все</translation>
+    </message>
+    <message>
+        <source>Collapse all</source>
+        <translation>Згорнути все</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::LibraryFolder</name>

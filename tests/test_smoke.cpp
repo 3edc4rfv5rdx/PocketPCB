@@ -514,6 +514,17 @@ private slots:
         QVERIFY(group(QStringLiteral("R"))->isExpanded());
         QVERIFY(!group(QStringLiteral("TST"))->isExpanded());
 
+        // All groups at once, kept across a rebuild.
+        panel->setAllGroupsExpanded(true);
+        QVERIFY(group(QStringLiteral("TST"))->isExpanded());
+        QVERIFY(group(QStringLiteral("R"))->isExpanded());
+        window.loadLibrary();
+        QVERIFY(group(QStringLiteral("TST"))->isExpanded());
+        panel->setAllGroupsExpanded(false);
+        QVERIFY(!group(QStringLiteral("R"))->isExpanded());
+        // The sections stay open.
+        QVERIFY(tree->topLevelItem(0)->isExpanded());
+
         // The search goes by prefix too.
         panel->setFilter(QStringLiteral("tst"));
         QVERIFY(!group(QStringLiteral("TST"))->isHidden());

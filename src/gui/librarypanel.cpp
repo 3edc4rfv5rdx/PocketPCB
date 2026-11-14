@@ -102,8 +102,19 @@ LibraryPanel::LibraryPanel(QWidget *parent)
     reloadButton->setText(QStringLiteral("⟳"));
     reloadButton->setToolTip(tr("Read the library again"));
 
+    QToolButton *expandButton = new QToolButton(this);
+    expandButton->setObjectName(QStringLiteral("libraryExpandAll"));
+    expandButton->setText(QStringLiteral("⊞"));
+    expandButton->setToolTip(tr("Expand all"));
+    QToolButton *collapseButton = new QToolButton(this);
+    collapseButton->setObjectName(QStringLiteral("libraryCollapseAll"));
+    collapseButton->setText(QStringLiteral("⊟"));
+    collapseButton->setToolTip(tr("Collapse all"));
+
     QHBoxLayout *searchRow = new QHBoxLayout;
     searchRow->addWidget(m_search, 1);
+    searchRow->addWidget(expandButton);
+    searchRow->addWidget(collapseButton);
     searchRow->addWidget(reloadButton);
 
     m_tree = new QTreeWidget(this);
@@ -131,6 +142,9 @@ LibraryPanel::LibraryPanel(QWidget *parent)
 
     connect(m_search, &QLineEdit::textChanged, this, &LibraryPanel::applyFilter);
     connect(reloadButton, &QToolButton::clicked, this, &LibraryPanel::reloadRequested);
+    connect(expandButton, &QToolButton::clicked, this, [this] { setAllGroupsExpanded(true); });
+    connect(collapseButton, &QToolButton::clicked, this,
+            [this] { setAllGroupsExpanded(false); });
     connect(m_tree, &QTreeWidget::currentItemChanged, this, &LibraryPanel::showCurrentPart);
     connect(m_tree, &QTreeWidget::itemExpanded, this,
             [this](QTreeWidgetItem *item) { noteExpanded(item, true); });
@@ -164,6 +178,27 @@ void LibraryPanel::setLibraries(const MergedLibrary &library, const Library &pro
 void LibraryPanel::setFilter(const QString &text)
 {
     m_search->setText(text);
+}
+
+void LibraryPanel::setAllGroupsExpanded(bool expanded)
+{
+    const bool searching = !m_search->text().trimmed().isEmpty();
+    const QSignalBlocker blocker(m_tree);
+    for (int s = 0; s < m_tree->topLevelItemCount(); ++s) {
+        QTreeWidgetItem *section = m_tree->topLevelItem(s);
+        for (int g = 0; g < section->childCount(); ++g) {
+            QTreeWidgetItem *group = section->child(g);
+            if (group->isHidden())
+                continue;
+            group->setExpanded(expanded);
+            if (searching)
+                continue;
+            if (expanded)
+                m_expandedGroups.insert(groupKey(group));
+            else
+                m_expandedGroups.remove(groupKey(group));
+        }
+    }
 }
 
 QString LibraryPanel::currentPart() const
