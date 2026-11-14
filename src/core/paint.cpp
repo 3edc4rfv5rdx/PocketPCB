@@ -346,7 +346,10 @@ bool isHorizontal(const Pin &pin)
     return pin.side == PinSide::Left || pin.side == PinSide::Right;
 }
 
-void paintPin(QPainter &painter, const Pin &pin, bool showNumber, bool showName, bool upright)
+// 'markPoint' circles the point a wire connects to: in the library view,
+// where the symbol is being drawn, not on a sheet.
+void paintPin(QPainter &painter, const Pin &pin, bool showNumber, bool showName, bool upright,
+              bool markPoint)
 {
     const QPointF at = toMm(pin.at);
     const QPointF end = toMm(pinBodyEnd(pin));
@@ -355,8 +358,8 @@ void paintPin(QPainter &painter, const Pin &pin, bool showNumber, bool showName,
     painter.setPen(linePen(paintcolor::symbol(), PIN_LINE_WIDTH));
     painter.setBrush(Qt::NoBrush);
     painter.drawLine(at, end);
-    // Marks the point a wire connects to.
-    painter.drawEllipse(at, PIN_POINT_RADIUS, PIN_POINT_RADIUS);
+    if (markPoint)
+        painter.drawEllipse(at, PIN_POINT_RADIUS, PIN_POINT_RADIUS);
 
     const double offset = PIN_TEXT_GAP + PIN_TEXT_HEIGHT / 2;
     if (showNumber) {
@@ -456,13 +459,14 @@ void paintPad(QPainter &painter, const Pad &pad, BoardSide partSide = BoardSide:
 }
 
 
-// The graphics and the pins of a symbol, without the marks of the library view.
-void paintSymbolBody(QPainter &painter, const Symbol &symbol, bool upright)
+// The graphics and the pins of a symbol, without the marks of the library
+// view; 'markPoints' circles the points wires connect to (see paintPin()).
+void paintSymbolBody(QPainter &painter, const Symbol &symbol, bool upright, bool markPoints)
 {
     for (const Graphic &graphic : symbol.graphics)
         paintGraphic(painter, graphic, paintcolor::symbol(), upright);
     for (const Pin &pin : symbol.pins)
-        paintPin(painter, pin, symbol.showPinNumbers, symbol.showPinNames, upright);
+        paintPin(painter, pin, symbol.showPinNumbers, symbol.showPinNames, upright, markPoints);
 }
 
 // From the coordinates of a symbol to those of the sheet: the symbol is
@@ -521,7 +525,7 @@ void paintComponent(QPainter &painter, const Library &library, const Component &
     } else {
         painter.save();
         painter.setTransform(componentTransform(component), true);
-        paintSymbolBody(painter, *symbol, true);
+        paintSymbolBody(painter, *symbol, true, false);
         painter.restore();
     }
 
@@ -851,7 +855,7 @@ void paintSymbol(QPainter &painter, const Symbol &symbol)
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
     paintOriginMark(painter);
-    paintSymbolBody(painter, symbol, false);
+    paintSymbolBody(painter, symbol, false, true);
     paintPlaceholders(painter, symbol.refAt, symbol.valueAt);
     painter.restore();
 }
