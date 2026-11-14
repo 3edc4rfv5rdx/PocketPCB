@@ -1,5 +1,6 @@
 #include "appsettings.h"
 
+#include "document.h"
 #include "version.h"
 
 #include <QCoreApplication>
@@ -22,6 +23,7 @@ const char KEY_CURSOR_STYLE[] = "view/cursorStyle";
 const char KEY_ZOOM_WARP[] = "view/zoomCenterAndWarp";
 const char KEY_LAST_LIBRARY_FOLDER[] = "library/lastFolder";
 const char KEY_LAST_PROJECT_FOLDER[] = "project/lastFolder";
+const char KEY_BACKUP_COUNT[] = "project/backupCount";
 const char KEY_WINDOW_GEOMETRY[] = "window/geometry";
 const char KEY_WINDOW_STATE[] = "window/state";
 
@@ -134,6 +136,13 @@ QString AppSettings::lastProjectFolder()
 void AppSettings::setLastProjectFolder(const QString &folder)
 {
     writeValue(KEY_LAST_PROJECT_FOLDER, folder);
+}
+
+int AppSettings::backupCount()
+{
+    bool ok = false;
+    const int count = readValue(KEY_BACKUP_COUNT, Document::DEFAULT_BACKUP_COUNT).toInt(&ok);
+    return ok && count >= 0 ? count : Document::DEFAULT_BACKUP_COUNT;
 }
 
 QByteArray AppSettings::windowGeometry()

@@ -25,6 +25,8 @@ class Document : public QObject
 public:
     // The history keeps this many last steps.
     static constexpr int UNDO_LIMIT = 200;
+    // How many earlier versions of each file a save keeps, unless told.
+    static constexpr int DEFAULT_BACKUP_COUNT = 3;
 
     // Starts as a new project named "untitled".
     explicit Document(QObject *parent = nullptr);
@@ -35,6 +37,13 @@ public:
     // The content differs from what the files hold. A new project is not
     // modified until it is changed.
     bool isModified() const;
+
+    // Before a save replaces the project, schematic or board file, the file
+    // as it was is kept in the backup folder (DesignFiles::backupPath()) as
+    // "<file name>.1.bak", the earlier ones moving to .2.bak and on; this
+    // many are kept. 0 keeps none.
+    int backupCount() const { return m_backupCount; }
+    void setBackupCount(int count) { m_backupCount = qMax(0, count); }
 
     // For the Undo and Redo actions. Push nothing here: use change().
     QUndoStack *undoStack() { return &m_undoStack; }
@@ -100,6 +109,7 @@ private:
     QString m_projectPath;
     QUndoStack m_undoStack;
     bool m_wasModified = false;
+    int m_backupCount = DEFAULT_BACKUP_COUNT;
 };
 
 } // namespace ppcb

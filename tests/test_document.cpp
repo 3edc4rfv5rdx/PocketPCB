@@ -336,6 +336,58 @@ private slots:
         QVERIFY(QFile::exists(second));
     }
 
+    void saveKeepsBackupCopies()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("amp.ppcb"));
+        const QString copy1 = dir.filePath(QStringLiteral("backup/amp.ppsch.1.bak"));
+        const QString copy2 = dir.filePath(QStringLiteral("backup/amp.ppsch.2.bak"));
+        const QString copy3 = dir.filePath(QStringLiteral("backup/amp.ppsch.3.bak"));
+
+        Document document;
+        document.setBackupCount(2);
+        QString error;
+        // Nothing was there before: nothing to keep.
+        QVERIFY2(document.saveAs(path, error), qPrintable(error));
+        QVERIFY(!QFileInfo::exists(dir.filePath(QStringLiteral("backup"))));
+
+        // Each save keeps the schematic as it was; the board did not change.
+        const auto saveTitle = [&](const QString &title) {
+            document.change(title, withSheetTitle(document, title));
+            QString saveError;
+            QVERIFY2(document.save(saveError), qPrintable(saveError));
+        };
+        const auto titleIn = [](const QString &file) {
+            Schematic schematic;
+            QString readError;
+            if (!SchematicFile::read(file, schematic, readError))
+                return readError;
+            return schematic.sheets.at(0).title;
+        };
+        saveTitle(QStringLiteral("A"));
+        QCOMPARE(titleIn(copy1), QString());
+        QVERIFY(!QFileInfo::exists(dir.filePath(QStringLiteral("backup/amp.ppbrd.1.bak"))));
+        saveTitle(QStringLiteral("B"));
+        QCOMPARE(titleIn(copy1), QStringLiteral("A"));
+        QCOMPARE(titleIn(copy2), QString());
+        saveTitle(QStringLiteral("C"));
+        QCOMPARE(titleIn(copy1), QStringLiteral("B"));
+        QCOMPARE(titleIn(copy2), QStringLiteral("A"));
+        QVERIFY(!QFileInfo::exists(copy3));
+
+        // Fewer kept: the extra copies go at the next save.
+        document.setBackupCount(1);
+        saveTitle(QStringLiteral("D"));
+        QCOMPARE(titleIn(copy1), QStringLiteral("C"));
+        QVERIFY(!QFileInfo::exists(copy2));
+
+        // None kept: the copies there stay as they are.
+        document.setBackupCount(0);
+        saveTitle(QStringLiteral("E"));
+        QCOMPARE(titleIn(copy1), QStringLiteral("C"));
+    }
+
     void saveWritesAMissingFileAgain()
     {
         QTemporaryDir dir;

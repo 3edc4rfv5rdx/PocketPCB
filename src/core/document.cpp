@@ -1,6 +1,7 @@
 #include "document.h"
 
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 
 namespace ppcb {
@@ -8,6 +9,7 @@ namespace ppcb {
 namespace {
 
 const char NEW_PROJECT_NAME[] = "untitled";
+const char BACKUP_EXT[] = ".bak";
 
 // Characters no file name may hold on Windows; '/' also on Linux.
 const char FORBIDDEN_NAME_CHARS[] = "/\\:*?\"<>|";
@@ -17,6 +19,35 @@ const char *const RESERVED_NAMES[] = {
     "CON",  "PRN",  "AUX",  "NUL",  "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7",
     "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
 };
+
+// Keeps 'path' as it is now as the newest of 'count' backup copies in
+// 'folder', before it is replaced. Nothing to do for a file not there yet.
+bool backUp(const QString &path, const QString &folder, int count, QString &error)
+{
+    if (count <= 0 || !QFileInfo::exists(path))
+        return true;
+    if (!QDir().mkpath(folder)) {
+        error = withPlace(folder, Document::tr("cannot make the folder"));
+        return false;
+    }
+    const QString name = QFileInfo(path).fileName();
+    const auto copyPath = [&folder, &name](int number) {
+        return QDir(folder).filePath(name + QLatin1Char('.') + QString::number(number)
+                                     + QLatin1String(BACKUP_EXT));
+    };
+    // The oldest goes, with any left from a time more were kept.
+    for (int number = count; QFileInfo::exists(copyPath(number)); ++number)
+        QFile::remove(copyPath(number));
+    for (int number = count - 1; number >= 1; --number) {
+        if (QFileInfo::exists(copyPath(number)))
+            QFile::rename(copyPath(number), copyPath(number + 1));
+    }
+    if (!QFile::copy(path, copyPath(1))) {
+        error = withPlace(copyPath(1), Document::tr("cannot make the backup copy"));
+        return false;
+    }
+    return true;
+}
 
 } // namespace
 
@@ -208,6 +239,7 @@ bool Document::write(const QString &projectPath, bool everything, QString &error
 {
     const QString schematicPath = DesignFiles::schematicPath(projectPath, m_design.project);
     const QString boardPath = DesignFiles::boardPath(projectPath, m_design.project);
+    const QString backupFolder = DesignFiles::backupPath(projectPath);
 
     // The library goes first and the project last, so that no file names
     // one that is not there. Each file counts as saved as soon as it is
@@ -220,18 +252,21 @@ bool Document::write(const QString &projectPath, bool everything, QString &error
         m_saved.library = m_design.library;
     if (ok && (everything || m_design.schematic != m_saved.schematic
                || !QFileInfo::exists(schematicPath))) {
-        ok = SchematicFile::write(schematicPath, m_design.schematic, error);
+        ok = backUp(schematicPath, backupFolder, m_backupCount, error)
+             && SchematicFile::write(schematicPath, m_design.schematic, error);
         if (ok)
             m_saved.schematic = m_design.schematic;
     }
     if (ok && (everything || m_design.board != m_saved.board || !QFileInfo::exists(boardPath))) {
-        ok = BoardFile::write(boardPath, m_design.board, error);
+        ok = backUp(boardPath, backupFolder, m_backupCount, error)
+             && BoardFile::write(boardPath, m_design.board, error);
         if (ok)
             m_saved.board = m_design.board;
     }
     if (ok && (everything || m_design.project != m_saved.project
                || !QFileInfo::exists(projectPath))) {
-        ok = ProjectFile::write(projectPath, m_design.project, error);
+        ok = backUp(projectPath, backupFolder, m_backupCount, error)
+             && ProjectFile::write(projectPath, m_design.project, error);
         if (ok)
             m_saved.project = m_design.project;
     }

@@ -55,6 +55,10 @@
         <source>cannot make the folder</source>
         <translation>не удалось создать папку</translation>
     </message>
+    <message>
+        <source>cannot make the backup copy</source>
+        <translation>не удалось создать резервную копию</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::JsonFile</name>

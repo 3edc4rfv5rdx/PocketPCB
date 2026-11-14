@@ -17,6 +17,8 @@ extern const char FILE_EXT_SCHEMATIC[];
 extern const char FILE_EXT_BOARD[];
 // The folder of the project library, beside the project file.
 extern const char PROJECT_LIBRARY_FOLDER[];
+// The folder of the backup copies of the project's files, beside it too.
+extern const char PROJECT_BACKUP_FOLDER[];
 
 // Names of the two net classes a new project starts with, which are also its
 // default class and its power class (see Project).
@@ -178,6 +180,7 @@ public:
     static QString schematicPath(const QString &projectPath, const Project &project);
     static QString boardPath(const QString &projectPath, const Project &project);
     static QString libraryPath(const QString &projectPath);
+    static QString backupPath(const QString &projectPath);
 
     // Changes 'design' only when all three files were read. The library does
     // not stop a project from opening: library files that cannot be read and

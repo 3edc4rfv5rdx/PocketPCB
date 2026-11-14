@@ -9,6 +9,7 @@ const char FILE_EXT_PROJECT[] = ".ppcb";
 const char FILE_EXT_SCHEMATIC[] = ".ppsch";
 const char FILE_EXT_BOARD[] = ".ppbrd";
 const char PROJECT_LIBRARY_FOLDER[] = "library";
+const char PROJECT_BACKUP_FOLDER[] = "backup";
 
 const char NET_CLASS_SIGNAL[] = "Signal";
 const char NET_CLASS_POWER[] = "Power";
@@ -497,6 +498,11 @@ QString DesignFiles::boardPath(const QString &projectPath, const Project &projec
 QString DesignFiles::libraryPath(const QString &projectPath)
 {
     return besideProject(projectPath, QLatin1String(PROJECT_LIBRARY_FOLDER));
+}
+
+QString DesignFiles::backupPath(const QString &projectPath)
+{
+    return besideProject(projectPath, QLatin1String(PROJECT_BACKUP_FOLDER));
 }
 
 QStringList missingLibraryItems(const Design &design)

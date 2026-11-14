@@ -63,6 +63,7 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(central);
 
     m_document = new Document(this);
+    m_document->setBackupCount(AppSettings::backupCount());
     m_designItem = new DesignViewItem(m_document, m_canvas->scene()->sceneRect());
     m_canvas->scene()->addItem(m_designItem);
     connect(m_document, &Document::designChanged, this, &MainWindow::projectChanged);

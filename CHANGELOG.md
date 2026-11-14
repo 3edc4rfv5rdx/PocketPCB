@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Saving keeps the three last versions of each project file in the backup folder of the project
 - N: Closing the window, a new project and opening another one ask whether to save unsaved changes
 - I: Project file names its default net class and the class of power nets
 ## v0.1.14 (2026-11-14)

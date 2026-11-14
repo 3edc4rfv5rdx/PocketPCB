@@ -42,6 +42,10 @@ public:
     static QString lastProjectFolder();
     static void setLastProjectFolder(const QString &folder);
 
+    // How many earlier versions of each project file a save keeps (see
+    // Document::setBackupCount()). Set in the file by hand for now.
+    static int backupCount();
+
     static QByteArray windowGeometry();
     static void setWindowGeometry(const QByteArray &geometry);
 
