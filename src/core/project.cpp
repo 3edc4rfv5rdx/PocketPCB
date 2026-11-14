@@ -20,6 +20,8 @@ const char KEY_BOARD[] = "board";
 const char KEY_TITLE_BLOCK[] = "titleBlock";
 const char KEY_DESIGNATOR_STYLE[] = "designatorStyle";
 const char KEY_NET_CLASSES[] = "netClasses";
+const char KEY_DEFAULT_CLASS[] = "defaultClass";
+const char KEY_POWER_CLASS[] = "powerClass";
 const char KEY_NETS[] = "nets";
 const char KEY_RULES[] = "rules";
 const char KEY_GRID[] = "grid";
@@ -267,6 +269,17 @@ Rules rulesFromJson(const QJsonObject &root, JsonReader &reader)
     return rules;
 }
 
+// The name of one of the project's net classes.
+QString classNameFromJson(const QJsonObject &root, const char *key, const QStringList &classNames,
+                          JsonReader &reader)
+{
+    const QString name = reader.nonEmptyString(root, key, QString());
+    if (reader.ok() && !classNames.contains(name))
+        reader.fail(QLatin1String(key),
+                    JsonReader::tr("the net class is not in the list of net classes"));
+    return name;
+}
+
 // The class chosen for single nets: an object of class names by net name.
 QMap<QString, QString> classOfNetFromJson(const QJsonObject &root, const QStringList &classNames,
                                           JsonReader &reader)
@@ -361,7 +374,8 @@ bool operator==(const Project &a, const Project &b)
 {
     return a.schematicFile == b.schematicFile && a.boardFile == b.boardFile
            && a.titleBlock == b.titleBlock && a.designatorStyle == b.designatorStyle
-           && a.netClasses == b.netClasses && a.classOfNet == b.classOfNet && a.rules == b.rules
+           && a.netClasses == b.netClasses && a.defaultClass == b.defaultClass
+           && a.powerClass == b.powerClass && a.classOfNet == b.classOfNet && a.rules == b.rules
            && a.schematicGridStep == b.schematicGridStep && a.boardGridStep == b.boardGridStep;
 }
 
@@ -388,6 +402,8 @@ QJsonObject projectToJson(const Project &project)
     root.insert(QLatin1String(KEY_DESIGNATOR_STYLE),
                 styleNames().at(int(project.designatorStyle)));
     root.insert(QLatin1String(KEY_NET_CLASSES), listToJson(project.netClasses, netClassToJson));
+    root.insert(QLatin1String(KEY_DEFAULT_CLASS), project.defaultClass);
+    root.insert(QLatin1String(KEY_POWER_CLASS), project.powerClass);
     root.insert(QLatin1String(KEY_NETS), nets);
     root.insert(QLatin1String(KEY_RULES), rulesToJson(project.rules));
     root.insert(QLatin1String(KEY_GRID), grid);
@@ -405,13 +421,15 @@ Project projectFromJson(const QJsonObject &root, JsonReader &reader)
     project.designatorStyle = DesignatorStyle(
         reader.choice(root, KEY_DESIGNATOR_STYLE, QString(), styleNames()));
 
-    // Net classes first: the nets are checked against their names.
+    // Net classes first: the names below are checked against theirs.
     project.netClasses = listFromJson<NetClass>(root, KEY_NET_CLASSES, QString(), context,
                                                 netClassFromJson);
     if (reader.ok() && project.netClasses.isEmpty()) {
         reader.fail(QLatin1String(KEY_NET_CLASSES),
                     JsonReader::tr("a project needs at least one net class"));
     }
+    project.defaultClass = classNameFromJson(root, KEY_DEFAULT_CLASS, context.classNames, reader);
+    project.powerClass = classNameFromJson(root, KEY_POWER_CLASS, context.classNames, reader);
     project.classOfNet = classOfNetFromJson(root, context.classNames, reader);
     project.rules = rulesFromJson(root, reader);
 
@@ -456,6 +474,8 @@ Design newDesign(const QString &baseName)
     design.project.titleBlock.title = baseName;
     design.project.netClasses = {startingNetClass(NET_CLASS_SIGNAL, PRODUCTION_DEFAULT_WIDTH),
                                  startingNetClass(NET_CLASS_POWER, POWER_TRACK_WIDTH)};
+    design.project.defaultClass = QLatin1String(NET_CLASS_SIGNAL);
+    design.project.powerClass = QLatin1String(NET_CLASS_POWER);
     design.project.rules = productionRules();
 
     Sheet sheet;

@@ -17,6 +17,8 @@
     {"name": "Signal", "trackWidth": 0.5, "clearance": 0.3, "viaDrill": 0.6, "viaSize": 1.2},
     {"name": "Power", "trackWidth": 1.5, "clearance": 0.3, "viaDrill": 0.6, "viaSize": 1.2}
   ],
+  "defaultClass": "Signal",
+  "powerClass": "Power",
   "nets": {
     "+5V": "Power",
     "GND": "Power"

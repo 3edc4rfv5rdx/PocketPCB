@@ -18,8 +18,8 @@ extern const char FILE_EXT_BOARD[];
 // The folder of the project library, beside the project file.
 extern const char PROJECT_LIBRARY_FOLDER[];
 
-// Names of the two net classes a new project starts with: the class of an
-// ordinary net and the class of the nets of power and ground symbols.
+// Names of the two net classes a new project starts with, which are also its
+// default class and its power class (see Project).
 extern const char NET_CLASS_SIGNAL[];
 extern const char NET_CLASS_POWER[];
 
@@ -107,6 +107,10 @@ struct Project
 
     // At least one in a project read from a file; names do not repeat.
     QList<NetClass> netClasses;
+    // Names of two of them: the class of a net nothing else gives one, and
+    // the class of the nets of power and ground symbols. They may be the same.
+    QString defaultClass;
+    QString powerClass;
     // Class of the nets it was chosen for in the table of nets, by net name.
     // A net that is not here takes its class from a label or the default one.
     QMap<QString, QString> classOfNet;

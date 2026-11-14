@@ -77,6 +77,8 @@ Project fullProject()
     power.viaDrill = 800000;
     power.viaSize = 2000000;
     project.netClasses.append(power);
+    project.defaultClass = QStringLiteral("Signal");
+    project.powerClass = QStringLiteral("Силовые");
 
     project.classOfNet.insert(QStringLiteral("GND"), QStringLiteral("Силовые"));
     project.classOfNet.insert(QStringLiteral("N7"), QStringLiteral("Signal"));
@@ -223,6 +225,8 @@ private slots:
         CHANGED(other.netClasses[1].viaDrill += 1);
         CHANGED(other.netClasses[1].viaSize += 1);
         CHANGED(other.netClasses.removeLast());
+        CHANGED(other.defaultClass = QStringLiteral("Силовые"));
+        CHANGED(other.powerClass = QStringLiteral("Signal"));
         CHANGED(other.classOfNet[QStringLiteral("GND")] = QStringLiteral("Signal"));
         CHANGED(other.classOfNet.remove(QStringLiteral("N7")));
 
@@ -367,6 +371,23 @@ private slots:
         QVERIFY2(error.startsWith(QStringLiteral("netClasses: ")), qPrintable(error));
         error = errorOfRoot("netClasses", REMOVED);
         QVERIFY2(error.startsWith(QStringLiteral("netClasses: ")), qPrintable(error));
+    }
+
+    void defaultAndPowerClassRules()
+    {
+        for (const char *key : {"defaultClass", "powerClass"}) {
+            const QString where = QLatin1String(key) + QStringLiteral(": ");
+            QString error = errorOfRoot(key, QStringLiteral("Power"));
+            QVERIFY2(error.startsWith(where), qPrintable(error));
+            error = errorOfRoot(key, QStringLiteral(""));
+            QVERIFY2(error.startsWith(where), qPrintable(error));
+            error = errorOfRoot(key, 5);
+            QVERIFY2(error.startsWith(where), qPrintable(error));
+            error = errorOfRoot(key, REMOVED);
+            QVERIFY2(error.startsWith(where), qPrintable(error));
+        }
+        // One class may be both.
+        QCOMPARE(errorOfRoot("powerClass", QStringLiteral("Signal")), QString());
     }
 
     void classOfNetRules()
@@ -523,6 +544,8 @@ private slots:
         QCOMPARE(design.project.netClasses.at(0).trackWidth, Coord(500000));
         QCOMPARE(design.project.netClasses.at(1).name, QString::fromLatin1(NET_CLASS_POWER));
         QCOMPARE(design.project.netClasses.at(1).trackWidth, Coord(1500000));
+        QCOMPARE(design.project.defaultClass, QString::fromLatin1(NET_CLASS_SIGNAL));
+        QCOMPARE(design.project.powerClass, QString::fromLatin1(NET_CLASS_POWER));
 
         QCOMPARE(design.schematic.sheets.size(), 1);
         QVERIFY(!design.schematic.sheets.at(0).id.isNull());
