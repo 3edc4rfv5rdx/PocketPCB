@@ -5,6 +5,8 @@
 
 #include <QWidget>
 
+#include <functional>
+
 class QComboBox;
 class QMimeData;
 class QLineEdit;
@@ -24,10 +26,17 @@ public:
     // Null for what is not there; the pointers must stay valid while shown.
     void setContent(const Symbol *symbol, const Footprint *footprint);
 
+    // What dragging the drawing carries off: the part shown; null when
+    // there is nothing to drag.
+    std::function<QMimeData *()> makeMimeData;
+
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
 
 private:
+    QPoint m_pressPos;
     const Symbol *m_symbol = nullptr;
     const Footprint *m_footprint = nullptr;
 };

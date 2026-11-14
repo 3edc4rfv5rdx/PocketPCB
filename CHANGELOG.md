@@ -3,6 +3,8 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A short right click ends placing, as Esc does
+- F: A part can be dragged onto the sheet from its drawing in the library panel too, and placing goes on after the drop; the dragged row's picture no longer hides it
 - F: Pin ends are circled only in the library view, not on sheets
 - F: Parts in the library have no value until one is typed in
 - N: Parts are placed from the library panel by a double click, one after another until Esc, or by dragging one onto the sheet; the part is copied into the project and numbered on

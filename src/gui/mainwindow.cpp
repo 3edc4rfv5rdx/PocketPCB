@@ -84,8 +84,8 @@ MainWindow::MainWindow(QWidget *parent)
     // The part being placed follows the cursor.
     connect(m_canvas, &CanvasView::cursorMoved, m_sheetEditor,
             [this](Coord x, Coord y) { m_sheetEditor->hover(Point{x, y}); });
-    // A part dragged from the panel follows the cursor too, and a drop
-    // places it once.
+    // A part dragged from the panel follows the cursor too; a drop places it
+    // and placing goes on, as after a double click.
     m_canvas->setDropType(LibraryPanel::partMimeType());
     connect(m_canvas, &CanvasView::dragEntered, this, [this](const QByteArray &bytes) {
         QMimeData data;
@@ -97,11 +97,14 @@ MainWindow::MainWindow(QWidget *parent)
             placePart(source, part, footprint);
     });
     connect(m_canvas, &CanvasView::dragLeft, m_sheetEditor, &SheetEditor::stopPlacing);
+    // A short right click ends placing, as Esc does.
+    connect(m_canvas, &CanvasView::contextMenuRequested, m_sheetEditor, [this] {
+        if (m_sheetEditor->isPlacing())
+            m_sheetEditor->stopPlacing();
+    });
     connect(m_canvas, &CanvasView::dropped, this, [this](const QPointF &at) {
-        if (!m_sheetEditor->isPlacing())
-            return;
-        m_sheetEditor->press(at, false);
-        m_sheetEditor->stopPlacing();
+        if (m_sheetEditor->isPlacing())
+            m_sheetEditor->press(at, false);
     });
     connect(m_document, &Document::designChanged, this, &MainWindow::projectChanged);
     connect(m_document, &Document::modifiedChanged, this, &MainWindow::updateTitle);

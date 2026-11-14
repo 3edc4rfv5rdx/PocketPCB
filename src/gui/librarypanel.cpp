@@ -4,10 +4,13 @@
 #include "paint.h"
 #include "sheetedit.h"
 
+#include <QApplication>
 #include <QComboBox>
+#include <QDrag>
 #include <QFont>
 #include <QHBoxLayout>
 #include <QLineEdit>
+#include <QMouseEvent>
 #include <QMimeData>
 #include <QPainter>
 #include <QScrollBar>
@@ -40,12 +43,18 @@ public:
     std::function<QMimeData *(const QTreeWidgetItem *)> makeMimeData;
 
 protected:
-    QStringList mimeTypes() const override { return {QLatin1String(PART_MIME_TYPE)}; }
-    QMimeData *mimeData(const QList<QTreeWidgetItem *> &items) const override
+    // Without the picture of the row a list drags by default: it would hide
+    // the part, which follows the cursor on the sheet itself.
+    void startDrag(Qt::DropActions actions) override
     {
-        if (items.size() != 1 || !makeMimeData)
-            return nullptr;
-        return makeMimeData(items.first());
+        Q_UNUSED(actions);
+        const QTreeWidgetItem *item = currentItem();
+        QMimeData *data = item == nullptr || !makeMimeData ? nullptr : makeMimeData(item);
+        if (data == nullptr)
+            return;
+        QDrag *drag = new QDrag(this);
+        drag->setMimeData(data);
+        drag->exec(Qt::CopyAction);
     }
 };
 
@@ -84,6 +93,29 @@ void PartPreview::setContent(const Symbol *symbol, const Footprint *footprint)
     m_symbol = symbol;
     m_footprint = footprint;
     update();
+}
+
+void PartPreview::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton)
+        m_pressPos = event->position().toPoint();
+    QWidget::mousePressEvent(event);
+}
+
+void PartPreview::mouseMoveEvent(QMouseEvent *event)
+{
+    if (!(event->buttons() & Qt::LeftButton) || !makeMimeData
+        || (event->position().toPoint() - m_pressPos).manhattanLength()
+               < QApplication::startDragDistance()) {
+        QWidget::mouseMoveEvent(event);
+        return;
+    }
+    QMimeData *data = makeMimeData();
+    if (data == nullptr)
+        return;
+    QDrag *drag = new QDrag(this);
+    drag->setMimeData(data);
+    drag->exec(Qt::CopyAction);
 }
 
 void PartPreview::paintEvent(QPaintEvent *event)
@@ -149,6 +181,12 @@ LibraryPanel::LibraryPanel(QWidget *parent)
     m_footprintBox = new QComboBox(this);
     m_footprintBox->setObjectName(QStringLiteral("libraryFootprint"));
     m_preview = new PartPreview(this);
+    m_preview->makeMimeData = [this]() -> QMimeData * {
+        const QString part = currentPart();
+        if (part.isEmpty())
+            return nullptr;
+        return partMimeData(currentSource(), part, m_footprintBox->currentText());
+    };
 
     QWidget *previewBox = new QWidget(this);
     QVBoxLayout *previewLayout = new QVBoxLayout(previewBox);
