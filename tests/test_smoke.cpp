@@ -9,11 +9,13 @@
 #include "saveprojectdialog.h"
 
 #include <QAction>
+#include <QApplication>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QSettings>
 #include <QGraphicsScene>
@@ -21,6 +23,7 @@
 #include <QStatusBar>
 #include <QTabBar>
 #include <QTemporaryDir>
+#include <QTimer>
 #include <QtTest>
 
 using namespace ppcb;
@@ -57,6 +60,23 @@ Design twoSheetDesign()
     second.title = QStringLiteral("Питание");
     second.paper = PaperSize::A3;
     design.schematic.sheets.append(second);
+    return design;
+}
+
+// Presses 'button' in the unsaved changes box as soon as it is shown.
+void answerUnsavedChanges(QMessageBox::StandardButton button)
+{
+    QTimer::singleShot(0, [button] {
+        auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget());
+        QVERIFY(box != nullptr);
+        QCOMPARE(box->objectName(), QStringLiteral("unsavedChangesBox"));
+        box->button(button)->click();
+    });
+}
+
+Design withTitle(Design design, const QString &title)
+{
+    design.schematic.sheets[0].title = title;
     return design;
 }
 
@@ -342,6 +362,43 @@ private slots:
         QCOMPARE(dialog.name(), QStringLiteral("amp"));
         QVERIFY(save->isEnabled());
         QCOMPARE(dialog.parentFolder(), dir.path());
+    }
+
+    void unsavedChangesAreAskedAbout()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+        // Nothing changed: nothing to ask.
+        QVERIFY(window.confirmLeavingProject());
+
+        Design design = window.document()->design();
+        design.schematic.sheets[0].title = QStringLiteral("Вход");
+        window.document()->change(QStringLiteral("Rename sheet"), design);
+
+        // Cancel keeps the project, closing the window too.
+        answerUnsavedChanges(QMessageBox::Cancel);
+        QVERIFY(!window.confirmLeavingProject());
+        answerUnsavedChanges(QMessageBox::Cancel);
+        QVERIFY(!window.close());
+        QVERIFY(window.isVisible());
+        QVERIFY(window.document()->isModified());
+
+        // Discard lets it go unsaved.
+        answerUnsavedChanges(QMessageBox::Discard);
+        QVERIFY(window.confirmLeavingProject());
+        QVERIFY(window.document()->isModified());
+
+        // Save writes it first.
+        QVERIFY(window.saveProjectAs(dir.path(), QStringLiteral("amp")));
+        window.document()->change(QStringLiteral("Rename sheet"),
+                                  withTitle(window.document()->design(), QStringLiteral("B")));
+        answerUnsavedChanges(QMessageBox::Save);
+        QVERIFY(window.confirmLeavingProject());
+        QVERIFY(!window.document()->isModified());
     }
 
     void undoActionsAndTitleFollowTheDocument()

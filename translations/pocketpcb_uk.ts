@@ -413,6 +413,14 @@
         <source>more problems with the project library</source>
         <translation>ще проблем із бібліотекою проєкту</translation>
     </message>
+    <message>
+        <source>Unsaved changes</source>
+        <translation>Незбережені зміни</translation>
+    </message>
+    <message>
+        <source>Save the changes to the project</source>
+        <translation>Зберегти зміни в проєкті</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SaveProjectDialog</name>

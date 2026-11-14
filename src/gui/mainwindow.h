@@ -40,6 +40,10 @@ public:
     // Saves the project into the new folder 'name' inside 'parentFolder'
     // (see Document::saveAsNewFolder()).
     bool saveProjectAs(const QString &parentFolder, const QString &name);
+    // Asks what to do with unsaved changes before the project is closed,
+    // replaced by a new one or by another one opened: save them, drop them
+    // or stay. True when the project may go; always true without changes.
+    bool confirmLeavingProject();
     // Shows page 'page' of the project and fits the view to it.
     void showPage(int page);
 
@@ -71,9 +75,11 @@ private:
     void applyCursorStyle(CursorStyle style);
     void applyZoomCenterAndWarp(bool on);
 
+    void chooseNewProject();
     void chooseProjectToOpen();
-    void saveProject();
-    void chooseProjectToSaveAs();
+    // Both return true when the project was saved.
+    bool saveProject();
+    bool chooseProjectToSaveAs();
     // Puts the project on the canvas in the place of a library file.
     void showProject();
     // Brings the tabs and the drawing in line with the project's content.

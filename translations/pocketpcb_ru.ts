@@ -413,6 +413,14 @@
         <source>more problems with the project library</source>
         <translation>ещё проблем с библиотекой проекта</translation>
     </message>
+    <message>
+        <source>Unsaved changes</source>
+        <translation>Несохранённые изменения</translation>
+    </message>
+    <message>
+        <source>Save the changes to the project</source>
+        <translation>Сохранить изменения в проекте</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SaveProjectDialog</name>

@@ -20,6 +20,7 @@
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
+#include <QMessageBox>
 #include <QShowEvent>
 #include <QSignalBlocker>
 #include <QStatusBar>
@@ -98,6 +99,10 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    if (!confirmLeavingProject()) {
+        event->ignore();
+        return;
+    }
     AppSettings::setWindowGeometry(saveGeometry());
     AppSettings::setWindowState(saveState());
     QMainWindow::closeEvent(event);
@@ -123,7 +128,7 @@ void MainWindow::createMenus()
     QAction *newAction = fileMenu->addAction(tr("&New project"));
     newAction->setObjectName(QStringLiteral("actionNewProject"));
     newAction->setShortcut(QKeySequence::New);
-    connect(newAction, &QAction::triggered, this, &MainWindow::newProject);
+    connect(newAction, &QAction::triggered, this, &MainWindow::chooseNewProject);
 
     QAction *openAction = fileMenu->addAction(tr("&Open project") + QStringLiteral("…"));
     openAction->setObjectName(QStringLiteral("actionOpenProject"));
@@ -311,33 +316,61 @@ bool MainWindow::saveProjectAs(const QString &parentFolder, const QString &name)
     return true;
 }
 
+bool MainWindow::confirmLeavingProject()
+{
+    if (!m_document->isModified())
+        return true;
+    QMessageBox box(QMessageBox::Warning, tr("Unsaved changes"),
+                    tr("Save the changes to the project") + QLatin1Char('?'),
+                    QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel, this);
+    box.setObjectName(QStringLiteral("unsavedChangesBox"));
+    box.setDefaultButton(QMessageBox::Save);
+    switch (box.exec()) {
+    case QMessageBox::Save:
+        // A save that failed or was cancelled keeps the project open.
+        return saveProject();
+    case QMessageBox::Discard:
+        return true;
+    default:
+        return false;
+    }
+}
+
+void MainWindow::chooseNewProject()
+{
+    if (confirmLeavingProject())
+        newProject();
+}
+
 void MainWindow::chooseProjectToOpen()
 {
     const QString path = QFileDialog::getOpenFileName(
         this, tr("Open project"), AppSettings::lastProjectFolder(),
         tr("PocketPCB projects") + QStringLiteral(" (*") + QLatin1String(FILE_EXT_PROJECT)
             + QLatin1Char(')'));
-    if (path.isEmpty())
+    // Asked once a project is chosen: a dialog closed without one leaves
+    // the open project as it is.
+    if (path.isEmpty() || !confirmLeavingProject())
         return;
     // The project file lies in the project's own folder.
     AppSettings::setLastProjectFolder(QFileInfo(QFileInfo(path).absolutePath()).absolutePath());
     openProject(path);
 }
 
-void MainWindow::saveProject()
+bool MainWindow::saveProject()
 {
-    if (m_document->projectPath().isEmpty()) {
-        chooseProjectToSaveAs();
-        return;
-    }
+    if (m_document->projectPath().isEmpty())
+        return chooseProjectToSaveAs();
     QString error;
-    if (m_document->save(error))
-        statusBar()->showMessage(m_document->projectPath());
-    else
+    if (!m_document->save(error)) {
         statusBar()->showMessage(error);
+        return false;
+    }
+    statusBar()->showMessage(m_document->projectPath());
+    return true;
 }
 
-void MainWindow::chooseProjectToSaveAs()
+bool MainWindow::chooseProjectToSaveAs()
 {
     const QString path = m_document->projectPath();
     const QString name = path.isEmpty() ? tr("untitled") : QFileInfo(path).completeBaseName();
@@ -347,9 +380,9 @@ void MainWindow::chooseProjectToSaveAs()
 
     SaveProjectDialog dialog(name, parentFolder, this);
     if (dialog.exec() != QDialog::Accepted)
-        return;
+        return false;
     AppSettings::setLastProjectFolder(dialog.parentFolder());
-    saveProjectAs(dialog.parentFolder(), dialog.name());
+    return saveProjectAs(dialog.parentFolder(), dialog.name());
 }
 
 void MainWindow::showPage(int page)
