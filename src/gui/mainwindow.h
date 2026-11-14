@@ -21,6 +21,7 @@ class CanvasView;
 class DesignViewItem;
 class Document;
 class LibraryPanel;
+class SheetEditor;
 class LibraryViewItem;
 
 class MainWindow : public QMainWindow
@@ -47,8 +48,9 @@ public:
     // replaced by a new one or by another one opened: save them, drop them
     // or stay. True when the project may go; always true without changes.
     bool confirmLeavingProject();
-    // Shows page 'page' of the project and fits the view to it.
-    void showPage(int page);
+    SheetEditor *sheetEditor() const { return m_sheetEditor; }
+    // Shows page 'page' of the project and, when 'fit', fits the view to it.
+    void showPage(int page, bool fit = true);
 
     // Shows a symbol or footprint file of the library on the canvas in the
     // place of the project and keeps watching it: the drawing follows every
@@ -110,6 +112,15 @@ private:
     bool showLibraryFile(const QString &path);
     void watchLibraryFile();
 
+    // Undo or Redo of a step: its page is shown and what it touched chosen.
+    void showStep(int page, const QSet<ObjectId> &ids);
+    // The canvas takes the grid step the project keeps for the page shown,
+    // and a step chosen by the user goes into the project.
+    void applyProjectGrid();
+    void storeGridStep(Coord step);
+    // "2.54 mm": a grid step in the status bar and in a step's name.
+    static QString gridStepText(Coord step);
+
     void showCursorPosition(Coord x, Coord y);
     void showGridStep(Coord step);
 
@@ -118,6 +129,7 @@ private:
     Document *m_document = nullptr;
     // Owned by the canvas scene.
     DesignViewItem *m_designItem = nullptr;
+    SheetEditor *m_sheetEditor = nullptr;
     // The view is fitted to the page after the window is first shown.
     bool m_shownOnce = false;
     QLabel *m_positionLabel = nullptr;

@@ -50,7 +50,11 @@ public:
 
     // Replaces the content as one step of the history, named 'text' for the
     // menu ("Undo <text>"). Does nothing when 'changed' brings no change.
-    void change(const QString &text, const Design &changed);
+    // 'page' (the sheets, then the board, as on the tabs; -1 for none) and
+    // 'ids' tell where the step was made and what it touched: undoing and
+    // redoing it reports them through stepApplied().
+    void change(const QString &text, const Design &changed, int page = -1,
+                const QSet<ObjectId> &ids = QSet<ObjectId>());
 
     // Drops the content and the history for a new project; without a name
     // it is "untitled".
@@ -106,6 +110,9 @@ signals:
     // The content was replaced: by change(), Undo, Redo, startNew() or open().
     void designChanged();
     void modifiedChanged(bool modified);
+    // A step was undone or redone: where it was made and what it touched,
+    // so the window can show it.
+    void stepApplied(int page, const QSet<ObjectId> &ids);
 
 private:
     friend class DesignCommand;

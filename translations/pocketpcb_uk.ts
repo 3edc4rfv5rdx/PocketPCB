@@ -433,10 +433,6 @@
         <translation>Проєкти PocketPCB</translation>
     </message>
     <message>
-        <source>Sheet %1</source>
-        <translation>Аркуш %1</translation>
-    </message>
-    <message>
         <source>Board</source>
         <translation>Плата</translation>
     </message>
@@ -467,6 +463,45 @@
     <message>
         <source>Open library folder</source>
         <translation>Відкрити папку бібліотеки</translation>
+    </message>
+    <message>
+        <source>Select all</source>
+        <translation>Виділити все</translation>
+    </message>
+    <message>
+        <source>Deselect</source>
+        <translation>Зняти виділення</translation>
+    </message>
+    <message>
+        <source>Grid step</source>
+        <translation>Крок сітки</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::SheetEditor</name>
+    <message>
+        <source>Move</source>
+        <translation>Перемістити</translation>
+    </message>
+    <message>
+        <source>Rotate</source>
+        <translation>Повернути</translation>
+    </message>
+    <message>
+        <source>Mirror</source>
+        <translation>Віддзеркалити</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Видалити</translation>
+    </message>
+    <message>
+        <source>objects</source>
+        <translation>об’єктів</translation>
+    </message>
+    <message>
+        <source>Sheet %1</source>
+        <translation>Аркуш %1</translation>
     </message>
 </context>
 <context>

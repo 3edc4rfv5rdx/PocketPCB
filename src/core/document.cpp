@@ -2,6 +2,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QSet>
 #include <QFileInfo>
 
 namespace ppcb {
@@ -54,22 +55,38 @@ class DesignCommand : public QUndoCommand
 {
 public:
     DesignCommand(Document *document, const QString &text, const Design &before,
-                  const Design &after)
+                  const Design &after, int page, const QSet<ObjectId> &ids)
         : QUndoCommand(text)
         , m_document(document)
         , m_before(before)
         , m_after(after)
+        , m_page(page)
+        , m_ids(ids)
     {
     }
 
-    void undo() override { m_document->install(m_before); }
-    // Also called by QUndoStack::push(), which is what applies a change.
-    void redo() override { m_document->install(m_after); }
+    void undo() override
+    {
+        m_document->install(m_before);
+        emit m_document->stepApplied(m_page, m_ids);
+    }
+    // Also called by QUndoStack::push(), which is what applies a change:
+    // the change is in front of the user then, so nothing is reported.
+    void redo() override
+    {
+        m_document->install(m_after);
+        if (m_pushed)
+            emit m_document->stepApplied(m_page, m_ids);
+        m_pushed = true;
+    }
 
 private:
     Document *m_document;
     Design m_before;
     Design m_after;
+    int m_page;
+    QSet<ObjectId> m_ids;
+    bool m_pushed = false;
 };
 
 Document::Document(QObject *parent)
@@ -84,7 +101,8 @@ bool Document::isModified() const
     return m_design != m_saved;
 }
 
-void Document::change(const QString &text, const Design &changed)
+void Document::change(const QString &text, const Design &changed, int page,
+                      const QSet<ObjectId> &ids)
 {
     // The file names are not the caller's to change.
     Design after = changed;
@@ -92,7 +110,7 @@ void Document::change(const QString &text, const Design &changed)
     after.project.boardFile = m_design.project.boardFile;
     if (after == m_design)
         return;
-    m_undoStack.push(new DesignCommand(this, text, m_design, after));
+    m_undoStack.push(new DesignCommand(this, text, m_design, after, page, ids));
 }
 
 void Document::startNew()

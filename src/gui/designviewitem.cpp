@@ -1,8 +1,19 @@
 #include "designviewitem.h"
 
 #include "paint.h"
+#include "sheeteditor.h"
+
+#include <QGraphicsSceneMouseEvent>
+#include <QPainter>
 
 namespace ppcb {
+
+namespace {
+
+// The band drawn along a selected wire or bus, in millimetres.
+const double SELECTED_LINE_WIDTH = 0.8;
+
+} // namespace
 
 DesignViewItem::DesignViewItem(const Document *document, const QRectF &area)
     : m_document(document)
@@ -40,11 +51,96 @@ void DesignViewItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *op
     Q_UNUSED(option);
     Q_UNUSED(widget);
     const Design &design = m_document->design();
-    if (m_page == boardPage())
+    if (m_page == boardPage()) {
         paintBoard(*painter, design.board, design.library);
-    else
-        paintSheet(*painter, design.schematic, design.library, m_page,
-                   design.project.titleBlock);
+        return;
+    }
+    const SheetEditor *editor = activeEditor();
+    const Sheet *preview = editor == nullptr ? nullptr : editor->preview();
+    if (preview == nullptr) {
+        paintSheet(*painter, design.schematic, design.library, m_page, design.project.titleBlock);
+        paintSelection(*painter, design.schematic.sheets.at(m_page));
+        return;
+    }
+    // A drag in progress: the sheet as it would be.
+    Schematic schematic = design.schematic;
+    schematic.sheets[m_page] = *preview;
+    paintSheet(*painter, schematic, design.library, m_page, design.project.titleBlock);
+    paintSelection(*painter, *preview);
+}
+
+void DesignViewItem::setEditor(SheetEditor *editor)
+{
+    m_editor = editor;
+    setAcceptedMouseButtons(editor == nullptr ? Qt::NoButton : Qt::LeftButton);
+}
+
+SheetEditor *DesignViewItem::activeEditor() const
+{
+    if (m_editor == nullptr || m_editor->sheet() != m_page || m_page == boardPage())
+        return nullptr;
+    return m_editor;
+}
+
+void DesignViewItem::paintSelection(QPainter &painter, const Sheet &sheet) const
+{
+    const SheetEditor *editor = activeEditor();
+    if (editor == nullptr)
+        return;
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    QColor fill = paintcolor::selection();
+    fill.setAlpha(40);
+    // A line one pixel wide at any zoom.
+    QPen pen(paintcolor::selection(), 0);
+    const QList<SheetObjectShape> shapes = sheetObjectShapes(sheet, m_document->design().library);
+    for (const SheetObjectShape &shape : shapes) {
+        if (!editor->selection().contains(shape.id))
+            continue;
+        if (shape.polyline.isEmpty()) {
+            painter.setPen(pen);
+            painter.setBrush(fill);
+            painter.drawRect(shape.rect);
+        } else {
+            // A wire or a bus: a wide band along it.
+            QColor bandColor = paintcolor::selection();
+            bandColor.setAlpha(110);
+            painter.setPen(QPen(bandColor, SELECTED_LINE_WIDTH, Qt::SolidLine, Qt::RoundCap,
+                                Qt::RoundJoin));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawPolyline(shape.polyline);
+        }
+    }
+    const QRectF rubber = editor->rubberBand();
+    if (!rubber.isEmpty()) {
+        painter.setPen(QPen(paintcolor::selection(), 0, Qt::DashLine));
+        painter.setBrush(fill);
+        painter.drawRect(rubber);
+    }
+    painter.restore();
+}
+
+void DesignViewItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
+    SheetEditor *editor = activeEditor();
+    if (editor == nullptr || event->button() != Qt::LeftButton) {
+        event->ignore();
+        return;
+    }
+    editor->press(event->scenePos(), event->modifiers().testFlag(Qt::ControlModifier));
+    event->accept();
+}
+
+void DesignViewItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+{
+    if (SheetEditor *editor = activeEditor())
+        editor->move(event->scenePos());
+}
+
+void DesignViewItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+{
+    if (SheetEditor *editor = activeEditor())
+        editor->release(event->scenePos());
 }
 
 } // namespace ppcb

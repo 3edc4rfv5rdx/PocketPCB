@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Sheet editing: choose with a click, Ctrl and a click or a rectangle, drag along the grid, turn (R), mirror (X) and delete; Undo goes to the step's sheet and chooses what it touched, and the project keeps its grid steps
 ## v0.2.23 (2026-11-14)
 - F: Library panel has buttons to expand and to collapse all groups
 - I: Library gets parts that stay off the board: a power jack, audio jacks, a toggle and a rotary switch, a potentiometer, a speaker and a battery

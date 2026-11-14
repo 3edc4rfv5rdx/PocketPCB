@@ -6,6 +6,7 @@
 #include "format.h"
 #include "grid.h"
 #include "librarypanel.h"
+#include "sheeteditor.h"
 #include "libraryviewitem.h"
 #include "saveprojectdialog.h"
 
@@ -75,6 +76,10 @@ MainWindow::MainWindow(QWidget *parent)
         m_autosaveTimer->start(AppSettings::autosaveMinutes() * MS_PER_MINUTE);
     m_designItem = new DesignViewItem(m_document, m_canvas->scene()->sceneRect());
     m_canvas->scene()->addItem(m_designItem);
+    m_sheetEditor = new SheetEditor(m_document, m_canvas, this);
+    m_designItem->setEditor(m_sheetEditor);
+    connect(m_sheetEditor, &SheetEditor::changed, this, [this] { m_designItem->update(); });
+    connect(m_document, &Document::stepApplied, this, &MainWindow::showStep);
     connect(m_document, &Document::designChanged, this, &MainWindow::projectChanged);
     connect(m_document, &Document::modifiedChanged, this, &MainWindow::updateTitle);
     // 'currentChanged' covers the keyboard; 'tabBarClicked' adds the click
@@ -190,6 +195,26 @@ void MainWindow::createMenus()
     redoAction->setObjectName(QStringLiteral("actionRedo"));
     redoAction->setShortcut(QKeySequence::Redo);
     editMenu->addAction(redoAction);
+    editMenu->addSeparator();
+
+    const auto addEditAction = [this, editMenu](const QString &text, const char *name,
+                                                const QKeySequence &key, auto slot) {
+        QAction *action = editMenu->addAction(text);
+        action->setObjectName(QLatin1String(name));
+        action->setShortcut(key);
+        connect(action, &QAction::triggered, m_sheetEditor, slot);
+    };
+    addEditAction(SheetEditor::actionName(SheetEditor::Action::Rotate), "actionRotate",
+                  QKeySequence(Qt::Key_R), &SheetEditor::rotateSelection);
+    addEditAction(SheetEditor::actionName(SheetEditor::Action::Mirror), "actionMirror",
+                  QKeySequence(Qt::Key_X), &SheetEditor::mirrorSelection);
+    addEditAction(SheetEditor::actionName(SheetEditor::Action::Delete), "actionDelete",
+                  QKeySequence::Delete, &SheetEditor::deleteSelection);
+    editMenu->addSeparator();
+    addEditAction(tr("Select all"), "actionSelectAll", QKeySequence::SelectAll,
+                  &SheetEditor::selectAll);
+    addEditAction(tr("Deselect"), "actionDeselect", QKeySequence(Qt::Key_Escape),
+                  &SheetEditor::cancel);
 
     QMenu *viewMenu = menuBar()->addMenu(tr("&View"));
 
@@ -254,7 +279,7 @@ void MainWindow::createStatusBar()
     m_gridStepBox = new QComboBox(this);
     m_gridStepBox->setObjectName(QStringLiteral("gridStepBox"));
     for (Coord step : gridSteps()) {
-        m_gridStepBox->addItem(formatMmShort(step) + QLatin1Char(' ') + tr("mm"),
+        m_gridStepBox->addItem(gridStepText(step),
                                QVariant::fromValue<qlonglong>(step));
     }
     statusBar()->addPermanentWidget(m_gridStepBox);
@@ -265,6 +290,7 @@ void MainWindow::createStatusBar()
         m_canvas->setGridStep(m_gridStepBox->itemData(index).toLongLong());
     });
     connect(m_canvas, &CanvasView::gridStepChanged, this, &MainWindow::showGridStep);
+    connect(m_canvas, &CanvasView::gridStepChanged, this, &MainWindow::storeGridStep);
     connect(m_canvas, &CanvasView::cursorMoved, this, &MainWindow::showCursorPosition);
 
     showGridStep(m_canvas->gridStep());
@@ -438,7 +464,7 @@ bool MainWindow::chooseProjectToSaveAs()
     return saveProjectAs(dialog.parentFolder(), dialog.name());
 }
 
-void MainWindow::showPage(int page)
+void MainWindow::showPage(int page, bool fit)
 {
     showProject();
     m_designItem->setPage(page);
@@ -447,7 +473,46 @@ void MainWindow::showPage(int page)
         const QSignalBlocker blocker(m_tabs);
         m_tabs->setCurrentIndex(m_designItem->page());
     }
-    m_canvas->fitRect(m_designItem->pageBounds());
+    const int shown = m_designItem->page();
+    m_sheetEditor->setSheet(shown == m_designItem->boardPage() ? -1 : shown);
+    applyProjectGrid();
+    if (fit)
+        m_canvas->fitRect(m_designItem->pageBounds());
+}
+
+void MainWindow::showStep(int page, const QSet<ObjectId> &ids)
+{
+    if (page < 0)
+        return;
+    if (page != m_designItem->page() || !m_designItem->isVisible())
+        showPage(page, false);
+    m_sheetEditor->setSelection(ids);
+}
+
+void MainWindow::applyProjectGrid()
+{
+    const Project &project = m_document->design().project;
+    const bool board = m_designItem->page() == m_designItem->boardPage();
+    m_canvas->setGridStep(board ? project.boardGridStep : project.schematicGridStep);
+}
+
+void MainWindow::storeGridStep(Coord step)
+{
+    // A library file on the canvas has no project grid.
+    if (!m_designItem->isVisible())
+        return;
+    const bool board = m_designItem->page() == m_designItem->boardPage();
+    Design design = m_document->design();
+    Coord &stored = board ? design.project.boardGridStep : design.project.schematicGridStep;
+    if (stored == step)
+        return;
+    stored = step;
+    m_document->change(tr("Grid step") + QLatin1Char(' ') + gridStepText(step), design);
+}
+
+QString MainWindow::gridStepText(Coord step)
+{
+    return formatMmShort(step) + QLatin1Char(' ') + tr("mm");
 }
 
 void MainWindow::showProject()
@@ -469,11 +534,18 @@ void MainWindow::projectChanged()
     while (m_tabs->count() > 0)
         m_tabs->removeTab(0);
     for (int i = 0; i < design.schematic.sheets.size(); ++i) {
-        const QString title = design.schematic.sheets.at(i).title;
-        m_tabs->addTab(title.isEmpty() ? tr("Sheet %1").arg(i + 1) : title);
+        m_tabs->addTab(SheetEditor::sheetName(design.schematic.sheets.at(i), i));
     }
     m_tabs->addTab(tr("Board"));
     m_tabs->setCurrentIndex(m_designItem->page());
+    // The sheet edited may be gone, and so may what was chosen on it.
+    const int shown = m_designItem->page();
+    const int sheet = shown == m_designItem->boardPage() ? -1 : shown;
+    if (m_sheetEditor->sheet() != sheet)
+        m_sheetEditor->setSheet(sheet);
+    else
+        m_sheetEditor->setSelection(m_sheetEditor->selection());
+    applyProjectGrid();
     updateLibraryPanel();
 }
 

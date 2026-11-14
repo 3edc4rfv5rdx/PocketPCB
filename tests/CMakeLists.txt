@@ -23,6 +23,7 @@ ppcb_add_test(test_schematic)
 ppcb_add_test(test_board)
 ppcb_add_test(test_project)
 ppcb_add_test(test_document)
+ppcb_add_test(test_sheetedit)
 # Reads the library and the example project kept in the source tree.
 ppcb_add_test(test_files)
 target_compile_definitions(test_files PRIVATE PPCB_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

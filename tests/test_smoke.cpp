@@ -6,8 +6,10 @@
 #include "libraryfile.h"
 #include "librarypanel.h"
 #include "libraryviewitem.h"
+#include "paint.h"
 #include "mainwindow.h"
 #include "saveprojectdialog.h"
+#include "sheeteditor.h"
 
 #include <QAction>
 #include <QApplication>
@@ -537,6 +539,78 @@ private slots:
         QVERIFY(window.openProject(QStringLiteral(PPCB_SOURCE_DIR "/examples/demo/demo.ppcb")));
         QCOMPARE(tree->topLevelItemCount(), 2);
         QCOMPARE(tree->topLevelItem(1)->text(0), QStringLiteral("Project"));
+    }
+
+    void sheetIsEditedWithTheMouseAndKeys()
+    {
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QVERIFY(window.openProject(QStringLiteral(PPCB_SOURCE_DIR "/examples/demo/demo.ppcb")));
+        SheetEditor *editor = window.sheetEditor();
+        QCOMPARE(editor->sheet(), 0);
+        const auto sheet = [&window]() -> const Sheet & {
+            return window.document()->design().schematic.sheets.at(0);
+        };
+        const Component r1 = sheet().components.at(0);
+        QCOMPARE(r1.designator, QStringLiteral("R1"));
+        const QPointF at = toMm(r1.at);
+
+        // A click takes it, a drag moves it along the grid.
+        editor->press(at, false);
+        QCOMPARE(editor->selection(), QSet<ObjectId>({r1.id}));
+        editor->move(at + QPointF(5.2, 0.4));
+        QVERIFY(editor->preview() != nullptr);
+        editor->release(at + QPointF(5.2, 0.4));
+        QVERIFY(editor->preview() == nullptr);
+        QCOMPARE(sheet().components.at(0).at, r1.at + Point({5080000, 0}));
+        QAction *undo = window.findChild<QAction *>(QStringLiteral("actionUndo"));
+        QVERIFY2(undo->text().contains(QStringLiteral("R1")), qPrintable(undo->text()));
+
+        // Undo puts it back and chooses it again.
+        editor->cancel();
+        QVERIFY(editor->selection().isEmpty());
+        window.document()->undoStack()->undo();
+        QCOMPARE(sheet().components.at(0).at, r1.at);
+        QCOMPARE(editor->selection(), QSet<ObjectId>({r1.id}));
+
+        // R turns it about its own point.
+        window.findChild<QAction *>(QStringLiteral("actionRotate"))->trigger();
+        QCOMPARE(sheet().components.at(0).rotation, 90);
+        QCOMPARE(sheet().components.at(0).at, r1.at);
+
+        // A rectangle around it takes it, Delete removes it. The rectangle
+        // starts below and to the left, where the demo sheet is empty.
+        editor->press(at + QPointF(-12, 12), false);
+        QVERIFY(editor->selection().isEmpty());
+        editor->move(at + QPointF(12, -12));
+        QVERIFY(!editor->rubberBand().isEmpty());
+        editor->release(at + QPointF(12, -12));
+        QVERIFY(editor->selection().contains(r1.id));
+        window.findChild<QAction *>(QStringLiteral("actionDelete"))->trigger();
+        QVERIFY(editor->selection().isEmpty());
+        for (const Component &component : sheet().components)
+            QVERIFY(component.id != r1.id);
+
+        // The board is not a sheet.
+        window.showPage(window.designItem()->boardPage());
+        QCOMPARE(editor->sheet(), -1);
+    }
+
+    void gridStepIsKeptInTheProject()
+    {
+        MainWindow window;
+        QAction *next = window.findChild<QAction *>(QStringLiteral("actionGridNext"));
+        next->trigger();
+        QCOMPARE(window.document()->design().project.schematicGridStep, mmToNm(5.08));
+        // The board has a step of its own.
+        window.showPage(window.designItem()->boardPage());
+        QCOMPARE(window.canvas()->gridStep(), window.document()->design().project.boardGridStep);
+        window.showPage(0);
+        QCOMPARE(window.canvas()->gridStep(), mmToNm(5.08));
+        // Undo gives the old step back to the canvas.
+        window.document()->undoStack()->undo();
+        QCOMPARE(window.canvas()->gridStep(), mmToNm(2.54));
     }
 
     void undoActionsAndTitleFollowTheDocument()

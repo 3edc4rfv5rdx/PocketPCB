@@ -59,6 +59,9 @@ const double NO_CONNECT_HALF = 0.635;
 // The board.
 const double OUTLINE_WIDTH = 0.15;
 const double ZONE_LINE_WIDTH = 0.15;
+// A circle or an arc is found by the mouse along this many straight pieces.
+const int CURVE_PIECES = 32;
+const double FULL_TURN_DEGREES = 360.0;
 // A rounded corner of the outline is drawn with this many straight pieces.
 const int CORNER_PIECES = 12;
 // What an empty board is fitted to.
@@ -245,6 +248,47 @@ QRectF graphicBounds(const Graphic &graphic)
     }
     }
     return bounds.adjusted(-half, -half, half, half);
+}
+
+// The line a drawing is found by: its outline, or nothing for one that is
+// found by its area (a text, a filled polygon). Circles and arcs are cut into
+// straight pieces.
+QPolygonF graphicLine(const Graphic &graphic)
+{
+    const QPointF a = toMm(graphic.a);
+    const QPointF b = toMm(graphic.b);
+    QPolygonF line;
+    switch (graphic.kind) {
+    case GraphicKind::Line:
+        line << a << b;
+        break;
+    case GraphicKind::Rect:
+        line << a << QPointF(b.x(), a.y()) << b << QPointF(a.x(), b.y()) << a;
+        break;
+    case GraphicKind::Circle:
+    case GraphicKind::Arc: {
+        const bool whole = graphic.kind == GraphicKind::Circle;
+        const double start = whole ? 0 : graphic.startAngle;
+        const double span = whole ? FULL_TURN_DEGREES : graphic.spanAngle;
+        const double radius = nmToMm(graphic.radius);
+        for (int i = 0; i <= CURVE_PIECES; ++i) {
+            // Angles grow towards +Y, as everywhere in the model.
+            const double angle = (start + span * i / CURVE_PIECES) * PI / HALF_TURN;
+            line << a + QPointF(radius * std::cos(angle), radius * std::sin(angle));
+        }
+        break;
+    }
+    case GraphicKind::Polygon:
+        if (graphic.filled)
+            break;
+        for (const Point &point : graphic.points)
+            line << toMm(point);
+        line << toMm(graphic.points.value(0));
+        break;
+    case GraphicKind::Text:
+        break;
+    }
+    return line;
 }
 
 // Collects rectangles into one. QRectF::united() ignores rectangles of zero
@@ -868,6 +912,72 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const Library &li
     for (const NoConnect &mark : sheet.noConnects)
         paintNoConnect(painter, mark);
     painter.restore();
+}
+
+QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &library)
+{
+    QList<SheetObjectShape> shapes;
+    const auto addRect = [&shapes](const ObjectId &id, const QRectF &rect) {
+        shapes.append(SheetObjectShape{id, rect, QPolygonF()});
+    };
+    for (const SheetGraphic &item : sheet.graphics) {
+        shapes.append(SheetObjectShape{item.id, graphicBounds(item.graphic),
+                                       graphicLine(item.graphic)});
+    }
+    for (const Bus &bus : sheet.buses)
+        shapes.append(SheetObjectShape{bus.id, toPolygon(bus.points).boundingRect(),
+                                       toPolygon(bus.points)});
+    for (const Wire &wire : sheet.wires)
+        shapes.append(SheetObjectShape{wire.id, toPolygon(wire.points).boundingRect(),
+                                       toPolygon(wire.points)});
+    for (const Component &component : sheet.components) {
+        Bounds bounds;
+        const Symbol *symbol = library.findSymbolOfPart(component.part);
+        if (symbol == nullptr) {
+            bounds.add(missingRect(toMm(component.at), MISSING_SYMBOL_SIZE));
+        } else {
+            // The drawing without the room symbolBounds() keeps for pin texts.
+            Bounds body;
+            for (const Graphic &graphic : symbol->graphics)
+                body.add(graphicBounds(graphic));
+            for (const Pin &pin : symbol->pins)
+                body.add(QRectF(toMm(pin.at), toMm(pinBodyEnd(pin))).normalized());
+            if (!body.isEmpty())
+                bounds.add(componentTransform(component).mapRect(body.rect()));
+            else
+                bounds.add(missingRect(toMm(component.at), MISSING_SYMBOL_SIZE));
+        }
+        bounds.add(textBounds(toMm(component.at + component.refAt), component.designator,
+                              PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center));
+        if (!component.value.isEmpty()) {
+            bounds.add(textBounds(toMm(component.at + component.valueAt), component.value,
+                                  PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center));
+        }
+        addRect(component.id, bounds.rect());
+    }
+    for (const PowerSymbol &power : sheet.powerSymbols) {
+        // Drawn pointing up, then turned about its point.
+        Bounds bounds;
+        bounds.add(QRectF(QPointF(-POWER_BAR_HALF, -POWER_STEM), QPointF(POWER_BAR_HALF, 0)));
+        bounds.add(textBounds(QPointF(0, -(POWER_STEM + LABEL_TEXT_HEIGHT / 2 + LABEL_GAP)),
+                              power.name, LABEL_TEXT_HEIGHT, TextAlign::Center));
+        QTransform transform;
+        transform.translate(nmToMm(power.at.x), nmToMm(power.at.y));
+        transform.rotate(power.rotation);
+        addRect(power.id, transform.mapRect(bounds.rect()));
+    }
+    for (const Label &label : sheet.labels) {
+        QTransform transform;
+        transform.translate(nmToMm(label.at.x), nmToMm(label.at.y));
+        transform.rotate(label.rotation);
+        const QRectF text = textBounds(QPointF(0, -(LABEL_TEXT_HEIGHT / 2 + LABEL_GAP)),
+                                       label.text, LABEL_TEXT_HEIGHT, TextAlign::Left);
+        // The label's point belongs to it too.
+        addRect(label.id, transform.mapRect(text.united(QRectF(0, -LABEL_GAP, 0, LABEL_GAP))));
+    }
+    for (const NoConnect &mark : sheet.noConnects)
+        addRect(mark.id, squareAround(toMm(mark.at), 2 * NO_CONNECT_HALF));
+    return shapes;
 }
 
 QRectF boardBounds(const Board &board, const Library &library)

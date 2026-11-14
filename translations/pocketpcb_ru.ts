@@ -433,10 +433,6 @@
         <translation>Проекты PocketPCB</translation>
     </message>
     <message>
-        <source>Sheet %1</source>
-        <translation>Лист %1</translation>
-    </message>
-    <message>
         <source>Board</source>
         <translation>Плата</translation>
     </message>
@@ -467,6 +463,45 @@
     <message>
         <source>Open library folder</source>
         <translation>Открыть папку библиотеки</translation>
+    </message>
+    <message>
+        <source>Select all</source>
+        <translation>Выделить всё</translation>
+    </message>
+    <message>
+        <source>Deselect</source>
+        <translation>Снять выделение</translation>
+    </message>
+    <message>
+        <source>Grid step</source>
+        <translation>Шаг сетки</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::SheetEditor</name>
+    <message>
+        <source>Move</source>
+        <translation>Переместить</translation>
+    </message>
+    <message>
+        <source>Rotate</source>
+        <translation>Повернуть</translation>
+    </message>
+    <message>
+        <source>Mirror</source>
+        <translation>Отразить</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Удалить</translation>
+    </message>
+    <message>
+        <source>objects</source>
+        <translation>объектов</translation>
+    </message>
+    <message>
+        <source>Sheet %1</source>
+        <translation>Лист %1</translation>
     </message>
 </context>
 <context>

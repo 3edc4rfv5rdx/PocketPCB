@@ -4,6 +4,7 @@
 
 #include <QColor>
 #include <QPointF>
+#include <QPolygonF>
 #include <QRectF>
 
 class QPainter;
@@ -40,6 +41,8 @@ inline QColor boardOutline() { return QColor(60, 60, 60); }
 inline QColor bareHole() { return QColor(120, 120, 120); }
 // What stands in for a symbol or a footprint the project library lacks.
 inline QColor missing() { return QColor(220, 0, 0); }
+// The selection and the rectangle drawn to choose with.
+inline QColor selection() { return QColor(0, 120, 215); }
 } // namespace paintcolor
 
 QPointF toMm(const Point &point);
@@ -65,6 +68,22 @@ QRectF paperRect(PaperSize paper);
 // from 'library'; one it lacks is drawn as a red square with a question mark.
 void paintSheet(QPainter &painter, const Schematic &schematic, const Library &library,
                 int index, const TitleBlock &titleBlock);
+
+// Where an object of a sheet is for the mouse, in millimetres. What is a
+// line — a wire, a bus, a drawing that is not filled in — is found by its
+// line; anything else by a rectangle around what is drawn of it (a
+// component's texts included). 'rect' holds the whole object either way.
+struct SheetObjectShape
+{
+    ObjectId id;
+    QRectF rect;
+    // The line, for what is found by it; empty for the rest.
+    QPolygonF polyline;
+};
+
+// The shapes of everything placed on 'sheet', in the order it is drawn: the
+// last is on top.
+QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &library);
 
 // A rectangle that holds everything paintBoard() draws; never empty.
 QRectF boardBounds(const Board &board, const Library &library);
