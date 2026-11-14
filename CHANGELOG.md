@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- I: Library gets pin headers 1×1 to 1×10, screw terminals for 2 and 3 wires and a wire pad
 - F: Electrolytic capacitor footprints have their pads on the 2.54 grid
 - F: Library panel keeps the groups the user opened, the chosen part and the scroll when the library is read again
 - I: Library gets a diode, an LED, NPN and PNP transistors, JFETs and MOSFETs with TO-92 and TO-220 footprints

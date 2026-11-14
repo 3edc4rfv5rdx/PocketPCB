@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "wire-pad",
+  "footprints": ["wire-pad"],
+  "prefix": "J",
+  "prefixGost": "X",
+  "value": "",
+  "connector": true,
+  "name": {"en": "Wire pad", "uk": "Площадка під провід", "ru": "Площадка под провод"}
+}

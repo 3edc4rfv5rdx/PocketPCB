@@ -1,0 +1,23 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "rect", "from": [-2.54, -1.27], "to": [0, 24.13]}
+  ],
+  "pins": [
+    {"number": "1", "at": [-5.08, 0.0], "side": "left"},
+    {"number": "2", "at": [-5.08, 2.54], "side": "left"},
+    {"number": "3", "at": [-5.08, 5.08], "side": "left"},
+    {"number": "4", "at": [-5.08, 7.62], "side": "left"},
+    {"number": "5", "at": [-5.08, 10.16], "side": "left"},
+    {"number": "6", "at": [-5.08, 12.7], "side": "left"},
+    {"number": "7", "at": [-5.08, 15.24], "side": "left"},
+    {"number": "8", "at": [-5.08, 17.78], "side": "left"},
+    {"number": "9", "at": [-5.08, 20.32], "side": "left"},
+    {"number": "10", "at": [-5.08, 22.86], "side": "left"}
+  ],
+  "refAt": [-1.27, -3.81],
+  "valueAt": [-1.27, 26.67],
+  "showPinNumbers": true,
+  "showPinNames": false
+}

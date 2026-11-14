@@ -1,0 +1,10 @@
+{
+  "type": "pocketpcb-footprint",
+  "format": 1,
+  "pads": [
+    {"number": "1", "at": [0, 0], "shape": "circle", "size": [2.5, 2.5], "hole": 1.2}
+  ],
+  "graphics": [],
+  "refAt": [0, -2.3],
+  "valueAt": [0, 2.3]
+}

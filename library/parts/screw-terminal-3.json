@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "conn-1x03",
+  "footprints": ["screw-terminal-1x03-5.08"],
+  "prefix": "J",
+  "prefixGost": "X",
+  "value": "",
+  "connector": true,
+  "name": {"en": "Screw terminal, 3 contacts", "uk": "Гвинтова клема, 3 контакти", "ru": "Винтовой клеммник, 3 контакта"}
+}

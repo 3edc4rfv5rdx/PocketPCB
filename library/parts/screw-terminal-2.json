@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "conn-1x02",
+  "footprints": ["screw-terminal-1x02-5.08"],
+  "prefix": "J",
+  "prefixGost": "X",
+  "value": "",
+  "connector": true,
+  "name": {"en": "Screw terminal, 2 contacts", "uk": "Гвинтова клема, 2 контакти", "ru": "Винтовой клеммник, 2 контакта"}
+}
