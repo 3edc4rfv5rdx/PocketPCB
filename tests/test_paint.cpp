@@ -111,9 +111,32 @@ QImage renderWith(Paint paint)
     return image;
 }
 
-QImage render(const Board &board)
+// The pad of boardWithPad(): no hole, 2 mm across, 3 mm to the right of the
+// footprint's origin.
+Footprint padFootprint()
 {
-    return renderWith([&board](QPainter &painter) { paintBoard(painter, board); });
+    Pad pad;
+    pad.at = Point{3000000, 0};
+    pad.sizeX = 2000000;
+    pad.sizeY = 2000000;
+    pad.layers = PadLayers::Front;
+    Footprint footprint;
+    footprint.pads.append(pad);
+    return footprint;
+}
+
+// A project library with padFootprint() as "f".
+ProjectLibrary padLibrary()
+{
+    ProjectLibrary library;
+    library.footprints.insert(QStringLiteral("f"), padFootprint());
+    return library;
+}
+
+QImage render(const Board &board, const ProjectLibrary &library = padLibrary())
+{
+    return renderWith(
+        [&board, &library](QPainter &painter) { paintBoard(painter, board, library); });
 }
 
 // A schematic of one sheet with nothing on it.
@@ -124,10 +147,17 @@ Schematic emptySchematic()
     return schematic;
 }
 
-QImage render(const Schematic &schematic)
+QImage render(const Schematic &schematic, const ProjectLibrary &library = ProjectLibrary())
 {
-    return renderWith(
-        [&schematic](QPainter &painter) { paintSheet(painter, schematic, 0, TitleBlock()); });
+    return renderWith([&schematic, &library](QPainter &painter) {
+        paintSheet(painter, schematic, library, 0, TitleBlock());
+    });
+}
+
+// The first sheet of the design's schematic.
+QImage render(const Design &design)
+{
+    return render(design.schematic, design.library);
 }
 
 // Whether any pixel of the rectangle (millimetres) has the colour.
@@ -160,33 +190,28 @@ Symbol arrowSymbol()
 
 // A sheet with one component of the given symbol at -5, -5 mm: away from
 // the frame, whose lines run through the positive quarter of the picture.
-Schematic schematicWith(const Symbol &symbol, int rotation, bool mirrored)
+// The symbol is "s", of the part "p".
+Design schematicWith(const Symbol &symbol, int rotation, bool mirrored)
 {
-    Schematic schematic = emptySchematic();
-    schematic.symbols.insert(QStringLiteral("s"), symbol);
+    Design design;
+    design.schematic = emptySchematic();
+    Part part;
+    part.symbol = QStringLiteral("s");
+    design.library.parts.insert(QStringLiteral("p"), part);
+    design.library.symbols.insert(QStringLiteral("s"), symbol);
     Component component;
-    component.symbol = QStringLiteral("s");
+    component.part = QStringLiteral("p");
     component.at = Point{-5000000, -5000000};
     component.rotation = rotation;
     component.mirrored = mirrored;
-    schematic.sheets[0].components.append(component);
-    return schematic;
+    design.schematic.sheets[0].components.append(component);
+    return design;
 }
 
-// A board with one footprint placed at the origin: a single pad without a
-// hole, 2 mm across, 3 mm to the right of the footprint's origin.
+// A board with the footprint "f" of padLibrary() placed at the origin.
 Board boardWithPad(int rotation, BoardSide side)
 {
-    Pad pad;
-    pad.at = Point{3000000, 0};
-    pad.sizeX = 2000000;
-    pad.sizeY = 2000000;
-    pad.layers = PadLayers::Front;
-    Footprint footprint;
-    footprint.pads.append(pad);
-
     Board board;
-    board.footprints.insert(QStringLiteral("f"), footprint);
     Placement placement;
     placement.footprint = QStringLiteral("f");
     placement.rotation = rotation;
@@ -439,8 +464,8 @@ private slots:
 
         // A sheet that is not there draws nothing at all.
         const QImage nothing = renderWith([&schematic](QPainter &painter) {
-            paintSheet(painter, schematic, 1, TitleBlock());
-            paintSheet(painter, schematic, -1, TitleBlock());
+            paintSheet(painter, schematic, ProjectLibrary(), 1, TitleBlock());
+            paintSheet(painter, schematic, ProjectLibrary(), -1, TitleBlock());
         });
         QCOMPARE(nothing, newImage());
     }
@@ -459,7 +484,7 @@ private slots:
         const auto renderAround = [&schematic](double x, double y, const TitleBlock &block) {
             return renderWith([&](QPainter &painter) {
                 painter.translate(-x, -y);
-                paintSheet(painter, schematic, 0, block);
+                paintSheet(painter, schematic, ProjectLibrary(), 0, block);
             });
         };
         // The corner of the A4 frame is at 292, 205. The block is 90 mm wide
@@ -651,11 +676,11 @@ private slots:
     void boardBoundsHoldTheBoard()
     {
         // Something to fit the view to even when the board is empty.
-        const QRectF empty = boardBounds(Board());
+        const QRectF empty = boardBounds(Board(), ProjectLibrary());
         QVERIFY(empty.width() > 0 && empty.height() > 0);
 
         Board board = boardWithOutline(0);
-        QCOMPARE(boardBounds(board), QRectF(-8, -8, 16, 16));
+        QCOMPARE(boardBounds(board, ProjectLibrary()), QRectF(-8, -8, 16, 16));
 
         // What sticks out of the outline counts too.
         Via via;
@@ -668,14 +693,37 @@ private slots:
         track.from = Point{0, 0};
         track.to = Point{0, 15000000};
         board.tracks.append(track);
-        const QRectF bounds = boardBounds(board);
+        const QRectF bounds = boardBounds(board, ProjectLibrary());
         QVERIFY(bounds.contains(QRectF(-8, -8, 21, 23.5)));
 
         // A placed footprint counts where it is placed, turned as it is.
         Board placed = boardWithPad(90, BoardSide::Top);
         placed.placements[0].at = Point{20000000, 0};
-        QVERIFY(boardBounds(placed).contains(QPointF(20, 3)));
-        QVERIFY(!boardBounds(placed).contains(QPointF(0, 0)));
+        QVERIFY(boardBounds(placed, padLibrary()).contains(QPointF(20, 3)));
+        QVERIFY(!boardBounds(placed, padLibrary()).contains(QPointF(0, 0)));
+        // One the library lacks counts as the square drawn in its place.
+        QVERIFY(boardBounds(placed, ProjectLibrary()).contains(QPointF(20, 0)));
+    }
+
+    // What the project library lacks is a red square with a question mark,
+    // where the symbol or the footprint would be.
+    void missingLibraryItemsAreMarked()
+    {
+        Design design = schematicWith(arrowSymbol(), 0, false);
+        QVERIFY(!anyColor(render(design), -8, -8, -2, -2, paintcolor::missing()));
+        design.library.symbols.clear();
+        QVERIFY(anyColor(render(design), -8, -8, -2, -2, paintcolor::missing()));
+        // The part itself missing.
+        design = schematicWith(arrowSymbol(), 0, false);
+        design.library.parts.clear();
+        QVERIFY(anyColor(render(design), -8, -8, -2, -2, paintcolor::missing()));
+
+        const Board board = boardWithPad(0, BoardSide::Top);
+        QVERIFY(!anyColor(render(board), -1.8, -1.8, 1.8, 1.8, paintcolor::missing()));
+        const QImage missing = render(board, ProjectLibrary());
+        QVERIFY(anyColor(missing, -1.8, -1.8, 1.8, 1.8, paintcolor::missing()));
+        // No pad is drawn.
+        QVERIFY(!isColor(colorAt(missing, 3, 0), paintcolor::padFront()));
     }
 
     void textIsDrawn()

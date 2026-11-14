@@ -2,6 +2,7 @@
 
 #include "board.h"
 #include "grid.h"
+#include "projectlibrary.h"
 #include "schematic.h"
 
 #include <QList>
@@ -14,6 +15,8 @@ namespace ppcb {
 extern const char FILE_EXT_PROJECT[];
 extern const char FILE_EXT_SCHEMATIC[];
 extern const char FILE_EXT_BOARD[];
+// The folder of the project library, beside the project file.
+extern const char PROJECT_LIBRARY_FOLDER[];
 
 // Names of the two net classes a new project starts with: the class of an
 // ordinary net and the class of the nets of power and ground symbols.
@@ -136,12 +139,14 @@ public:
     static bool write(const QString &path, const Project &project, QString &error);
 };
 
-// Everything of one project: the content of its three files.
+// Everything of one project: the content of its three files and of its
+// library folder.
 struct Design
 {
     Project project;
     Schematic schematic;
     Board board;
+    ProjectLibrary library;
 };
 
 bool operator==(const Design &a, const Design &b);
@@ -152,20 +157,33 @@ inline bool operator!=(const Design &a, const Design &b) { return !(a == b); }
 // classes, a schematic of one empty sheet and an empty board.
 Design newDesign(const QString &baseName);
 
-// The three files together. 'projectPath' is the .ppcb file; the other two
-// are found beside it by the names it holds. On failure both return false
+// Messages for the user about what the schematic and the board use that
+// the project library does not have: a part, the symbol of a part, a
+// footprint. Each names the missing file, as "library/parts/diode.json".
+QStringList missingLibraryItems(const Design &design);
+
+// The three files and the library folder together. 'projectPath' is the
+// .ppcb file; the other two files are found beside it by the names it
+// holds, the library folder beside it as well. On failure both return false
 // and put a message that names the file into 'error'.
 class DesignFiles
 {
 public:
-    // Where the schematic and the board of the project file 'projectPath' lie.
+    // Where the schematic, the board and the library folder of the project
+    // file 'projectPath' lie.
     static QString schematicPath(const QString &projectPath, const Project &project);
     static QString boardPath(const QString &projectPath, const Project &project);
+    static QString libraryPath(const QString &projectPath);
 
-    // Changes 'design' only when all three files were read.
-    static bool read(const QString &projectPath, Design &design, QString &error);
-    // Writes the schematic and the board first and the project last. A
-    // failure may leave the files written before it already replaced.
+    // Changes 'design' only when all three files were read. The library does
+    // not stop a project from opening: library files that cannot be read and
+    // items the project uses but the library lacks go into 'problems', when
+    // given, as messages for the user.
+    static bool read(const QString &projectPath, Design &design, QString &error,
+                     QStringList *problems = nullptr);
+    // Writes the library first, then the schematic and the board, and the
+    // project last. A failure may leave the files written before it already
+    // replaced.
     static bool write(const QString &projectPath, const Design &design, QString &error);
 };
 

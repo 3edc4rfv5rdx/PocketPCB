@@ -2,32 +2,23 @@
 
 #include "graphic.h"
 #include "objectid.h"
-#include "symbol.h"
 
 #include <QList>
-#include <QMap>
 
 namespace ppcb {
 
-// A part placed on a sheet. What it needs from the library is copied in, so
-// the schematic opens the same whether or not the library still has the part.
+// A part placed on a sheet. The part, its symbol and its footprint are
+// found in the project library by name (see ProjectLibrary).
 struct Component
 {
     ObjectId id;
-    // Library name of the part it was placed from.
+    // Name of the part it was placed from.
     QString part;
-    // Name of its symbol in Schematic::symbols.
-    QString symbol;
-    // Library name of the chosen footprint; empty when it has none.
+    // Name of the chosen footprint; empty when it has none.
     QString footprint;
     // Reference designator ("R1") and value ("10k").
     QString designator;
     QString value;
-    // Designator prefixes of the part in both styles, for switching the style.
-    QString prefix;
-    QString prefixGost;
-    // A connector or wire pad (used by ERC).
-    bool connector = false;
     // Not on the board: mounted on the panel, on a heatsink and so on.
     bool offBoard = false;
 
@@ -111,12 +102,9 @@ struct Sheet
     QList<SheetGraphic> graphics;
 };
 
-// The whole schematic of a project: its sheets and the symbols they use.
+// The whole schematic of a project.
 struct Schematic
 {
-    // Symbols copied from the library, by library name. Shared by all the
-    // components placed from the same part.
-    QMap<QString, Symbol> symbols;
     // At least one in a schematic read from a file.
     QList<Sheet> sheets;
 };

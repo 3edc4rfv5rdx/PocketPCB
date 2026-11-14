@@ -16,29 +16,10 @@ ObjectId id(quint64 value)
     return ObjectId{value};
 }
 
-Pad roundPad(const QString &number, const Point &at)
-{
-    Pad pad;
-    pad.number = number;
-    pad.at = at;
-    pad.sizeX = 1800000;
-    pad.sizeY = 1800000;
-    pad.hole = 900000;
-    return pad;
-}
-
 // One object of every kind (two placements), every field non-default.
 Board fullBoard()
 {
     Board board;
-
-    Footprint resistor;
-    resistor.pads.append(roundPad(QStringLiteral("1"), Point{-3810000, 0}));
-    resistor.pads.append(roundPad(QStringLiteral("2"), Point{3810000, 0}));
-    // A pad tied to no pin.
-    resistor.pads.append(roundPad(QString(), Point{0, 2540000}));
-    board.footprints.insert(QStringLiteral("resistor-7.62"), resistor);
-    board.footprints.insert(QStringLiteral("empty"), Footprint());
 
     // A rectangle of 50 x 30 mm with one corner cut off and one rounded.
     board.outline = {OutlineCorner{Point{0, 0}, 0}, OutlineCorner{Point{50 * MM, 0}, 2 * MM},
@@ -204,8 +185,6 @@ private slots:
     statement; \
     QVERIFY2(other != board, #statement)
 
-        CHANGED(other.footprints.remove(QStringLiteral("empty")));
-        CHANGED(other.footprints[QStringLiteral("resistor-7.62")].pads[0].hole += 1);
 
         CHANGED(other.outline[1].at.x += 1);
         CHANGED(other.outline[1].radius = 0);
@@ -312,8 +291,8 @@ private slots:
 
     void everyListMustBePresent()
     {
-        const char *const keys[] = {"footprints", "outline", "placements", "tracks",
-                                    "vias",       "holes",   "graphics",   "zones"};
+        const char *const keys[] = {"outline", "placements", "tracks", "vias",
+                                    "holes",   "graphics",   "zones"};
         for (const char *key : keys) {
             QJsonObject root = boardToJson(fullBoard());
             root.remove(QLatin1String(key));
@@ -389,8 +368,9 @@ private slots:
 
     void placementErrors()
     {
+        // The footprint is looked up in the project library, which may lack it.
         QString error = errorOfChange("placements", "footprint", QStringLiteral("dip-8"));
-        QVERIFY2(error.startsWith(QStringLiteral("placements[0].footprint: ")), qPrintable(error));
+        QCOMPARE(error, QString());
 
         error = errorOfChange("placements", "footprint", QStringLiteral(""));
         QVERIFY2(error.startsWith(QStringLiteral("placements[0].footprint: ")), qPrintable(error));
@@ -425,12 +405,13 @@ private slots:
         error = errorOfChange("placements", "nets", QJsonArray());
         QVERIFY2(error.startsWith(QStringLiteral("placements[0].nets: ")), qPrintable(error));
 
-        // The footprint has pads 1 and 2 only.
+        // Pad numbers are not checked against the footprint: it lies in the
+        // project library, which may lack it or have it changed.
         error = errorOfChange("placements", "nets",
                               netsObject(QStringLiteral("3"), QStringLiteral("GND")));
-        QVERIFY2(error.startsWith(QStringLiteral("placements[0].nets.3: ")), qPrintable(error));
+        QCOMPARE(error, QString());
 
-        // Its third pad has no number, and no number names no pad.
+        // No number names no pad.
         error = errorOfChange("placements", "nets", netsObject(QString(), QStringLiteral("GND")));
         QVERIFY2(error.startsWith(QStringLiteral("placements[0].nets.: ")), qPrintable(error));
 
@@ -440,11 +421,6 @@ private slots:
         error = errorOfChange("placements", "nets",
                               netsObject(QStringLiteral("1"), QStringLiteral("")));
         QVERIFY2(error.startsWith(QStringLiteral("placements[0].nets.1: ")), qPrintable(error));
-
-        // A net on a footprint without pads.
-        error = errorOfChange("placements", 1, "nets",
-                              netsObject(QStringLiteral("1"), QStringLiteral("GND")));
-        QVERIFY2(error.startsWith(QStringLiteral("placements[1].nets.1: ")), qPrintable(error));
 
         // No pad has a net: fine.
         error = errorOfChange("placements", "nets", QJsonObject());
@@ -547,24 +523,6 @@ private slots:
         QCOMPARE(error, QString());
         error = errorOfChange("zones", "net", QStringLiteral(""));
         QCOMPARE(error, QString());
-    }
-
-    void footprintTableErrors()
-    {
-        // A footprint of the table that is not a footprint.
-        QJsonObject root = boardToJson(fullBoard());
-        QJsonObject footprints = root.value(QStringLiteral("footprints")).toObject();
-        footprints.insert(QStringLiteral("resistor-7.62"), 5);
-        root.insert(QStringLiteral("footprints"), footprints);
-        QString error = errorOf(root);
-        QVERIFY2(error.startsWith(QStringLiteral("footprints.resistor-7.62: ")), qPrintable(error));
-
-        // A damaged footprint is named with its place inside the table.
-        footprints.insert(QStringLiteral("resistor-7.62"), QJsonObject());
-        root.insert(QStringLiteral("footprints"), footprints);
-        error = errorOf(root);
-        QVERIFY2(error.startsWith(QStringLiteral("footprints.resistor-7.62.pads: ")),
-                 qPrintable(error));
     }
 };
 

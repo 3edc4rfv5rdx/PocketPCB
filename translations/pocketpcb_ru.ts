@@ -178,10 +178,6 @@
         <translation>ожидается один из углов 0 90 180 270</translation>
     </message>
     <message>
-        <source>the symbol is not in the list of symbols</source>
-        <translation>символа нет в списке символов</translation>
-    </message>
-    <message>
         <source>at least two points are expected</source>
         <translation>ожидается не менее двух точек</translation>
     </message>
@@ -196,14 +192,6 @@
     <message>
         <source>a schematic needs at least one sheet</source>
         <translation>в схеме должен быть хотя бы один лист</translation>
-    </message>
-    <message>
-        <source>the footprint is not in the list of footprints</source>
-        <translation>посадочного места нет в списке посадочных мест</translation>
-    </message>
-    <message>
-        <source>the footprint has no pad with this number</source>
-        <translation>у посадочного места нет площадки с таким номером</translation>
     </message>
     <message>
         <source>the ends of a track coincide</source>
@@ -253,6 +241,10 @@
         <source>the width is not in the list of track widths</source>
         <translation>ширины нет в списке ширин дорожек</translation>
     </message>
+    <message>
+        <source>a pad number is expected</source>
+        <translation>ожидается номер площадки</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::Paint</name>
@@ -266,6 +258,21 @@
     <message>
         <source>this is not a PocketPCB library file</source>
         <translation>это не файл библиотеки PocketPCB</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::ProjectLibraryFiles</name>
+    <message>
+        <source>the file does not belong in this folder</source>
+        <translation>этому файлу не место в этой папке</translation>
+    </message>
+    <message>
+        <source>cannot make the folder</source>
+        <translation>не удалось создать папку</translation>
+    </message>
+    <message>
+        <source>the file is missing</source>
+        <translation>файла нет</translation>
     </message>
 </context>
 <context>
@@ -401,6 +408,10 @@
     <message>
         <source>untitled</source>
         <translation>без имени</translation>
+    </message>
+    <message>
+        <source>more problems with the project library</source>
+        <translation>ещё проблем с библиотекой проекта</translation>
     </message>
 </context>
 <context>

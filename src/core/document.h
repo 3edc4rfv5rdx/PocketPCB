@@ -48,15 +48,16 @@ public:
     void startNew();
     void startNew(const QString &baseName);
     // Reads a project. On failure returns false, puts a message for the user
-    // into 'error' and leaves the document as it was.
-    bool open(const QString &projectPath, QString &error);
+    // into 'error' and leaves the document as it was. What is wrong with the
+    // project library does not stop it: see DesignFiles::read().
+    bool open(const QString &projectPath, QString &error, QStringList *problems = nullptr);
     // Writes the files that changed since they were read or written, and
     // those that are missing. On failure returns false with a message; what
     // was written before the failure counts as saved.
     bool save(QString &error);
-    // Writes all three files at a new place and names the schematic and the
-    // board after the project file. The history is kept. After a failure the
-    // document still belongs to the old place.
+    // Writes all three files and the library at a new place and names the
+    // schematic and the board after the project file. The history is kept.
+    // After a failure the document still belongs to the old place.
     bool saveAs(const QString &projectPath, QString &error);
 
     // A project lives in a folder of its own, named like the project:

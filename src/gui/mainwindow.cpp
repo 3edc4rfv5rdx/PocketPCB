@@ -278,13 +278,24 @@ void MainWindow::newProject()
 bool MainWindow::openProject(const QString &path)
 {
     QString error;
-    if (!m_document->open(path, error)) {
+    QStringList problems;
+    if (!m_document->open(path, error, &problems)) {
         statusBar()->showMessage(error);
         return false;
     }
     showPage(0);
     updateTitle();
-    statusBar()->showMessage(path);
+    // The first problem in full, and how many more there are.
+    if (problems.isEmpty()) {
+        statusBar()->showMessage(path);
+        return true;
+    }
+    QString message = problems.first();
+    if (problems.size() > 1) {
+        message += QStringLiteral(" — ") + tr("more problems with the project library")
+                   + QStringLiteral(": ") + QString::number(problems.size() - 1);
+    }
+    statusBar()->showMessage(message);
     return true;
 }
 

@@ -8,6 +8,7 @@ namespace ppcb {
 const char FILE_EXT_PROJECT[] = ".ppcb";
 const char FILE_EXT_SCHEMATIC[] = ".ppsch";
 const char FILE_EXT_BOARD[] = ".ppbrd";
+const char PROJECT_LIBRARY_FOLDER[] = "library";
 
 const char NET_CLASS_SIGNAL[] = "Signal";
 const char NET_CLASS_POWER[] = "Power";
@@ -366,7 +367,8 @@ bool operator==(const Project &a, const Project &b)
 
 bool operator==(const Design &a, const Design &b)
 {
-    return a.project == b.project && a.schematic == b.schematic && a.board == b.board;
+    return a.project == b.project && a.schematic == b.schematic && a.board == b.board
+           && a.library == b.library;
 }
 
 QJsonObject projectToJson(const Project &project)
@@ -472,7 +474,47 @@ QString DesignFiles::boardPath(const QString &projectPath, const Project &projec
     return besideProject(projectPath, project.boardFile);
 }
 
-bool DesignFiles::read(const QString &projectPath, Design &design, QString &error)
+QString DesignFiles::libraryPath(const QString &projectPath)
+{
+    return besideProject(projectPath, QLatin1String(PROJECT_LIBRARY_FOLDER));
+}
+
+QStringList missingLibraryItems(const Design &design)
+{
+    const QString folder = QLatin1String(PROJECT_LIBRARY_FOLDER) + QLatin1Char('/');
+    const auto fileOf = [&folder](const char *subfolder, const QString &name) {
+        return folder + QLatin1String(subfolder) + QLatin1Char('/') + name
+               + QLatin1String(LIBRARY_FILE_EXT);
+    };
+
+    QStringList files;
+    const ProjectLibrary &library = design.library;
+    for (const Sheet &sheet : design.schematic.sheets) {
+        for (const Component &component : sheet.components) {
+            const Part *part = library.findPart(component.part);
+            if (part == nullptr)
+                files.append(fileOf(LIBRARY_PARTS_FOLDER, component.part));
+            else if (library.findSymbolOfPart(component.part) == nullptr)
+                files.append(fileOf(LIBRARY_SYMBOLS_FOLDER, part->symbol));
+            if (!component.footprint.isEmpty()
+                && library.findFootprint(component.footprint) == nullptr)
+                files.append(fileOf(LIBRARY_FOOTPRINTS_FOLDER, component.footprint));
+        }
+    }
+    for (const Placement &placement : design.board.placements) {
+        if (library.findFootprint(placement.footprint) == nullptr)
+            files.append(fileOf(LIBRARY_FOOTPRINTS_FOLDER, placement.footprint));
+    }
+    files.removeDuplicates();
+
+    QStringList messages;
+    for (const QString &file : files)
+        messages.append(withPlace(file, ProjectLibraryFiles::tr("the file is missing")));
+    return messages;
+}
+
+bool DesignFiles::read(const QString &projectPath, Design &design, QString &error,
+                       QStringList *problems)
 {
     Design result;
     if (!ProjectFile::read(projectPath, result.project, error))
@@ -481,6 +523,11 @@ bool DesignFiles::read(const QString &projectPath, Design &design, QString &erro
         return false;
     if (!BoardFile::read(boardPath(projectPath, result.project), result.board, error))
         return false;
+    QStringList found;
+    result.library = ProjectLibraryFiles::read(libraryPath(projectPath), found);
+    found += missingLibraryItems(result);
+    if (problems != nullptr)
+        *problems = found;
     design = result;
     return true;
 }
@@ -488,8 +535,11 @@ bool DesignFiles::read(const QString &projectPath, Design &design, QString &erro
 bool DesignFiles::write(const QString &projectPath, const Design &design, QString &error)
 {
     // The project goes last, so that it never names a file that is not there.
-    return SchematicFile::write(schematicPath(projectPath, design.project), design.schematic,
-                                error)
+    ProjectLibrary written;
+    return ProjectLibraryFiles::write(libraryPath(projectPath), design.library, written, true,
+                                      error)
+           && SchematicFile::write(schematicPath(projectPath, design.project), design.schematic,
+                                   error)
            && BoardFile::write(boardPath(projectPath, design.project), design.board, error)
            && ProjectFile::write(projectPath, design.project, error);
 }

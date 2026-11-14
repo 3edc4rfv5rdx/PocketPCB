@@ -38,6 +38,8 @@ inline QColor sheetFrame() { return QColor(90, 90, 90); }
 inline QColor silkscreenBottom() { return QColor(132, 0, 132); }
 inline QColor boardOutline() { return QColor(60, 60, 60); }
 inline QColor bareHole() { return QColor(120, 120, 120); }
+// What stands in for a symbol or a footprint the project library lacks.
+inline QColor missing() { return QColor(220, 0, 0); }
 } // namespace paintcolor
 
 QPointF toMm(const Point &point);
@@ -59,15 +61,17 @@ QRectF paperRect(PaperSize paper);
 
 // Sheet 'index' of the schematic: the frame with the title block, then
 // everything placed on the sheet. Texts stay readable whatever way a symbol
-// is turned or mirrored. An index out of range draws nothing.
-void paintSheet(QPainter &painter, const Schematic &schematic, int index,
-                const TitleBlock &titleBlock);
+// is turned or mirrored. An index out of range draws nothing. Symbols come
+// from 'library'; one it lacks is drawn as a red square with a question mark.
+void paintSheet(QPainter &painter, const Schematic &schematic, const ProjectLibrary &library,
+                int index, const TitleBlock &titleBlock);
 
 // A rectangle that holds everything paintBoard() draws; never empty.
-QRectF boardBounds(const Board &board);
+QRectF boardBounds(const Board &board, const ProjectLibrary &library);
 // The board as seen from the top: bottom copper under top copper, the
 // silkscreen and the outline over them. What lies on the bottom side is
-// mirrored, texts included, as it is on the real board.
-void paintBoard(QPainter &painter, const Board &board);
+// mirrored, texts included, as it is on the real board. Footprints come
+// from 'library'; one it lacks is drawn as a red square with a question mark.
+void paintBoard(QPainter &painter, const Board &board, const ProjectLibrary &library);
 
 } // namespace ppcb

@@ -1,4 +1,5 @@
 #include "schematic.h"
+#include "symbol.h"
 
 #include <QJsonDocument>
 #include <QTemporaryDir>
@@ -19,14 +20,6 @@ Schematic fullSchematic()
 {
     Schematic schematic;
 
-    Symbol resistor;
-    Pin pin;
-    pin.number = QStringLiteral("1");
-    pin.at = Point{-2 * PIN_GRID, 0};
-    resistor.pins.append(pin);
-    schematic.symbols.insert(QStringLiteral("resistor"), resistor);
-    schematic.symbols.insert(QStringLiteral("empty"), Symbol());
-
     Sheet first;
     first.id = id(0x10);
     first.title = QStringLiteral("Питание");
@@ -35,13 +28,9 @@ Schematic fullSchematic()
     Component component;
     component.id = id(0x11);
     component.part = QStringLiteral("resistor-part");
-    component.symbol = QStringLiteral("resistor");
     component.footprint = QStringLiteral("resistor-7.62");
     component.designator = QStringLiteral("R1");
     component.value = QStringLiteral("10k");
-    component.prefix = QStringLiteral("R");
-    component.prefixGost = QStringLiteral("Rg");
-    component.connector = true;
     component.offBoard = true;
     component.at = Point{10 * PIN_GRID, 20 * PIN_GRID};
     component.rotation = 270;
@@ -173,8 +162,6 @@ private slots:
     statement; \
     QVERIFY2(other != schematic, #statement)
 
-        CHANGED(other.symbols.remove(QStringLiteral("empty")));
-        CHANGED(other.symbols[QStringLiteral("resistor")].pins[0].number = QStringLiteral("2"));
         CHANGED(other.sheets.removeLast());
         // other.sheets[0] is spelled out each time: CHANGED() replaces 'other',
         // so a reference into it would not survive.
@@ -184,13 +171,9 @@ private slots:
 
         CHANGED(other.sheets[0].components[0].id = id(1));
         CHANGED(other.sheets[0].components[0].part.clear());
-        CHANGED(other.sheets[0].components[0].symbol = QStringLiteral("empty"));
         CHANGED(other.sheets[0].components[0].footprint.clear());
         CHANGED(other.sheets[0].components[0].designator = QStringLiteral("R2"));
         CHANGED(other.sheets[0].components[0].value.clear());
-        CHANGED(other.sheets[0].components[0].prefix = QStringLiteral("X"));
-        CHANGED(other.sheets[0].components[0].prefixGost = QStringLiteral("X"));
-        CHANGED(other.sheets[0].components[0].connector = false);
         CHANGED(other.sheets[0].components[0].offBoard = false);
         CHANGED(other.sheets[0].components[0].at.x += 1);
         CHANGED(other.sheets[0].components[0].rotation = 0);
@@ -273,11 +256,6 @@ private slots:
         root.remove(QStringLiteral("sheets"));
         readBack(root, error);
         QVERIFY2(error.startsWith(QStringLiteral("sheets: ")), qPrintable(error));
-
-        root = schematicToJson(fullSchematic());
-        root.remove(QStringLiteral("symbols"));
-        readBack(root, error);
-        QVERIFY2(error.startsWith(QStringLiteral("symbols: ")), qPrintable(error));
     }
 
     void idsAreUniqueAcrossSheets()
@@ -307,8 +285,12 @@ private slots:
 
     void componentErrors()
     {
-        QString error = errorOfChange("components", "symbol", QStringLiteral("capacitor"));
-        QVERIFY2(error.startsWith(QStringLiteral("sheets[0].components[0].symbol: ")),
+        // The part and the footprint are not checked here: they are looked
+        // up in the project library, which may lack them.
+        QString error = errorOfChange("components", "part", QStringLiteral("capacitor"));
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+        error = errorOfChange("components", "part", QStringLiteral(""));
+        QVERIFY2(error.startsWith(QStringLiteral("sheets[0].components[0].part: ")),
                  qPrintable(error));
 
         error = errorOfChange("components", "designator", QStringLiteral(""));
@@ -423,7 +405,7 @@ private slots:
         QVERIFY2(error.startsWith(QStringLiteral("sheets[0].graphics[0].kind: ")), qPrintable(error));
     }
 
-    void sheetAndSymbolErrors()
+    void sheetErrors()
     {
         QJsonObject root = schematicToJson(fullSchematic());
         QJsonArray sheets = root.value(QStringLiteral("sheets")).toArray();
@@ -434,20 +416,6 @@ private slots:
         QString error;
         readBack(root, error);
         QVERIFY2(error.startsWith(QStringLiteral("sheets[0].paper: ")), qPrintable(error));
-
-        // A symbol of the table that is not a symbol.
-        root = schematicToJson(fullSchematic());
-        QJsonObject symbols = root.value(QStringLiteral("symbols")).toObject();
-        symbols.insert(QStringLiteral("resistor"), 5);
-        root.insert(QStringLiteral("symbols"), symbols);
-        readBack(root, error);
-        QVERIFY2(error.startsWith(QStringLiteral("symbols.resistor: ")), qPrintable(error));
-
-        // A damaged symbol is named with its place inside the table.
-        symbols.insert(QStringLiteral("resistor"), QJsonObject());
-        root.insert(QStringLiteral("symbols"), symbols);
-        readBack(root, error);
-        QVERIFY2(error.startsWith(QStringLiteral("symbols.resistor.graphics: ")), qPrintable(error));
     }
 };
 

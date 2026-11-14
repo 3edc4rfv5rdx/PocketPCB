@@ -30,7 +30,7 @@ QRectF DesignViewItem::pageBounds() const
 {
     const Design &design = m_document->design();
     if (m_page == boardPage())
-        return boardBounds(design.board);
+        return boardBounds(design.board, design.library);
     return paperRect(design.schematic.sheets.at(m_page).paper);
 }
 
@@ -41,9 +41,10 @@ void DesignViewItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *op
     Q_UNUSED(widget);
     const Design &design = m_document->design();
     if (m_page == boardPage())
-        paintBoard(*painter, design.board);
+        paintBoard(*painter, design.board, design.library);
     else
-        paintSheet(*painter, design.schematic, m_page, design.project.titleBlock);
+        paintSheet(*painter, design.schematic, design.library, m_page,
+                   design.project.titleBlock);
 }
 
 } // namespace ppcb

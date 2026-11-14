@@ -9,6 +9,43 @@ using namespace ppcb;
 
 namespace {
 
+// A resistor in the library, on the first sheet and on the board.
+void addResistor(Design &design)
+{
+    Symbol symbol;
+    Pin pin;
+    pin.number = QStringLiteral("1");
+    symbol.pins.append(pin);
+    design.library.symbols.insert(QStringLiteral("resistor"), symbol);
+    Footprint footprint;
+    Pad pad;
+    pad.number = QStringLiteral("1");
+    pad.sizeX = NM_PER_MM;
+    pad.sizeY = NM_PER_MM;
+    pad.hole = NM_PER_MM / 2;
+    footprint.pads.append(pad);
+    design.library.footprints.insert(QStringLiteral("r-7.62"), footprint);
+    Part part;
+    part.symbol = QStringLiteral("resistor");
+    part.footprints = QStringList({QStringLiteral("r-7.62")});
+    part.prefix = QStringLiteral("R");
+    part.prefixGost = QStringLiteral("R");
+    design.library.parts.insert(QStringLiteral("resistor"), part);
+
+    Component component;
+    component.id = newObjectId();
+    component.part = QStringLiteral("resistor");
+    component.footprint = QStringLiteral("r-7.62");
+    component.designator = QStringLiteral("R1");
+    design.schematic.sheets[0].components.append(component);
+    Placement placement;
+    placement.id = newObjectId();
+    placement.component = component.id;
+    placement.footprint = QStringLiteral("r-7.62");
+    placement.designator = QStringLiteral("R1");
+    design.board.placements.append(placement);
+}
+
 // Every field non-default.
 Project fullProject()
 {
@@ -506,16 +543,86 @@ private slots:
         design.schematic.sheets[0].title = QStringLiteral("Вход");
         design.board.outline = {OutlineCorner{Point{0, 0}, 0}, OutlineCorner{Point{NM_PER_MM, 0}, 0},
                                 OutlineCorner{Point{0, NM_PER_MM}, 0}};
+        addResistor(design);
 
         QString error;
         QVERIFY2(DesignFiles::write(path, design, error), qPrintable(error));
         QVERIFY(QFile::exists(path));
         QVERIFY(QFile::exists(dir.filePath(QStringLiteral("amp.ppsch"))));
         QVERIFY(QFile::exists(dir.filePath(QStringLiteral("amp.ppbrd"))));
+        QVERIFY(QFile::exists(dir.filePath(QStringLiteral("library/symbols/resistor.json"))));
+        QVERIFY(QFile::exists(dir.filePath(QStringLiteral("library/footprints/r-7.62.json"))));
+        QVERIFY(QFile::exists(dir.filePath(QStringLiteral("library/parts/resistor.json"))));
 
         Design back;
-        QVERIFY2(DesignFiles::read(path, back, error), qPrintable(error));
+        QStringList problems;
+        QVERIFY2(DesignFiles::read(path, back, error, &problems), qPrintable(error));
+        QVERIFY2(problems.isEmpty(), qPrintable(problems.join(QLatin1Char('\n'))));
         QVERIFY(back == design);
+    }
+
+    // What is wrong with the library is told, but the project is read.
+    void libraryProblemsDoNotStopReading()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("amp.ppcb"));
+        Design design = newDesign(QStringLiteral("amp"));
+        addResistor(design);
+        QString error;
+        QVERIFY2(DesignFiles::write(path, design, error), qPrintable(error));
+
+        // The part's symbol is gone, a footprint lies in the parts folder,
+        // and a file is not a library file at all.
+        QVERIFY(QFile::remove(dir.filePath(QStringLiteral("library/symbols/resistor.json"))));
+        QVERIFY(QFile::copy(dir.filePath(QStringLiteral("library/footprints/r-7.62.json")),
+                            dir.filePath(QStringLiteral("library/parts/r-7.62.json"))));
+        QFile broken(dir.filePath(QStringLiteral("library/footprints/broken.json")));
+        QVERIFY(broken.open(QIODevice::WriteOnly));
+        broken.write("not json");
+        broken.close();
+
+        Design back;
+        QStringList problems;
+        QVERIFY2(DesignFiles::read(path, back, error, &problems), qPrintable(error));
+        QCOMPARE(problems.size(), 3);
+        QVERIFY2(problems.at(0).startsWith(broken.fileName()), qPrintable(problems.at(0)));
+        QVERIFY2(problems.at(1).startsWith(dir.filePath(QStringLiteral("library/parts/r-7.62.json"))),
+                 qPrintable(problems.at(1)));
+        QVERIFY2(problems.at(2).startsWith(QStringLiteral("library/symbols/resistor.json: ")),
+                 qPrintable(problems.at(2)));
+        QVERIFY(back.library.symbols.isEmpty());
+        QCOMPARE(back.library.footprints.keys(), QStringList({QStringLiteral("r-7.62")}));
+        QCOMPARE(back.library.parts.keys(), QStringList({QStringLiteral("resistor")}));
+        QVERIFY(back.schematic == design.schematic);
+        QVERIFY(back.board == design.board);
+    }
+
+    void missingLibraryItemsAreNamedOnce()
+    {
+        Design design = newDesign(QStringLiteral("amp"));
+        addResistor(design);
+        QVERIFY(missingLibraryItems(design).isEmpty());
+
+        // A second component of a part the library lacks, and a placement
+        // whose footprint it lacks too.
+        Component other = design.schematic.sheets[0].components.at(0);
+        other.part = QStringLiteral("diode");
+        other.footprint = QString();
+        design.schematic.sheets[0].components.append(other);
+        design.schematic.sheets[0].components.append(other);
+        design.board.placements[0].footprint = QStringLiteral("dip-8");
+        const QStringList missing = missingLibraryItems(design);
+        QCOMPARE(missing.size(), 2);
+        QVERIFY2(missing.at(0).startsWith(QStringLiteral("library/parts/diode.json: ")),
+                 qPrintable(missing.at(0)));
+        QVERIFY2(missing.at(1).startsWith(QStringLiteral("library/footprints/dip-8.json: ")),
+                 qPrintable(missing.at(1)));
+
+        // The component's own footprint is looked up too.
+        design.schematic.sheets[0].components[0].footprint = QStringLiteral("to-92");
+        QVERIFY(missingLibraryItems(design).join(QLatin1Char(' '))
+                    .contains(QStringLiteral("library/footprints/to-92.json")));
     }
 
     void designWithAMissingFileIsNotRead()

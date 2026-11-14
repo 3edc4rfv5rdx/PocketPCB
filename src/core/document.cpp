@@ -76,10 +76,10 @@ void Document::startNew(const QString &baseName)
     reset(newDesign(baseName), QString());
 }
 
-bool Document::open(const QString &projectPath, QString &error)
+bool Document::open(const QString &projectPath, QString &error, QStringList *problems)
 {
     Design design;
-    if (!DesignFiles::read(projectPath, design, error))
+    if (!DesignFiles::read(projectPath, design, error, problems))
         return false;
     reset(design, projectPath);
     return true;
@@ -209,12 +209,17 @@ bool Document::write(const QString &projectPath, bool everything, QString &error
     const QString schematicPath = DesignFiles::schematicPath(projectPath, m_design.project);
     const QString boardPath = DesignFiles::boardPath(projectPath, m_design.project);
 
-    // The project goes last, so that it never names a file that is not
-    // there. Each file counts as saved as soon as it is written, so after a
-    // failure the next save writes only the rest.
-    bool ok = true;
-    if (everything || m_design.schematic != m_saved.schematic
-        || !QFileInfo::exists(schematicPath)) {
+    // The library goes first and the project last, so that no file names
+    // one that is not there. Each file counts as saved as soon as it is
+    // written, so after a failure the next save writes only the rest.
+    bool ok = ProjectLibraryFiles::write(DesignFiles::libraryPath(projectPath), m_design.library,
+                                         m_saved.library, everything, error);
+    // Items dropped from the library stay on disk, unused: files are never
+    // removed. They no longer count as part of the saved content.
+    if (ok)
+        m_saved.library = m_design.library;
+    if (ok && (everything || m_design.schematic != m_saved.schematic
+               || !QFileInfo::exists(schematicPath))) {
         ok = SchematicFile::write(schematicPath, m_design.schematic, error);
         if (ok)
             m_saved.schematic = m_design.schematic;

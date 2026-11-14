@@ -4,7 +4,6 @@ namespace ppcb {
 
 namespace {
 
-const char KEY_FOOTPRINTS[] = "footprints";
 const char KEY_OUTLINE[] = "outline";
 const char KEY_PLACEMENTS[] = "placements";
 const char KEY_TRACKS[] = "tracks";
@@ -58,8 +57,6 @@ struct ReadContext
     QSet<ObjectId> ids;
     // Schematic components that already have a placement.
     QSet<ObjectId> components;
-    // Pad numbers of every footprint in the table, by footprint name.
-    QMap<QString, QStringList> padNumbers;
 };
 
 QJsonValue sideToJson(BoardSide side)
@@ -135,17 +132,17 @@ QJsonObject placementToJson(const Placement &placement)
 }
 
 // The nets of a placement's pads: an object of net names by pad number.
+// The numbers are not checked against the footprint: it lies in the project
+// library and may be missing or changed there.
 QMap<QString, QString> padNetsFromJson(const QJsonObject &object, const QString &where,
-                                       const QStringList &padNumbers, JsonReader &reader)
+                                       JsonReader &reader)
 {
     const QMap<QString, QString> padNets = reader.nameMap(object, KEY_NETS, where);
     const QString netsWhere = JsonReader::pathOf(where, KEY_NETS);
-    for (auto it = padNets.constBegin(); it != padNets.constEnd(); ++it) {
-        // A pad without a number is tied to no pin, so it cannot be named here.
-        if (it.key().isEmpty() || !padNumbers.contains(it.key())) {
-            reader.fail(JsonReader::pathOf(netsWhere, it.key()),
-                        JsonReader::tr("the footprint has no pad with this number"));
-        }
+    // A pad without a number is tied to no pin, so it cannot be named here.
+    if (padNets.contains(QString())) {
+        reader.fail(JsonReader::pathOf(netsWhere, QString()),
+                    JsonReader::tr("a pad number is expected"));
     }
     return padNets;
 }
@@ -158,10 +155,6 @@ Placement placementFromJson(const QJsonObject &object, const QString &where, Rea
     // One placement for a component.
     placement.component = reader.uniqueId(object, KEY_COMPONENT, where, context.components);
     placement.footprint = reader.nonEmptyString(object, KEY_FOOTPRINT, where);
-    if (reader.ok() && !context.padNumbers.contains(placement.footprint)) {
-        reader.fail(JsonReader::pathOf(where, KEY_FOOTPRINT),
-                    JsonReader::tr("the footprint is not in the list of footprints"));
-    }
     placement.designator = reader.nonEmptyString(object, KEY_DESIGNATOR, where);
     placement.value = reader.string(object, KEY_VALUE, where);
     placement.at = reader.point(object, KEY_AT, where);
@@ -171,11 +164,7 @@ Placement placementFromJson(const QJsonObject &object, const QString &where, Rea
     placement.valueAt = reader.point(object, KEY_VALUE_AT, where);
     placement.showRef = reader.boolean(object, KEY_SHOW_REF, where);
     placement.showValue = reader.boolean(object, KEY_SHOW_VALUE, where);
-    // After a failure the footprint may be unknown, and so its pads.
-    if (reader.ok()) {
-        placement.padNets = padNetsFromJson(object, where,
-                                            context.padNumbers.value(placement.footprint), reader);
-    }
+    placement.padNets = padNetsFromJson(object, where, reader);
     return placement;
 }
 
@@ -368,19 +357,14 @@ bool operator==(const Zone &a, const Zone &b)
 
 bool operator==(const Board &a, const Board &b)
 {
-    return a.footprints == b.footprints && a.outline == b.outline
+    return a.outline == b.outline
            && a.placements == b.placements && a.tracks == b.tracks && a.vias == b.vias
            && a.holes == b.holes && a.graphics == b.graphics && a.zones == b.zones;
 }
 
 QJsonObject boardToJson(const Board &board)
 {
-    QJsonObject footprints;
-    for (auto it = board.footprints.constBegin(); it != board.footprints.constEnd(); ++it)
-        footprints.insert(it.key(), footprintToJson(it.value()));
-
     QJsonObject root;
-    root.insert(QLatin1String(KEY_FOOTPRINTS), footprints);
     root.insert(QLatin1String(KEY_OUTLINE), listToJson(board.outline, cornerToJson));
     root.insert(QLatin1String(KEY_PLACEMENTS), listToJson(board.placements, placementToJson));
     root.insert(QLatin1String(KEY_TRACKS), listToJson(board.tracks, trackToJson));
@@ -394,20 +378,7 @@ QJsonObject boardToJson(const Board &board)
 Board boardFromJson(const QJsonObject &root, JsonReader &reader)
 {
     Board board;
-    ReadContext context{reader, {}, {}, {}};
-
-    // Footprints first: placements are checked against their names and pads.
-    const QMap<QString, QJsonObject> footprints = reader.objectMap(root, KEY_FOOTPRINTS, QString());
-    for (auto it = footprints.constBegin(); it != footprints.constEnd(); ++it) {
-        const QString where = JsonReader::pathOf(QLatin1String(KEY_FOOTPRINTS), it.key());
-        const Footprint footprint = footprintFromJson(it.value(), where, reader);
-        board.footprints.insert(it.key(), footprint);
-
-        QStringList numbers;
-        for (const Pad &pad : footprint.pads)
-            numbers.append(pad.number);
-        context.padNumbers.insert(it.key(), numbers);
-    }
+    ReadContext context{reader, {}, {}};
 
     board.outline = listFromJson<OutlineCorner>(root, KEY_OUTLINE, QString(), context,
                                                 cornerFromJson);

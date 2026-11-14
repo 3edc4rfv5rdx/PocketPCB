@@ -67,6 +67,13 @@ const double EMPTY_BOARD_HEIGHT = 80.0;
 const double HALF_TURN = 180.0;
 const double PI = 3.14159265358979323846;
 
+// What stands in for a symbol or footprint the project library lacks.
+const double MISSING_SYMBOL_SIZE = 5.08;
+const double MISSING_FOOTPRINT_SIZE = 3.0;
+const double MISSING_LINE_WIDTH = 0.2;
+// The question mark takes this share of the square's side.
+const double MISSING_TEXT_SHARE = 0.6;
+
 const char REF_PLACEHOLDER[] = "REF";
 const char VALUE_PLACEHOLDER[] = "VALUE";
 
@@ -445,12 +452,34 @@ QPolygonF toPolygon(const QList<Point> &points)
     return polygon;
 }
 
-void paintComponent(QPainter &painter, const Schematic &schematic, const Component &component)
+// A square around 'center' with a question mark in it.
+QRectF missingRect(const QPointF &center, double size)
+{
+    return QRectF(center.x() - size / 2, center.y() - size / 2, size, size);
+}
+
+void paintMissing(QPainter &painter, const QPointF &center, double size)
 {
     painter.save();
-    painter.setTransform(componentTransform(component), true);
-    paintSymbolBody(painter, schematic.symbols.value(component.symbol), true);
+    painter.setPen(dashedPen(paintcolor::missing(), MISSING_LINE_WIDTH));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRect(missingRect(center, size));
+    drawText(painter, center, QStringLiteral("?"), size * MISSING_TEXT_SHARE, TextAlign::Center,
+             paintcolor::missing());
     painter.restore();
+}
+
+void paintComponent(QPainter &painter, const ProjectLibrary &library, const Component &component)
+{
+    const Symbol *symbol = library.findSymbolOfPart(component.part);
+    if (symbol == nullptr) {
+        paintMissing(painter, toMm(component.at), MISSING_SYMBOL_SIZE);
+    } else {
+        painter.save();
+        painter.setTransform(componentTransform(component), true);
+        paintSymbolBody(painter, *symbol, true);
+        painter.restore();
+    }
 
     drawText(painter, toMm(component.at + component.refAt), component.designator,
              PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center, paintcolor::symbol());
@@ -651,11 +680,17 @@ QColor silkscreenColor(BoardSide side)
     return side == BoardSide::Top ? paintcolor::silkscreen() : paintcolor::silkscreenBottom();
 }
 
-void paintPlacementPads(QPainter &painter, const Board &board, const Placement &placement)
+void paintPlacementPads(QPainter &painter, const ProjectLibrary &library,
+                        const Placement &placement)
 {
+    const Footprint *footprint = library.findFootprint(placement.footprint);
+    if (footprint == nullptr) {
+        paintMissing(painter, toMm(placement.at), MISSING_FOOTPRINT_SIZE);
+        return;
+    }
     painter.save();
     painter.setTransform(placementTransform(placement), true);
-    for (const Pad &pad : board.footprints.value(placement.footprint).pads)
+    for (const Pad &pad : footprint->pads)
         paintPad(painter, pad, placement.side, true);
     painter.restore();
 }
@@ -674,13 +709,17 @@ void paintPlacementText(QPainter &painter, const Placement &placement, const Poi
     painter.restore();
 }
 
-void paintPlacementSilkscreen(QPainter &painter, const Board &board, const Placement &placement)
+void paintPlacementSilkscreen(QPainter &painter, const ProjectLibrary &library,
+                              const Placement &placement)
 {
-    painter.save();
-    painter.setTransform(placementTransform(placement), true);
-    for (const Graphic &graphic : board.footprints.value(placement.footprint).graphics)
-        paintGraphic(painter, graphic, silkscreenColor(placement.side));
-    painter.restore();
+    const Footprint *footprint = library.findFootprint(placement.footprint);
+    if (footprint != nullptr) {
+        painter.save();
+        painter.setTransform(placementTransform(placement), true);
+        for (const Graphic &graphic : footprint->graphics)
+            paintGraphic(painter, graphic, silkscreenColor(placement.side));
+        painter.restore();
+    }
 
     const Point refAt = placement.at + placement.refAt;
     const Point valueAt = placement.at + placement.valueAt;
@@ -794,8 +833,8 @@ QRectF paperRect(PaperSize paper)
     return QRectF(0, 0, A4_LONG_SIDE, A4_SHORT_SIDE);
 }
 
-void paintSheet(QPainter &painter, const Schematic &schematic, int index,
-                const TitleBlock &titleBlock)
+void paintSheet(QPainter &painter, const Schematic &schematic, const ProjectLibrary &library,
+                int index, const TitleBlock &titleBlock)
 {
     if (index < 0 || index >= schematic.sheets.size())
         return;
@@ -821,7 +860,7 @@ void paintSheet(QPainter &painter, const Schematic &schematic, int index,
         painter.drawPolyline(toPolygon(wire.points));
     }
     for (const Component &component : sheet.components)
-        paintComponent(painter, schematic, component);
+        paintComponent(painter, library, component);
     for (const PowerSymbol &power : sheet.powerSymbols)
         paintPowerSymbol(painter, power);
     for (const Label &label : sheet.labels)
@@ -831,14 +870,17 @@ void paintSheet(QPainter &painter, const Schematic &schematic, int index,
     painter.restore();
 }
 
-QRectF boardBounds(const Board &board)
+QRectF boardBounds(const Board &board, const ProjectLibrary &library)
 {
     Bounds bounds;
     for (const OutlineCorner &corner : board.outline)
         bounds.add(QRectF(toMm(corner.at), QSizeF(0, 0)));
     for (const Placement &placement : board.placements) {
-        const Footprint footprint = board.footprints.value(placement.footprint);
-        bounds.add(placementTransform(placement).mapRect(footprintBounds(footprint)));
+        const Footprint *footprint = library.findFootprint(placement.footprint);
+        if (footprint == nullptr)
+            bounds.add(missingRect(toMm(placement.at), MISSING_FOOTPRINT_SIZE));
+        else
+            bounds.add(placementTransform(placement).mapRect(footprintBounds(*footprint)));
     }
     for (const Track &track : board.tracks) {
         const double half = nmToMm(track.width) / 2;
@@ -865,7 +907,7 @@ QRectF boardBounds(const Board &board)
     return bounds.rect();
 }
 
-void paintBoard(QPainter &painter, const Board &board)
+void paintBoard(QPainter &painter, const Board &board, const ProjectLibrary &library)
 {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -880,14 +922,14 @@ void paintBoard(QPainter &painter, const Board &board)
     paintTracks(painter, board, BoardSide::Bottom);
     paintTracks(painter, board, BoardSide::Top);
     for (const Placement &placement : board.placements)
-        paintPlacementPads(painter, board, placement);
+        paintPlacementPads(painter, library, placement);
     for (const Via &via : board.vias)
         paintRing(painter, toMm(via.at), nmToMm(via.size), nmToMm(via.drill));
     for (const MountingHole &hole : board.holes)
         paintMountingHole(painter, hole);
 
     for (const Placement &placement : board.placements)
-        paintPlacementSilkscreen(painter, board, placement);
+        paintPlacementSilkscreen(painter, library, placement);
     for (const BoardGraphic &item : board.graphics)
         paintBoardGraphic(painter, item);
 

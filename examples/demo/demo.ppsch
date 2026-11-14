@@ -1,21 +1,6 @@
 {
   "type": "pocketpcb-schematic",
   "format": 1,
-  "symbols": {
-    "resistor": {
-      "graphics": [
-        {"kind": "rect", "from": [-2.54, -1.016], "to": [2.54, 1.016]}
-      ],
-      "pins": [
-        {"number": "1", "at": [-5.08, 0], "side": "left"},
-        {"number": "2", "at": [5.08, 0], "side": "right"}
-      ],
-      "refAt": [0, -2.54],
-      "valueAt": [0, 2.54],
-      "showPinNumbers": false,
-      "showPinNames": false
-    }
-  },
   "sheets": [
     {
       "id": "5c1a00000001",
@@ -23,16 +8,16 @@
       "paper": "A4",
       "components": [
         {
-          "id": "5c1a00000011", "part": "resistor", "symbol": "resistor",
+          "id": "5c1a00000011", "part": "resistor",
           "footprint": "resistor-10.16", "designator": "R1", "value": "10k",
-          "prefix": "R", "prefixGost": "R", "connector": false, "offBoard": false,
+          "offBoard": false,
           "at": [101.6, 76.2], "rotation": 0, "mirrored": false,
           "refAt": [0, -2.54], "valueAt": [0, 2.54]
         },
         {
-          "id": "5c1a00000012", "part": "resistor", "symbol": "resistor",
+          "id": "5c1a00000012", "part": "resistor",
           "footprint": "resistor-vertical", "designator": "R2", "value": "4.7k",
-          "prefix": "R", "prefixGost": "R", "connector": false, "offBoard": false,
+          "offBoard": false,
           "at": [116.84, 88.9], "rotation": 90, "mirrored": false,
           "refAt": [5.08, -1.27], "valueAt": [5.08, 1.27]
         }

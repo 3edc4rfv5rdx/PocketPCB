@@ -26,7 +26,7 @@ struct Placement
     // The schematic component it stands for. Renumbering the schematic does
     // not break this tie.
     ObjectId component;
-    // Name of its footprint in Board::footprints.
+    // Name of its footprint in the project library (see ProjectLibrary).
     QString footprint;
     // Copied from the component when the board is updated from the schematic.
     QString designator;
@@ -110,9 +110,6 @@ struct Zone
 // The board of a project.
 struct Board
 {
-    // Footprints copied from the library, by library name. Shared by all the
-    // placements made with the same footprint.
-    QMap<QString, Footprint> footprints;
     // The board's edge: a closed chain of corners, every side horizontal,
     // vertical or at 45 degrees. Empty while the board has no outline yet.
     QList<OutlineCorner> outline;

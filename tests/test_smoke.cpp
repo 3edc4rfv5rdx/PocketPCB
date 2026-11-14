@@ -273,6 +273,29 @@ private slots:
         QCOMPARE(window.designItem()->page(), 0);
     }
 
+    void libraryProblemsAreShownOnOpening()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("amp.ppcb"));
+        Design design = twoSheetDesign();
+        Component component;
+        component.id = newObjectId();
+        component.part = QStringLiteral("diode");
+        component.designator = QStringLiteral("D1");
+        design.schematic.sheets[0].components.append(component);
+        QString error;
+        QVERIFY2(DesignFiles::write(path, design, error), qPrintable(error));
+
+        // The project opens all the same.
+        MainWindow window;
+        QVERIFY(window.openProject(path));
+        QCOMPARE(window.document()->projectPath(), path);
+        QVERIFY2(window.statusBar()->currentMessage().startsWith(
+                     QStringLiteral("library/parts/diode.json")),
+                 qPrintable(window.statusBar()->currentMessage()));
+    }
+
     void projectIsSavedIntoItsOwnFolder()
     {
         QTemporaryDir dir;

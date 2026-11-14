@@ -178,10 +178,6 @@
         <translation>очікується один із кутів 0 90 180 270</translation>
     </message>
     <message>
-        <source>the symbol is not in the list of symbols</source>
-        <translation>символу немає у списку символів</translation>
-    </message>
-    <message>
         <source>at least two points are expected</source>
         <translation>очікується щонайменше дві точки</translation>
     </message>
@@ -196,14 +192,6 @@
     <message>
         <source>a schematic needs at least one sheet</source>
         <translation>у схемі має бути принаймні один аркуш</translation>
-    </message>
-    <message>
-        <source>the footprint is not in the list of footprints</source>
-        <translation>посадкового місця немає у списку посадкових місць</translation>
-    </message>
-    <message>
-        <source>the footprint has no pad with this number</source>
-        <translation>у посадкового місця немає площадки з таким номером</translation>
     </message>
     <message>
         <source>the ends of a track coincide</source>
@@ -253,6 +241,10 @@
         <source>the width is not in the list of track widths</source>
         <translation>ширини немає у списку ширин доріжок</translation>
     </message>
+    <message>
+        <source>a pad number is expected</source>
+        <translation>очікується номер площадки</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::Paint</name>
@@ -266,6 +258,21 @@
     <message>
         <source>this is not a PocketPCB library file</source>
         <translation>це не файл бібліотеки PocketPCB</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::ProjectLibraryFiles</name>
+    <message>
+        <source>the file does not belong in this folder</source>
+        <translation>цьому файлу не місце в цій папці</translation>
+    </message>
+    <message>
+        <source>cannot make the folder</source>
+        <translation>не вдалося створити папку</translation>
+    </message>
+    <message>
+        <source>the file is missing</source>
+        <translation>файлу немає</translation>
     </message>
 </context>
 <context>
@@ -401,6 +408,10 @@
     <message>
         <source>untitled</source>
         <translation>без назви</translation>
+    </message>
+    <message>
+        <source>more problems with the project library</source>
+        <translation>ще проблем із бібліотекою проєкту</translation>
     </message>
 </context>
 <context>

@@ -1,7 +1,9 @@
 #include "document.h"
+#include "libraryfile.h"
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -287,6 +289,51 @@ private slots:
         QVERIFY(!document.isModified());
         QVERIFY2(document.save(error), qPrintable(error));
         QVERIFY(isGarbage(schematicPath));
+    }
+
+    void saveWritesTheLibraryAndNeverRemovesItsFiles()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("amp.ppcb"));
+        const QString first = dir.filePath(QStringLiteral("library/symbols/first.json"));
+        const QString second = dir.filePath(QStringLiteral("library/symbols/second.json"));
+
+        Document document;
+        QString error;
+        QVERIFY2(document.saveAs(path, error), qPrintable(error));
+        // An empty library makes no folder.
+        QVERIFY(!QFileInfo::exists(dir.filePath(QStringLiteral("library"))));
+
+        Design design = document.design();
+        design.library.symbols.insert(QStringLiteral("first"), Symbol());
+        design.library.symbols.insert(QStringLiteral("second"), Symbol());
+        document.change(QStringLiteral("Add symbols"), design);
+        QVERIFY2(document.save(error), qPrintable(error));
+        QVERIFY(QFile::exists(first));
+        QVERIFY(QFile::exists(second));
+
+        // Only what changed is written again.
+        QVERIFY(writeGarbage(first));
+        Symbol changed;
+        changed.showPinNames = !changed.showPinNames;
+        design = document.design();
+        design.library.symbols.insert(QStringLiteral("second"), changed);
+        document.change(QStringLiteral("Change symbol"), design);
+        QVERIFY2(document.save(error), qPrintable(error));
+        QVERIFY(isGarbage(first));
+        LibraryItem item;
+        QVERIFY2(LibraryFile::read(second, item, error), qPrintable(error));
+        QVERIFY(item.symbol == changed);
+
+        // Dropped from the library, kept on disk, and the project is saved.
+        document.undoStack()->undo();
+        document.undoStack()->undo();
+        QVERIFY(document.design().library.symbols.isEmpty());
+        QVERIFY2(document.save(error), qPrintable(error));
+        QVERIFY(!document.isModified());
+        QVERIFY(isGarbage(first));
+        QVERIFY(QFile::exists(second));
     }
 
     void saveWritesAMissingFileAgain()

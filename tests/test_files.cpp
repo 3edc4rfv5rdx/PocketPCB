@@ -73,9 +73,16 @@ private slots:
     {
         Design design;
         QString error;
+        QStringList problems;
         QVERIFY2(DesignFiles::read(sourcePath(QStringLiteral("examples/demo/demo.ppcb")), design,
-                                   error),
+                                   error, &problems),
                  qPrintable(error));
+        // Its library has everything it uses, and nothing else.
+        QVERIFY2(problems.isEmpty(), qPrintable(problems.join(QLatin1Char('\n'))));
+        QCOMPARE(design.library.parts.keys(), QStringList({QStringLiteral("resistor")}));
+        QCOMPARE(design.library.symbols.keys(), QStringList({QStringLiteral("resistor")}));
+        QCOMPARE(design.library.footprints.keys(),
+                 QStringList({QStringLiteral("resistor-10.16"), QStringLiteral("resistor-vertical")}));
         QCOMPARE(design.schematic.sheets.size(), 1);
         const Sheet &sheet = design.schematic.sheets.at(0);
         QCOMPARE(sheet.components.size(), 2);
@@ -95,9 +102,9 @@ private slots:
             QVERIFY2(found, qPrintable(placement.designator));
         }
 
-        // The footprints of the board are the ones of the library.
-        for (auto it = design.board.footprints.constBegin();
-             it != design.board.footprints.constEnd(); ++it) {
+        // The footprints of the project are the ones of the library.
+        for (auto it = design.library.footprints.constBegin();
+             it != design.library.footprints.constEnd(); ++it) {
             const QString path = sourcePath(QStringLiteral("library/footprints/") + it.key()
                                             + QStringLiteral(".json"));
             LibraryItem item;

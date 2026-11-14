@@ -4,7 +4,6 @@ namespace ppcb {
 
 namespace {
 
-const char KEY_SYMBOLS[] = "symbols";
 const char KEY_SHEETS[] = "sheets";
 
 const char KEY_ID[] = "id";
@@ -22,13 +21,9 @@ const char KEY_NO_CONNECTS[] = "noConnects";
 const char KEY_GRAPHICS[] = "graphics";
 
 const char KEY_PART[] = "part";
-const char KEY_SYMBOL[] = "symbol";
 const char KEY_FOOTPRINT[] = "footprint";
 const char KEY_DESIGNATOR[] = "designator";
 const char KEY_VALUE[] = "value";
-const char KEY_PREFIX[] = "prefix";
-const char KEY_PREFIX_GOST[] = "prefixGost";
-const char KEY_CONNECTOR[] = "connector";
 const char KEY_OFF_BOARD[] = "offBoard";
 const char KEY_MIRRORED[] = "mirrored";
 const char KEY_REF_AT[] = "refAt";
@@ -63,8 +58,6 @@ struct ReadContext
     JsonReader &reader;
     // Every id met so far: ids are unique in the whole schematic.
     QSet<ObjectId> ids;
-    // Names in the table of symbols.
-    QStringList symbolNames;
 };
 
 QJsonObject componentToJson(const Component &component)
@@ -72,13 +65,9 @@ QJsonObject componentToJson(const Component &component)
     QJsonObject object;
     object.insert(QLatin1String(KEY_ID), idToJson(component.id));
     object.insert(QLatin1String(KEY_PART), component.part);
-    object.insert(QLatin1String(KEY_SYMBOL), component.symbol);
     object.insert(QLatin1String(KEY_FOOTPRINT), component.footprint);
     object.insert(QLatin1String(KEY_DESIGNATOR), component.designator);
     object.insert(QLatin1String(KEY_VALUE), component.value);
-    object.insert(QLatin1String(KEY_PREFIX), component.prefix);
-    object.insert(QLatin1String(KEY_PREFIX_GOST), component.prefixGost);
-    object.insert(QLatin1String(KEY_CONNECTOR), component.connector);
     object.insert(QLatin1String(KEY_OFF_BOARD), component.offBoard);
     object.insert(QLatin1String(KEY_AT), pointToJson(component.at));
     object.insert(QLatin1String(KEY_ROTATION), component.rotation);
@@ -94,17 +83,9 @@ Component componentFromJson(const QJsonObject &object, const QString &where, Rea
     Component component;
     component.id = reader.uniqueId(object, KEY_ID, where, context.ids);
     component.part = reader.nonEmptyString(object, KEY_PART, where);
-    component.symbol = reader.nonEmptyString(object, KEY_SYMBOL, where);
-    if (reader.ok() && !context.symbolNames.contains(component.symbol)) {
-        reader.fail(JsonReader::pathOf(where, KEY_SYMBOL),
-                    JsonReader::tr("the symbol is not in the list of symbols"));
-    }
     component.footprint = reader.string(object, KEY_FOOTPRINT, where);
     component.designator = reader.nonEmptyString(object, KEY_DESIGNATOR, where);
     component.value = reader.string(object, KEY_VALUE, where);
-    component.prefix = reader.nonEmptyString(object, KEY_PREFIX, where);
-    component.prefixGost = reader.nonEmptyString(object, KEY_PREFIX_GOST, where);
-    component.connector = reader.boolean(object, KEY_CONNECTOR, where);
     component.offBoard = reader.boolean(object, KEY_OFF_BOARD, where);
     component.at = reader.point(object, KEY_AT, where);
     component.rotation = reader.rightAngle(object, KEY_ROTATION, where);
@@ -302,10 +283,8 @@ Sheet sheetFromJson(const QJsonObject &object, const QString &where, ReadContext
 
 bool operator==(const Component &a, const Component &b)
 {
-    return a.id == b.id && a.part == b.part && a.symbol == b.symbol && a.footprint == b.footprint
-           && a.designator == b.designator && a.value == b.value && a.prefix == b.prefix
-           && a.prefixGost == b.prefixGost && a.connector == b.connector
-           && a.offBoard == b.offBoard && a.at == b.at && a.rotation == b.rotation
+    return a.id == b.id && a.part == b.part && a.footprint == b.footprint
+           && a.designator == b.designator && a.value == b.value && a.offBoard == b.offBoard && a.at == b.at && a.rotation == b.rotation
            && a.mirrored == b.mirrored && a.refAt == b.refAt && a.valueAt == b.valueAt;
 }
 
@@ -351,17 +330,12 @@ bool operator==(const Sheet &a, const Sheet &b)
 
 bool operator==(const Schematic &a, const Schematic &b)
 {
-    return a.symbols == b.symbols && a.sheets == b.sheets;
+    return a.sheets == b.sheets;
 }
 
 QJsonObject schematicToJson(const Schematic &schematic)
 {
-    QJsonObject symbols;
-    for (auto it = schematic.symbols.constBegin(); it != schematic.symbols.constEnd(); ++it)
-        symbols.insert(it.key(), symbolToJson(it.value()));
-
     QJsonObject root;
-    root.insert(QLatin1String(KEY_SYMBOLS), symbols);
     root.insert(QLatin1String(KEY_SHEETS), listToJson(schematic.sheets, sheetToJson));
     return root;
 }
@@ -369,16 +343,7 @@ QJsonObject schematicToJson(const Schematic &schematic)
 Schematic schematicFromJson(const QJsonObject &root, JsonReader &reader)
 {
     Schematic schematic;
-    ReadContext context{reader, {}, {}};
-
-    // Symbols first: components are checked against their names.
-    const QMap<QString, QJsonObject> symbols = reader.objectMap(root, KEY_SYMBOLS, QString());
-    for (auto it = symbols.constBegin(); it != symbols.constEnd(); ++it) {
-        const QString where = JsonReader::pathOf(QLatin1String(KEY_SYMBOLS), it.key());
-        schematic.symbols.insert(it.key(), symbolFromJson(it.value(), where, reader));
-    }
-    context.symbolNames = schematic.symbols.keys();
-
+    ReadContext context{reader, {}};
     schematic.sheets = listFromJson<Sheet>(root, KEY_SHEETS, QString(), context, sheetFromJson);
     if (reader.ok() && schematic.sheets.isEmpty()) {
         reader.fail(QLatin1String(KEY_SHEETS), JsonReader::tr("a schematic needs at least one sheet"));
