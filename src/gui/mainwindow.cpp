@@ -6,11 +6,13 @@
 #include "format.h"
 #include "grid.h"
 #include "libraryviewitem.h"
+#include "saveprojectdialog.h"
 
 #include <QAction>
 #include <QActionGroup>
 #include <QCloseEvent>
 #include <QComboBox>
+#include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFileSystemWatcher>
@@ -286,15 +288,15 @@ bool MainWindow::openProject(const QString &path)
     return true;
 }
 
-bool MainWindow::saveProjectAs(const QString &path)
+bool MainWindow::saveProjectAs(const QString &parentFolder, const QString &name)
 {
     QString error;
-    if (!m_document->saveAs(path, error)) {
+    if (!m_document->saveAsNewFolder(parentFolder, name, error)) {
         statusBar()->showMessage(error);
         return false;
     }
     updateTitle();
-    statusBar()->showMessage(path);
+    statusBar()->showMessage(m_document->projectPath());
     return true;
 }
 
@@ -306,7 +308,8 @@ void MainWindow::chooseProjectToOpen()
             + QLatin1Char(')'));
     if (path.isEmpty())
         return;
-    AppSettings::setLastProjectFolder(QFileInfo(path).absolutePath());
+    // The project file lies in the project's own folder.
+    AppSettings::setLastProjectFolder(QFileInfo(QFileInfo(path).absolutePath()).absolutePath());
     openProject(path);
 }
 
@@ -325,16 +328,17 @@ void MainWindow::saveProject()
 
 void MainWindow::chooseProjectToSaveAs()
 {
-    QString path = QFileDialog::getSaveFileName(
-        this, tr("Save project as"), AppSettings::lastProjectFolder(),
-        tr("PocketPCB projects") + QStringLiteral(" (*") + QLatin1String(FILE_EXT_PROJECT)
-            + QLatin1Char(')'));
-    if (path.isEmpty())
+    const QString path = m_document->projectPath();
+    const QString name = path.isEmpty() ? tr("untitled") : QFileInfo(path).completeBaseName();
+    QString parentFolder = AppSettings::lastProjectFolder();
+    if (parentFolder.isEmpty())
+        parentFolder = QDir::homePath();
+
+    SaveProjectDialog dialog(name, parentFolder, this);
+    if (dialog.exec() != QDialog::Accepted)
         return;
-    if (!path.endsWith(QLatin1String(FILE_EXT_PROJECT), Qt::CaseInsensitive))
-        path += QLatin1String(FILE_EXT_PROJECT);
-    AppSettings::setLastProjectFolder(QFileInfo(path).absolutePath());
-    saveProjectAs(path);
+    AppSettings::setLastProjectFolder(dialog.parentFolder());
+    saveProjectAs(dialog.parentFolder(), dialog.name());
 }
 
 void MainWindow::showPage(int page)

@@ -59,6 +59,23 @@ public:
     // document still belongs to the old place.
     bool saveAs(const QString &projectPath, QString &error);
 
+    // A project lives in a folder of its own, named like the project:
+    // <parentFolder>/<name>/<name>.ppcb.
+    static QString projectPathInFolder(const QString &parentFolder, const QString &name);
+    // Why 'name' cannot name a project folder and its files, on Linux and on
+    // Windows; empty when it can.
+    static QString nameProblem(const QString &name);
+    // Why the project folder 'name' cannot be made inside 'parentFolder':
+    // a bad name, no parent folder or one that is not a full path, or
+    // something in the place other than an empty folder. Empty when it can
+    // be made.
+    static QString newFolderProblem(const QString &parentFolder, const QString &name);
+    // saveAs() into the new folder 'name' inside 'parentFolder', made with
+    // the folders above it when missing. Refuses whatever newFolderProblem()
+    // names. After a failure of the writing the new folder is left with what
+    // was written into it.
+    bool saveAsNewFolder(const QString &parentFolder, const QString &name, QString &error);
+
 signals:
     // The content was replaced: by change(), Undo, Redo, startNew() or open().
     void designChanged();

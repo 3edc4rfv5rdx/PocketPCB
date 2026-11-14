@@ -37,7 +37,9 @@ public:
     // Both return false, with the reason in the status bar, on failure; what
     // was open before stays.
     bool openProject(const QString &path);
-    bool saveProjectAs(const QString &path);
+    // Saves the project into the new folder 'name' inside 'parentFolder'
+    // (see Document::saveAsNewFolder()).
+    bool saveProjectAs(const QString &parentFolder, const QString &name);
     // Shows page 'page' of the project and fits the view to it.
     void showPage(int page);
 

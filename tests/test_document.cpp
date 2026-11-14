@@ -348,6 +348,80 @@ private slots:
         QCOMPARE(document.projectPath(), path);
     }
 
+    void projectNamesAreChecked()
+    {
+        for (const char *good : {"amp", "amp v2", "amp.v2", "усилитель", "con1", "a"})
+            QVERIFY2(Document::nameProblem(QString::fromUtf8(good)).isEmpty(), good);
+        for (const char *bad : {"", "a/b", "a\\b", "a:b", "a*b", "a?b", "a\"b", "a<b", "a>b", "a|b",
+                                "a\tb", ".amp", ".", "..", " amp", "amp ", "amp.", "con", "Con.amp",
+                                "nul", "COM1", "lpt9"})
+            QVERIFY2(!Document::nameProblem(QString::fromUtf8(bad)).isEmpty(), bad);
+    }
+
+    void newProjectFolderProblems()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        // Nothing there, and an empty folder: fine.
+        QVERIFY(Document::newFolderProblem(dir.path(), QStringLiteral("amp")).isEmpty());
+        QVERIFY(QDir(dir.path()).mkdir(QStringLiteral("empty")));
+        QVERIFY(Document::newFolderProblem(dir.path(), QStringLiteral("empty")).isEmpty());
+        // A parent that is not there yet is made on saving.
+        QVERIFY(Document::newFolderProblem(dir.filePath(QStringLiteral("a/b")),
+                                           QStringLiteral("amp")).isEmpty());
+
+        QVERIFY(!Document::newFolderProblem(dir.path(), QStringLiteral("a/b")).isEmpty());
+        QVERIFY(!Document::newFolderProblem(QString(), QStringLiteral("amp")).isEmpty());
+        QVERIFY(!Document::newFolderProblem(QStringLiteral("relative"), QStringLiteral("amp"))
+                     .isEmpty());
+        // A file in the place of the folder.
+        QVERIFY(writeGarbage(dir.filePath(QStringLiteral("file"))));
+        QVERIFY(!Document::newFolderProblem(dir.path(), QStringLiteral("file")).isEmpty());
+        // A folder with anything in it, a hidden file too.
+        QVERIFY(QDir(dir.path()).mkpath(QStringLiteral("hidden")));
+        QVERIFY(writeGarbage(dir.filePath(QStringLiteral("hidden/.keep"))));
+        QVERIFY(!Document::newFolderProblem(dir.path(), QStringLiteral("hidden")).isEmpty());
+    }
+
+    void saveAsNewFolderMakesTheProjectFolder()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString parent = dir.filePath(QStringLiteral("projects"));
+        const QString folder = parent + QStringLiteral("/amp");
+
+        Document document;
+        QString error;
+        QVERIFY2(document.saveAsNewFolder(parent, QStringLiteral("amp"), error), qPrintable(error));
+        QCOMPARE(document.projectPath(), folder + QStringLiteral("/amp.ppcb"));
+        QCOMPARE(document.projectPath(),
+                 Document::projectPathInFolder(parent, QStringLiteral("amp")));
+        QCOMPARE(QDir(folder).entryList(QDir::Files, QDir::Name),
+                 QStringList({QStringLiteral("amp.ppbrd"), QStringLiteral("amp.ppcb"),
+                              QStringLiteral("amp.ppsch")}));
+        QVERIFY(!document.isModified());
+
+        // The folder is there now: the same place is refused and nothing in
+        // it is touched.
+        QVERIFY(writeGarbage(folder + QStringLiteral("/amp.ppsch")));
+        document.change(QStringLiteral("A"), withSheetTitle(document, QStringLiteral("A")));
+        QVERIFY(!document.saveAsNewFolder(parent, QStringLiteral("amp"), error));
+        QVERIFY(!error.isEmpty());
+        QVERIFY(isGarbage(folder + QStringLiteral("/amp.ppsch")));
+        QCOMPARE(document.projectPath(), folder + QStringLiteral("/amp.ppcb"));
+        QVERIFY(document.isModified());
+
+        // A bad name makes no folder.
+        QVERIFY(!document.saveAsNewFolder(parent, QStringLiteral("a|b"), error));
+        QVERIFY(!QFileInfo::exists(parent + QStringLiteral("/a|b")));
+
+        // An empty folder of that name is taken.
+        QVERIFY(QDir(parent).mkdir(QStringLiteral("v2")));
+        QVERIFY2(document.saveAsNewFolder(parent, QStringLiteral("v2"), error), qPrintable(error));
+        QCOMPARE(document.projectPath(), parent + QStringLiteral("/v2/v2.ppcb"));
+        QCOMPARE(document.design().project.schematicFile, QStringLiteral("v2.ppsch"));
+    }
+
     void openReplacesContentAndHistory()
     {
         QTemporaryDir dir;

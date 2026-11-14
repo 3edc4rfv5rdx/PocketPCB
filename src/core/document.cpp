@@ -1,5 +1,6 @@
 #include "document.h"
 
+#include <QDir>
 #include <QFileInfo>
 
 namespace ppcb {
@@ -7,6 +8,15 @@ namespace ppcb {
 namespace {
 
 const char NEW_PROJECT_NAME[] = "untitled";
+
+// Characters no file name may hold on Windows; '/' also on Linux.
+const char FORBIDDEN_NAME_CHARS[] = "/\\:*?\"<>|";
+
+// Names Windows keeps for devices.
+const char *const RESERVED_NAMES[] = {
+    "CON",  "PRN",  "AUX",  "NUL",  "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7",
+    "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+};
 
 } // namespace
 
@@ -109,6 +119,68 @@ bool Document::saveAs(const QString &projectPath, QString &error)
     }
     m_projectPath = projectPath;
     return true;
+}
+
+QString Document::projectPathInFolder(const QString &parentFolder, const QString &name)
+{
+    return QDir(QDir(parentFolder).filePath(name)).filePath(name + QLatin1String(FILE_EXT_PROJECT));
+}
+
+QString Document::nameProblem(const QString &name)
+{
+    if (name.isEmpty())
+        return tr("the project needs a name");
+    for (const QChar c : name) {
+        if (c.unicode() < 0x20 || QLatin1String(FORBIDDEN_NAME_CHARS).contains(c))
+            return tr("the name must not contain %1").arg(QLatin1String(FORBIDDEN_NAME_CHARS));
+    }
+    if (name.startsWith(QLatin1Char('.')))
+        return tr("the name must not start with a dot");
+    if (name.startsWith(QLatin1Char(' ')))
+        return tr("the name must not start with a space");
+    if (name.endsWith(QLatin1Char(' ')) || name.endsWith(QLatin1Char('.')))
+        return tr("the name must not end with a space or a dot");
+    // Windows takes these for devices, whatever follows the first dot.
+    const QString device = name.section(QLatin1Char('.'), 0, 0).toUpper();
+    for (const char *reserved : RESERVED_NAMES) {
+        if (device == QLatin1String(reserved))
+            return tr("the name is reserved by Windows");
+    }
+    return QString();
+}
+
+QString Document::newFolderProblem(const QString &parentFolder, const QString &name)
+{
+    const QString problem = nameProblem(name);
+    if (!problem.isEmpty())
+        return problem;
+    if (parentFolder.isEmpty())
+        return tr("the project needs a folder");
+    if (QDir::isRelativePath(parentFolder))
+        return withPlace(parentFolder, tr("the folder must be a full path"));
+    const QString folder = QDir(parentFolder).filePath(name);
+    const QFileInfo info(folder);
+    if (!info.exists())
+        return QString();
+    if (!info.isDir())
+        return withPlace(folder, tr("a file with this name is already there"));
+    if (!QDir(folder).isEmpty(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden
+                              | QDir::System))
+        return withPlace(folder, tr("the folder already exists and is not empty"));
+    return QString();
+}
+
+bool Document::saveAsNewFolder(const QString &parentFolder, const QString &name, QString &error)
+{
+    error = newFolderProblem(parentFolder, name);
+    if (!error.isEmpty())
+        return false;
+    const QString folder = QDir(parentFolder).filePath(name);
+    if (!QDir().mkpath(folder)) {
+        error = withPlace(folder, tr("cannot make the folder"));
+        return false;
+    }
+    return saveAs(projectPathInFolder(parentFolder, name), error);
 }
 
 void Document::install(const Design &design)

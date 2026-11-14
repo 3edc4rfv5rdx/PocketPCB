@@ -7,6 +7,7 @@ add_library(pocketpcb_gui STATIC
     language.h language.cpp
     libraryviewitem.h libraryviewitem.cpp
     mainwindow.h mainwindow.cpp
+    saveprojectdialog.h saveprojectdialog.cpp
 )
 target_include_directories(pocketpcb_gui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(pocketpcb_gui PUBLIC pocketpcb_core Qt6::Widgets)

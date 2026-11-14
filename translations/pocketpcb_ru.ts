@@ -11,6 +11,50 @@
         <source>the project has no file yet</source>
         <translation>у проекта ещё нет файла</translation>
     </message>
+    <message>
+        <source>the project needs a name</source>
+        <translation>проекту нужно имя</translation>
+    </message>
+    <message>
+        <source>the name must not contain %1</source>
+        <translation>имя не должно содержать %1</translation>
+    </message>
+    <message>
+        <source>the name must not start with a dot</source>
+        <translation>имя не должно начинаться с точки</translation>
+    </message>
+    <message>
+        <source>the name must not start with a space</source>
+        <translation>имя не должно начинаться с пробела</translation>
+    </message>
+    <message>
+        <source>the name must not end with a space or a dot</source>
+        <translation>имя не должно заканчиваться пробелом или точкой</translation>
+    </message>
+    <message>
+        <source>the name is reserved by Windows</source>
+        <translation>это имя зарезервировано Windows</translation>
+    </message>
+    <message>
+        <source>the project needs a folder</source>
+        <translation>проекту нужна папка</translation>
+    </message>
+    <message>
+        <source>the folder must be a full path</source>
+        <translation>путь к папке должен быть полным</translation>
+    </message>
+    <message>
+        <source>a file with this name is already there</source>
+        <translation>здесь уже есть файл с таким именем</translation>
+    </message>
+    <message>
+        <source>the folder already exists and is not empty</source>
+        <translation>папка уже существует и не пуста</translation>
+    </message>
+    <message>
+        <source>cannot make the folder</source>
+        <translation>не удалось создать папку</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::JsonFile</name>
@@ -343,10 +387,6 @@
         <translation>Открыть проект</translation>
     </message>
     <message>
-        <source>Save project as</source>
-        <translation>Сохранить проект как</translation>
-    </message>
-    <message>
         <source>PocketPCB projects</source>
         <translation>Проекты PocketPCB</translation>
     </message>
@@ -361,6 +401,33 @@
     <message>
         <source>untitled</source>
         <translation>без имени</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::SaveProjectDialog</name>
+    <message>
+        <source>Save project as</source>
+        <translation>Сохранить проект как</translation>
+    </message>
+    <message>
+        <source>Browse</source>
+        <translation>Обзор</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Имя</translation>
+    </message>
+    <message>
+        <source>Folder</source>
+        <translation>Папка</translation>
+    </message>
+    <message>
+        <source>Folder for the project</source>
+        <translation>Папка для проекта</translation>
+    </message>
+    <message>
+        <source>Will be made</source>
+        <translation>Будет создано</translation>
     </message>
 </context>
 </TS>

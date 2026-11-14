@@ -38,7 +38,7 @@ public:
     static QString lastLibraryFolder();
     static void setLastLibraryFolder(const QString &folder);
 
-    // Folder the last project was opened from or saved into.
+    // Folder that holds the folder of the last project opened or saved.
     static QString lastProjectFolder();
     static void setLastProjectFolder(const QString &folder);
 

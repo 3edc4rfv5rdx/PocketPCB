@@ -6,9 +6,15 @@
 #include "libraryfile.h"
 #include "libraryviewitem.h"
 #include "mainwindow.h"
+#include "saveprojectdialog.h"
 
 #include <QAction>
 #include <QComboBox>
+#include <QDialogButtonBox>
+#include <QDir>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
 #include <QSettings>
 #include <QGraphicsScene>
 #include <QStandardPaths>
@@ -267,23 +273,52 @@ private slots:
         QCOMPARE(window.designItem()->page(), 0);
     }
 
-    void projectIsSavedUnderAName()
+    void projectIsSavedIntoItsOwnFolder()
     {
         QTemporaryDir dir;
         QVERIFY(dir.isValid());
-        const QString path = dir.filePath(QStringLiteral("first.ppcb"));
+        const QString path = dir.filePath(QStringLiteral("first/first.ppcb"));
 
         MainWindow window;
-        QVERIFY(window.saveProjectAs(path));
+        QVERIFY(window.saveProjectAs(dir.path(), QStringLiteral("first")));
+        QCOMPARE(window.document()->projectPath(), path);
         QVERIFY(QFile::exists(path));
-        QVERIFY(QFile::exists(dir.filePath(QStringLiteral("first.ppsch"))));
-        QVERIFY(QFile::exists(dir.filePath(QStringLiteral("first.ppbrd"))));
+        QVERIFY(QFile::exists(dir.filePath(QStringLiteral("first/first.ppsch"))));
+        QVERIFY(QFile::exists(dir.filePath(QStringLiteral("first/first.ppbrd"))));
         QVERIFY2(window.windowTitle().startsWith(QStringLiteral("first.ppcb")),
                  qPrintable(window.windowTitle()));
 
-        QVERIFY(!window.saveProjectAs(dir.filePath(QStringLiteral("nowhere/second.ppcb"))));
+        // The folder of the first one is taken.
+        QVERIFY(!window.saveProjectAs(dir.path(), QStringLiteral("first")));
         QCOMPARE(window.document()->projectPath(), path);
         QVERIFY(!window.statusBar()->currentMessage().isEmpty());
+    }
+
+    void saveProjectDialogShowsThePlaceOrTheProblem()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        SaveProjectDialog dialog(QStringLiteral("amp"), dir.path());
+        QLineEdit *name = dialog.findChild<QLineEdit *>(QStringLiteral("projectNameEdit"));
+        QLabel *preview = dialog.findChild<QLabel *>(QStringLiteral("projectPreviewLabel"));
+        QDialogButtonBox *buttons = dialog.findChild<QDialogButtonBox *>();
+        QVERIFY(name != nullptr && preview != nullptr && buttons != nullptr);
+        QPushButton *save = buttons->button(QDialogButtonBox::Save);
+
+        QVERIFY2(preview->text().contains(QDir::toNativeSeparators(
+                     Document::projectPathInFolder(dir.path(), QStringLiteral("amp")))),
+                 qPrintable(preview->text()));
+        QVERIFY(save->isEnabled());
+
+        name->setText(QStringLiteral("a|b"));
+        QCOMPARE(preview->text(), Document::nameProblem(QStringLiteral("a|b")));
+        QVERIFY(!save->isEnabled());
+
+        // The spaces around the name are not part of it.
+        name->setText(QStringLiteral("  amp  "));
+        QCOMPARE(dialog.name(), QStringLiteral("amp"));
+        QVERIFY(save->isEnabled());
+        QCOMPARE(dialog.parentFolder(), dir.path());
     }
 
     void undoActionsAndTitleFollowTheDocument()
