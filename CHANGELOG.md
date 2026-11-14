@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- I: Library gets the resistor symbol and part, and a test that every part has its symbol and footprints
 - N: The built-in and the user's library are loaded on start, the user's library folder is made and opened from the File menu
 - R: The library types are named for any library folder, not for the project's alone
 - R: Folders are made by one shared function with one message

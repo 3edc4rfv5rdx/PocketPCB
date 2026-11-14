@@ -1,0 +1,11 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "resistor",
+  "footprints": ["resistor-10.16", "resistor-vertical"],
+  "prefix": "R",
+  "prefixGost": "R",
+  "value": "10k",
+  "connector": false,
+  "name": {"en": "Resistor", "uk": "Резистор", "ru": "Резистор"}
+}

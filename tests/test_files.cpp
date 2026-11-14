@@ -1,3 +1,4 @@
+#include "library.h"
 #include "libraryfile.h"
 #include "project.h"
 
@@ -48,6 +49,31 @@ private slots:
             ++count;
         }
         QVERIFY(count >= 2);
+    }
+
+    // Every part of the library has its symbol and its footprints there,
+    // and its pins and pads match by number.
+    void everyLibraryPartIsComplete()
+    {
+        QStringList problems;
+        const Library library = LibraryFolder::read(sourcePath(QStringLiteral("library")), problems);
+        QVERIFY2(problems.isEmpty(), qPrintable(problems.join(QLatin1Char('\n'))));
+        QVERIFY(!library.parts.isEmpty());
+        for (auto it = library.parts.constBegin(); it != library.parts.constEnd(); ++it) {
+            const Symbol *symbol = library.findSymbolOfPart(it.key());
+            QVERIFY2(symbol != nullptr, qPrintable(it.key()));
+            QStringList pins;
+            for (const Pin &pin : symbol->pins)
+                pins.append(pin.number);
+            for (const QString &name : it.value().footprints) {
+                const Footprint *footprint = library.findFootprint(name);
+                QVERIFY2(footprint != nullptr, qPrintable(it.key() + QLatin1Char(' ') + name));
+                for (const Pad &pad : footprint->pads) {
+                    QVERIFY2(pad.number.isEmpty() || pins.contains(pad.number),
+                             qPrintable(name + QLatin1Char(' ') + pad.number));
+                }
+            }
+        }
     }
 
     void resistorFootprintsHaveTheirPitch()
