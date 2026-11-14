@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+#
+# Everything the numbered steps share: where the project keeps its version,
+# how that version moves, and how a step checks the tree. Nothing here runs on its own — every
+# step sources it:
+#
+#   cd "$(dirname "$0")" || exit 1
+#   . ./98-common
+#
+# It is numbered 98 so it sorts out of the way of the steps, and carries neither
+# an execute bit nor a .sh: it is not a script anybody runs. The shebang is here
+# for the editor and for shellcheck, which need to be told the language.
+#
+
+set -o pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+die() {
+    echo "ERROR: $*" >&2
+    exit 1
+}
+
+# ---------- project settings ----------
+# One file per project holds everything that differs between projects; nothing
+# below this line names a particular one.
+[ -f "$SCRIPT_DIR/99-project.conf" ] || die "No 99-project.conf beside 98-common"
+# shellcheck source=99-project.conf
+. "$SCRIPT_DIR/99-project.conf"
+
+[ -n "${PROJECT:-}" ] || die "99-project.conf must set PROJECT"
+
+BUILD_FILE="${BUILD_FILE:-build_number.txt}"
+CHANGELOG_FILE="${CHANGELOG_FILE:-CHANGELOG.md}"
+OUT_DIR="${OUT_DIR:-OUT}"
+GIT_BRANCH="${GIT_BRANCH:-main}"
+GIT_REMOTE="${GIT_REMOTE:-origin}"
+
+# ---------- version ----------
+#
+# build_number.txt is the single source of truth, and it is plain shell. It is
+# written by 00-Make.sh on every build:
+#
+#   base_version=0.1        the line: major.minor, moved by a feature
+#   build=13                the build number, +1 on every build
+#   version=0.1.13          the line plus that same build number
+#   build_date=2026-11-14   the day of the build
+#
+# The tag it all ends up as is v<version> — v0.1.13.
+
+version_load() {
+    [ -f "$BUILD_FILE" ] || die "No $BUILD_FILE: build with ./00-Make.sh first."
+    # shellcheck disable=SC1090
+    . "./$BUILD_FILE"
+    # All three, because a hand-edited file missing one of them produces a tag
+    # like "v-45" rather than an error anybody would notice.
+    [ -n "${base_version:-}" ] || die "No base_version in $BUILD_FILE"
+    [ -n "${build:-}" ] || die "No build in $BUILD_FILE"
+    [ -n "${version:-}" ] || die "No version in $BUILD_FILE"
+}
+
+version_save() { # version_save <base_version> <build> <version> <build_date>
+    cat > "$BUILD_FILE" <<EOF
+base_version=$1
+build=$2
+version=$3
+build_date=$4
+EOF
+}
+
+# Whether anything waiting for release is a new feature. The changelog already
+# says so itself: N is a feature, everything else is a fix, a tweak or plumbing.
+# 20-MakeTag.sh empties Unreleased when it stamps a version, so this reads
+# exactly what has landed since the last tag. Continuation lines are indented,
+# so only the first line of an entry can match, and both dialects of the marker
+# — "- N:" and "- N " — count.
+unreleased_has_feature() {
+    [ -f "$CHANGELOG_FILE" ] || return 1
+    awk '
+        /^## Unreleased$/ { inside = 1; next }
+        /^## / { inside = 0 }
+        inside && /^- N[: ]/ { found = 1 }
+        END { exit !found }
+    ' "$CHANGELOG_FILE"
+}
+
+# The line the last release went out on, so the rule fires once per feature and
+# not on every build after it. Silence rather than failure when there is no tag
+# yet, or none that parses: a project without releases is not an error, and an
+# assignment from a function that returns non-zero would end a script under
+# set -e.
+released_line() {
+    local tag
+    # Release tags only: a tag like "duplex" sorts ahead of them and would answer
+    # this question with a name that carries no version at all.
+    tag=$(git tag --list 'v*' --sort=-v:refname 2>/dev/null | head -1) || true
+    if [[ "$tag" =~ ^v([0-9]+\.[0-9]+)\. ]]; then
+        echo "${BASH_REMATCH[1]}"
+    fi
+    return 0
+}
+
+next_line() { # next_line <major.minor> -> <major.minor+1>
+    if [[ ! "$1" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
+        echo "Malformed base_version: $1" >&2
+        return 1
+    fi
+    echo "${BASH_REMATCH[1]}.$((BASH_REMATCH[2] + 1))"
+}
+
+# The whole version step of a build: raise the build number, move the line when
+# the changelog says a feature is waiting, and write the file back.
+#
+# The line moves by itself. Nothing to pass and nothing to remember: the
+# decision was made when the entry was written as N rather than E. It moves only
+# when the last release went out on this same line, so after it has moved the
+# tag still names the old one and the next build leaves it alone. A tree with no
+# tags yet never matches, so the line stays where it is.
+version_bump() {
+    version_load
+    [[ "$base_version" =~ ^[0-9]+\.[0-9]+$ && "$build" =~ ^[0-9]+$ ]] ||
+        die "base_version or build in $BUILD_FILE is malformed"
+    local new_build=$((10#$build + 1)) # 10#: a number like 08 is not octal
+    local new_base="$base_version" line
+    line=$(released_line)
+    if [ -n "$line" ] && [ "$line" = "$base_version" ] && unreleased_has_feature; then
+        new_base=$(next_line "$base_version") || return 1
+        echo ">>> A feature is waiting in $CHANGELOG_FILE, so the line moves to $new_base"
+    fi
+
+    local new_version="${new_base}.${new_build}"
+    local new_date
+    new_date=$(date +%F)
+    version_save "$new_base" "$new_build" "$new_version" "$new_date"
+    echo "Version: $new_version"
+    echo "Date:    $new_date"
+}
+
+# ---------- git ----------
+
+require_clean_tree() {
+    echo "=== Checking that the working tree is clean ==="
+    # --porcelain reports staged, unstaged AND untracked files; git diff --quiet
+    # misses untracked, so a new source file could be built into the program and
+    # left out of the tag it went out under.
+    local dirty
+    dirty=$(git status --porcelain)
+    if [[ -n "$dirty" ]]; then
+        echo "ERROR: You have uncommitted or untracked changes:"
+        echo "$dirty"
+        echo "Please commit, stash, or remove them before running this script."
+        exit 1
+    fi
+    echo "OK: Working tree is clean."
+}
+
+# ---------- misc ----------
+
+# Every step ends on one, so a double-clicked terminal does not close over the
+# last thing it said.
+pause() {
+    sleep "${1:-2}"
+}

@@ -3,6 +3,8 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- I: 00-Make.sh moves the version line when a feature waits in CHANGELOG since the last release
+- I: Scripts to push the branch, tag a release and upload it to GitHub
 - F: A project keeps the parts, symbols and footprints it uses as library files in its library folder, and draws a red question mark for one that is missing
 - F: Save as asks for a name and a place and puts the project into a folder of its own, refusing one that is not empty
 - I: Library part gets a name in every interface language for the library panel

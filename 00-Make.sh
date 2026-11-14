@@ -13,7 +13,6 @@ cd "$(dirname "$0")" || exit 1
 BUILD_DIR=build
 OUT_DIR=OUT
 BINARY=src/app/pocketpcb
-BUILD_FILE=build_number.txt
 
 if [[ "${1:-}" == "--clean" ]]; then
     rm -rf "$BUILD_DIR"
@@ -36,21 +35,10 @@ step() { # step <name> <command...>
     "$@" || { status=$?; echo ">>> $name FAILED (exit $status)"; }
 }
 
-# The next build number: build + 1, version = <base_version>.<build>, the
-# date of today. Done before configuring, so the binary carries the new number.
-version_bump() {
-    local base_version build
-    base_version=$(sed -n 's/^base_version=//p' "$BUILD_FILE")
-    build=$(sed -n 's/^build=//p' "$BUILD_FILE")
-    if [[ ! "$base_version" =~ ^[0-9]+\.[0-9]+$ || ! "$build" =~ ^[0-9]+$ ]]; then
-        echo ">>> $BUILD_FILE: base_version or build is missing or malformed"
-        return 1
-    fi
-    build=$((10#$build + 1)) # 10#: a number like 08 is not octal
-    printf 'base_version=%s\nbuild=%s\nversion=%s.%s\nbuild_date=%s\n' \
-        "$base_version" "$build" "$base_version" "$build" "$(date +%F)" > "$BUILD_FILE"
-    echo "Version: $base_version.$build"
-}
+# The next build number, and the next line when a feature waits in the
+# changelog (version_bump in 98-common). Done before configuring, so the binary
+# carries the new number.
+. ./98-common
 
 step "Version" version_bump
 [[ $status -eq 0 ]] && step "Configure" cmake -S . -B "$BUILD_DIR" "${GENERATOR[@]}" -DCMAKE_BUILD_TYPE=Release
