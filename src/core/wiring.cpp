@@ -1017,34 +1017,55 @@ Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectI
             return other.id != wire && other.points.size() >= 2 && isOnWire(other, point);
         });
     };
-    // Unless it can slide along a wire it lies on, to where it goes: what
-    // else is there stays joined to it through that wire.
-    const auto slides = [&](const Point &point, const Point &to) {
-        return std::any_of(sheet.wires.cbegin(), sheet.wires.cend(), [&](const Wire &other) {
-            if (other.id == wire)
-                return false;
-            for (int i = 1; i < other.points.size(); ++i) {
-                const Point &s0 = other.points.at(i - 1);
-                const Point &s1 = other.points.at(i);
-                if (isOnSegment(s0, s1, point) && isOnSegment(s0, s1, to))
-                    return true;
+    // Unless it can slide along the wires it lies on, towards where it
+    // goes: what else is there stays joined to it through them. Where it
+    // gets to: 'to' itself, or as far that way as the wires reach, from
+    // one on to the next.
+    const auto slidTo = [&](const Point &point, const Point &to) {
+        const auto distance = [&to](const Point &from) {
+            return std::llabs(to.x - from.x) + std::llabs(to.y - from.y);
+        };
+        Point reached = point;
+        for (bool further = true; further;) {
+            further = false;
+            for (const Wire &other : sheet.wires) {
+                if (other.id == wire)
+                    continue;
+                for (int i = 1; i < other.points.size(); ++i) {
+                    const Point &s0 = other.points.at(i - 1);
+                    const Point &s1 = other.points.at(i);
+                    if (!isOnSegment(s0, s1, reached))
+                        continue;
+                    Point along = reached;
+                    if (isOnSegment(s0, s1, to))
+                        along = to;
+                    else if (s0.y == s1.y && to.y == s0.y)
+                        along.x = qBound(qMin(s0.x, s1.x), to.x, qMax(s0.x, s1.x));
+                    else if (s0.x == s1.x && to.x == s0.x)
+                        along.y = qBound(qMin(s0.y, s1.y), to.y, qMax(s0.y, s1.y));
+                    if (distance(along) < distance(reached)) {
+                        reached = along;
+                        further = true;
+                    }
+                }
             }
-            return false;
-        });
+        }
+        return reached;
     };
-    // The wire's ends held by something: they stay, or slide along it.
+    // The wire's ends held by something: they stay, or slide along it, and
+    // a bend leads on from where they get to.
     const bool aHeld = index == 0 && held(a);
     const bool bHeld = index + 2 == n && held(b);
-    const bool aStays = aHeld && !slides(a, na);
-    const bool bStays = bHeld && !slides(b, nb);
+    const Point aAt = aHeld ? slidTo(a, na) : na;
+    const Point bAt = bHeld ? slidTo(b, nb) : nb;
 
     QList<Point> points;
     if (index > 0) {
         // The segment before goes on its own way to the moved one.
         points = p.mid(0, index);
         points += wireRoute(p.at(index - 1), na, p.at(index - 1).x == a.x, false);
-    } else if (aStays) {
-        points = laidBetween(a, na, d.x == 0, obstacles.without(wire));
+    } else if (aAt != na) {
+        points = laidBetween(aAt, na, d.x == 0, obstacles.without(wire));
     }
     if (points.isEmpty() || points.last() != na)
         points.append(na);
@@ -1053,8 +1074,8 @@ Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectI
         // The segment after comes into its next point its own way.
         points += wireRoute(nb, p.at(index + 2), p.at(index + 2).x != b.x, false);
         points += p.mid(index + 3);
-    } else if (bStays) {
-        points += laidBetween(nb, b, d.x == 0, obstacles.without(wire)).mid(1);
+    } else if (bAt != nb) {
+        points += laidBetween(nb, bAt, d.x == 0, obstacles.without(wire)).mid(1);
     }
 
     Sheet result = sheet;

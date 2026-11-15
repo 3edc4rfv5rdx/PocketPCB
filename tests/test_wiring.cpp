@@ -655,6 +655,20 @@ private slots:
                  sheet.wires.at(0).points);
     }
 
+    // An upright wire with its top end on the middle of a level rail,
+    // moved sideways past the end of the rail: its end slides to the end
+    // of the rail and a bend leads on, instead of a bend back along the rail.
+    void aSegmentSlidesAsFarAsTheWireReaches()
+    {
+        const Library library;
+        Sheet sheet;
+        sheet.wires = {wire({mm(0, 0), mm(20, 0)}), wire({mm(10, 0), mm(10, 10)})};
+        const ObjectId id = sheet.wires.at(1).id;
+        const QList<Wire> wires = withSegmentMoved(sheet, library, id, 0, mm(15, 0)).wires;
+        QCOMPARE(wires.at(1).points, QList<Point>({mm(20, 0), mm(25, 0), mm(25, 10)}));
+        QCOMPARE(wires.at(0).points, sheet.wires.at(0).points);
+    }
+
     // A level wire from the right pin of a part at the origin, with an
     // upright wire going down from the same pin: moved down, the level one
     // slides down the upright one instead of leaving a bend over it.
