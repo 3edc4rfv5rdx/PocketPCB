@@ -13,6 +13,7 @@ class QTimer;
 class QComboBox;
 class QDockWidget;
 class QLabel;
+class QPushButton;
 class QMenu;
 class QTabBar;
 
@@ -72,6 +73,9 @@ public:
 
     LibraryPanel *libraryPanel() const { return m_libraryPanel; }
 
+    // The message last put into the status bar, beside the saved mark.
+    QString statusText() const;
+
     // The built-in library with the user's over it, as last loaded.
     const MergedLibrary &library() const { return m_library; }
     // Reads both libraries again. What cannot be read is told in the status
@@ -112,6 +116,11 @@ private:
     // Brings the tabs and the drawing in line with the project's content.
     void projectChanged();
     void updateTitle();
+    // The mark in the bottom left corner: saved, not saved, or new.
+    void updateSavedMark();
+    // Puts 'text' into the status bar until the next one. Not
+    // QStatusBar::showMessage(), which would hide the saved mark.
+    void showStatus(const QString &text);
 
     void chooseLibraryFile();
     void openLibraryFolder();
@@ -143,6 +152,8 @@ private:
     // The view is fitted to the page after the window is first shown.
     bool m_shownOnce = false;
     QLabel *m_positionLabel = nullptr;
+    QPushButton *m_savedMark = nullptr;
+    QLabel *m_statusText = nullptr;
     QComboBox *m_gridStepBox = nullptr;
     QMenu *m_recentMenu = nullptr;
 

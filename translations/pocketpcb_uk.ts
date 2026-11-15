@@ -437,6 +437,18 @@
         <translation>Плата</translation>
     </message>
     <message>
+        <source>Not saved</source>
+        <translation>Не збережено</translation>
+    </message>
+    <message>
+        <source>New</source>
+        <translation>Новий</translation>
+    </message>
+    <message>
+        <source>Saved</source>
+        <translation>Збережено</translation>
+    </message>
+    <message>
         <source>untitled</source>
         <translation>без назви</translation>
     </message>

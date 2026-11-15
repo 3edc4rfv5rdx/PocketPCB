@@ -193,7 +193,7 @@ private slots:
         QCOMPARE(visibleItems(window), 1);
         QVERIFY(window.libraryItem()->isVisible());
         QVERIFY(!window.designItem()->isVisible());
-        QVERIFY(window.statusBar()->currentMessage().contains(QStringLiteral("item.json")));
+        QVERIFY(window.statusText().contains(QStringLiteral("item.json")));
 
         // The file becomes a footprint: a reload shows it, in the same item.
         LibraryItem footprint;
@@ -210,7 +210,7 @@ private slots:
         file.close();
         QVERIFY(!window.reloadLibraryFile());
         QVERIFY(window.libraryItem()->content().kind == LibraryKind::Footprint);
-        QVERIFY(window.statusBar()->currentMessage().startsWith(path));
+        QVERIFY(window.statusText().startsWith(path));
 
         // A file that cannot be opened changes nothing.
         QVERIFY(!window.openLibraryFile(dir.filePath(QStringLiteral("absent.json"))));
@@ -301,7 +301,7 @@ private slots:
         QVERIFY(!window.openProject(dir.filePath(QStringLiteral("absent.ppcb"))));
         QCOMPARE(window.document()->projectPath(), path);
         QCOMPARE(tabTexts(window).size(), 3);
-        QVERIFY(!window.statusBar()->currentMessage().isEmpty());
+        QVERIFY(!window.statusText().isEmpty());
         // Nor does it go into the recent ones.
         QVERIFY(!AppSettings::recentProjects().contains(
             QFileInfo(dir.filePath(QStringLiteral("absent.ppcb"))).absoluteFilePath()));
@@ -335,9 +335,9 @@ private slots:
         MainWindow window;
         QVERIFY(window.openProject(path));
         QCOMPARE(window.document()->projectPath(), path);
-        QVERIFY2(window.statusBar()->currentMessage().startsWith(
+        QVERIFY2(window.statusText().startsWith(
                      QStringLiteral("library/parts/diode.json")),
-                 qPrintable(window.statusBar()->currentMessage()));
+                 qPrintable(window.statusText()));
     }
 
     void projectIsSavedIntoItsOwnFolder()
@@ -358,7 +358,34 @@ private slots:
         // The folder of the first one is taken.
         QVERIFY(!window.saveProjectAs(dir.path(), QStringLiteral("first")));
         QCOMPARE(window.document()->projectPath(), path);
-        QVERIFY(!window.statusBar()->currentMessage().isEmpty());
+        QVERIFY(!window.statusText().isEmpty());
+    }
+
+    void theSavedMarkTellsWhetherTheProjectIsSaved()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        MainWindow window;
+        const QPushButton *mark = window.findChild<QPushButton *>(QStringLiteral("savedMark"));
+        QVERIFY(mark != nullptr);
+        QCOMPARE(mark->text(), QStringLiteral("New"));
+
+        QVERIFY(window.saveProjectAs(dir.path(), QStringLiteral("marked")));
+        QCOMPARE(mark->text(), QStringLiteral("Saved"));
+
+        Design changed = window.document()->design();
+        changed.schematic.sheets[0].title = QStringLiteral("Power");
+        window.document()->change(QStringLiteral("Rename"), changed);
+        QCOMPARE(mark->text(), QStringLiteral("Not saved"));
+
+        window.document()->undoStack()->undo();
+        QCOMPARE(mark->text(), QStringLiteral("Saved"));
+
+        // A click on the mark saves.
+        window.document()->change(QStringLiteral("Rename"), changed);
+        QCOMPARE(mark->text(), QStringLiteral("Not saved"));
+        const_cast<QPushButton *>(mark)->click();
+        QCOMPARE(mark->text(), QStringLiteral("Saved"));
     }
 
     void saveProjectDialogShowsThePlaceOrTheProblem()
@@ -810,7 +837,7 @@ private slots:
 
         MainWindow window;
         QVERIFY(window.openLibraryFile(path));
-        const QString message = window.statusBar()->currentMessage();
+        const QString message = window.statusText();
         QVERIFY2(message.contains(QStringLiteral("diode-7.62, diode-10.16")), qPrintable(message));
     }
 };

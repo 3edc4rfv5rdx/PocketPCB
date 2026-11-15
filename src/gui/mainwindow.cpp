@@ -25,6 +25,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QShowEvent>
 #include <QSignalBlocker>
 #include <QStatusBar>
@@ -45,6 +46,14 @@ const int RELOAD_DELAY_MS = 150;
 const int MS_PER_MINUTE = 60 * 1000;
 
 const char APP_TITLE[] = "PocketPCB";
+
+// The saved mark: white bold text on soft green, red or grey.
+const char SAVED_MARK_STYLE[] =
+    "QPushButton { color: white; font-weight: bold; padding: 0px 6px; border: none;"
+    " border-radius: 2px; background: %1; }";
+const char SAVED_COLOR[] = "#5f9462";
+const char NOT_SAVED_COLOR[] = "#c25450";
+const char NEW_COLOR[] = "#8c8c8c";
 
 } // namespace
 
@@ -326,6 +335,17 @@ void MainWindow::createMenus()
 
 void MainWindow::createStatusBar()
 {
+    // On the left, the saved mark, then the messages.
+    // A click on the mark saves, as File > Save does.
+    m_savedMark = new QPushButton(this);
+    m_savedMark->setObjectName(QStringLiteral("savedMark"));
+    m_savedMark->setCursor(Qt::PointingHandCursor);
+    m_savedMark->setFocusPolicy(Qt::NoFocus);
+    connect(m_savedMark, &QPushButton::clicked, this, &MainWindow::saveProject);
+    statusBar()->addWidget(m_savedMark);
+    m_statusText = new QLabel(this);
+    statusBar()->addWidget(m_statusText, 1);
+
     m_positionLabel = new QLabel(this);
     statusBar()->addPermanentWidget(m_positionLabel);
 
@@ -382,7 +402,7 @@ void MainWindow::newProject()
     m_document->startNew();
     showPage(0);
     updateTitle();
-    statusBar()->clearMessage();
+    showStatus(QString());
 }
 
 bool MainWindow::openProject(const QString &path)
@@ -390,7 +410,7 @@ bool MainWindow::openProject(const QString &path)
     QString error;
     QStringList problems;
     if (!m_document->open(path, error, &problems)) {
-        statusBar()->showMessage(error);
+        showStatus(error);
         return false;
     }
     showPage(0);
@@ -402,7 +422,7 @@ bool MainWindow::openProject(const QString &path)
         message += QStringLiteral(" — ") + tr("more problems with the project library")
                    + QStringLiteral(": ") + QString::number(problems.size() - 1);
     }
-    statusBar()->showMessage(message);
+    showStatus(message);
     offerAutosave();
     return true;
 }
@@ -411,12 +431,12 @@ bool MainWindow::saveProjectAs(const QString &parentFolder, const QString &name)
 {
     QString error;
     if (!m_document->saveAsNewFolder(parentFolder, name, error)) {
-        statusBar()->showMessage(error);
+        showStatus(error);
         return false;
     }
     updateTitle();
     AppSettings::addRecentProject(m_document->projectPath());
-    statusBar()->showMessage(m_document->projectPath());
+    showStatus(m_document->projectPath());
     return true;
 }
 
@@ -448,7 +468,7 @@ void MainWindow::autosaveProject()
 {
     QString error;
     if (!m_document->autosave(error))
-        statusBar()->showMessage(error);
+        showStatus(error);
 }
 
 void MainWindow::offerAutosave()
@@ -467,7 +487,7 @@ void MainWindow::offerAutosave()
     }
     QString error;
     if (!m_document->restoreAutosave(error))
-        statusBar()->showMessage(error);
+        showStatus(error);
 }
 
 void MainWindow::chooseNewProject()
@@ -517,8 +537,8 @@ void MainWindow::openRecentProject(const QString &path)
 {
     if (!QFileInfo::exists(path)) {
         AppSettings::removeRecentProject(path);
-        statusBar()->showMessage(tr("The project is no longer there") + QStringLiteral(": ")
-                                 + QDir::toNativeSeparators(path));
+        showStatus(tr("The project is no longer there") + QStringLiteral(": ")
+                   + QDir::toNativeSeparators(path));
         return;
     }
     leaveAndOpenProject(path);
@@ -530,10 +550,10 @@ bool MainWindow::saveProject()
         return chooseProjectToSaveAs();
     QString error;
     if (!m_document->save(error)) {
-        statusBar()->showMessage(error);
+        showStatus(error);
         return false;
     }
-    statusBar()->showMessage(m_document->projectPath());
+    showStatus(m_document->projectPath());
     return true;
 }
 
@@ -644,6 +664,34 @@ void MainWindow::updateTitle()
     // "[*]" is where Qt puts the mark of unsaved changes.
     setWindowTitle(name + QStringLiteral("[*] — ") + QLatin1String(APP_TITLE));
     setWindowModified(m_document->isModified());
+    updateSavedMark();
+}
+
+void MainWindow::updateSavedMark()
+{
+    if (m_savedMark == nullptr)
+        return;
+    const char *color = SAVED_COLOR;
+    if (m_document->isModified()) {
+        m_savedMark->setText(tr("Not saved"));
+        color = NOT_SAVED_COLOR;
+    } else if (m_document->projectPath().isEmpty()) {
+        m_savedMark->setText(tr("New"));
+        color = NEW_COLOR;
+    } else {
+        m_savedMark->setText(tr("Saved"));
+    }
+    m_savedMark->setStyleSheet(QString::fromLatin1(SAVED_MARK_STYLE).arg(QLatin1String(color)));
+}
+
+void MainWindow::showStatus(const QString &text)
+{
+    m_statusText->setText(text);
+}
+
+QString MainWindow::statusText() const
+{
+    return m_statusText->text();
 }
 
 void MainWindow::loadLibrary()
@@ -657,14 +705,14 @@ void MainWindow::loadLibrary()
     m_library = mergeLibraries(builtIn, user);
     updateLibraryPanel();
     if (!problems.isEmpty())
-        statusBar()->showMessage(problems.first());
+        showStatus(problems.first());
 }
 
 bool MainWindow::placePart(LibraryPanel::Source source, const QString &part,
                            const QString &footprint)
 {
     if (!m_designItem->isVisible() || m_sheetEditor->sheet() < 0) {
-        statusBar()->showMessage(tr("Open a sheet to place parts on"));
+        showStatus(tr("Open a sheet to place parts on"));
         return false;
     }
     const Library &library =
@@ -721,7 +769,7 @@ bool MainWindow::showLibraryFile(const QString &path)
     LibraryItem content;
     QString error;
     if (!LibraryFile::read(path, content, error)) {
-        statusBar()->showMessage(error);
+        showStatus(error);
         return false;
     }
 
@@ -751,7 +799,7 @@ bool MainWindow::showLibraryFile(const QString &path)
                   + content.part.footprints.join(QLatin1String(", "));
         break;
     }
-    statusBar()->showMessage(message);
+    showStatus(message);
     return true;
 }
 
