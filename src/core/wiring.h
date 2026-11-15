@@ -60,7 +60,8 @@ QList<Point> simplifiedWire(const QList<Point> &points);
 // short. An end that also lay on a pin of a component left in place stays
 // there. A wire left with no length is removed. A moved pin that touched a
 // pin left in place gets a new wire to it, laid the same way, from that pin
-// or from a wire there, joining it straight across from the moved pin. A
+// or from a wire there, joining it straight across from the moved pin,
+// unless it lands on a wire that already reaches the pin it left. A
 // moved pin that was joined to something and lands on the middle of a wire
 // cuts the wire there, so that it is joined to it. Where several
 // wire ends went together, an end at a point a wire already led still

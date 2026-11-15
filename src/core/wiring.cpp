@@ -860,9 +860,18 @@ Sheet withWiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
         if (joined.contains(pair))
             continue;
         joined.insert(pair);
-        // Onto a wire: it is cut there below.
-        if (std::any_of(wires.cbegin(), wires.cend(),
-                        [&pin](const Wire &other) { return isOnWire(other, pin.to); }))
+        // Onto a wire joined to the pin it left: it is cut there below, and
+        // that joins them. Onto any other wire it still needs its own.
+        Sheet joinedBy;
+        joinedBy.wires = wires;
+        QSet<ObjectId> reached;
+        for (const Wire &other : wires) {
+            if (isOnWire(other, pin.from))
+                reached.unite(joinedWires(joinedBy, other.id));
+        }
+        if (std::any_of(wires.cbegin(), wires.cend(), [&](const Wire &other) {
+                return reached.contains(other.id) && isOnWire(other, pin.to);
+            }))
             continue;
         Wire wire;
         wire.id = newObjectId();

@@ -316,6 +316,23 @@ private slots:
         QCOMPARE(withWiresFollowing(sheet, sheet, part, library), sheet);
     }
 
+    // Part A at the origin and part B touch pin to pin at (5, 0). B goes
+    // up, and its pin lands on a wire that has nothing to do with A: the
+    // pins still get their wire, which ends on that one.
+    void aPinLandingOnAnotherWireKeepsThePinItTouched()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0)), twoPin(mm(10, 0))};
+        sheet.wires = {wire({mm(0, -6), mm(8, -6)})};
+        const QSet<ObjectId> b = {sheet.components.at(1).id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, b, mm(0, -6)), b, library);
+        QCOMPARE(moved.wires.size(), 2);
+        QCOMPARE(moved.wires.at(0).points, sheet.wires.at(0).points);
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(5, 0), mm(5, -6)}));
+    }
+
     void pinsThatTouchedAreJoinedByANewWire()
     {
         const Library library = twoPinLibrary();
