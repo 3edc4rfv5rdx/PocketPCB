@@ -642,6 +642,17 @@ private slots:
         emit footprint->activated(footprint->currentIndex());
         QCOMPARE(sheet().components.at(0).footprint, QStringLiteral("resistor-vertical"));
 
+        // A drag of one of the parts chosen takes both; a click keeps it alone.
+        editor->setSelection({r1, r2});
+        const QPointF r1At = toMm(sheet().components.at(0).at);
+        editor->press(r1At, false);
+        editor->move(r1At + QPointF(5.08, 0), false);
+        editor->release(r1At + QPointF(5.08, 0), false);
+        QCOMPARE(editor->selection(), QSet<ObjectId>({r1, r2}));
+        editor->press(r1At + QPointF(5.08, 0), false);
+        editor->release(r1At + QPointF(5.08, 0), false);
+        QCOMPARE(editor->selection(), QSet<ObjectId>({r1}));
+
         // A click on R1's value chooses the text alone; the panel shows R1.
         const QPointF valueAt =
             toMm(componentTextPoint(sheet().components.at(0), ComponentText::Value));

@@ -13,7 +13,7 @@ Early development. What works now:
 - Built-in parts: resistors, capacitors, an inductor, a trimmer, diodes and LEDs, bipolar, field-effect and MOS transistors, a thyristor, DIP chips, a crystal, a fuse, a button, a buzzer, pin headers, screw terminals, a wire pad, and panel parts (jacks, switches, a potentiometer, a speaker, a battery). Symbols follow GOST/IEC style.
 - Library panel: search, parts grouped by designator prefix (international or GOST), a drawing of the symbol and footprint; a double click on a part on the sheet shows its part and footprint there.
 - Schematic sheet:
-  - choose with a click or a rectangle; what is chosen stays chosen after a change;
+  - choose with a click or a rectangle; a click on one of several chosen objects keeps it alone; what is chosen stays chosen after a change;
   - drag along the grid with the wires following (Shift tears them off), rotate and mirror with the wires following too, delete, copy, cut, paste and duplicate (pasted parts are numbered on);
   - draw wires (W; Space turns the corner, / slants it) with junction dots placed by themselves;
   - a click on a wire chooses its segment: a drag moves it across, Delete removes it, and taken near the wire's end it drags that end, unless the end is on a pin; a double click chooses the whole wire, Shift and a click every wire joined to it;

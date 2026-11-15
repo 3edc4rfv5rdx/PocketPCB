@@ -17,7 +17,8 @@ namespace ppcb {
 class CanvasView;
 
 // Editing of the sheet shown on the canvas: the selection, choosing with
-// the mouse (a click, Ctrl and a click, a rectangle), dragging the
+// the mouse (a click, Ctrl and a click, a rectangle; a click on one of the
+// objects chosen keeps it alone), dragging the
 // selection along the grid with the wires on it following (Shift tears them
 // off), turning and mirroring the selection with the wires on it following
 // too, and deleting it. A click on a
@@ -243,6 +244,9 @@ private:
     bool m_pressAdding = false;
     // The press was on a selected object: moving the mouse drags.
     bool m_pressOnSelection = false;
+    // The press took an object that was chosen already: a release that did
+    // not drag keeps it chosen alone. Set by every press.
+    ObjectId m_narrowTo;
     // The point of what the press took that a drag lands on the grid.
     Point m_dragAnchor;
 

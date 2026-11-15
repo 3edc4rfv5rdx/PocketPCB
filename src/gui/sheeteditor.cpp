@@ -120,6 +120,7 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
     m_pressAdding = adding;
     m_endWire = ObjectId();
     m_textComponent = ObjectId();
+    m_narrowTo = ObjectId();
     dropSegment();
     const QList<SheetObjectShape> found = shapes();
     const ObjectId hit = objectAt(found, at, pixelsToMm(HIT_PIXELS));
@@ -190,6 +191,9 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
             }
         } else if (!m_selection.contains(hit)) {
             m_selection = {hit};
+        } else {
+            // A drag takes all that is chosen, a click this one alone.
+            m_narrowTo = hit;
         }
     }
     emit changed();
@@ -488,7 +492,10 @@ void SheetEditor::release(const QPointF &at, bool detached)
             m_selection.unite(inside);
         else
             m_selection = inside;
+    } else if (m_pressed && !m_narrowTo.isNull()) {
+        m_selection = {m_narrowTo};
     }
+    m_narrowTo = ObjectId();
     m_pressed = false;
     m_dragging = false;
     m_rubberBanding = false;

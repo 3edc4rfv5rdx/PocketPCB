@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A click on one of several chosen objects keeps it chosen alone, while a drag still takes them all
 - F: Esc in a field of the properties panel takes back what was typed instead of dropping the selection
 - F: A click on a part's designator or value chooses that text alone instead of the whole part
 - N: A properties panel sets the designator, value, footprint and off-board flag of the chosen components, of several at once
