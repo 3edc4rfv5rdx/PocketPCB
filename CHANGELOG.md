@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A dragged object puts its own point on the grid, so after a switch to a coarser grid it lands on the nodes instead of between them
 - F: The end of a dragged wire segment that lies on another wire slides along it with its junction, from a pin too, instead of staying behind
 - N: A click on a wire chooses the segment under it, which a drag moves across and Delete removes; a double click chooses the whole wire, whose ends stay on their pins and wires when it is dragged
 - N: A wire taken near one of its ends drags that end alone, laid clear of bodies and pins

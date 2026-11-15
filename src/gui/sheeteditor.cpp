@@ -102,6 +102,7 @@ void SheetEditor::press(const QPointF &at, bool adding)
     m_endWire = ObjectId();
     dropSegment();
     const ObjectId hit = objectAt(shapes(), at, pixelsToMm(HIT_PIXELS));
+    m_dragAnchor = dragAnchor(*currentSheet(), hit, at);
     if (hit.isNull()) {
         m_pressOnSelection = false;
         if (!adding)
@@ -134,6 +135,9 @@ void SheetEditor::press(const QPointF &at, bool adding)
             if (qMin(first, last) <= pixelsToMm(END_PIXELS)) {
                 m_endWire = hit;
                 m_endIsLast = last < first;
+                m_dragAnchor = m_endIsLast ? wire->points.last() : wire->points.first();
+            } else {
+                m_dragAnchor = wire->points.at(m_segmentIndex);
             }
         } else if (!m_selection.contains(hit)) {
             m_selection = {hit};
@@ -223,8 +227,8 @@ void SheetEditor::move(const QPointF &at, bool detached)
             m_rubberBanding = true;
     }
     if (m_dragging) {
-        // The selection moves by whole grid steps, the way the cursor does.
-        m_dragDelta = snapped(at) - snapped(m_pressAt);
+        // What was taken lands on the grid, wherever it stood before.
+        m_dragDelta = snapped(toMm(m_dragAnchor) + (at - m_pressAt)) - m_dragAnchor;
         m_dragDetached = detached;
         updateDrag();
     } else {

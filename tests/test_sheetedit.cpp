@@ -172,6 +172,18 @@ private slots:
         QCOMPARE(all.graphics.at(0).graphic.a, sheet.graphics.at(0).graphic.a + delta);
     }
 
+    void dragsLandAnObjectsOwnPointOnTheGrid()
+    {
+        const Sheet sheet = fullSheet();
+        QCOMPARE(dragAnchor(sheet, id(1), QPointF(52, 49)), sheet.components.at(0).at);
+        // The wire's point nearest to where it was taken.
+        QCOMPARE(dragAnchor(sheet, id(2), QPointF(29, 11)), (Point{30 * MM, 10 * MM}));
+        QCOMPARE(dragAnchor(sheet, id(2), QPointF(12, 10)), (Point{10 * MM, 10 * MM}));
+        QCOMPARE(dragAnchor(sheet, sheet.labels.at(0).id, QPointF(0, 0)), sheet.labels.at(0).at);
+        // Nothing there: the point itself.
+        QCOMPARE(dragAnchor(sheet, ObjectId(), QPointF(1.5, 2)), (Point{1500000, 2 * MM}));
+    }
+
     void turningIsClockwiseAndComesBackAfterFour()
     {
         const Sheet sheet = fullSheet();

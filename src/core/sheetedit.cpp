@@ -292,6 +292,47 @@ Sheet withoutObjects(const Sheet &sheet, const QSet<ObjectId> &ids)
     return result;
 }
 
+Point dragAnchor(const Sheet &sheet, const ObjectId &id, const QPointF &near)
+{
+    for (const Component &component : sheet.components) {
+        if (component.id == id)
+            return component.at;
+    }
+    const auto nearest = [&near](const QList<Point> &points) {
+        Point best = points.first();
+        for (const Point &point : points) {
+            if (QLineF(near, toMm(point)).length() < QLineF(near, toMm(best)).length())
+                best = point;
+        }
+        return best;
+    };
+    for (const Wire &wire : sheet.wires) {
+        if (wire.id == id && !wire.points.isEmpty())
+            return nearest(wire.points);
+    }
+    for (const Bus &bus : sheet.buses) {
+        if (bus.id == id && !bus.points.isEmpty())
+            return nearest(bus.points);
+    }
+    for (const Label &label : sheet.labels) {
+        if (label.id == id)
+            return label.at;
+    }
+    for (const PowerSymbol &power : sheet.powerSymbols) {
+        if (power.id == id)
+            return power.at;
+    }
+    for (const NoConnect &mark : sheet.noConnects) {
+        if (mark.id == id)
+            return mark.at;
+    }
+    for (const SheetGraphic &item : sheet.graphics) {
+        if (item.id == id)
+            return item.graphic.a;
+    }
+    return Point{mmToNm(near.x()), mmToNm(near.y())};
+}
+
 int segmentAt(const Wire &wire, const QPointF &point)
 {
     int nearest = -1;

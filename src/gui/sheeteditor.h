@@ -180,6 +180,8 @@ private:
     bool m_pressAdding = false;
     // The press was on a selected object: moving the mouse drags.
     bool m_pressOnSelection = false;
+    // The point of what the press took that a drag lands on the grid.
+    Point m_dragAnchor;
 
     bool m_dragging = false;
     // The press took a wire near one of its ends, which a drag moves alone:

@@ -21,6 +21,12 @@ QSet<ObjectId> objectsInside(const QList<SheetObjectShape> &shapes, const QRectF
 // The rectangle around the selected objects; empty when none is on the sheet.
 QRectF selectionBounds(const QList<SheetObjectShape> &shapes, const QSet<ObjectId> &ids);
 
+// The point of the object 'id' that a drag lands on the grid: a part's own
+// point, the point of a wire or a bus nearest to 'near' (millimetres), a
+// label's or a mark's point, a drawing's first point. 'near' itself, in
+// nanometres, when the sheet has no such object.
+Point dragAnchor(const Sheet &sheet, const ObjectId &id, const QPointF &near);
+
 // The selected objects moved by 'delta'.
 Sheet movedObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point &delta);
 // The selected objects turned by 90 degrees clockwise on screen about
