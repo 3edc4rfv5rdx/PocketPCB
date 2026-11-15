@@ -198,7 +198,7 @@ private slots:
         // No designator: nothing is found.
         sheet.components[0].designator.clear();
         QVERIFY(componentTextAt(sheet, library, QPointF(50, 47)).component.isNull());
-        sheet = withComponentValue(sheet, id(1), QStringLiteral(" 10k "));
+        sheet = withComponentValue(sheet, {id(1)}, QStringLiteral(" 10k "));
         QCOMPARE(sheet.components.at(0).value, QStringLiteral("10k"));
         sheet.components[0].designator = QStringLiteral("R1");
         QCOMPARE(componentTextAt(sheet, library, QPointF(52, 53)).component, id(1));
@@ -213,6 +213,40 @@ private slots:
         QCOMPARE(moved.components.at(0).refAt, sheet.components.at(0).refAt);
         QCOMPARE(moved.components.at(0).at, sheet.components.at(0).at);
         QVERIFY(moved.wires == sheet.wires);
+    }
+
+    void componentPropertiesAreSet()
+    {
+        Sheet sheet = fullSheet();
+        Component second = sheet.components.first();
+        second.id = id(20);
+        second.designator = QStringLiteral("R2");
+        sheet.components.append(second);
+        const QSet<ObjectId> both{id(1), id(20)};
+
+        Sheet edited = withComponentValue(sheet, both, QStringLiteral("1k"));
+        QCOMPARE(edited.components.at(0).value, QStringLiteral("1k"));
+        QCOMPARE(edited.components.at(1).value, QStringLiteral("1k"));
+        QVERIFY(edited.wires == sheet.wires);
+
+        edited = withComponentFootprint(sheet, {id(20)}, QStringLiteral("resistor-vertical"));
+        QVERIFY(edited.components.at(0).footprint.isEmpty());
+        QCOMPARE(edited.components.at(1).footprint, QStringLiteral("resistor-vertical"));
+
+        edited = withComponentOffBoard(sheet, both, true);
+        QVERIFY(edited.components.at(0).offBoard && edited.components.at(1).offBoard);
+
+        edited = withComponentDesignator(sheet, {id(20)}, QStringLiteral(" R7 "));
+        QCOMPARE(edited.components.at(1).designator, QStringLiteral("R7"));
+        // An empty designator is not taken.
+        QVERIFY(withComponentDesignator(sheet, {id(20)}, QStringLiteral("  ")) == sheet);
+
+        Schematic schematic;
+        schematic.sheets = {sheet, Sheet()};
+        QVERIFY(isDesignatorTaken(schematic, QStringLiteral("R1"), id(20)));
+        // A component does not take its own designator.
+        QVERIFY(!isDesignatorTaken(schematic, QStringLiteral("R1"), id(1)));
+        QVERIFY(!isDesignatorTaken(schematic, QStringLiteral("R3"), id(20)));
     }
 
     void dragsLandAnObjectsOwnPointOnTheGrid()

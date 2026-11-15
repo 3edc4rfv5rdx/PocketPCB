@@ -6,6 +6,7 @@
 #include "format.h"
 #include "grid.h"
 #include "librarypanel.h"
+#include "propertiespanel.h"
 #include "sheeteditor.h"
 #include "libraryviewitem.h"
 #include "saveprojectdialog.h"
@@ -124,6 +125,12 @@ MainWindow::MainWindow(QWidget *parent)
     m_libraryDock->setObjectName(QStringLiteral("libraryDock"));
     m_libraryDock->setWidget(m_libraryPanel);
     addDockWidget(Qt::RightDockWidgetArea, m_libraryDock);
+    // The properties of what is chosen, under the library.
+    m_propertiesPanel = new PropertiesPanel(m_document, m_sheetEditor, this);
+    m_propertiesDock = new QDockWidget(PropertiesPanel::propertiesTitle(), this);
+    m_propertiesDock->setObjectName(QStringLiteral("propertiesDock"));
+    m_propertiesDock->setWidget(m_propertiesPanel);
+    splitDockWidget(m_libraryDock, m_propertiesDock, Qt::Vertical);
     connect(m_libraryPanel, &LibraryPanel::reloadRequested, this, &MainWindow::loadLibrary);
     connect(m_libraryPanel, &LibraryPanel::placeRequested, this, &MainWindow::placePart);
     // A component double-clicked on the sheet is shown in the panel: its
@@ -325,6 +332,7 @@ void MainWindow::createMenus()
     viewMenu->addSeparator();
 
     viewMenu->addAction(m_libraryDock->toggleViewAction());
+    viewMenu->addAction(m_propertiesDock->toggleViewAction());
     viewMenu->addSeparator();
 
     QAction *warpAction = viewMenu->addAction(tr("Center and warp cursor on zoom"));
@@ -790,7 +798,7 @@ bool MainWindow::showLibraryFile(const QString &path)
         message = tr("Symbol") + QLatin1String(": ") + name;
         break;
     case LibraryKind::Footprint:
-        message = tr("Footprint") + QLatin1String(": ") + name;
+        message = PropertiesPanel::footprintTitle() + QLatin1String(": ") + name;
         break;
     case LibraryKind::Part:
         message = tr("Part") + QLatin1String(": ") + name + QStringLiteral(" — ") + tr("symbol")

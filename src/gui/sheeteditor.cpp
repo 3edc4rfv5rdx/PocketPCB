@@ -326,14 +326,56 @@ void SheetEditor::finishValueEdit(bool keep)
     edit->hide();
     edit->deleteLater();
     m_canvas->setFocus();
+    if (keep)
+        setComponentValue({m_valueComponent}, value);
+}
+
+QList<Component> SheetEditor::chosenComponents() const
+{
+    QList<Component> chosen;
+    if (const Sheet *sheet = currentSheet()) {
+        for (const Component &component : sheet->components) {
+            if (m_selection.contains(component.id))
+                chosen.append(component);
+        }
+    }
+    return chosen;
+}
+
+void SheetEditor::setComponentValue(const QSet<ObjectId> &ids, const QString &value)
+{
+    if (const Sheet *sheet = currentSheet())
+        applyToComponents(Action::Value, ids, withComponentValue(*sheet, ids, value));
+}
+
+void SheetEditor::setComponentDesignator(const ObjectId &id, const QString &designator)
+{
+    if (const Sheet *sheet = currentSheet())
+        applyToComponents(Action::Designator, {id},
+                          withComponentDesignator(*sheet, {id}, designator));
+}
+
+void SheetEditor::setComponentFootprint(const QSet<ObjectId> &ids, const QString &footprint)
+{
+    if (const Sheet *sheet = currentSheet())
+        applyToComponents(Action::Footprint, ids, withComponentFootprint(*sheet, ids, footprint));
+}
+
+void SheetEditor::setComponentOffBoard(const QSet<ObjectId> &ids, bool offBoard)
+{
+    if (const Sheet *sheet = currentSheet())
+        applyToComponents(offBoard ? Action::OffBoard : Action::OnBoard, ids,
+                          withComponentOffBoard(*sheet, ids, offBoard));
+}
+
+void SheetEditor::applyToComponents(Action action, const QSet<ObjectId> &ids,
+                                    const Sheet &edited)
+{
     const Sheet *sheet = currentSheet();
-    if (!keep || sheet == nullptr)
+    if (sheet == nullptr || edited == *sheet)
         return;
-    const Sheet edited = withComponentValue(*sheet, m_valueComponent, value);
-    if (edited == *sheet)
-        return;
-    const QSet<ObjectId> ids{m_valueComponent};
-    const QString name = stepName(actionName(Action::Value), *sheet, ids);
+    // Named by the designators they had before.
+    const QString name = stepName(actionName(action), *sheet, ids);
     Design design = m_document->design();
     design.schematic.sheets[m_sheet] = edited;
     m_document->change(name, design, m_sheet, ids);
@@ -881,6 +923,14 @@ QString SheetEditor::actionName(Action action)
         return tr("Wire");
     case Action::Value:
         return tr("Change value");
+    case Action::Designator:
+        return tr("Change designator");
+    case Action::Footprint:
+        return tr("Change footprint");
+    case Action::OffBoard:
+        return tr("Take off board");
+    case Action::OnBoard:
+        return tr("Put on board");
     }
     return QString();
 }

@@ -8,6 +8,7 @@ add_library(pocketpcb_gui STATIC
     librarypanel.h librarypanel.cpp
     libraryviewitem.h libraryviewitem.cpp
     mainwindow.h mainwindow.cpp
+    propertiespanel.h propertiespanel.cpp
     sheeteditor.h sheeteditor.cpp
     saveprojectdialog.h saveprojectdialog.cpp
 )

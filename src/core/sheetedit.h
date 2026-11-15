@@ -45,9 +45,22 @@ ComponentTextHit componentTextAt(const Sheet &sheet, const Library &library,
 // component itself stays.
 Sheet withComponentTextMoved(const Sheet &sheet, const ObjectId &id, ComponentText text,
                              const Point &delta);
-// 'sheet' with the value of the component 'id' set to 'value', without the
-// spaces around it.
-Sheet withComponentValue(const Sheet &sheet, const ObjectId &id, const QString &value);
+
+// Properties of components. Each returns 'sheet' with the components of
+// 'ids' changed; the other objects stay as they are.
+
+// The value set to 'value', without the spaces around it.
+Sheet withComponentValue(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &value);
+// The designator set to 'designator', without the spaces around it; an empty
+// one leaves the designator as it was.
+Sheet withComponentDesignator(const Sheet &sheet, const QSet<ObjectId> &ids,
+                              const QString &designator);
+Sheet withComponentFootprint(const Sheet &sheet, const QSet<ObjectId> &ids,
+                             const QString &footprint);
+Sheet withComponentOffBoard(const Sheet &sheet, const QSet<ObjectId> &ids, bool offBoard);
+// True when a component of the schematic other than 'except' has 'designator'.
+bool isDesignatorTaken(const Schematic &schematic, const QString &designator,
+                       const ObjectId &except);
 
 // The selected objects moved by 'delta'.
 Sheet movedObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point &delta);

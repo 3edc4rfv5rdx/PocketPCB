@@ -38,6 +38,18 @@ bool isNearPolyline(const QPolygonF &polyline, const QPointF &point, double tole
     return polyline.size() == 1 && QLineF(point, polyline.first()).length() <= tolerance;
 }
 
+// 'sheet' with 'edit' done to each component of 'ids'.
+Sheet withComponentsChanged(const Sheet &sheet, const QSet<ObjectId> &ids,
+                            const std::function<void(Component &)> &edit)
+{
+    Sheet result = sheet;
+    for (Component &component : result.components) {
+        if (ids.contains(component.id))
+            edit(component);
+    }
+    return result;
+}
+
 // What a turn or a mirror does to each kind of thing on a sheet.
 struct Transform
 {
@@ -183,14 +195,44 @@ Sheet withComponentTextMoved(const Sheet &sheet, const ObjectId &id, ComponentTe
     return result;
 }
 
-Sheet withComponentValue(const Sheet &sheet, const ObjectId &id, const QString &value)
+Sheet withComponentValue(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &value)
 {
-    Sheet result = sheet;
-    for (Component &component : result.components) {
-        if (component.id == id)
-            component.value = value.trimmed();
+    const QString trimmed = value.trimmed();
+    return withComponentsChanged(sheet, ids, [&trimmed](Component &c) { c.value = trimmed; });
+}
+
+Sheet withComponentDesignator(const Sheet &sheet, const QSet<ObjectId> &ids,
+                              const QString &designator)
+{
+    const QString trimmed = designator.trimmed();
+    if (trimmed.isEmpty())
+        return sheet;
+    return withComponentsChanged(sheet, ids,
+                                 [&trimmed](Component &c) { c.designator = trimmed; });
+}
+
+Sheet withComponentFootprint(const Sheet &sheet, const QSet<ObjectId> &ids,
+                             const QString &footprint)
+{
+    return withComponentsChanged(sheet, ids,
+                                 [&footprint](Component &c) { c.footprint = footprint; });
+}
+
+Sheet withComponentOffBoard(const Sheet &sheet, const QSet<ObjectId> &ids, bool offBoard)
+{
+    return withComponentsChanged(sheet, ids, [offBoard](Component &c) { c.offBoard = offBoard; });
+}
+
+bool isDesignatorTaken(const Schematic &schematic, const QString &designator,
+                       const ObjectId &except)
+{
+    for (const Sheet &sheet : schematic.sheets) {
+        for (const Component &component : sheet.components) {
+            if (component.id != except && component.designator == designator)
+                return true;
+        }
     }
-    return result;
+    return false;
 }
 
 Sheet movedObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point &delta)

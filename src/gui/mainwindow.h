@@ -23,6 +23,7 @@ class CanvasView;
 class DesignViewItem;
 class Document;
 class LibraryPanel;
+class PropertiesPanel;
 class SheetEditor;
 class LibraryViewItem;
 
@@ -165,6 +166,8 @@ private:
     MergedLibrary m_library;
     LibraryPanel *m_libraryPanel = nullptr;
     QDockWidget *m_libraryDock = nullptr;
+    PropertiesPanel *m_propertiesPanel = nullptr;
+    QDockWidget *m_propertiesDock = nullptr;
 
     QFileSystemWatcher *m_libraryWatcher = nullptr;
     // Delays the reload a little: editors often save in several steps.

@@ -50,7 +50,11 @@ public:
         Paste,
         Duplicate,
         Wire,
-        Value
+        Value,
+        Designator,
+        Footprint,
+        OffBoard,
+        OnBoard
     };
     static QString actionName(Action action);
 
@@ -128,6 +132,15 @@ public:
     // Esc: placing ends, or a drag is called off, or the selection is dropped.
     void cancel();
 
+    // The chosen components of the sheet edited, in the order of the sheet.
+    QList<Component> chosenComponents() const;
+    // Properties of the components 'ids' of the sheet edited, each change one
+    // step; nothing happens when it changes nothing (see sheetedit.h).
+    void setComponentValue(const QSet<ObjectId> &ids, const QString &value);
+    void setComponentDesignator(const ObjectId &id, const QString &designator);
+    void setComponentFootprint(const QSet<ObjectId> &ids, const QString &footprint);
+    void setComponentOffBoard(const QSet<ObjectId> &ids, bool offBoard);
+
     void selectAll();
     void rotateSelection();
     void mirrorSelection();
@@ -191,6 +204,8 @@ private:
     void removeSelection(Action action);
     // Makes 'edited' the sheet as one step of the history named 'action'.
     void apply(const QString &action, const Sheet &edited);
+    // The same for a change of the components 'ids', named after them.
+    void applyToComponents(Action action, const QSet<ObjectId> &ids, const Sheet &edited);
     // "Move R1, C2 (Sheet 1)": the step's name in the Edit menu, for the
     // objects 'ids' of 'objects', on the sheet edited.
     QString stepName(const QString &action, const Sheet &objects,

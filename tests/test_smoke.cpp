@@ -583,6 +583,59 @@ private slots:
         QCOMPARE(tree->topLevelItem(1)->text(0), QStringLiteral("Project"));
     }
 
+    void propertiesPanelEditsTheChosenComponents()
+    {
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QVERIFY(window.openProject(QStringLiteral(PPCB_SOURCE_DIR "/examples/demo/demo.ppcb")));
+        SheetEditor *editor = window.sheetEditor();
+        const auto sheet = [&window]() -> const Sheet & {
+            return window.document()->design().schematic.sheets.at(0);
+        };
+        // R1 10k on resistor-10.16, R2 4.7k on resistor-vertical.
+        const ObjectId r1 = sheet().components.at(0).id;
+        const ObjectId r2 = sheet().components.at(1).id;
+        auto *designator = window.findChild<QLineEdit *>(QStringLiteral("propertiesDesignator"));
+        auto *value = window.findChild<QLineEdit *>(QStringLiteral("propertiesValue"));
+        auto *footprint = window.findChild<QComboBox *>(QStringLiteral("propertiesFootprint"));
+        QVERIFY(designator != nullptr && value != nullptr && footprint != nullptr);
+        QVERIFY(!value->isEnabled());
+
+        editor->setSelection({r1});
+        QVERIFY(designator->isEnabled());
+        QCOMPARE(designator->text(), QStringLiteral("R1"));
+        QCOMPARE(value->text(), QStringLiteral("10k"));
+        QCOMPARE(footprint->currentText(), QStringLiteral("resistor-10.16"));
+        // R2's designator is red, and is still set.
+        designator->setText(QStringLiteral("R2"));
+        emit designator->textEdited(designator->text());
+        QVERIFY(!designator->styleSheet().isEmpty());
+
+        // Both: one designator cannot be set, the values differ, and a value
+        // set goes to both as one step.
+        editor->setSelection({r1, r2});
+        QVERIFY(!designator->isEnabled());
+        QVERIFY(value->text().isEmpty());
+        QVERIFY(!value->placeholderText().isEmpty());
+        QCOMPARE(footprint->currentIndex(), -1);
+        // Left empty over values that differ, nothing changes.
+        value->clear();
+        emit value->editingFinished();
+        QCOMPARE(sheet().components.at(1).value, QStringLiteral("4.7k"));
+        const int steps = window.document()->undoStack()->count();
+        value->setText(QStringLiteral("22k"));
+        emit value->editingFinished();
+        QCOMPARE(sheet().components.at(0).value, QStringLiteral("22k"));
+        QCOMPARE(sheet().components.at(1).value, QStringLiteral("22k"));
+        QCOMPARE(window.document()->undoStack()->count(), steps + 1);
+        QCOMPARE(value->text(), QStringLiteral("22k"));
+
+        footprint->setCurrentIndex(footprint->findText(QStringLiteral("resistor-vertical")));
+        emit footprint->activated(footprint->currentIndex());
+        QCOMPARE(sheet().components.at(0).footprint, QStringLiteral("resistor-vertical"));
+    }
+
     void sheetIsEditedWithTheMouseAndKeys()
     {
         MainWindow window;

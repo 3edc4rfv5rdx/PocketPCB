@@ -1,0 +1,195 @@
+#include "propertiespanel.h"
+
+#include "document.h"
+#include "sheetedit.h"
+#include "sheeteditor.h"
+
+#include <QCheckBox>
+#include <QComboBox>
+#include <QFormLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QVBoxLayout>
+
+#include <algorithm>
+
+namespace ppcb {
+
+namespace {
+
+// How many designators the heading lists before it stops.
+const int NAMED_COMPONENTS = 5;
+// A designator another component has.
+const char TAKEN_STYLE[] = "QLineEdit { color: #c00000; }";
+
+} // namespace
+
+PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidget *parent)
+    : QWidget(parent)
+    , m_document(document)
+    , m_editor(editor)
+{
+    m_heading = new QLabel(this);
+    m_heading->setWordWrap(true);
+    m_designator = new QLineEdit(this);
+    m_designator->setObjectName(QStringLiteral("propertiesDesignator"));
+    m_value = new QLineEdit(this);
+    m_value->setObjectName(QStringLiteral("propertiesValue"));
+    m_footprint = new QComboBox(this);
+    m_footprint->setObjectName(QStringLiteral("propertiesFootprint"));
+    m_offBoard = new QCheckBox(this);
+    m_offBoard->setObjectName(QStringLiteral("propertiesOffBoard"));
+
+    QFormLayout *form = new QFormLayout;
+    form->addRow(tr("Designator"), m_designator);
+    form->addRow(tr("Value"), m_value);
+    form->addRow(footprintTitle(), m_footprint);
+    form->addRow(tr("Off board"), m_offBoard);
+    QVBoxLayout *layout = new QVBoxLayout(this);
+    layout->addWidget(m_heading);
+    layout->addLayout(form);
+    layout->addStretch();
+
+    // Only what the user does: filling the fields in refresh() sends none of these.
+    connect(m_designator, &QLineEdit::editingFinished, this, &PropertiesPanel::commitDesignator);
+    connect(m_designator, &QLineEdit::textEdited, this, &PropertiesPanel::markDesignator);
+    connect(m_value, &QLineEdit::editingFinished, this, &PropertiesPanel::commitValue);
+    connect(m_footprint, &QComboBox::activated, this, &PropertiesPanel::commitFootprint);
+    connect(m_offBoard, &QCheckBox::clicked, this, &PropertiesPanel::commitOffBoard);
+    connect(m_editor, &SheetEditor::changed, this, [this] { refresh(); });
+    connect(m_document, &Document::designChanged, this, [this] { refresh(); });
+    refresh(true);
+}
+
+QString PropertiesPanel::propertiesTitle()
+{
+    return tr("Properties");
+}
+
+QString PropertiesPanel::footprintTitle()
+{
+    return tr("Footprint");
+}
+
+bool PropertiesPanel::isTyping(const QWidget *field, bool force) const
+{
+    return !force && field->hasFocus();
+}
+
+void PropertiesPanel::refresh(bool force)
+{
+    const QList<Component> chosen =
+        m_editor->sheet() >= 0 ? m_editor->chosenComponents() : QList<Component>();
+    QSet<ObjectId> ids;
+    for (const Component &component : chosen)
+        ids.insert(component.id);
+    // Other components: what is typed belongs to the ones before.
+    force = force || ids != m_ids;
+    m_ids = ids;
+    const QString different = QLatin1Char('(') + tr("different") + QLatin1Char(')');
+
+    QStringList names;
+    for (const Component &component : chosen)
+        names.append(component.designator);
+    std::sort(names.begin(), names.end());
+    if (names.size() > NAMED_COMPONENTS) {
+        names = names.mid(0, NAMED_COMPONENTS);
+        names.append(QStringLiteral("…"));
+    }
+    m_heading->setText(chosen.isEmpty() ? tr("No component chosen")
+                                        : names.join(QStringLiteral(", ")));
+
+    // The designator: of one component only.
+    m_designator->setEnabled(chosen.size() == 1);
+    if (!isTyping(m_designator, force)) {
+        m_designator->setText(chosen.size() == 1 ? chosen.first().designator : QString());
+        markDesignator();
+    }
+
+    // The value: the one they all have, or none.
+    m_valuesDiffer = false;
+    for (const Component &component : chosen)
+        m_valuesDiffer = m_valuesDiffer || component.value != chosen.first().value;
+    m_value->setEnabled(!chosen.isEmpty());
+    m_value->setPlaceholderText(m_valuesDiffer ? different : QString());
+    if (!isTyping(m_value, force))
+        m_value->setText(chosen.isEmpty() || m_valuesDiffer ? QString() : chosen.first().value);
+
+    // The footprint: one of those the part allows, when all are of one part.
+    const Part *part =
+        chosen.isEmpty() ? nullptr : m_document->design().library.findPart(chosen.first().part);
+    bool footprintsDiffer = false;
+    for (const Component &component : chosen) {
+        if (component.part != chosen.first().part)
+            part = nullptr;
+        footprintsDiffer = footprintsDiffer || component.footprint != chosen.first().footprint;
+    }
+    m_footprint->clear();
+    m_footprint->setEnabled(part != nullptr && !part->footprints.isEmpty());
+    if (m_footprint->isEnabled()) {
+        m_footprint->addItems(part->footprints);
+        const QString current = footprintsDiffer ? QString() : chosen.first().footprint;
+        // One the part no longer allows is still told, though not offered.
+        m_footprint->setPlaceholderText(footprintsDiffer ? different : current);
+        m_footprint->setCurrentIndex(m_footprint->findText(current));
+    } else {
+        m_footprint->setPlaceholderText(QString());
+    }
+
+    // Off the board: checked, not, or partly when they differ.
+    int offBoard = 0;
+    for (const Component &component : chosen)
+        offBoard += component.offBoard ? 1 : 0;
+    m_offBoard->setEnabled(!chosen.isEmpty());
+    const bool mixed = offBoard > 0 && offBoard < chosen.size();
+    // Partly only to show: a click turns it on or off for all.
+    m_offBoard->setTristate(mixed);
+    m_offBoard->setCheckState(mixed                       ? Qt::PartiallyChecked
+                              : offBoard > 0              ? Qt::Checked
+                                                          : Qt::Unchecked);
+}
+
+void PropertiesPanel::commitDesignator()
+{
+    if (m_ids.size() != 1)
+        return;
+    m_editor->setComponentDesignator(*m_ids.constBegin(), m_designator->text());
+    refresh(true);
+}
+
+void PropertiesPanel::commitValue()
+{
+    // Left empty over values that differ: they stay as they are.
+    if (m_ids.isEmpty() || (m_valuesDiffer && m_value->text().isEmpty()))
+        return;
+    m_editor->setComponentValue(m_ids, m_value->text());
+    refresh(true);
+}
+
+void PropertiesPanel::commitFootprint(int index)
+{
+    if (m_ids.isEmpty() || index < 0)
+        return;
+    m_editor->setComponentFootprint(m_ids, m_footprint->itemText(index));
+    refresh(true);
+}
+
+void PropertiesPanel::commitOffBoard()
+{
+    if (m_ids.isEmpty())
+        return;
+    m_editor->setComponentOffBoard(m_ids, m_offBoard->checkState() == Qt::Checked);
+    refresh(true);
+}
+
+void PropertiesPanel::markDesignator()
+{
+    const bool taken =
+        m_ids.size() == 1
+        && isDesignatorTaken(m_document->design().schematic, m_designator->text().trimmed(),
+                             *m_ids.constBegin());
+    m_designator->setStyleSheet(taken ? QLatin1String(TAKEN_STYLE) : QString());
+    m_designator->setToolTip(taken ? tr("Another component has this designator") : QString());
+}
+
+} // namespace ppcb

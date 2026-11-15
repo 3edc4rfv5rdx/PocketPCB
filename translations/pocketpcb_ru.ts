@@ -381,10 +381,6 @@
         <translation>Символ</translation>
     </message>
     <message>
-        <source>Footprint</source>
-        <translation>Посадочное место</translation>
-    </message>
-    <message>
         <source>Part</source>
         <translation>Деталь</translation>
     </message>
@@ -566,6 +562,57 @@
     <message>
         <source>Change value</source>
         <translation>Изменить значение</translation>
+    </message>
+    <message>
+        <source>Change designator</source>
+        <translation>Изменить обозначение</translation>
+    </message>
+    <message>
+        <source>Change footprint</source>
+        <translation>Изменить посадочное место</translation>
+    </message>
+    <message>
+        <source>Take off board</source>
+        <translation>Убрать с платы</translation>
+    </message>
+    <message>
+        <source>Put on board</source>
+        <translation>Вернуть на плату</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::PropertiesPanel</name>
+    <message>
+        <source>Properties</source>
+        <translation>Свойства</translation>
+    </message>
+    <message>
+        <source>Footprint</source>
+        <translation>Посадочное место</translation>
+    </message>
+    <message>
+        <source>Designator</source>
+        <translation>Обозначение</translation>
+    </message>
+    <message>
+        <source>Value</source>
+        <translation>Значение</translation>
+    </message>
+    <message>
+        <source>Off board</source>
+        <translation>Не на плате</translation>
+    </message>
+    <message>
+        <source>different</source>
+        <translation>разные</translation>
+    </message>
+    <message>
+        <source>No component chosen</source>
+        <translation>Компонент не выбран</translation>
+    </message>
+    <message>
+        <source>Another component has this designator</source>
+        <translation>Это обозначение уже есть у другого компонента</translation>
     </message>
 </context>
 <context>
