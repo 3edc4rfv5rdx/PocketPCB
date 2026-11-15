@@ -279,6 +279,27 @@ private slots:
         QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(5, -6), mm(5, -10)}));
     }
 
+    // A wire passes through the right pin of a part at the origin without
+    // ending there. The part goes up: the wire is cut at the pin, and both
+    // parts go with it.
+    void aWirePassingThroughAPinFollowsIt()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0))};
+        sheet.wires = {wire({mm(5, -10), mm(5, 10)})};
+        const QSet<ObjectId> part = {sheet.components.first().id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, part, mm(0, -4)), part, library);
+        QCOMPARE(moved.wires.size(), 2);
+        QVERIFY(moved.wires.at(0).id == sheet.wires.at(0).id);
+        QCOMPARE(moved.wires.at(0).points, QList<Point>({mm(5, -10), mm(5, -4)}));
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(5, -4), mm(5, 10)}));
+
+        // A part that does not move leaves the wire whole.
+        QCOMPARE(withWiresFollowing(sheet, sheet, part, library), sheet);
+    }
+
     void pinsThatTouchedAreJoinedByANewWire()
     {
         const Library library = twoPinLibrary();

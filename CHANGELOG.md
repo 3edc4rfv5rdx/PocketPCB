@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A wire that passes through a pin of a dragged part follows the part instead of staying behind
 - N: Shift and a click on a wire chooses every wire joined to it, with Ctrl added to the choice
 - E: A dragged pin that comes to lie on a wire is joined to it instead of only touching it
 - F: Wires laid by a drag keep off other wires and take the shortest of equal ways, and a new wire from a pin joins a wire there straight across

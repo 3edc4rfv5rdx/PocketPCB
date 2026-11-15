@@ -344,37 +344,51 @@ QList<Point> laidBetween(const Point &from, const Point &to, bool upright,
     return bestWire(routesBetween(from, to, upright), obstacles);
 }
 
+// True when 'wire' passes through 'point' without ending there.
+bool passesThrough(const Wire &wire, const Point &point)
+{
+    const QList<Point> &p = wire.points;
+    return p.size() >= 2 && p.first() != point && p.last() != point && isOnWire(wire, point);
+}
+
+// The wire 'index' of 'wires', which passes through 'point', cut in two at
+// it: the first part keeps the wire's id, the second, put after it, gets
+// 'restId'. Both then end at 'point', and so are joined to a pin there.
+void splitAt(QList<Wire> &wires, int index, const Point &point, const ObjectId &restId)
+{
+    const Wire whole = wires.at(index);
+    const QList<Point> &p = whole.points;
+    QList<Point> before;
+    QList<Point> after = {point};
+    bool passed = false;
+    for (int j = 0; j < p.size(); ++j) {
+        if (!passed) {
+            before.append(p.at(j));
+            if (j + 1 < p.size() && isOnSegment(p.at(j), p.at(j + 1), point)) {
+                if (before.last() != point)
+                    before.append(point);
+                passed = true;
+            }
+        } else if (p.at(j) != point) {
+            after.append(p.at(j));
+        }
+    }
+    wires[index].points = before;
+    Wire rest = whole;
+    rest.id = restId;
+    rest.points = after;
+    wires.insert(index + 1, rest);
+}
+
 // 'wires' with the first wire that passes through 'point' without ending
-// there cut in two at it: the first part keeps the wire's id, the second
-// gets a new one. Both then end at 'point', and so are joined to a pin there.
+// there cut in two at it (splitAt()), the second part with a new id.
 void cutAt(QList<Wire> &wires, const Point &point)
 {
     for (int i = 0; i < wires.size(); ++i) {
-        const Wire whole = wires.at(i);
-        const QList<Point> &p = whole.points;
-        if (p.size() < 2 || p.first() == point || p.last() == point || !isOnWire(whole, point))
-            continue;
-        QList<Point> before;
-        QList<Point> after = {point};
-        bool passed = false;
-        for (int j = 0; j < p.size(); ++j) {
-            if (!passed) {
-                before.append(p.at(j));
-                if (j + 1 < p.size() && isOnSegment(p.at(j), p.at(j + 1), point)) {
-                    if (before.last() != point)
-                        before.append(point);
-                    passed = true;
-                }
-            } else if (p.at(j) != point) {
-                after.append(p.at(j));
-            }
+        if (passesThrough(wires.at(i), point)) {
+            splitAt(wires, i, point, newObjectId());
+            return;
         }
-        wires[i].points = before;
-        Wire rest = whole;
-        rest.id = newObjectId();
-        rest.points = after;
-        wires.insert(i + 1, rest);
-        return;
     }
 }
 
@@ -671,9 +685,32 @@ QList<Point> simplifiedWire(const QList<Point> &points)
     return result;
 }
 
-Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
-                         const Library &library)
+Sheet withWiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
+                         const QSet<ObjectId> &moved, const Library &library)
 {
+    // A wire left in place that passes through a pin that goes is cut there
+    // first, in both sheets alike, so that its two parts end on the pin and
+    // follow it: a pin on a wire is joined to it, as its dot shows.
+    Sheet before = sheetBefore;
+    Sheet after = sheetAfter;
+    for (const PointFollower::MovedPin &pin :
+         PointFollower(sheetBefore, sheetAfter, moved, library).movedPins()) {
+        if (pin.to == pin.from)
+            continue;
+        for (int i = 0; i < before.wires.size(); ++i) {
+            const ObjectId id = before.wires.at(i).id;
+            if (moved.contains(id) || !passesThrough(before.wires.at(i), pin.from))
+                continue;
+            const ObjectId restId = newObjectId();
+            splitAt(before.wires, i, pin.from, restId);
+            for (int j = 0; j < after.wires.size(); ++j) {
+                if (after.wires.at(j).id == id) {
+                    splitAt(after.wires, j, pin.from, restId);
+                    break;
+                }
+            }
+        }
+    }
     const PointFollower follower(before, after, moved, library);
     const Obstacles obstacles = obstaclesOf(after, library);
     // The ends of the wires that stay, with the wire they belong to: a wire
