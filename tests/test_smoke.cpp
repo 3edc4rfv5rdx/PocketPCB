@@ -630,6 +630,13 @@ private slots:
         QCOMPARE(sheet().components.at(1).value, QStringLiteral("22k"));
         QCOMPARE(window.document()->undoStack()->count(), steps + 1);
         QCOMPARE(value->text(), QStringLiteral("22k"));
+        // Esc takes back what was typed, and the selection stays.
+        value->setFocus();
+        value->setText(QStringLiteral("zzz"));
+        QTest::keyClick(value, Qt::Key_Escape);
+        QCOMPARE(value->text(), QStringLiteral("22k"));
+        QCOMPARE(editor->selection(), QSet<ObjectId>({r1, r2}));
+        QCOMPARE(sheet().components.at(0).value, QStringLiteral("22k"));
 
         footprint->setCurrentIndex(footprint->findText(QStringLiteral("resistor-vertical")));
         emit footprint->activated(footprint->currentIndex());

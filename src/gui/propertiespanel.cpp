@@ -7,6 +7,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QFormLayout>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QVBoxLayout>
@@ -50,6 +51,8 @@ PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidge
     layout->addLayout(form);
     layout->addStretch();
 
+    m_designator->installEventFilter(this);
+    m_value->installEventFilter(this);
     // Only what the user does: filling the fields in refresh() sends none of these.
     connect(m_designator, &QLineEdit::editingFinished, this, &PropertiesPanel::commitDesignator);
     connect(m_designator, &QLineEdit::textEdited, this, &PropertiesPanel::markDesignator);
@@ -69,6 +72,25 @@ QString PropertiesPanel::propertiesTitle()
 QString PropertiesPanel::footprintTitle()
 {
     return tr("Footprint");
+}
+
+bool PropertiesPanel::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched != m_designator && watched != m_value)
+        return QWidget::eventFilter(watched, event);
+    const bool escape = (event->type() == QEvent::ShortcutOverride
+                         || event->type() == QEvent::KeyPress)
+                        && static_cast<QKeyEvent *>(event)->key() == Qt::Key_Escape;
+    if (!escape)
+        return QWidget::eventFilter(watched, event);
+    // Esc is the field's, not the window's, which would drop the selection.
+    event->accept();
+    if (event->type() == QEvent::KeyPress) {
+        // The fields show the components again: leaving them sets nothing.
+        refresh(true);
+        static_cast<QWidget *>(watched)->clearFocus();
+    }
+    return true;
 }
 
 bool PropertiesPanel::isTyping(const QWidget *field, bool force) const

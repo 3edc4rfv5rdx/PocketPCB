@@ -19,7 +19,8 @@ class SheetEditor;
 // footprint and whether the part is off the board. With several chosen, a
 // field shows what they all have, or stays empty saying they differ, and
 // what is set there goes to them all as one step. The designator is set one
-// component at a time; one another component has is shown in red.
+// component at a time; one another component has is shown in red. Enter or
+// leaving a field sets what is typed, Esc takes it back.
 class PropertiesPanel : public QWidget
 {
     Q_OBJECT
@@ -34,6 +35,10 @@ public:
     // Shows the chosen components again. A field being typed in is left
     // alone while the same components stay chosen, unless 'force'.
     void refresh(bool force = false);
+
+protected:
+    // Esc in a field takes back what was typed there.
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
     void commitDesignator();
