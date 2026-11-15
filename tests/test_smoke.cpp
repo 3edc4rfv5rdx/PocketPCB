@@ -634,6 +634,20 @@ private slots:
         footprint->setCurrentIndex(footprint->findText(QStringLiteral("resistor-vertical")));
         emit footprint->activated(footprint->currentIndex());
         QCOMPARE(sheet().components.at(0).footprint, QStringLiteral("resistor-vertical"));
+
+        // A click on R1's value chooses the text alone; the panel shows R1.
+        const QPointF valueAt =
+            toMm(componentTextPoint(sheet().components.at(0), ComponentText::Value));
+        editor->press(valueAt, false);
+        editor->release(valueAt, false);
+        QVERIFY(editor->selection().isEmpty());
+        QVERIFY(!editor->chosenText().isEmpty());
+        QCOMPARE(designator->text(), QStringLiteral("R1"));
+        // R turns nothing, Delete deletes nothing.
+        const Sheet before = sheet();
+        editor->rotateSelection();
+        editor->deleteSelection();
+        QVERIFY(sheet() == before);
     }
 
     void sheetIsEditedWithTheMouseAndKeys()

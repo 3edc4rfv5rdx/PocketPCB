@@ -118,6 +118,12 @@ void DesignViewItem::paintSelection(QPainter &painter, const Sheet &sheet) const
         painter.setPen(band);
         painter.drawLine(segment);
     }
+    const QRectF text = editor->chosenText();
+    if (!text.isEmpty()) {
+        painter.setPen(pen);
+        painter.setBrush(fill);
+        painter.drawRect(text);
+    }
     const QLineF guide = editor->textGuide();
     if (!guide.isNull()) {
         painter.setPen(pen);

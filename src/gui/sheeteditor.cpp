@@ -55,7 +55,7 @@ void SheetEditor::setSheet(int sheet)
     m_wiring = false;
     m_wirePoints.clear();
     m_selection.clear();
-    dropSegment();
+    dropPieces();
     m_pressed = false;
     m_dragging = false;
     m_rubberBanding = false;
@@ -165,7 +165,7 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
             }
         }
         if (!text.component.isNull()) {
-            m_selection = {text.component};
+            m_selection.clear();
             m_textComponent = text.component;
             m_text = text.text;
             for (const Component &component : sheet->components) {
@@ -220,9 +220,32 @@ QLineF SheetEditor::chosenSegment() const
     return QLineF();
 }
 
+bool SheetEditor::hasText() const
+{
+    const Sheet *sheet = currentSheet();
+    if (m_textComponent.isNull() || !m_selection.isEmpty() || sheet == nullptr)
+        return false;
+    for (const Component &component : sheet->components) {
+        if (component.id == m_textComponent)
+            return true;
+    }
+    return false;
+}
+
+QRectF SheetEditor::chosenText() const
+{
+    if (!hasText() || m_dragging)
+        return QRectF();
+    for (const Component &component : currentSheet()->components) {
+        if (component.id == m_textComponent)
+            return componentTextRect(component, m_text, m_document->design().library);
+    }
+    return QRectF();
+}
+
 QLineF SheetEditor::textGuide() const
 {
-    if (!m_dragging || m_textComponent.isNull())
+    if (!m_dragging || !hasText())
         return QLineF();
     for (const Component &component : m_preview.components) {
         if (component.id == m_textComponent)
@@ -233,12 +256,16 @@ QLineF SheetEditor::textGuide() const
 
 bool SheetEditor::dragsWhole() const
 {
-    return m_endWire.isNull() && m_textComponent.isNull() && !hasSegment();
+    return m_endWire.isNull() && !hasText() && !hasSegment();
 }
 
 QSet<ObjectId> SheetEditor::chosenIds() const
 {
-    return hasSegment() ? QSet<ObjectId>{m_segmentWire} : m_selection;
+    if (hasSegment())
+        return {m_segmentWire};
+    if (hasText())
+        return {m_textComponent};
+    return m_selection;
 }
 
 void SheetEditor::doubleClick(const QPointF &at, bool adding)
@@ -251,7 +278,7 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
     const Sheet *sheet = currentSheet();
     if (placing || sheet == nullptr)
         return;
-    if (!m_textComponent.isNull() && m_text == ComponentText::Value) {
+    if (hasText() && m_text == ComponentText::Value) {
         editValue(m_textComponent);
         return;
     }
@@ -333,9 +360,10 @@ void SheetEditor::finishValueEdit(bool keep)
 QList<Component> SheetEditor::chosenComponents() const
 {
     QList<Component> chosen;
+    const QSet<ObjectId> ids = chosenIds();
     if (const Sheet *sheet = currentSheet()) {
         for (const Component &component : sheet->components) {
-            if (m_selection.contains(component.id))
+            if (ids.contains(component.id))
                 chosen.append(component);
         }
     }
@@ -487,7 +515,7 @@ void SheetEditor::cancel()
         m_pressed = false;
     } else {
         m_selection.clear();
-        dropSegment();
+        dropPieces();
     }
     emit changed();
 }
@@ -523,7 +551,7 @@ void SheetEditor::transformDragged(Sheet (*transform)(const Sheet &, const QSet<
 
 void SheetEditor::updateDrag()
 {
-    if (!m_textComponent.isNull()) {
+    if (hasText()) {
         m_preview = withComponentTextMoved(m_dragStart, m_textComponent, m_text, m_dragDelta);
         return;
     }
@@ -686,7 +714,7 @@ void SheetEditor::startFloating(const Sheet &piece, const Library &source, Actio
     m_rubberBanding = false;
     m_pressed = false;
     m_selection.clear();
-    dropSegment();
+    dropPieces();
     m_floating = piece;
     m_floatSource = source;
     m_floatAction = action;
@@ -772,7 +800,7 @@ void SheetEditor::startWiring()
     m_rubberBanding = false;
     m_pressed = false;
     m_selection.clear();
-    dropSegment();
+    dropPieces();
     m_wiring = true;
     m_wirePoints.clear();
     m_wireCursor = Point{m_canvas->cursorX(), m_canvas->cursorY()};

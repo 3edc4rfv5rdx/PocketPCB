@@ -24,8 +24,8 @@ class CanvasView;
 // wire chooses the segment under it: a drag moves it, or one end of the
 // wire when taken near it, unless that end is on a pin; Delete removes it. A double click chooses the
 // whole wire, Shift and a click every wire joined to it. A component's
-// designator or value taken with the mouse is dragged alone, its component
-// staying; a double click on the value edits it in place.
+// designator or value is chosen alone by a click and dragged alone, its
+// component staying; a double click on the value edits it in place.
 // Positions come in scene millimetres.
 class SheetEditor : public QObject
 {
@@ -70,6 +70,9 @@ public:
     // While a component's text is dragged: from the component's point to
     // the text's; a null line otherwise.
     QLineF textGuide() const;
+    // The rectangle of the text chosen alone, in millimetres; empty when
+    // none is, or while it is dragged.
+    QRectF chosenText() const;
     // Keeps only the ids of objects on the sheet.
     void setSelection(const QSet<ObjectId> &ids);
 
@@ -132,7 +135,8 @@ public:
     // Esc: placing ends, or a drag is called off, or the selection is dropped.
     void cancel();
 
-    // The chosen components of the sheet edited, in the order of the sheet.
+    // The chosen components of the sheet edited, in the order of the sheet;
+    // the component of the text chosen alone.
     QList<Component> chosenComponents() const;
     // Properties of the components 'ids' of the sheet edited, each change one
     // step; nothing happens when it changes nothing (see sheetedit.h).
@@ -167,6 +171,15 @@ private:
     // and the sheet has the segment.
     bool hasSegment() const;
     void dropSegment() { m_segmentWire = ObjectId(); }
+    // True when a text of a component is chosen alone: no whole object is,
+    // and the sheet has the component.
+    bool hasText() const;
+    // Drops the segment and the text chosen alone.
+    void dropPieces()
+    {
+        dropSegment();
+        m_textComponent = ObjectId();
+    }
     // What a step is named by: the chosen objects, or the segment's wire.
     QSet<ObjectId> chosenIds() const;
     QList<SheetObjectShape> shapes() const;
@@ -239,8 +252,9 @@ private:
     // the wire, and its last end or its first. Set by every press.
     ObjectId m_endWire;
     bool m_endIsLast = false;
-    // The press took a text of a component, which a drag moves alone: the
-    // component and which text. Set by every press.
+    // The text chosen alone by a click on it, which a drag moves: its
+    // component and which text. It counts only while 'm_selection' is empty
+    // (hasText()).
     ObjectId m_textComponent;
     ComponentText m_text = ComponentText::Designator;
     // The sheet the drag started from, and the same with what was turned

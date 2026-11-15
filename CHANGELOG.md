@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A click on a part's designator or value chooses that text alone instead of the whole part
 - N: A properties panel sets the designator, value, footprint and off-board flag of the chosen components, of several at once
 - E: What is chosen on the sheet stays chosen after a change instead of being dropped
 - N: Parts that need no value, such as switches and connectors, show no VALUE mark on the sheet
