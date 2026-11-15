@@ -189,6 +189,13 @@ void MainWindow::createMenus()
     openAction->setShortcut(QKeySequence::Open);
     connect(openAction, &QAction::triggered, this, &MainWindow::chooseProjectToOpen);
 
+    m_recentMenu = fileMenu->addMenu(tr("Recent projects"));
+    m_recentMenu->setObjectName(QStringLiteral("menuRecentProjects"));
+    m_recentMenu->setToolTipsVisible(true);
+    // The list may change in another window of the program as well.
+    connect(fileMenu, &QMenu::aboutToShow, this, &MainWindow::updateRecentMenu);
+    updateRecentMenu();
+
     QAction *saveAction = fileMenu->addAction(tr("&Save"));
     saveAction->setObjectName(QStringLiteral("actionSaveProject"));
     saveAction->setShortcut(QKeySequence::Save);
@@ -381,6 +388,7 @@ bool MainWindow::openProject(const QString &path)
     }
     showPage(0);
     updateTitle();
+    AppSettings::addRecentProject(path);
     // The first problem in full, and how many more there are.
     QString message = problems.value(0, path);
     if (problems.size() > 1) {
@@ -400,6 +408,7 @@ bool MainWindow::saveProjectAs(const QString &parentFolder, const QString &name)
         return false;
     }
     updateTitle();
+    AppSettings::addRecentProject(m_document->projectPath());
     statusBar()->showMessage(m_document->projectPath());
     return true;
 }
@@ -468,11 +477,44 @@ void MainWindow::chooseProjectToOpen()
             + QLatin1Char(')'));
     // Asked once a project is chosen: a dialog closed without one leaves
     // the open project as it is.
-    if (path.isEmpty() || !confirmLeavingProject())
+    if (!path.isEmpty())
+        leaveAndOpenProject(path);
+}
+
+void MainWindow::leaveAndOpenProject(const QString &path)
+{
+    if (!confirmLeavingProject())
         return;
     // The project file lies in the project's own folder.
     AppSettings::setLastProjectFolder(QFileInfo(QFileInfo(path).absolutePath()).absolutePath());
     openProject(path);
+}
+
+void MainWindow::updateRecentMenu()
+{
+    m_recentMenu->clear();
+    const QStringList paths = AppSettings::recentProjects();
+    for (const QString &path : paths) {
+        QAction *action = m_recentMenu->addAction(QFileInfo(path).completeBaseName());
+        action->setToolTip(QDir::toNativeSeparators(path));
+        connect(action, &QAction::triggered, this, [this, path] { openRecentProject(path); });
+    }
+    m_recentMenu->addSeparator();
+    QAction *clearAction = m_recentMenu->addAction(tr("Clear list"));
+    clearAction->setObjectName(QStringLiteral("actionClearRecentProjects"));
+    connect(clearAction, &QAction::triggered, this, [] { AppSettings::clearRecentProjects(); });
+    m_recentMenu->setEnabled(!paths.isEmpty());
+}
+
+void MainWindow::openRecentProject(const QString &path)
+{
+    if (!QFileInfo::exists(path)) {
+        AppSettings::removeRecentProject(path);
+        statusBar()->showMessage(tr("The project is no longer there") + QStringLiteral(": ")
+                                 + QDir::toNativeSeparators(path));
+        return;
+    }
+    leaveAndOpenProject(path);
 }
 
 bool MainWindow::saveProject()

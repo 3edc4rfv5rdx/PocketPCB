@@ -16,6 +16,7 @@
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDir>
+#include <QFileInfo>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -289,11 +290,24 @@ private slots:
         window.showPage(9);
         QCOMPARE(window.designItem()->page(), 2);
 
+        // An opened project goes first in the recent ones, once.
+        AppSettings::addRecentProject(dir.filePath(QStringLiteral("other.ppcb")));
+        QVERIFY(window.openProject(path));
+        QCOMPARE(AppSettings::recentProjects().value(0), QFileInfo(path).absoluteFilePath());
+        QCOMPARE(AppSettings::recentProjects().count(QFileInfo(path).absoluteFilePath()), 1);
+
         // A file that cannot be read changes nothing.
         QVERIFY(!window.openProject(dir.filePath(QStringLiteral("absent.ppcb"))));
         QCOMPARE(window.document()->projectPath(), path);
         QCOMPARE(tabTexts(window).size(), 3);
         QVERIFY(!window.statusBar()->currentMessage().isEmpty());
+        // Nor does it go into the recent ones.
+        QVERIFY(!AppSettings::recentProjects().contains(
+            QFileInfo(dir.filePath(QStringLiteral("absent.ppcb"))).absoluteFilePath()));
+        AppSettings::removeRecentProject(path);
+        QVERIFY(!AppSettings::recentProjects().contains(QFileInfo(path).absoluteFilePath()));
+        AppSettings::clearRecentProjects();
+        QVERIFY(AppSettings::recentProjects().isEmpty());
 
         // A new project drops the file and the second sheet.
         window.newProject();

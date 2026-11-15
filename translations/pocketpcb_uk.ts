@@ -469,6 +469,18 @@
         <translation>Виділити все</translation>
     </message>
     <message>
+        <source>Recent projects</source>
+        <translation>Нещодавні проєкти</translation>
+    </message>
+    <message>
+        <source>Clear list</source>
+        <translation>Очистити список</translation>
+    </message>
+    <message>
+        <source>The project is no longer there</source>
+        <translation>Проєкту більше немає на місці</translation>
+    </message>
+    <message>
         <source>Deselect</source>
         <translation>Зняти виділення</translation>
     </message>

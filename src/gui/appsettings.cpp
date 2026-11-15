@@ -26,6 +26,7 @@ const char KEY_ZOOM_WARP[] = "view/zoomCenterAndWarp";
 const char KEY_LAST_LIBRARY_FOLDER[] = "library/lastFolder";
 const char KEY_USER_LIBRARY_FOLDER[] = "library/folder";
 const char KEY_LAST_PROJECT_FOLDER[] = "project/lastFolder";
+const char KEY_RECENT_PROJECTS[] = "project/recent";
 const char KEY_BACKUP_COUNT[] = "project/backupCount";
 const char KEY_AUTOSAVE_MINUTES[] = "project/autosaveMinutes";
 
@@ -185,6 +186,35 @@ QString AppSettings::lastProjectFolder()
 void AppSettings::setLastProjectFolder(const QString &folder)
 {
     writeValue(KEY_LAST_PROJECT_FOLDER, folder);
+}
+
+QStringList AppSettings::recentProjects()
+{
+    // An empty list may come back from the file as one empty string.
+    QStringList paths = readValue(KEY_RECENT_PROJECTS, QStringList()).toStringList();
+    paths.removeAll(QString());
+    return paths;
+}
+
+void AppSettings::addRecentProject(const QString &path)
+{
+    const QString file = QFileInfo(path).absoluteFilePath();
+    QStringList paths = recentProjects();
+    paths.removeAll(file);
+    paths.prepend(file);
+    writeValue(KEY_RECENT_PROJECTS, paths.mid(0, RECENT_PROJECTS_MAX));
+}
+
+void AppSettings::removeRecentProject(const QString &path)
+{
+    QStringList paths = recentProjects();
+    paths.removeAll(QFileInfo(path).absoluteFilePath());
+    writeValue(KEY_RECENT_PROJECTS, paths);
+}
+
+void AppSettings::clearRecentProjects()
+{
+    writeValue(KEY_RECENT_PROJECTS, QStringList());
 }
 
 int AppSettings::autosaveMinutes()

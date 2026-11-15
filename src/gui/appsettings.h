@@ -2,6 +2,7 @@
 
 #include <QByteArray>
 #include <QString>
+#include <QStringList>
 
 namespace ppcb {
 
@@ -52,6 +53,15 @@ public:
     // Folder that holds the folder of the last project opened or saved.
     static QString lastProjectFolder();
     static void setLastProjectFolder(const QString &folder);
+
+    // Project files opened or saved lately, the latest first, at most
+    // RECENT_PROJECTS_MAX of them.
+    static const int RECENT_PROJECTS_MAX = 10;
+    static QStringList recentProjects();
+    // Puts 'path' first, once; the oldest beyond the limit drops out.
+    static void addRecentProject(const QString &path);
+    static void removeRecentProject(const QString &path);
+    static void clearRecentProjects();
 
     // How many earlier versions of each project file a save keeps (see
     // Document::setBackupCount()). Set in the file by hand for now; the

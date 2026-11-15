@@ -98,6 +98,12 @@ private:
     void offerAutosave();
     void chooseNewProject();
     void chooseProjectToOpen();
+    // Fills the menu of recent projects from the settings.
+    void updateRecentMenu();
+    // Opens a project from that menu; one that is gone leaves the list.
+    void openRecentProject(const QString &path);
+    // Opens 'path' once the open project may be left, and remembers its folder.
+    void leaveAndOpenProject(const QString &path);
     // Both return true when the project was saved.
     bool saveProject();
     bool chooseProjectToSaveAs();
@@ -138,6 +144,7 @@ private:
     bool m_shownOnce = false;
     QLabel *m_positionLabel = nullptr;
     QComboBox *m_gridStepBox = nullptr;
+    QMenu *m_recentMenu = nullptr;
 
     QString m_libraryPath;
     // Owned by the canvas scene.
