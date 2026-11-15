@@ -390,7 +390,7 @@ private slots:
         circle.a = Point{1270000, 0};
         circle.radius = 635000;
         QCOMPARE(QJsonDocument(graphicToJson(circle)).toJson(QJsonDocument::Compact),
-                 QByteArray(R"({"center":[1.27,0],"dashed":false,"kind":"circle","radius":0.635,"width":0.15})"));
+                 QByteArray(R"({"center":[1.27,0],"dashed":false,"kind":"circle","radius":0.635,"width":0.2})"));
 
         Graphic text;
         text.kind = GraphicKind::Text;
@@ -404,7 +404,7 @@ private slots:
         polygon.points = {Point{0, 0}, Point{1270000, 635000}, Point{0, 1270000}};
         polygon.filled = true;
         QCOMPARE(QJsonDocument(graphicToJson(polygon)).toJson(QJsonDocument::Compact),
-                 QByteArray(R"({"dashed":false,"filled":true,"kind":"polygon","points":[[0,0],[1.27,0.635],[0,1.27]],"width":0.15})"));
+                 QByteArray(R"({"dashed":false,"filled":true,"kind":"polygon","points":[[0,0],[1.27,0.635],[0,1.27]],"width":0.2})"));
     }
 };
 

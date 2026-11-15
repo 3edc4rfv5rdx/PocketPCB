@@ -12,7 +12,7 @@ enum class GraphicKind { Line, Rect, Circle, Arc, Text, Polygon };
 enum class TextAlign { Left, Center, Right };
 
 // Line width used when a file does not give one.
-constexpr Coord DEFAULT_LINE_WIDTH = 150000; // 0.15 mm
+constexpr Coord DEFAULT_LINE_WIDTH = 200000; // 0.2 mm
 
 // One drawing primitive of a symbol, of a footprint's silkscreen or of the
 // free drawing on a schematic sheet.

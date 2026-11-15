@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Lines of drawings without a width of their own, footprint silkscreen among them, are 0.2 mm instead of 0.15
 - F: Symbol, pin and wire lines on sheets are drawn 0.25 mm thick instead of 0.15
 - N: Wires are drawn on sheets with W, ending on a pin or a wire by themselves, and junction dots are drawn where three or more meet
 - N: File menu lists the ten recent projects to open again
