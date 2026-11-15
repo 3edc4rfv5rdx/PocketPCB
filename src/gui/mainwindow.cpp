@@ -234,6 +234,15 @@ void MainWindow::createMenus()
         action->setShortcut(key);
         connect(action, &QAction::triggered, m_sheetEditor, slot);
     };
+    addEditAction(SheetEditor::actionName(SheetEditor::Action::Copy), "actionCopy",
+                  QKeySequence::Copy, &SheetEditor::copySelection);
+    addEditAction(SheetEditor::actionName(SheetEditor::Action::Cut), "actionCut",
+                  QKeySequence::Cut, &SheetEditor::cutSelection);
+    addEditAction(SheetEditor::actionName(SheetEditor::Action::Paste), "actionPaste",
+                  QKeySequence::Paste, &SheetEditor::paste);
+    addEditAction(SheetEditor::actionName(SheetEditor::Action::Duplicate), "actionDuplicate",
+                  QKeySequence(Qt::CTRL | Qt::Key_D), &SheetEditor::duplicateSelection);
+    editMenu->addSeparator();
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Rotate), "actionRotate",
                   QKeySequence(Qt::Key_R), &SheetEditor::rotateSelection);
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Mirror), "actionMirror",
@@ -612,7 +621,6 @@ bool MainWindow::placePart(LibraryPanel::Source source, const QString &part,
     const Library &library =
         source == LibraryPanel::Source::Project ? m_document->design().library : m_library.items;
     m_sheetEditor->startPlacing(library, part, footprint);
-    m_sheetEditor->hover(Point{m_canvas->cursorX(), m_canvas->cursorY()});
     m_canvas->setFocus();
     return m_sheetEditor->isPlacing();
 }

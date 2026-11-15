@@ -511,6 +511,22 @@
         <source>Place</source>
         <translation>Поставить</translation>
     </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копировать</translation>
+    </message>
+    <message>
+        <source>Cut</source>
+        <translation>Вырезать</translation>
+    </message>
+    <message>
+        <source>Paste</source>
+        <translation>Вставить</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>Дублировать</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SaveProjectDialog</name>

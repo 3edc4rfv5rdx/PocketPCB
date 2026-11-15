@@ -511,6 +511,22 @@
         <source>Place</source>
         <translation>Поставити</translation>
     </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копіювати</translation>
+    </message>
+    <message>
+        <source>Cut</source>
+        <translation>Вирізати</translation>
+    </message>
+    <message>
+        <source>Paste</source>
+        <translation>Вставити</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>Дублювати</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SaveProjectDialog</name>

@@ -32,6 +32,23 @@ Sheet mirroredObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point
 // The sheet without the selected objects.
 Sheet withoutObjects(const Sheet &sheet, const QSet<ObjectId> &ids);
 
+// Copying and pasting. A piece of a sheet is a Sheet that holds only some
+// objects; its id, title and paper mean nothing.
+
+// The selected objects of 'sheet'.
+Sheet objectsOf(const Sheet &sheet, const QSet<ObjectId> &ids);
+// The ids of every object of 'sheet'.
+QSet<ObjectId> objectIds(const Sheet &sheet);
+// 'piece' with a new id for every object.
+Sheet withNewIds(const Sheet &piece);
+// 'sheet' with the objects of 'piece' added after its own.
+Sheet withObjectsAdded(const Sheet &sheet, const Sheet &piece);
+// 'piece' with its components numbered on after those of 'schematic' and
+// after each other, by the prefix their part has in 'library'. A component
+// whose part 'library' lacks keeps its designator.
+Sheet numberedOn(const Sheet &piece, const Schematic &schematic, const Library &library,
+                 DesignatorStyle style);
+
 // Placing parts.
 
 // The designator prefix of 'part' in 'style': R, VD, DD...

@@ -28,7 +28,7 @@ public:
     static QString sheetName(const Sheet &sheet, int index);
 
     // What is done to a selection: the name of the menu item and of the step.
-    enum class Action { Move, Rotate, Mirror, Delete, Place };
+    enum class Action { Move, Rotate, Mirror, Delete, Place, Copy, Cut, Paste, Duplicate };
     static QString actionName(Action action);
 
     // The sheet being edited, or -1 when the page shown is not a sheet.
@@ -43,7 +43,7 @@ public:
     // What the canvas shows instead of the sheet while dragging or placing;
     // null when neither is going on.
     const Sheet *preview() const { return m_dragging || m_placing ? &m_preview : nullptr; }
-    // The library to draw the preview with: the project's, with the part
+    // The library to draw the preview with: the project's, with the parts
     // being placed; null when nothing is placed.
     const Library *previewLibrary() const { return m_placing ? &m_placeLibrary : nullptr; }
 
@@ -53,9 +53,21 @@ public:
     // sheet is edited or 'source' lacks the part.
     void startPlacing(const Library &source, const QString &part, const QString &footprint);
     void stopPlacing();
+    // Placing, pasting or duplicating: something follows the cursor.
     bool isPlacing() const { return m_placing; }
-    // Where the cursor is, on the grid: the part being placed follows it.
+    // Where the cursor is, on the grid: what is placed follows it.
     void hover(const Point &at);
+
+    // The selection goes to the editor's clipboard, with the parts of its
+    // components; it stays there across sheets and projects.
+    void copySelection();
+    // Copies the selection, then deletes it as one step.
+    void cutSelection();
+    // A copy of the clipboard, or of the selection, follows the cursor like
+    // a part being placed, with new ids and components numbered on; a
+    // click puts it down once and chooses it.
+    void paste();
+    void duplicateSelection();
     // The rectangle being drawn to choose with; empty when there is none.
     QRectF rubberBand() const { return m_rubberBanding ? m_rubberBand : QRectF(); }
 
@@ -87,15 +99,27 @@ private:
     // The grid point the selection on 'sheet' is turned and mirrored about:
     // a single component's own point, else the middle of the selection.
     Point selectionCenter(const Sheet &sheet) const;
+    // The selected objects of 'sheet', placed about the point they are
+    // turned about, which comes to lie at the origin.
+    Sheet selectionPiece(const Sheet &sheet) const;
+    // Makes 'piece', placed about the origin, follow the cursor; the parts
+    // of its components come from 'source'. 'again': every click places
+    // one more, else the first ends placing.
+    void startFloating(const Sheet &piece, const Library &source, Action action, bool again);
     // Turns or mirrors what is dragged, on the way, without a step of its own:
     // the drop makes one step of it all.
     void transformDragged(Sheet (*transform)(const Sheet &, const QSet<ObjectId> &, const Point &));
-    // Builds the preview of the part following the cursor, numbered on.
-    void updateGhost();
-    void placeGhost();
+    // Builds the preview of what follows the cursor, numbered on.
+    void updateFloating();
+    void placeFloating();
+    // Deletes the selection as one step named 'action'.
+    void removeSelection(Action action);
     // Makes 'edited' the sheet as one step of the history named 'action'.
     void apply(const QString &action, const Sheet &edited);
-    // "Move R1, C2 (Sheet 1)": the step's name in the Edit menu.
+    // "Move R1, C2 (Sheet 1)": the step's name in the Edit menu, for the
+    // objects 'ids' of 'objects', on the sheet edited.
+    QString stepName(const QString &action, const Sheet &objects,
+                     const QSet<ObjectId> &ids) const;
     QString stepName(const QString &action) const;
     // A distance on screen, in millimetres at the current zoom.
     double pixelsToMm(double pixels) const;
@@ -122,12 +146,22 @@ private:
     bool m_rubberBanding = false;
     QRectF m_rubberBand;
 
-    // Placing: the part, where it comes from, and the next one to place.
+    // Placing: what follows the cursor, about the origin; where its parts
+    // come from; where the cursor is; and what is done.
     bool m_placing = false;
-    Library m_placeSource;
-    QString m_placePart;
-    Component m_ghost;
+    Sheet m_floating;
+    Library m_floatSource;
+    Point m_floatAt;
+    Action m_floatAction = Action::Place;
+    bool m_floatAgain = false;
+    // The project's library with the parts placed, and what a click puts
+    // down: the floating objects where the cursor is, numbered on.
     Library m_placeLibrary;
+    Sheet m_placed;
+
+    // The clipboard: objects about the origin, and the library their parts are in.
+    Sheet m_clipboard;
+    Library m_clipboardLibrary;
 };
 
 } // namespace ppcb

@@ -292,4 +292,74 @@ Sheet withoutObjects(const Sheet &sheet, const QSet<ObjectId> &ids)
     return result;
 }
 
+Sheet objectsOf(const Sheet &sheet, const QSet<ObjectId> &ids)
+{
+    return withoutObjects(sheet, objectIds(withoutObjects(sheet, ids)));
+}
+
+QSet<ObjectId> objectIds(const Sheet &sheet)
+{
+    QSet<ObjectId> ids;
+    const auto add = [&ids](const auto &objects) {
+        for (const auto &object : objects)
+            ids.insert(object.id);
+    };
+    add(sheet.components);
+    add(sheet.wires);
+    add(sheet.buses);
+    add(sheet.labels);
+    add(sheet.powerSymbols);
+    add(sheet.noConnects);
+    add(sheet.graphics);
+    return ids;
+}
+
+Sheet withNewIds(const Sheet &piece)
+{
+    Sheet result = piece;
+    const auto renew = [](auto &objects) {
+        for (auto &object : objects)
+            object.id = newObjectId();
+    };
+    renew(result.components);
+    renew(result.wires);
+    renew(result.buses);
+    renew(result.labels);
+    renew(result.powerSymbols);
+    renew(result.noConnects);
+    renew(result.graphics);
+    return result;
+}
+
+Sheet withObjectsAdded(const Sheet &sheet, const Sheet &piece)
+{
+    Sheet result = sheet;
+    result.components.append(piece.components);
+    result.wires.append(piece.wires);
+    result.buses.append(piece.buses);
+    result.labels.append(piece.labels);
+    result.powerSymbols.append(piece.powerSymbols);
+    result.noConnects.append(piece.noConnects);
+    result.graphics.append(piece.graphics);
+    return result;
+}
+
+Sheet numberedOn(const Sheet &piece, const Schematic &schematic, const Library &library,
+                 DesignatorStyle style)
+{
+    Sheet result = piece;
+    // The schematic with the components numbered so far, so that two of
+    // them do not get one designator.
+    Schematic taken = schematic;
+    taken.sheets.append(Sheet());
+    for (Component &component : result.components) {
+        const Part *part = library.findPart(component.part);
+        if (part == nullptr)
+            continue;
+        component.designator = nextDesignator(taken, designatorPrefix(*part, style));
+        taken.sheets.last().components.append(component);
+    }
+    return result;
+}
+
 } // namespace ppcb

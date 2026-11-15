@@ -81,7 +81,7 @@ void SheetEditor::press(const QPointF &at, bool adding)
         return;
     if (m_placing) {
         hover(snapped(at));
-        placeGhost();
+        placeFloating();
         return;
     }
     m_pressed = true;
@@ -221,10 +221,8 @@ void SheetEditor::transformDragged(Sheet (*transform)(const Sheet &, const QSet<
 void SheetEditor::rotateSelection()
 {
     if (m_placing) {
-        Sheet ghost;
-        ghost.components.append(m_ghost);
-        m_ghost = rotatedObjects(ghost, {m_ghost.id}, m_ghost.at).components.first();
-        updateGhost();
+        m_floating = rotatedObjects(m_floating, objectIds(m_floating), Point());
+        updateFloating();
         return;
     }
     if (m_dragging) {
@@ -241,10 +239,8 @@ void SheetEditor::rotateSelection()
 void SheetEditor::mirrorSelection()
 {
     if (m_placing) {
-        Sheet ghost;
-        ghost.components.append(m_ghost);
-        m_ghost = mirroredObjects(ghost, {m_ghost.id}, m_ghost.at).components.first();
-        updateGhost();
+        m_floating = mirroredObjects(m_floating, objectIds(m_floating), Point());
+        updateFloating();
         return;
     }
     if (m_dragging) {
@@ -260,11 +256,16 @@ void SheetEditor::mirrorSelection()
 
 void SheetEditor::deleteSelection()
 {
+    removeSelection(Action::Delete);
+}
+
+void SheetEditor::removeSelection(Action action)
+{
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr || m_selection.isEmpty())
         return;
     // Named before the objects are gone.
-    const QString name = stepName(actionName(Action::Delete));
+    const QString name = stepName(actionName(action));
     Design design = m_document->design();
     design.schematic.sheets[m_sheet] = withoutObjects(*sheet, m_selection);
     const QSet<ObjectId> deleted = m_selection;
@@ -276,19 +277,69 @@ void SheetEditor::deleteSelection()
 void SheetEditor::startPlacing(const Library &source, const QString &part,
                                const QString &footprint)
 {
-    if (currentSheet() == nullptr || source.findPart(part) == nullptr)
+    if (source.findPart(part) == nullptr)
+        return;
+    Sheet piece;
+    piece.components.append(newComponent(source, part, footprint));
+    startFloating(piece, source, Action::Place, true);
+}
+
+void SheetEditor::copySelection()
+{
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr || m_placing || m_selection.isEmpty())
+        return;
+    m_clipboard = selectionPiece(*sheet);
+    m_clipboardLibrary = m_document->design().library;
+}
+
+void SheetEditor::cutSelection()
+{
+    if (m_placing)
+        return;
+    copySelection();
+    removeSelection(Action::Cut);
+}
+
+void SheetEditor::paste()
+{
+    if (m_placing || objectIds(m_clipboard).isEmpty())
+        return;
+    startFloating(withNewIds(m_clipboard), m_clipboardLibrary, Action::Paste, false);
+}
+
+void SheetEditor::duplicateSelection()
+{
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr || m_placing || m_selection.isEmpty())
+        return;
+    startFloating(withNewIds(selectionPiece(*sheet)), m_document->design().library,
+                  Action::Duplicate, false);
+}
+
+Sheet SheetEditor::selectionPiece(const Sheet &sheet) const
+{
+    const Point center = selectionCenter(sheet);
+    const Sheet piece = objectsOf(sheet, m_selection);
+    return movedObjects(piece, objectIds(piece), Point() - center);
+}
+
+void SheetEditor::startFloating(const Sheet &piece, const Library &source, Action action,
+                                bool again)
+{
+    if (currentSheet() == nullptr || objectIds(piece).isEmpty())
         return;
     m_placing = true;
     m_dragging = false;
     m_rubberBanding = false;
     m_pressed = false;
     m_selection.clear();
-    m_placeSource = source;
-    m_placePart = part;
-    const Point at = m_ghost.at;
-    m_ghost = newComponent(source, part, footprint);
-    m_ghost.at = at;
-    updateGhost();
+    m_floating = piece;
+    m_floatSource = source;
+    m_floatAction = action;
+    m_floatAgain = again;
+    m_floatAt = Point{m_canvas->cursorX(), m_canvas->cursorY()};
+    updateFloating();
 }
 
 void SheetEditor::stopPlacing()
@@ -299,13 +350,13 @@ void SheetEditor::stopPlacing()
 
 void SheetEditor::hover(const Point &at)
 {
-    if (!m_placing || m_ghost.at == at)
+    if (!m_placing || m_floatAt == at)
         return;
-    m_ghost.at = at;
-    updateGhost();
+    m_floatAt = at;
+    updateFloating();
 }
 
-void SheetEditor::updateGhost()
+void SheetEditor::updateFloating()
 {
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr) {
@@ -314,30 +365,42 @@ void SheetEditor::updateGhost()
         return;
     }
     const Design &design = m_document->design();
-    m_placeLibrary = withPartFrom(design.library, m_placeSource, m_placePart);
-    // Numbered as it would be if placed now: the project's own part says
-    // the prefix.
-    const Part *part = m_placeLibrary.findPart(m_placePart);
-    m_ghost.designator =
-        nextDesignator(design.schematic, designatorPrefix(*part, design.project.designatorStyle));
-    m_preview = *sheet;
-    m_preview.components.append(m_ghost);
+    m_placeLibrary = design.library;
+    for (const Component &component : m_floating.components)
+        m_placeLibrary = withPartFrom(m_placeLibrary, m_floatSource, component.part);
+    // Numbered as it would be if placed now: the project's own parts say
+    // the prefixes.
+    const Sheet numbered = numberedOn(m_floating, design.schematic, m_placeLibrary,
+                                      design.project.designatorStyle);
+    m_placed = movedObjects(numbered, objectIds(numbered), m_floatAt);
+    m_preview = withObjectsAdded(*sheet, m_placed);
     emit changed();
 }
 
-void SheetEditor::placeGhost()
+void SheetEditor::placeFloating()
 {
+    // Built again from the sheet as it is now: an Undo may have come since
+    // the cursor last moved.
+    updateFloating();
+    if (!m_placing)
+        return;
     Design design = m_document->design();
     design.library = m_placeLibrary;
-    design.schematic.sheets[m_sheet].components.append(m_ghost);
-    const QString name = actionName(Action::Place) + QLatin1Char(' ') + m_ghost.designator
-                         + QStringLiteral(" (")
-                         + sheetName(design.schematic.sheets.at(m_sheet), m_sheet)
-                         + QLatin1Char(')');
-    m_document->change(name, design, m_sheet, {m_ghost.id});
-    // The next one: a new object, numbered on, turned the same way.
-    m_ghost.id = newObjectId();
-    updateGhost();
+    design.schematic.sheets[m_sheet] = m_preview;
+    const QSet<ObjectId> placed = objectIds(m_placed);
+    const QString name = stepName(actionName(m_floatAction), m_placed, placed);
+    if (!m_floatAgain) {
+        m_placing = false;
+        m_selection = placed;
+    }
+    m_document->change(name, design, m_sheet, placed);
+    if (m_placing) {
+        // The next one: new objects, numbered on, turned the same way.
+        m_floating = withNewIds(m_floating);
+        updateFloating();
+    } else {
+        emit changed();
+    }
 }
 
 void SheetEditor::apply(const QString &action, const Sheet &edited)
@@ -352,13 +415,19 @@ void SheetEditor::apply(const QString &action, const Sheet &edited)
 
 QString SheetEditor::stepName(const QString &action) const
 {
+    return stepName(action, *currentSheet(), m_selection);
+}
+
+QString SheetEditor::stepName(const QString &action, const Sheet &objects,
+                              const QSet<ObjectId> &ids) const
+{
     const Sheet *sheet = currentSheet();
     QStringList names;
-    for (const Component &component : sheet->components) {
-        if (m_selection.contains(component.id))
+    for (const Component &component : objects.components) {
+        if (ids.contains(component.id))
             names.append(component.designator);
     }
-    const int others = int(m_selection.size() - names.size());
+    const int others = int(ids.size() - names.size());
     std::sort(names.begin(), names.end());
     if (names.size() > NAMED_COMPONENTS) {
         names = names.mid(0, NAMED_COMPONENTS);
@@ -387,6 +456,14 @@ QString SheetEditor::actionName(Action action)
         return tr("Delete");
     case Action::Place:
         return tr("Place");
+    case Action::Copy:
+        return tr("Copy");
+    case Action::Cut:
+        return tr("Cut");
+    case Action::Paste:
+        return tr("Paste");
+    case Action::Duplicate:
+        return tr("Duplicate");
     }
     return QString();
 }

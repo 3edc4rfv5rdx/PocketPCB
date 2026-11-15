@@ -227,6 +227,58 @@ private slots:
         QVERIFY(withoutObjects(sheet, allIds()) == Sheet());
     }
 
+    void piecesAreCopiedAndPasted()
+    {
+        const Sheet sheet = fullSheet();
+        const Sheet piece = objectsOf(sheet, {id(1), id(2), id(8), id(99)});
+        QCOMPARE(objectIds(piece), QSet<ObjectId>({id(1), id(2), id(8)}));
+        QVERIFY(piece.components.first() == sheet.components.first());
+        QVERIFY(piece.wires.first() == sheet.wires.first());
+        QVERIFY(objectsOf(sheet, {}) == withoutObjects(sheet, allIds()));
+        QCOMPARE(objectIds(sheet), allIds());
+
+        // New ids, all different, and nothing else changed.
+        const Sheet renewed = withNewIds(piece);
+        const QSet<ObjectId> ids = objectIds(renewed);
+        QCOMPARE(ids.size(), 3);
+        QVERIFY(!ids.intersects(allIds()));
+        QCOMPARE(renewed.components.first().at, piece.components.first().at);
+        QVERIFY(renewed.wires.first().points == piece.wires.first().points);
+
+        const Sheet added = withObjectsAdded(sheet, renewed);
+        QCOMPARE(added.components.size(), 2);
+        QCOMPARE(added.wires.size(), 2);
+        QCOMPARE(added.graphics.size(), 3);
+        QCOMPARE(objectIds(added), allIds() + ids);
+        QVERIFY(withoutObjects(added, ids) == sheet);
+    }
+
+    void pastedComponentsAreNumberedOn()
+    {
+        Library library = resistorLibrary();
+        library.parts[QStringLiteral("resistor")].prefix = QStringLiteral("R");
+        library.parts[QStringLiteral("resistor")].prefixGost = QStringLiteral("RG");
+        Schematic schematic;
+        schematic.sheets.append(fullSheet());
+
+        Sheet piece;
+        Component r = fullSheet().components.first();
+        piece.components = {r, r};
+        Component missing = r;
+        missing.part = QStringLiteral("nothing");
+        missing.designator = QStringLiteral("X7");
+        piece.components.append(missing);
+
+        const Sheet numbered = numberedOn(piece, schematic, library, DesignatorStyle::International);
+        // R1 is taken: the two copies take R2 and R3, not both R2.
+        QCOMPARE(numbered.components.at(0).designator, QStringLiteral("R2"));
+        QCOMPARE(numbered.components.at(1).designator, QStringLiteral("R3"));
+        QCOMPARE(numbered.components.at(2).designator, QStringLiteral("X7"));
+        QCOMPARE(numberedOn(piece, schematic, library, DesignatorStyle::Gost)
+                     .components.at(0).designator,
+                 QStringLiteral("RG1"));
+    }
+
     void designatorsAreNumberedOn()
     {
         Schematic schematic;
