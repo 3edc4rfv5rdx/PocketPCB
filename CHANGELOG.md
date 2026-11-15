@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: Wires led after a moved or turned part keep off the ends of pins they do not end on, instead of passing through them and joining them with a dot
 - E: The end of a dragged wire segment slides along the wire it lies on as far as that wire reaches and bends on from there, instead of bending back over it with an extra dot
 - E: Two wires in one line through a pin of a dragged part no longer end up lying one over the other with extra dots
 - F: A wire taken near its end on a pin moves its segment instead of dragging the end off the pin

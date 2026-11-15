@@ -298,6 +298,26 @@ private slots:
         QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(5, 3), mm(5, 10)}));
     }
 
+    // A part between two wires that go round it to its pins, one over it
+    // and one under it. Turned a quarter, each pin lands on the wire of the
+    // other one: the wires are laid again clear of the pins they do not
+    // end on, instead of passing through them.
+    void wiresKeepOffThePinsTheyDoNotEndOn()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        // Turned half round: the left pin is at (15, 0), the right at (5, 0).
+        sheet.components = {twoPin(mm(10, 0), 180)};
+        sheet.wires = {wire({mm(0, 10), mm(0, -5), mm(15, -5), mm(15, 0)}),
+                       wire({mm(15, 5), mm(5, 5), mm(5, 0)})};
+        const QSet<ObjectId> part = {sheet.components.first().id};
+        const Sheet moved =
+            withWiresFollowing(sheet, rotatedObjects(sheet, part, mm(10, 0)), part, library);
+        // The left pin has gone to (10, 5), the right one to (10, -5).
+        QCOMPARE(moved.wires.at(0).points, QList<Point>({mm(0, 10), mm(0, 5), mm(10, 5)}));
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(15, 5), mm(15, -5), mm(10, -5)}));
+    }
+
     void aWireEndOnAPinLeftInPlaceStays()
     {
         const Library library = twoPinLibrary();

@@ -55,7 +55,8 @@ QList<Point> simplifiedWire(const QList<Point> &points);
 // of other wires on it go with it, else its last
 // segment slides along with the end, or one or two bends lead on to where
 // it goes. Of the ways to do it that keep the other wires joined to it, the
-// one through the fewest bodies of parts, then along the fewest pins and
+// one through the ends of the fewest pins it does not end on, then through
+// the fewest bodies of parts, then along the fewest pins and
 // other wires, then with the fewest corners, then the shortest is taken; a wire going back over itself is cut
 // short. An end that also lay on a pin of a component left in place stays
 // there. A wire left with no length is removed. A moved pin that touched a

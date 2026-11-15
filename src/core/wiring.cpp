@@ -172,19 +172,34 @@ bool crossesInside(const Point &a, const Point &b, const QRectF &rect)
            && clip(-dy, double(a.y) - rect.top()) && clip(dy, rect.bottom() - double(a.y));
 }
 
-// How bad a wire is: the times it goes through a component's body, then
-// the times it runs along a pin or another wire, then its number of points,
-// then its length. Less is better, in that order.
-using Badness = std::tuple<int, int, int, qint64>;
+// How bad a wire is: the times it passes through the end of a pin it does
+// not end on, which would join it to that pin, then the times it goes
+// through a component's body, then the times it runs along a pin or another
+// wire, then its number of points, then its length. Less is better, in that
+// order.
+using Badness = std::tuple<int, int, int, int, qint64>;
+
+// True when a wire as bad as 'badness' joins nothing it should not, goes
+// through no body and runs along no pin or wire.
+bool isClear(const Badness &badness)
+{
+    return std::get<0>(badness) == 0 && std::get<1>(badness) == 0 && std::get<2>(badness) == 0;
+}
 
 Badness badness(const QList<Point> &points, const Obstacles &obstacles)
 {
+    int joins = 0;
     int bodies = 0;
     int pins = 0;
     qint64 length = 0;
     for (int i = 1; i < points.size(); ++i) {
         const Point &a = points.at(i - 1);
         const Point &b = points.at(i);
+        for (const auto &[tip, end] : obstacles.pins) {
+            // Once for a corner on it: with the segment that comes into it.
+            if (tip != a && tip != points.last() && isOnSegment(a, b, tip))
+                ++joins;
+        }
         for (const QRectF &body : obstacles.bodies) {
             if (crossesInside(a, b, body))
                 ++bodies;
@@ -199,7 +214,7 @@ Badness badness(const QList<Point> &points, const Obstacles &obstacles)
         }
         length += std::llabs(b.x - a.x) + std::llabs(b.y - a.y);
     }
-    return std::make_tuple(bodies, pins, int(points.size()), length);
+    return std::make_tuple(joins, bodies, pins, int(points.size()), length);
 }
 
 // The least bad of 'candidates' (one or more); the earliest of equals.
@@ -282,8 +297,8 @@ QList<Point> withJoints(const QList<Point> &points, const QList<Point> &joints)
 // upright. Next the wire is led on from its last point (routesBetween(),
 // going on along the last segment first, so that a straight wire stays
 // one). Each of these that keeps every point of 'kept' on the wire is a
-// candidate, and the least bad (bestWire()) is taken when it goes through
-// no body and along no pin. Otherwise the last point is given up and the
+// candidate, and the least bad (bestWire()) is taken when it is clear
+// (isClear()). Otherwise the last point is given up and the
 // wire is led on from the one before, and so on back to the first point:
 // a wire is laid again only as far back as needed to keep it clear. The
 // points of 'kept' inside its segments count as its points for this. When
@@ -328,7 +343,7 @@ QList<Point> ledTo(const QList<Point> &wirePoints, const Point &to, const QList<
             continue;
         const QList<Point> wire = bestWire(candidates, obstacles);
         const auto wireBadness = badness(wire, obstacles);
-        if (std::get<0>(wireBadness) == 0 && std::get<1>(wireBadness) == 0)
+        if (isClear(wireBadness))
             return wire;
         if (best.isEmpty() || wireBadness < bestBadness) {
             best = wire;
