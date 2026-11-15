@@ -88,6 +88,17 @@ struct SheetObjectShape
 // last is on top.
 QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &library);
 
+// The texts a component shows beside its symbol.
+enum class ComponentText { Designator, Value };
+// What is drawn for the text: the designator, or the value; a grey "VALUE"
+// mark stands where the value is empty, to show where it goes and to be
+// taken there.
+QString componentTextShown(const Component &component, ComponentText text);
+// Where the text stands on the sheet: the component's point and the text's offset.
+Point componentTextPoint(const Component &component, ComponentText text);
+// A rectangle surely holding the text as it is drawn, in millimetres.
+QRectF componentTextRect(const Component &component, ComponentText text);
+
 // A rectangle that holds everything paintBoard() draws; never empty.
 QRectF boardBounds(const Board &board, const Library &library);
 // The board as seen from the top: bottom copper under top copper, the

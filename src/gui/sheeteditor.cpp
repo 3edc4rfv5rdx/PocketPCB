@@ -6,7 +6,10 @@
 #include "wiring.h"
 
 #include <QApplication>
+#include <QKeyEvent>
+#include <QLineEdit>
 #include <QLineF>
+#include <QScrollBar>
 
 #include <algorithm>
 
@@ -20,6 +23,18 @@ const double HIT_PIXELS = 4.0;
 const double END_PIXELS = 8.0;
 // How many components a step's name lists before it stops.
 const int NAMED_COMPONENTS = 3;
+// The line a value is edited in holds at least this many letters.
+const int VALUE_EDIT_LETTERS = 12;
+
+// True when the object 'id' is found by its line: a wire, a bus, a drawing.
+bool isFoundByLine(const QList<SheetObjectShape> &shapes, const ObjectId &id)
+{
+    for (const SheetObjectShape &shape : shapes) {
+        if (shape.id == id)
+            return !shape.polyline.isEmpty();
+    }
+    return false;
+}
 
 } // namespace
 
@@ -33,6 +48,8 @@ SheetEditor::SheetEditor(Document *document, CanvasView *canvas, QObject *parent
 
 void SheetEditor::setSheet(int sheet)
 {
+    // Set on the sheet it was begun on.
+    finishValueEdit(true);
     m_sheet = sheet;
     m_placing = false;
     m_wiring = false;
@@ -100,8 +117,10 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
     m_pressAt = at;
     m_pressAdding = adding;
     m_endWire = ObjectId();
+    m_textComponent = ObjectId();
     dropSegment();
-    const ObjectId hit = objectAt(shapes(), at, pixelsToMm(HIT_PIXELS));
+    const QList<SheetObjectShape> found = shapes();
+    const ObjectId hit = objectAt(found, at, pixelsToMm(HIT_PIXELS));
     m_dragAnchor = dragAnchor(*currentSheet(), hit, at);
     // Shift on a wire: every wire joined to it, added with Ctrl.
     const QSet<ObjectId> wires = net ? joinedWires(*currentSheet(), hit) : QSet<ObjectId>();
@@ -127,17 +146,30 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
         m_pressOnSelection = false;
     } else {
         m_pressOnSelection = true;
+        const Sheet *sheet = currentSheet();
+        // A component's text, unless a line is taken over it: its component
+        // is chosen, and a drag moves the text alone.
+        const ComponentTextHit text = isFoundByLine(found, hit)
+                                          ? ComponentTextHit()
+                                          : componentTextAt(*sheet, at);
         // A wire not chosen whole: the segment under the cursor is chosen,
         // and a drag moves it, or the wire's end when taken near it.
-        const Sheet *sheet = currentSheet();
         const Wire *wire = nullptr;
-        if (sheet != nullptr && !m_selection.contains(hit)) {
+        if (text.component.isNull() && !m_selection.contains(hit)) {
             for (const Wire &candidate : sheet->wires) {
                 if (candidate.id == hit && candidate.points.size() >= 2)
                     wire = &candidate;
             }
         }
-        if (wire != nullptr) {
+        if (!text.component.isNull()) {
+            m_selection = {text.component};
+            m_textComponent = text.component;
+            m_text = text.text;
+            for (const Component &component : sheet->components) {
+                if (component.id == text.component)
+                    m_dragAnchor = componentTextPoint(component, text.text);
+            }
+        } else if (wire != nullptr) {
             m_selection.clear();
             m_segmentWire = hit;
             m_segmentIndex = segmentAt(*wire, at);
@@ -185,6 +217,22 @@ QLineF SheetEditor::chosenSegment() const
     return QLineF();
 }
 
+QLineF SheetEditor::textGuide() const
+{
+    if (!m_dragging || m_textComponent.isNull())
+        return QLineF();
+    for (const Component &component : m_preview.components) {
+        if (component.id == m_textComponent)
+            return QLineF(toMm(component.at), toMm(componentTextPoint(component, m_text)));
+    }
+    return QLineF();
+}
+
+bool SheetEditor::dragsWhole() const
+{
+    return m_endWire.isNull() && m_textComponent.isNull() && !hasSegment();
+}
+
 QSet<ObjectId> SheetEditor::chosenIds() const
 {
     return hasSegment() ? QSet<ObjectId>{m_segmentWire} : m_selection;
@@ -200,6 +248,10 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
     const Sheet *sheet = currentSheet();
     if (placing || sheet == nullptr)
         return;
+    if (!m_textComponent.isNull() && m_text == ComponentText::Value) {
+        editValue(m_textComponent);
+        return;
+    }
     const ObjectId hit = objectAt(shapes(), at, pixelsToMm(HIT_PIXELS));
     for (const Component &component : sheet->components) {
         if (component.id == hit) {
@@ -219,6 +271,98 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
             }
         }
     }
+}
+
+void SheetEditor::editValue(const ObjectId &id)
+{
+    finishValueEdit(true);
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr)
+        return;
+    for (const Component &component : sheet->components) {
+        if (component.id != id)
+            continue;
+        m_valueComponent = id;
+        auto *edit = new QLineEdit(component.value, m_canvas->viewport());
+        edit->selectAll();
+        // Over the text, at least wide enough to type a value into.
+        const QRect text =
+            m_canvas->mapFromScene(componentTextRect(component, ComponentText::Value))
+                .boundingRect();
+        const int width =
+            qMax(text.width(), edit->fontMetrics().averageCharWidth() * VALUE_EDIT_LETTERS);
+        const int height = edit->sizeHint().height();
+        edit->setGeometry(text.center().x() - width / 2, text.center().y() - height / 2, width,
+                          height);
+        edit->installEventFilter(this);
+        connect(edit, &QLineEdit::returnPressed, this, [this]() { finishValueEdit(true); });
+        // The line stays where it was put: moving the view ends it.
+        const auto end = [this]() { finishValueEdit(true); };
+        connect(m_canvas->horizontalScrollBar(), &QScrollBar::valueChanged, edit, end);
+        connect(m_canvas->verticalScrollBar(), &QScrollBar::valueChanged, edit, end);
+        m_valueEdit = edit;
+        edit->show();
+        edit->setFocus();
+        return;
+    }
+}
+
+void SheetEditor::finishValueEdit(bool keep)
+{
+    if (m_valueEdit.isNull())
+        return;
+    QLineEdit *edit = m_valueEdit;
+    m_valueEdit.clear();
+    // Hiding it takes its focus away: that must not end it again.
+    edit->removeEventFilter(this);
+    edit->disconnect(this);
+    disconnect(m_canvas->horizontalScrollBar(), nullptr, edit, nullptr);
+    disconnect(m_canvas->verticalScrollBar(), nullptr, edit, nullptr);
+    const QString value = edit->text();
+    edit->hide();
+    edit->deleteLater();
+    m_canvas->setFocus();
+    const Sheet *sheet = currentSheet();
+    if (!keep || sheet == nullptr)
+        return;
+    const Sheet edited = withComponentValue(*sheet, m_valueComponent, value);
+    if (edited == *sheet)
+        return;
+    const QSet<ObjectId> ids{m_valueComponent};
+    const QString name = stepName(actionName(Action::Value), *sheet, ids);
+    Design design = m_document->design();
+    design.schematic.sheets[m_sheet] = edited;
+    m_document->change(name, design, m_sheet, ids);
+    emit changed();
+}
+
+bool SheetEditor::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched != m_valueEdit.data())
+        return QObject::eventFilter(watched, event);
+    switch (event->type()) {
+    case QEvent::ShortcutOverride: {
+        // Esc and Enter belong to the line, not to the window's actions.
+        const int key = static_cast<QKeyEvent *>(event)->key();
+        if (key == Qt::Key_Escape || key == Qt::Key_Return || key == Qt::Key_Enter) {
+            event->accept();
+            return true;
+        }
+        break;
+    }
+    case QEvent::KeyPress:
+        if (static_cast<QKeyEvent *>(event)->key() == Qt::Key_Escape) {
+            finishValueEdit(false);
+            return true;
+        }
+        break;
+    case QEvent::FocusOut:
+        finishValueEdit(true);
+        break;
+    default:
+        break;
+    }
+    return QObject::eventFilter(watched, event);
 }
 
 void SheetEditor::move(const QPointF &at, bool detached)
@@ -333,6 +477,10 @@ void SheetEditor::transformDragged(Sheet (*transform)(const Sheet &, const QSet<
 
 void SheetEditor::updateDrag()
 {
+    if (!m_textComponent.isNull()) {
+        m_preview = withComponentTextMoved(m_dragStart, m_textComponent, m_text, m_dragDelta);
+        return;
+    }
     if (!m_endWire.isNull()) {
         for (const Wire &wire : m_dragStart.wires) {
             if (wire.id == m_endWire) {
@@ -362,8 +510,7 @@ void SheetEditor::rotateSelection()
         return;
     }
     if (m_dragging) {
-        // A wire's end or segment alone is not turned.
-        if (m_endWire.isNull() && !hasSegment())
+        if (dragsWhole())
             transformDragged(rotatedObjects);
         return;
     }
@@ -383,8 +530,7 @@ void SheetEditor::mirrorSelection()
         return;
     }
     if (m_dragging) {
-        // A wire's end or segment alone is not turned.
-        if (m_endWire.isNull() && !hasSegment())
+        if (dragsWhole())
             transformDragged(mirroredObjects);
         return;
     }
@@ -729,6 +875,8 @@ QString SheetEditor::actionName(Action action)
         return tr("Duplicate");
     case Action::Wire:
         return tr("Wire");
+    case Action::Value:
+        return tr("Change value");
     }
     return QString();
 }

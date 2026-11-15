@@ -156,6 +156,42 @@ QRectF selectionBounds(const QList<SheetObjectShape> &shapes, const QSet<ObjectI
     return bounds;
 }
 
+ComponentTextHit componentTextAt(const Sheet &sheet, const QPointF &point)
+{
+    for (auto it = sheet.components.crbegin(); it != sheet.components.crend(); ++it) {
+        for (const ComponentText text : {ComponentText::Designator, ComponentText::Value}) {
+            if (componentTextShown(*it, text).isEmpty())
+                continue;
+            if (componentTextRect(*it, text).contains(point))
+                return ComponentTextHit{it->id, text};
+        }
+    }
+    return ComponentTextHit();
+}
+
+Sheet withComponentTextMoved(const Sheet &sheet, const ObjectId &id, ComponentText text,
+                             const Point &delta)
+{
+    Sheet result = sheet;
+    for (Component &component : result.components) {
+        if (component.id != id)
+            continue;
+        Point &offset = text == ComponentText::Designator ? component.refAt : component.valueAt;
+        offset = offset + delta;
+    }
+    return result;
+}
+
+Sheet withComponentValue(const Sheet &sheet, const ObjectId &id, const QString &value)
+{
+    Sheet result = sheet;
+    for (Component &component : result.components) {
+        if (component.id == id)
+            component.value = value.trimmed();
+    }
+    return result;
+}
+
 Sheet movedObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point &delta)
 {
     Transform transform;

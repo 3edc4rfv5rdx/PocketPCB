@@ -179,6 +179,35 @@ private slots:
         QCOMPARE(all.graphics.at(0).graphic.a, sheet.graphics.at(0).graphic.a + delta);
     }
 
+    void componentTextsAreFoundAndMovedAlone()
+    {
+        Sheet sheet = fullSheet();
+        // R1 at (50, 50): its designator at (50, 47), its value at (52, 53).
+        QCOMPARE(componentTextAt(sheet, QPointF(50, 47)).component, id(1));
+        QVERIFY(componentTextAt(sheet, QPointF(50, 47)).text == ComponentText::Designator);
+        // No value: its mark is found where it stands.
+        QCOMPARE(componentTextAt(sheet, QPointF(52, 53)).component, id(1));
+        QVERIFY(componentTextAt(sheet, QPointF(52, 53)).text == ComponentText::Value);
+        // No designator: nothing is found.
+        sheet.components[0].designator.clear();
+        QVERIFY(componentTextAt(sheet, QPointF(50, 47)).component.isNull());
+        sheet = withComponentValue(sheet, id(1), QStringLiteral(" 10k "));
+        QCOMPARE(sheet.components.at(0).value, QStringLiteral("10k"));
+        sheet.components[0].designator = QStringLiteral("R1");
+        QCOMPARE(componentTextAt(sheet, QPointF(52, 53)).component, id(1));
+        QVERIFY(componentTextAt(sheet, QPointF(52, 53)).text == ComponentText::Value);
+        QVERIFY(componentTextAt(sheet, QPointF(80, 80)).component.isNull());
+        // The component's own point, between its texts, is not a text.
+        QVERIFY(componentTextAt(sheet, QPointF(50, 50)).component.isNull());
+
+        const Point delta{2 * MM, -1 * MM};
+        const Sheet moved = withComponentTextMoved(sheet, id(1), ComponentText::Value, delta);
+        QCOMPARE(moved.components.at(0).valueAt, sheet.components.at(0).valueAt + delta);
+        QCOMPARE(moved.components.at(0).refAt, sheet.components.at(0).refAt);
+        QCOMPARE(moved.components.at(0).at, sheet.components.at(0).at);
+        QVERIFY(moved.wires == sheet.wires);
+    }
+
     void dragsLandAnObjectsOwnPointOnTheGrid()
     {
         const Sheet sheet = fullSheet();

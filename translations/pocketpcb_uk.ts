@@ -563,6 +563,10 @@
         <source>Wire</source>
         <translation>Провід</translation>
     </message>
+    <message>
+        <source>Change value</source>
+        <translation>Змінити значення</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SaveProjectDialog</name>

@@ -5,9 +5,12 @@
 
 #include <QLineF>
 #include <QObject>
+#include <QPointer>
 #include <QPointF>
 #include <QRectF>
 #include <QSet>
+
+class QLineEdit;
 
 namespace ppcb {
 
@@ -20,7 +23,9 @@ class CanvasView;
 // too, and deleting it. A click on a
 // wire chooses the segment under it: a drag moves it, or one end of the
 // wire when taken near it, unless that end is on a pin; Delete removes it. A double click chooses the
-// whole wire, Shift and a click every wire joined to it.
+// whole wire, Shift and a click every wire joined to it. A component's
+// designator or value taken with the mouse is dragged alone, its component
+// staying; a double click on the value edits it in place.
 // Positions come in scene millimetres.
 class SheetEditor : public QObject
 {
@@ -34,7 +39,19 @@ public:
     static QString sheetName(const Sheet &sheet, int index);
 
     // What is done to a selection: the name of the menu item and of the step.
-    enum class Action { Move, Rotate, Mirror, Delete, Place, Copy, Cut, Paste, Duplicate, Wire };
+    enum class Action {
+        Move,
+        Rotate,
+        Mirror,
+        Delete,
+        Place,
+        Copy,
+        Cut,
+        Paste,
+        Duplicate,
+        Wire,
+        Value
+    };
     static QString actionName(Action action);
 
     // The sheet being edited, or -1 when the page shown is not a sheet.
@@ -46,6 +63,9 @@ public:
     // The segment of a wire chosen alone, in millimetres; a null line when
     // none is, or while it is dragged.
     QLineF chosenSegment() const;
+    // While a component's text is dragged: from the component's point to
+    // the text's; a null line otherwise.
+    QLineF textGuide() const;
     // Keeps only the ids of objects on the sheet.
     void setSelection(const QSet<ObjectId> &ids);
 
@@ -102,7 +122,8 @@ public:
     void move(const QPointF &at, bool detached);
     void release(const QPointF &at, bool detached);
     // A second click in a row: the press it also is, and a component under
-    // the cursor is opened (see componentOpened). Not while placing.
+    // the cursor is opened (see componentOpened), or its value edited in
+    // place when that is under it. Not while placing.
     void doubleClick(const QPointF &at, bool adding);
     // Esc: placing ends, or a drag is called off, or the selection is dropped.
     void cancel();
@@ -118,7 +139,16 @@ signals:
     // A component was double-clicked: its part and its footprint.
     void componentOpened(const QString &part, const QString &footprint);
 
+protected:
+    // Keys and focus of the value being edited in place.
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
+    // Opens a line on the canvas over the value of the component 'id': Enter
+    // or leaving it sets the value as one step, Esc drops it.
+    void editValue(const ObjectId &id);
+    // Closes the line; 'keep' sets what it holds as the value.
+    void finishValueEdit(bool keep);
     const Sheet *currentSheet() const;
     // True when a segment of a wire is chosen alone: no whole object is,
     // and the sheet has the segment.
@@ -127,6 +157,9 @@ private:
     // What a step is named by: the chosen objects, or the segment's wire.
     QSet<ObjectId> chosenIds() const;
     QList<SheetObjectShape> shapes() const;
+    // The drag takes the selection whole, not a wire's end, a segment or a
+    // component's text alone: only then does it turn and mirror on the way.
+    bool dragsWhole() const;
     // The grid point the selection on 'sheet' is turned and mirrored about:
     // a single component's own point, else the middle of the selection.
     Point selectionCenter(const Sheet &sheet) const;
@@ -191,6 +224,10 @@ private:
     // the wire, and its last end or its first. Set by every press.
     ObjectId m_endWire;
     bool m_endIsLast = false;
+    // The press took a text of a component, which a drag moves alone: the
+    // component and which text. Set by every press.
+    ObjectId m_textComponent;
+    ComponentText m_text = ComponentText::Designator;
     // The sheet the drag started from, and the same with what was turned
     // on the way.
     Sheet m_dragStart;
@@ -222,6 +259,10 @@ private:
     Point m_wireCursor;
     bool m_wireSwapped = false;
     bool m_wireSlanted = false;
+
+    // The value being edited in place: the line, and its component.
+    QPointer<QLineEdit> m_valueEdit;
+    ObjectId m_valueComponent;
 
     // The clipboard: objects about the origin, and the library their parts are in.
     Sheet m_clipboard;

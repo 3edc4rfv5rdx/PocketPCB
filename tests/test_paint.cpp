@@ -204,6 +204,8 @@ Design schematicWith(const Symbol &symbol, int rotation, bool mirrored)
     component.at = Point{-5000000, -5000000};
     component.rotation = rotation;
     component.mirrored = mirrored;
+    // The grey mark of the empty value goes far from the lines looked for.
+    component.valueAt = FAR_VALUE;
     design.schematic.sheets[0].components.append(component);
     return design;
 }

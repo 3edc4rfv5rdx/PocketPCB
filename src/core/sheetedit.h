@@ -28,6 +28,26 @@ QRectF selectionBounds(const QList<SheetObjectShape> &shapes, const QSet<ObjectI
 // nanometres, when the sheet has no such object.
 Point dragAnchor(const Sheet &sheet, const ObjectId &id, const QPointF &near);
 
+// A text of a component, found by the mouse; a null component when none is.
+struct ComponentTextHit
+{
+    ObjectId component;
+    ComponentText text = ComponentText::Designator;
+};
+// The text under 'point' (millimetres): the topmost whose rectangle holds
+// the point. No room is added around it, as the rectangle has room enough
+// and a click on the symbol next to it must take the component. An empty
+// value is found by its mark (see componentTextShown()), an empty
+// designator not at all.
+ComponentTextHit componentTextAt(const Sheet &sheet, const QPointF &point);
+// 'sheet' with the text 'text' of the component 'id' moved by 'delta'; the
+// component itself stays.
+Sheet withComponentTextMoved(const Sheet &sheet, const ObjectId &id, ComponentText text,
+                             const Point &delta);
+// 'sheet' with the value of the component 'id' set to 'value', without the
+// spaces around it.
+Sheet withComponentValue(const Sheet &sheet, const ObjectId &id, const QString &value);
+
 // The selected objects moved by 'delta'.
 Sheet movedObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point &delta);
 // The selected objects turned by 90 degrees clockwise on screen about

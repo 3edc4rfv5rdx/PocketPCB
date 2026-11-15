@@ -542,12 +542,13 @@ void paintComponent(QPainter &painter, const Library &library, const Component &
         painter.restore();
     }
 
-    drawText(painter, toMm(component.at + component.refAt), component.designator,
-             PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center, paintcolor::symbol());
-    if (!component.value.isEmpty()) {
-        drawText(painter, toMm(component.at + component.valueAt), component.value,
-                 PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center, paintcolor::symbol());
-    }
+    drawText(painter, toMm(componentTextPoint(component, ComponentText::Designator)),
+             component.designator, PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center,
+             paintcolor::symbol());
+    drawText(painter, toMm(componentTextPoint(component, ComponentText::Value)),
+             componentTextShown(component, ComponentText::Value), PLACEHOLDER_TEXT_HEIGHT,
+             TextAlign::Center,
+             component.value.isEmpty() ? paintcolor::placeholder() : paintcolor::symbol());
 }
 
 // The text lies along the label's direction, just above its point.
@@ -977,12 +978,8 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
             else
                 bounds.add(missingRect(toMm(component.at), MISSING_SYMBOL_SIZE));
         }
-        bounds.add(textBounds(toMm(component.at + component.refAt), component.designator,
-                              PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center));
-        if (!component.value.isEmpty()) {
-            bounds.add(textBounds(toMm(component.at + component.valueAt), component.value,
-                                  PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center));
-        }
+        bounds.add(componentTextRect(component, ComponentText::Designator));
+        bounds.add(componentTextRect(component, ComponentText::Value));
         addRect(component.id, bounds.rect());
     }
     for (const PowerSymbol &power : sheet.powerSymbols) {
@@ -1008,6 +1005,26 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
     for (const NoConnect &mark : sheet.noConnects)
         addRect(mark.id, squareAround(toMm(mark.at), 2 * NO_CONNECT_HALF));
     return shapes;
+}
+
+QString componentTextShown(const Component &component, ComponentText text)
+{
+    if (text == ComponentText::Designator)
+        return component.designator;
+    return component.value.isEmpty() ? QLatin1String(VALUE_PLACEHOLDER) : component.value;
+}
+
+Point componentTextPoint(const Component &component, ComponentText text)
+{
+    return component.at
+           + (text == ComponentText::Designator ? component.refAt : component.valueAt);
+}
+
+QRectF componentTextRect(const Component &component, ComponentText text)
+{
+    return textBounds(toMm(componentTextPoint(component, text)),
+                      componentTextShown(component, text), PLACEHOLDER_TEXT_HEIGHT,
+                      TextAlign::Center);
 }
 
 QRectF boardBounds(const Board &board, const Library &library)

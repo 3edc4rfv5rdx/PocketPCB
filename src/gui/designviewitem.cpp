@@ -118,6 +118,11 @@ void DesignViewItem::paintSelection(QPainter &painter, const Sheet &sheet) const
         painter.setPen(band);
         painter.drawLine(segment);
     }
+    const QLineF guide = editor->textGuide();
+    if (!guide.isNull()) {
+        painter.setPen(pen);
+        painter.drawLine(guide);
+    }
     const QRectF rubber = editor->rubberBand();
     if (!rubber.isEmpty()) {
         painter.setPen(QPen(paintcolor::selection(), 0, Qt::DashLine));
