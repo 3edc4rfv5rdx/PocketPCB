@@ -83,7 +83,7 @@ Point SheetEditor::snapped(const QPointF &at) const
     return Point{snapToGrid(mmToNm(at.x()), step), snapToGrid(mmToNm(at.y()), step)};
 }
 
-void SheetEditor::press(const QPointF &at, bool adding)
+void SheetEditor::press(const QPointF &at, bool adding, bool net)
 {
     if (currentSheet() == nullptr)
         return;
@@ -103,6 +103,17 @@ void SheetEditor::press(const QPointF &at, bool adding)
     dropSegment();
     const ObjectId hit = objectAt(shapes(), at, pixelsToMm(HIT_PIXELS));
     m_dragAnchor = dragAnchor(*currentSheet(), hit, at);
+    // Shift on a wire: every wire joined to it, added with Ctrl.
+    const QSet<ObjectId> wires = net ? joinedWires(*currentSheet(), hit) : QSet<ObjectId>();
+    if (!wires.isEmpty()) {
+        if (adding)
+            m_selection.unite(wires);
+        else
+            m_selection = wires;
+        m_pressOnSelection = !adding;
+        emit changed();
+        return;
+    }
     if (hit.isNull()) {
         m_pressOnSelection = false;
         if (!adding)

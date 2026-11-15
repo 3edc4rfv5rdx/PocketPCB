@@ -27,6 +27,11 @@ bool isOnWire(const Wire &wire, const Point &point);
 // a wire of 'sheet'.
 bool isConnectionPoint(const Sheet &sheet, const Library &library, const Point &point);
 
+// The ids of the wires joined to the wire 'wire' of 'sheet', one through
+// another, the wire itself among them: where an end of one lies on another.
+// Empty when the sheet has no such wire.
+QSet<ObjectId> joinedWires(const Sheet &sheet, const ObjectId &wire);
+
 // The points where three or more ends, pins and wires meet: where a dot is
 // drawn. A wire passing through a point counts twice, so a wire ending on
 // the middle of another makes a dot, and so do three wire ends on one point.

@@ -563,6 +563,34 @@ bool isConnectionPoint(const Sheet &sheet, const Library &library, const Point &
     return false;
 }
 
+QSet<ObjectId> joinedWires(const Sheet &sheet, const ObjectId &wire)
+{
+    const auto joined = [](const Wire &a, const Wire &b) {
+        if (a.points.isEmpty() || b.points.isEmpty())
+            return false;
+        return isOnWire(b, a.points.first()) || isOnWire(b, a.points.last())
+               || isOnWire(a, b.points.first()) || isOnWire(a, b.points.last());
+    };
+    QSet<ObjectId> found;
+    QList<const Wire *> waiting;
+    for (const Wire &candidate : sheet.wires) {
+        if (candidate.id == wire) {
+            found.insert(candidate.id);
+            waiting.append(&candidate);
+        }
+    }
+    while (!waiting.isEmpty()) {
+        const Wire *current = waiting.takeLast();
+        for (const Wire &other : sheet.wires) {
+            if (!found.contains(other.id) && joined(*current, other)) {
+                found.insert(other.id);
+                waiting.append(&other);
+            }
+        }
+    }
+    return found;
+}
+
 QList<Point> junctions(const Sheet &sheet, const Library &library)
 {
     // The points that may be junctions: wire ends and pins, each counted

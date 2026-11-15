@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Shift and a click on a wire chooses every wire joined to it, with Ctrl added to the choice
 - E: A dragged pin that comes to lie on a wire is joined to it instead of only touching it
 - F: Wires laid by a drag keep off other wires and take the shortest of equal ways, and a new wire from a pin joins a wire there straight across
 - E: Wires that met at a pin of a dragged part keep their junction instead of running side by side to the pin

@@ -134,7 +134,8 @@ void DesignViewItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
         event->ignore();
         return;
     }
-    editor->press(event->scenePos(), event->modifiers().testFlag(Qt::ControlModifier));
+    editor->press(event->scenePos(), event->modifiers().testFlag(Qt::ControlModifier),
+                  event->modifiers().testFlag(Qt::ShiftModifier));
     event->accept();
 }
 

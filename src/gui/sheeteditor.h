@@ -19,7 +19,7 @@ class CanvasView;
 // off), and turning, mirroring and deleting the selection. A click on a
 // wire chooses the segment under it: a drag moves it, or one end of the
 // wire when taken near it; Delete removes it. A double click chooses the
-// whole wire.
+// whole wire, Shift and a click every wire joined to it.
 // Positions come in scene millimetres.
 class SheetEditor : public QObject
 {
@@ -94,9 +94,10 @@ public:
     QRectF rubberBand() const { return m_rubberBanding ? m_rubberBand : QRectF(); }
 
     // The left mouse button. 'adding' is Ctrl held: the selection grows or
-    // shrinks instead of being replaced. 'detached' is Shift held: what is
-    // dragged leaves the wires on it where they are.
-    void press(const QPointF &at, bool adding);
+    // shrinks instead of being replaced. 'net' is Shift held: a wire taken
+    // chooses every wire joined to it. 'detached' is Shift held while
+    // dragging: what is dragged leaves the wires on it where they are.
+    void press(const QPointF &at, bool adding, bool net = false);
     void move(const QPointF &at, bool detached);
     void release(const QPointF &at, bool detached);
     // A second click in a row: the press it also is, and a component under

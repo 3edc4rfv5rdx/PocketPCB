@@ -450,6 +450,20 @@ private slots:
         QCOMPARE(moved.wires.at(2).points, sheet.wires.at(2).points);
     }
 
+    void joinedWiresAreFoundOneThroughAnother()
+    {
+        Sheet sheet;
+        // A runs right; B ends on its middle; C shares B's other end; D only
+        // crosses A; E stands apart.
+        sheet.wires = {wire({mm(0, 0), mm(20, 0)}), wire({mm(10, 0), mm(10, 10)}),
+                       wire({mm(10, 10), mm(30, 10)}), wire({mm(15, -5), mm(15, 5)}),
+                       wire({mm(40, 0), mm(50, 0)})};
+        const QList<Wire> &w = sheet.wires;
+        QCOMPARE(joinedWires(sheet, w.at(2).id), QSet<ObjectId>({w.at(0).id, w.at(1).id, w.at(2).id}));
+        QCOMPARE(joinedWires(sheet, w.at(3).id), QSet<ObjectId>({w.at(3).id}));
+        QVERIFY(joinedWires(sheet, newObjectId()).isEmpty());
+    }
+
     void aWireEndIsDraggedAlone()
     {
         const Library library = twoPinLibrary();
