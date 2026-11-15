@@ -16,7 +16,8 @@ class CanvasView;
 // Editing of the sheet shown on the canvas: the selection, choosing with
 // the mouse (a click, Ctrl and a click, a rectangle), dragging the
 // selection along the grid with the wires on it following (Shift tears them
-// off), and turning, mirroring and deleting the selection. A click on a
+// off), turning and mirroring the selection with the wires on it following
+// too, and deleting it. A click on a
 // wire chooses the segment under it: a drag moves it, or one end of the
 // wire when taken near it; Delete removes it. A double click chooses the
 // whole wire, Shift and a click every wire joined to it.

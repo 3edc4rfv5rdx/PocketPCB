@@ -368,7 +368,8 @@ void SheetEditor::rotateSelection()
     if (sheet == nullptr || m_selection.isEmpty())
         return;
     apply(actionName(Action::Rotate),
-          rotatedObjects(*sheet, m_selection, selectionCenter(*sheet)));
+          withWiresFollowing(*sheet, rotatedObjects(*sheet, m_selection, selectionCenter(*sheet)),
+                             m_selection, m_document->design().library));
 }
 
 void SheetEditor::mirrorSelection()
@@ -388,7 +389,8 @@ void SheetEditor::mirrorSelection()
     if (sheet == nullptr || m_selection.isEmpty())
         return;
     apply(actionName(Action::Mirror),
-          mirroredObjects(*sheet, m_selection, selectionCenter(*sheet)));
+          withWiresFollowing(*sheet, mirroredObjects(*sheet, m_selection, selectionCenter(*sheet)),
+                             m_selection, m_document->design().library));
 }
 
 void SheetEditor::deleteSelection()
