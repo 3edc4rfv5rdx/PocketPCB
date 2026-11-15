@@ -806,9 +806,18 @@ Sheet withWiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
     // point. Another end at the same point stays there when one of them still
     // passes through it, joined to it, instead of going the same way beside it.
     QList<QPair<Point, Wire>> led;
-    const auto onLed = [&led](const Point &point) {
-        return std::any_of(led.cbegin(), led.cend(), [&point](const auto &other) {
-            return other.first == point && isOnWire(other.second, point);
+    // 'next' is the point of the wire after that end: a wire that would
+    // run along the led one from there does not stay, but goes too.
+    const auto onLed = [&led](const Point &point, const Point &next) {
+        return std::any_of(led.cbegin(), led.cend(), [&](const auto &other) {
+            if (other.first != point || !isOnWire(other.second, point))
+                return false;
+            const QList<Point> &p = other.second.points;
+            for (int i = 1; i < p.size(); ++i) {
+                if (overlap(point, next, p.at(i - 1), p.at(i)))
+                    return false;
+            }
+            return true;
         });
     };
     for (Wire wire : result.wires) {
@@ -842,9 +851,9 @@ Sheet withWiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
         std::optional<Point> newLast = follower.follow(last);
         // A wire that goes whole has other ends following it: it is not held.
         const bool whole = newFirst && newLast && *newFirst - first == *newLast - last;
-        if (!whole && newFirst && onLed(first))
+        if (!whole && newFirst && onLed(first, wire.points.at(1)))
             newFirst.reset();
-        if (!whole && newLast && onLed(last))
+        if (!whole && newLast && onLed(last, wire.points.at(wire.points.size() - 2)))
             newLast.reset();
         if (whole) {
             const Point shift = *newFirst - first;

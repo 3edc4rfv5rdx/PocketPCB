@@ -281,6 +281,23 @@ private slots:
         QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(5, -4), mm(5, 20)}));
     }
 
+    // Two wires end on the right pin of a part at the origin, one going up
+    // and one going down. The part goes down, along the second: the first
+    // grows after the pin and the second grows short, instead of staying
+    // whole under the first.
+    void wiresInOneLineThroughAPinDoNotOverlap()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0))};
+        sheet.wires = {wire({mm(5, 0), mm(5, -10)}), wire({mm(5, 0), mm(5, 10)})};
+        const QSet<ObjectId> part = {sheet.components.first().id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, part, mm(0, 3)), part, library);
+        QCOMPARE(moved.wires.at(0).points, QList<Point>({mm(5, 3), mm(5, -10)}));
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(5, 3), mm(5, 10)}));
+    }
+
     void aWireEndOnAPinLeftInPlaceStays()
     {
         const Library library = twoPinLibrary();
