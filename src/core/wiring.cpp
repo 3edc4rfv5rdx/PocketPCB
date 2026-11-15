@@ -91,6 +91,13 @@ struct Obstacles
         result.wires.removeIf([&id](const auto &segment) { return segment.first == id; });
         return result;
     }
+
+    // Adds the segments of 'wire'.
+    void add(const Wire &wire)
+    {
+        for (int i = 1; i < wire.points.size(); ++i)
+            wires.append(qMakePair(wire.id, qMakePair(wire.points.at(i - 1), wire.points.at(i))));
+    }
 };
 
 // The obstacles of the components of 'sheet' whose symbol 'library' has.
@@ -122,12 +129,8 @@ Obstacles obstaclesOf(const Sheet &sheet, const Library &library)
         }
         obstacles.bodies.append(QRectF(QPointF(left, top), QPointF(right, bottom)));
     }
-    for (const Wire &wire : sheet.wires) {
-        for (int i = 1; i < wire.points.size(); ++i) {
-            obstacles.wires.append(
-                qMakePair(wire.id, qMakePair(wire.points.at(i - 1), wire.points.at(i))));
-        }
-    }
+    for (const Wire &wire : sheet.wires)
+        obstacles.add(wire);
     return obstacles;
 }
 
@@ -739,7 +742,17 @@ Sheet withWiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
         }
     }
     const PointFollower follower(before, after, moved, library);
-    const Obstacles obstacles = obstaclesOf(after, library);
+    // The wires that have an end to follow are no obstacles where they were:
+    // each becomes one again where it is laid.
+    Obstacles obstacles = obstaclesOf(after, library);
+    QSet<ObjectId> following;
+    for (const Wire &wire : before.wires) {
+        if (!moved.contains(wire.id) && wire.points.size() >= 2
+            && (follower.follow(wire.points.first()) || follower.follow(wire.points.last()))) {
+            following.insert(wire.id);
+            obstacles = obstacles.without(wire.id);
+        }
+    }
     // The ends of the wires that stay, with the wire they belong to: a wire
     // is joined to another where one of them lies on it.
     QList<QPair<Point, ObjectId>> ends;
@@ -844,6 +857,8 @@ Sheet withWiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
             if (newLast)
                 led.append(qMakePair(last, wire));
         }
+        if (following.contains(wire.id))
+            obstacles.add(wire);
         wires.append(wire);
     }
 
@@ -1026,6 +1041,8 @@ Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectI
             return isOnWire(upToSegment, end) ? na : nb;
         return std::nullopt;
     };
+    // What they keep off: the wire where it is now, not where it was.
+    const Obstacles around = obstaclesOf(result, library);
     for (int i = 0; i < result.wires.size(); ++i) {
         if (i == at)
             continue;
@@ -1044,7 +1061,7 @@ Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectI
                 point = point + shift;
             continue;
         }
-        const Obstacles own = obstacles.without(other.id);
+        const Obstacles own = around.without(other.id);
         QList<Point> moving = other.points;
         if (last)
             moving = ledTo(moving, *last, jointsOn(sheet, other, {wire}, {lastEnd}), own);

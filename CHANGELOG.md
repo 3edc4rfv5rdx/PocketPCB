@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Wires led after a dragged part keep off each other where they lie now, not where they lay, so no needless bends are added
 - E: A dragged pin that touched another pin and lands on an unrelated wire keeps a wire to that pin instead of losing it
 - E: A wire joined to the segment next to a dragged one stays joined when that segment shrinks past it
 - E: A wire joined to a wire that goes whole between dragged parts follows it instead of staying behind

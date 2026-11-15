@@ -244,6 +244,26 @@ private slots:
         QVERIFY(junctions(moved, library).contains(mm(5, 0)));
     }
 
+    // Two wires end on the right pin of a part at the origin, one going
+    // right and one going down. The part goes right: the first grows short,
+    // and the second bends over where the first was, which is free now,
+    // instead of going round it.
+    void aWireLaidAgainIsNoObstacleWhereItWas()
+    {
+        Library library = twoPinLibrary();
+        // Pins of no length, so that no wire runs along one.
+        for (Pin &pin : library.symbols[QStringLiteral("two")].pins)
+            pin.length = 0;
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0))};
+        sheet.wires = {wire({mm(5, 0), mm(20, 0)}), wire({mm(5, 0), mm(5, 20)})};
+        const QSet<ObjectId> part = {sheet.components.first().id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, part, mm(3, 0)), part, library);
+        QCOMPARE(moved.wires.at(0).points, QList<Point>({mm(8, 0), mm(20, 0)}));
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(8, 0), mm(5, 0), mm(5, 20)}));
+    }
+
     void aWireEndOnAPinLeftInPlaceStays()
     {
         const Library library = twoPinLibrary();
