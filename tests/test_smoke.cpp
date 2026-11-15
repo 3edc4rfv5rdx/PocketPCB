@@ -574,9 +574,9 @@ private slots:
         // A click takes it, a drag moves it along the grid.
         editor->press(at, false);
         QCOMPARE(editor->selection(), QSet<ObjectId>({r1.id}));
-        editor->move(at + QPointF(5.2, 0.4));
+        editor->move(at + QPointF(5.2, 0.4), false);
         QVERIFY(editor->preview() != nullptr);
-        editor->release(at + QPointF(5.2, 0.4));
+        editor->release(at + QPointF(5.2, 0.4), false);
         QVERIFY(editor->preview() == nullptr);
         QCOMPARE(sheet().components.at(0).at, r1.at + Point({5080000, 0}));
         QAction *undo = window.findChild<QAction *>(QStringLiteral("actionUndo"));
@@ -587,11 +587,11 @@ private slots:
         const int steps = window.document()->undoStack()->count();
         const QPointF moved = toMm(sheet().components.at(0).at);
         editor->press(moved, false);
-        editor->move(moved + QPointF(5.2, 0));
+        editor->move(moved + QPointF(5.2, 0), false);
         window.findChild<QAction *>(QStringLiteral("actionRotate"))->trigger();
         window.findChild<QAction *>(QStringLiteral("actionRotate"))->trigger();
         QCOMPARE(editor->preview()->components.at(0).rotation, 180);
-        editor->release(moved + QPointF(5.2, 0));
+        editor->release(moved + QPointF(5.2, 0), false);
         QCOMPARE(sheet().components.at(0).rotation, 180);
         QCOMPARE(sheet().components.at(0).at, r1.at + Point({2 * 5080000, 0}));
         QCOMPARE(window.document()->undoStack()->count(), steps + 1);
@@ -613,9 +613,9 @@ private slots:
         // starts below and to the left, where the demo sheet is empty.
         editor->press(at + QPointF(-12, 12), false);
         QVERIFY(editor->selection().isEmpty());
-        editor->move(at + QPointF(12, -12));
+        editor->move(at + QPointF(12, -12), false);
         QVERIFY(!editor->rubberBand().isEmpty());
-        editor->release(at + QPointF(12, -12));
+        editor->release(at + QPointF(12, -12), false);
         QVERIFY(editor->selection().contains(r1.id));
         window.findChild<QAction *>(QStringLiteral("actionDelete"))->trigger();
         QVERIFY(editor->selection().isEmpty());

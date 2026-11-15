@@ -1,3 +1,4 @@
+#include "sheetedit.h"
 #include "wiring.h"
 
 #include <QtTest>
@@ -13,15 +14,17 @@ Point mm(Coord x, Coord y)
     return Point{x * MM, y * MM};
 }
 
-// A symbol with pins at (-5, 0) and (5, 0) mm.
+// A symbol with pins at (-5, 0) and (5, 0) mm, wired from the left and from the right.
 Library twoPinLibrary()
 {
     Symbol symbol;
     Pin left;
     left.number = QStringLiteral("1");
     left.at = mm(-5, 0);
+    left.side = PinSide::Left;
     Pin right = left;
     right.number = QStringLiteral("2");
+    right.side = PinSide::Right;
     right.at = mm(5, 0);
     symbol.pins = {left, right};
     Library library;
@@ -155,6 +158,238 @@ private slots:
         // Going back is kept.
         QCOMPARE(simplifiedWire({mm(0, 0), mm(10, 0), mm(5, 0)}),
                  QList<Point>({mm(0, 0), mm(10, 0), mm(5, 0)}));
+    }
+
+    // A wire from (-20, 0) to the left pin of a part at the origin.
+    void wiresFollowAMovedPart()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0))};
+        sheet.wires = {wire({mm(-20, 0), mm(-5, 0)})};
+        const QSet<ObjectId> part = {sheet.components.first().id};
+        const auto dragged = [&](const Point &delta) {
+            return withWiresFollowing(sheet, movedObjects(sheet, part, delta), part, library)
+                .wires;
+        };
+
+        // Across the wire: a bend.
+        QCOMPARE(dragged(mm(0, 5)).first().points, QList<Point>({mm(-20, 0), mm(-5, 0), mm(-5, 5)}));
+        // Along it: longer or shorter, still straight.
+        QCOMPARE(dragged(mm(3, 0)).first().points, QList<Point>({mm(-20, 0), mm(-2, 0)}));
+        QCOMPARE(dragged(mm(-3, 0)).first().points, QList<Point>({mm(-20, 0), mm(-8, 0)}));
+        // Both ways: along the wire first, then across.
+        QCOMPARE(dragged(mm(4, 6)).first().points, QList<Point>({mm(-20, 0), mm(-1, 0), mm(-1, 6)}));
+        // Past the other end: the wire turns round and does not go back over itself.
+        QCOMPARE(dragged(mm(-20, 0)).first().points, QList<Point>({mm(-20, 0), mm(-25, 0)}));
+        // Onto the other end: no length left, so no wire.
+        QVERIFY(dragged(mm(-15, 0)).isEmpty());
+    }
+
+    void wiresFollowOnlyWhatLiesOnTheMovedObjects()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        // Two parts joined pin to pin by a bent wire, and a wire hanging free.
+        sheet.components = {twoPin(mm(0, 0)), twoPin(mm(20, 10))};
+        sheet.wires = {wire({mm(5, 0), mm(15, 0), mm(15, 10)}), wire({mm(30, 30), mm(40, 30)})};
+        QSet<ObjectId> both = {sheet.components.at(0).id, sheet.components.at(1).id};
+        Sheet moved = withWiresFollowing(sheet, movedObjects(sheet, both, mm(2, 3)), both, library);
+        // Both ends went the same way: the whole wire goes along.
+        QCOMPARE(moved.wires.at(0).points, QList<Point>({mm(7, 3), mm(17, 3), mm(17, 13)}));
+        QCOMPARE(moved.wires.at(1).points, sheet.wires.at(1).points);
+
+        // The wire is moved itself: it leaves the pins, the parts stay.
+        const QSet<ObjectId> line = {sheet.wires.at(0).id};
+        moved = withWiresFollowing(sheet, movedObjects(sheet, line, mm(2, 3)), line, library);
+        QCOMPARE(moved.wires.at(0).points, QList<Point>({mm(7, 3), mm(17, 3), mm(17, 13)}));
+        QCOMPARE(moved.components, sheet.components);
+    }
+
+    void aWireEndOnAPinLeftInPlaceStays()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        // The right pin of the first part lies on the left pin of the second.
+        sheet.components = {twoPin(mm(0, 0)), twoPin(mm(10, 0))};
+        sheet.wires = {wire({mm(5, 0), mm(5, 10)})};
+        const QSet<ObjectId> first = {sheet.components.first().id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, first, mm(0, -5)), first, library);
+        QCOMPARE(moved.wires.first().points, sheet.wires.first().points);
+        // The pins that touched are joined by a new wire.
+        QCOMPARE(moved.wires.size(), 2);
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(5, 0), mm(5, -5)}));
+    }
+
+    void pinsThatTouchedAreJoinedByANewWire()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0)), twoPin(mm(10, 0))};
+        const QSet<ObjectId> second = {sheet.components.at(1).id};
+        const auto dragged = [&](const Point &delta) {
+            return withWiresFollowing(sheet, movedObjects(sheet, second, delta), second, library)
+                .wires;
+        };
+        QCOMPARE(dragged(mm(0, 5)).size(), 1);
+        QCOMPARE(dragged(mm(0, 5)).first().points, QList<Point>({mm(5, 0), mm(5, 5)}));
+        QCOMPARE(dragged(mm(10, 0)).first().points, QList<Point>({mm(5, 0), mm(15, 0)}));
+        // Both moved together: nothing to join.
+        const QSet<ObjectId> both = {sheet.components.at(0).id, sheet.components.at(1).id};
+        QVERIFY(withWiresFollowing(sheet, movedObjects(sheet, both, mm(0, 5)), both, library)
+                    .wires.isEmpty());
+    }
+
+    // A part standing upright, its top pin ending at (0, -5) and wired from
+    // the left: a wire never comes into the pin along the pin.
+    void wiresComeIntoAPinClearOfIt()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0), 90)};
+        sheet.wires = {wire({mm(-20, -5), mm(0, -5)})};
+        const QSet<ObjectId> part = {sheet.components.first().id};
+        const auto dragged = [&](const Point &delta) {
+            return withWiresFollowing(sheet, movedObjects(sheet, part, delta), part, library)
+                .wires.first()
+                .points;
+        };
+        // Down: the wire comes into the pin from above, the way it points.
+        QCOMPARE(dragged(mm(0, 5)), QList<Point>({mm(-20, -5), mm(0, -5), mm(0, 0)}));
+        // Up: from above the old end it would run along the pin, so the bend
+        // starts earlier and the wire comes in from the side.
+        QCOMPARE(dragged(mm(0, -5)), QList<Point>({mm(-20, -5), mm(-20, -10), mm(0, -10)}));
+    }
+
+    // A wire from (-20, 0) to the left pin of part A at the origin; part B,
+    // with a body 4 by 2 mm, stands at (-5, 5), across the way down from
+    // that pin.
+    void wiresGoRoundTheBodiesOfParts()
+    {
+        Library library = twoPinLibrary();
+        Graphic body;
+        body.kind = GraphicKind::Rect;
+        body.a = mm(-2, -1);
+        body.b = mm(2, 1);
+        library.symbols[QStringLiteral("two")].graphics.append(body);
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0)), twoPin(mm(-5, 5))};
+        sheet.wires = {wire({mm(-20, 0), mm(-5, 0)})};
+        const QSet<ObjectId> a = {sheet.components.first().id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, a, mm(0, 10)), a, library);
+        // Down from the old end would cross B: the bend turns the other way.
+        QCOMPARE(moved.wires.first().points, QList<Point>({mm(-20, 0), mm(-20, 10), mm(-5, 10)}));
+    }
+
+    // Part A stays at the origin; part B, touching it pin to pin at (5, 0),
+    // goes up and to the left, so that one bend would run along a pin or
+    // through a body either way round: the new wire takes two.
+    void aNewWireTakesTwoBendsToKeepClear()
+    {
+        Library library = twoPinLibrary();
+        Graphic body;
+        body.kind = GraphicKind::Rect;
+        body.a = mm(-2, -1);
+        body.b = mm(2, 1);
+        library.symbols[QStringLiteral("two")].graphics.append(body);
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0)), twoPin(mm(10, 0))};
+        const QSet<ObjectId> b = {sheet.components.at(1).id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, b, mm(-5, -10)), b, library);
+        QCOMPARE(moved.wires.size(), 1);
+        // Halfway is on the half grid: -5.08 mm.
+        const Coord halfway = -5080000;
+        QCOMPARE(moved.wires.first().points,
+                 QList<Point>({mm(5, 0), Point{5 * MM, halfway}, Point{0, halfway}, mm(0, -10)}));
+    }
+
+    // Part A stands upright, its bottom pin wired from the left by a wire
+    // that runs along y = 0 first. A is dragged down onto that run: the wire
+    // is laid again from its far end, round the body instead of through it.
+    void aWireIsLaidAgainAsFarBackAsNeeded()
+    {
+        Library library = twoPinLibrary();
+        Graphic body;
+        body.kind = GraphicKind::Rect;
+        body.a = mm(-2, -1);
+        body.b = mm(2, 1);
+        library.symbols[QStringLiteral("two")].graphics.append(body);
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, -10), 90)};
+        sheet.wires = {wire({mm(20, 0), mm(-10, 0), mm(-10, -5), mm(0, -5)})};
+        const QSet<ObjectId> a = {sheet.components.first().id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, a, mm(0, 10)), a, library);
+        QCOMPARE(moved.wires.first().points, QList<Point>({mm(20, 0), mm(20, 5), mm(0, 5)}));
+    }
+
+    // The same, with a wire from below ending on the run at (10, 0): the
+    // wire is laid again from there, and that wire stays joined.
+    void aWireIsLaidAgainFromWhereAnotherJoinsIt()
+    {
+        Library library = twoPinLibrary();
+        Graphic body;
+        body.kind = GraphicKind::Rect;
+        body.a = mm(-2, -1);
+        body.b = mm(2, 1);
+        library.symbols[QStringLiteral("two")].graphics.append(body);
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, -10), 90)};
+        sheet.wires = {wire({mm(30, 0), mm(-10, 0), mm(-10, -5), mm(0, -5)}),
+                       wire({mm(10, 10), mm(10, 0)})};
+        const QSet<ObjectId> a = {sheet.components.first().id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, a, mm(0, 10)), a, library);
+        QCOMPARE(moved.wires.at(0).points,
+                 QList<Point>({mm(30, 0), mm(10, 0), mm(10, 5), mm(0, 5)}));
+        QCOMPARE(moved.wires.at(1).points, sheet.wires.at(1).points);
+    }
+
+    // A wire coming down at x = -20 and turning right into the left pin of
+    // a part at the origin.
+    void theLastSegmentSlidesWithThePin()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0))};
+        sheet.wires = {wire({mm(-20, 10), mm(-20, 0), mm(-5, 0)})};
+        const QSet<ObjectId> part = {sheet.components.first().id};
+        const auto dragged = [&](const Sheet &from, const Point &delta) {
+            return withWiresFollowing(from, movedObjects(from, part, delta), part, library)
+                .wires.first()
+                .points;
+        };
+        // No bend is added: the corner goes along.
+        QCOMPARE(dragged(sheet, mm(0, 5)), QList<Point>({mm(-20, 10), mm(-20, 5), mm(-5, 5)}));
+        QCOMPARE(dragged(sheet, mm(3, -15)), QList<Point>({mm(-20, 10), mm(-20, -15), mm(-2, -15)}));
+
+        // A wire ends on the corner: the corner stays, and a bend is added.
+        Sheet joined = sheet;
+        joined.wires.append(wire({mm(-30, 0), mm(-20, 0)}));
+        QCOMPARE(dragged(joined, mm(0, 5)),
+                 QList<Point>({mm(-20, 10), mm(-20, 0), mm(-5, 0), mm(-5, 5)}));
+    }
+
+    void wiresEndingOnAMovedWireFollowIt()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        // A wire ending in the middle of another one, and one ending on its corner.
+        sheet.wires = {wire({mm(0, 0), mm(10, 0), mm(10, 10)}), wire({mm(4, 0), mm(4, -6)}),
+                       wire({mm(10, 0), mm(20, 0)})};
+        const QSet<ObjectId> line = {sheet.wires.first().id};
+        // Turned a quarter about (10, 0): (0, 0) goes to (10, -10).
+        const Sheet turned = rotatedObjects(sheet, line, mm(10, 0));
+        QCOMPARE(turned.wires.first().points, QList<Point>({mm(10, -10), mm(10, 0), mm(0, 0)}));
+        const Sheet moved = withWiresFollowing(sheet, turned, line, library);
+        // (4, 0), 4 mm along the first segment, goes 4 mm along it turned:
+        // to (10, -6), where the bend from (4, 0) is cut back to a straight wire.
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(10, -6), mm(4, -6)}));
+        // On the corner, which stays where it was.
+        QCOMPARE(moved.wires.at(2).points, sheet.wires.at(2).points);
     }
 };
 

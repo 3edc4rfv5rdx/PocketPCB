@@ -3,6 +3,8 @@
 #include "library.h"
 #include "schematic.h"
 
+#include <QSet>
+
 namespace ppcb {
 
 // Wires on a sheet: where they connect and how a new one is laid. A wire
@@ -40,5 +42,19 @@ QList<Point> wireRoute(const Point &from, const Point &to, bool swapped, bool di
 // 'points' without a point equal to the one before it and without corners
 // that go on straight ahead.
 QList<Point> simplifiedWire(const QList<Point> &points);
+
+// 'after', where the objects 'moved' of 'before' have been moved, turned or
+// mirrored, with the other wires kept on them. A wire end that lay on a pin
+// of a moved component or on a moved wire goes where that point went: the
+// whole wire is shifted when both its ends went the same way, else its last
+// segment slides along with the end, or one or two bends lead on to where
+// it goes. Of the ways to do it that keep the other wires joined to it, the
+// one through the fewest bodies of parts, then along the fewest pins, then
+// with the fewest corners is taken; a wire going back over itself is cut
+// short. An end that also lay on a pin of a component left in place stays
+// there. A wire left with no length is removed. A moved pin that touched a
+// pin left in place gets a new wire to it, laid the same way.
+Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
+                         const Library &library);
 
 } // namespace ppcb

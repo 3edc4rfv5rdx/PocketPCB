@@ -134,7 +134,7 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
     }
 }
 
-void SheetEditor::move(const QPointF &at)
+void SheetEditor::move(const QPointF &at, bool detached)
 {
     const Sheet *sheet = currentSheet();
     if (m_placing || m_wiring) {
@@ -148,6 +148,7 @@ void SheetEditor::move(const QPointF &at)
             return;
         if (m_pressOnSelection) {
             m_dragging = true;
+            m_dragStart = *sheet;
             m_dragBase = *sheet;
         } else
             m_rubberBanding = true;
@@ -155,18 +156,19 @@ void SheetEditor::move(const QPointF &at)
     if (m_dragging) {
         // The selection moves by whole grid steps, the way the cursor does.
         m_dragDelta = snapped(at) - snapped(m_pressAt);
-        m_preview = movedObjects(m_dragBase, m_selection, m_dragDelta);
+        m_dragDetached = detached;
+        updateDrag();
     } else {
         m_rubberBand = QRectF(m_pressAt, at).normalized();
     }
     emit changed();
 }
 
-void SheetEditor::release(const QPointF &at)
+void SheetEditor::release(const QPointF &at, bool detached)
 {
     if (m_placing || m_wiring)
         return;
-    move(at);
+    move(at, detached);
     // A drag that came back to where it started may still have turned.
     if (m_dragging) {
         const Sheet moved = m_preview;
@@ -233,8 +235,16 @@ void SheetEditor::transformDragged(Sheet (*transform)(const Sheet &, const QSet<
                                                       const Point &))
 {
     m_dragBase = transform(m_dragBase, m_selection, selectionCenter(m_dragBase));
-    m_preview = movedObjects(m_dragBase, m_selection, m_dragDelta);
+    updateDrag();
     emit changed();
+}
+
+void SheetEditor::updateDrag()
+{
+    const Sheet moved = movedObjects(m_dragBase, m_selection, m_dragDelta);
+    m_preview = m_dragDetached ? moved
+                               : withWiresFollowing(m_dragStart, moved, m_selection,
+                                                    m_document->design().library);
 }
 
 void SheetEditor::rotateSelection()

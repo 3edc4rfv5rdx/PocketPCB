@@ -14,7 +14,8 @@ class CanvasView;
 
 // Editing of the sheet shown on the canvas: the selection, choosing with
 // the mouse (a click, Ctrl and a click, a rectangle), dragging the
-// selection along the grid, and turning, mirroring and deleting it.
+// selection along the grid with the wires on it following (Shift tears them
+// off), and turning, mirroring and deleting it.
 // Positions come in scene millimetres.
 class SheetEditor : public QObject
 {
@@ -86,10 +87,11 @@ public:
     QRectF rubberBand() const { return m_rubberBanding ? m_rubberBand : QRectF(); }
 
     // The left mouse button. 'adding' is Ctrl held: the selection grows or
-    // shrinks instead of being replaced.
+    // shrinks instead of being replaced. 'detached' is Shift held: what is
+    // dragged leaves the wires on it where they are.
     void press(const QPointF &at, bool adding);
-    void move(const QPointF &at);
-    void release(const QPointF &at);
+    void move(const QPointF &at, bool detached);
+    void release(const QPointF &at, bool detached);
     // A second click in a row: the press it also is, and a component under
     // the cursor is opened (see componentOpened). Not while placing.
     void doubleClick(const QPointF &at, bool adding);
@@ -123,6 +125,9 @@ private:
     // Turns or mirrors what is dragged, on the way, without a step of its own:
     // the drop makes one step of it all.
     void transformDragged(Sheet (*transform)(const Sheet &, const QSet<ObjectId> &, const Point &));
+    // Builds the preview of the drag: the base moved, with the wires on it
+    // following unless torn off.
+    void updateDrag();
     // Builds the preview of what follows the cursor, numbered on.
     void updateFloating();
     void placeFloating();
@@ -160,8 +165,11 @@ private:
     bool m_pressOnSelection = false;
 
     bool m_dragging = false;
-    // The sheet the drag started from, with what was turned on the way.
+    // The sheet the drag started from, and the same with what was turned
+    // on the way.
+    Sheet m_dragStart;
     Sheet m_dragBase;
+    bool m_dragDetached = false;
     Sheet m_preview;
     Point m_dragDelta;
 

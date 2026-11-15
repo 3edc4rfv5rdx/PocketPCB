@@ -852,6 +852,14 @@ QRectF symbolBounds(const Symbol &symbol)
     return bounds.rect();
 }
 
+QRectF symbolBodyBounds(const Symbol &symbol)
+{
+    Bounds body;
+    for (const Graphic &graphic : symbol.graphics)
+        body.add(graphicBounds(graphic, SYMBOL_LINE_WIDTH));
+    return body.rect();
+}
+
 QRectF footprintBounds(const Footprint &footprint)
 {
     Bounds bounds;
@@ -960,8 +968,8 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
         } else {
             // The drawing without the room symbolBounds() keeps for pin texts.
             Bounds body;
-            for (const Graphic &graphic : symbol->graphics)
-                body.add(graphicBounds(graphic, SYMBOL_LINE_WIDTH));
+            if (!symbol->graphics.isEmpty())
+                body.add(symbolBodyBounds(*symbol));
             for (const Pin &pin : symbol->pins)
                 body.add(QRectF(toMm(pin.at), toMm(pinBodyEnd(pin))).normalized());
             if (!body.isEmpty())

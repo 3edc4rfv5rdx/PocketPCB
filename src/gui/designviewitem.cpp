@@ -147,13 +147,13 @@ void DesignViewItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
 void DesignViewItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     if (SheetEditor *editor = activeEditor())
-        editor->move(event->scenePos());
+        editor->move(event->scenePos(), event->modifiers().testFlag(Qt::ShiftModifier));
 }
 
 void DesignViewItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
     if (SheetEditor *editor = activeEditor())
-        editor->release(event->scenePos());
+        editor->release(event->scenePos(), event->modifiers().testFlag(Qt::ShiftModifier));
 }
 
 } // namespace ppcb

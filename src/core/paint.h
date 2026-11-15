@@ -53,6 +53,9 @@ Point pinBodyEnd(const Pin &pin);
 // Rectangles that hold everything paintSymbol() / paintFootprint() draw.
 // Never empty, so a view can always be fitted to them.
 QRectF symbolBounds(const Symbol &symbol);
+// The rectangle the drawings of 'symbol' take, its body: pins and the
+// texts of the program left out. Null when the symbol has no drawings.
+QRectF symbolBodyBounds(const Symbol &symbol);
 QRectF footprintBounds(const Footprint &footprint);
 
 void paintSymbol(QPainter &painter, const Symbol &symbol);
