@@ -110,11 +110,12 @@ Sheet transformed(const Sheet &sheet, const QSet<ObjectId> &ids, const Transform
 ObjectId objectAt(const QList<SheetObjectShape> &shapes, const QPointF &point, double tolerance)
 {
     for (auto it = shapes.crbegin(); it != shapes.crend(); ++it) {
-        const bool hit = it->polyline.isEmpty()
-                             ? it->rect.adjusted(-tolerance, -tolerance, tolerance, tolerance)
-                                   .contains(point)
-                             : isNearPolyline(it->polyline, point, tolerance);
-        if (hit)
+        if (!it->polyline.isEmpty() && isNearPolyline(it->polyline, point, tolerance))
+            return it->id;
+    }
+    for (auto it = shapes.crbegin(); it != shapes.crend(); ++it) {
+        if (it->polyline.isEmpty()
+            && it->rect.adjusted(-tolerance, -tolerance, tolerance, tolerance).contains(point))
             return it->id;
     }
     return ObjectId();

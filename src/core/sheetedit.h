@@ -10,9 +10,10 @@ namespace ppcb {
 // A selection is a set of object ids; ids of objects not on the sheet are
 // left alone, so a selection may outlive the objects it names.
 
-// The object under 'point' (millimetres), the topmost when several are:
-// one found by its line when within 'tolerance' of it, any other when the
-// point is in its rectangle grown by 'tolerance'. A null id when nothing is.
+// The object under 'point' (millimetres): one found by its line when within
+// 'tolerance' of it, any other when the point is in its rectangle grown by
+// 'tolerance'. One found by its line comes first, so that a wire can be
+// taken where it reaches a part; then the topmost. A null id when nothing is.
 ObjectId objectAt(const QList<SheetObjectShape> &shapes, const QPointF &point, double tolerance);
 
 // The objects that lie wholly inside 'rect' (millimetres).

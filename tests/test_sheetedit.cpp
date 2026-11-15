@@ -138,6 +138,13 @@ private slots:
         QCOMPARE(objectAt(shapes, QPointF(92, 70), 0.5), id(8));
         QVERIFY(objectAt(shapes, QPointF(5, 60), 0.5).isNull());
 
+        // A wire over a part's rectangle is found by its line first.
+        const QList<SheetObjectShape> crossing = {
+            SheetObjectShape{id(11), QRectF(0, 5, 10, 0), QPolygonF({QPointF(0, 5), QPointF(10, 5)})},
+            SheetObjectShape{id(10), QRectF(0, 0, 10, 10), QPolygonF()}};
+        QCOMPARE(objectAt(crossing, QPointF(5, 5.2), 0.5), id(11));
+        QCOMPARE(objectAt(crossing, QPointF(5, 8), 0.5), id(10));
+
         // A component the library lacks is still found where it stands.
         const QList<SheetObjectShape> missing = sheetObjectShapes(fullSheet(), Library());
         QCOMPARE(objectAt(missing, QPointF(50, 50), 0.5), id(1));
