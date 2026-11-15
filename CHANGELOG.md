@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A double click on a part on the sheet shows its part and footprint in the library panel
 - E: R and X turn and mirror a part dragged out of the library panel too: the drag no longer takes the keyboard
 - E: R and X while dragging turn and mirror what is dragged, as often as asked, instead of the objects left behind
 - F: A short right click ends placing, as Esc does

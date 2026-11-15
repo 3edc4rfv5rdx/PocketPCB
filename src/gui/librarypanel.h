@@ -97,6 +97,9 @@ public:
     // The chosen part and where it is from; an empty name when none is.
     QString currentPart() const;
     Source currentSource() const;
+    // Chooses the project's part 'part' and, below the list, 'footprint'
+    // when the part allows it. False when the project has no such part.
+    bool showProjectPart(const QString &part, const QString &footprint);
 
     QTreeWidget *tree() const { return m_tree; }
     PartPreview *preview() const { return m_preview; }
@@ -117,6 +120,8 @@ signals:
 
 private:
     void rebuild();
+    // The item of the part 'part' of 'source'; null when there is none.
+    QTreeWidgetItem *findPartItem(Source source, const QString &part) const;
     // Adds the parts of 'library' under a new top item 'title'.
     void addSection(const QString &title, const Library &library, Source source,
                     const QSet<QString> &replaced);

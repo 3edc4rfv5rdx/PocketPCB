@@ -117,6 +117,10 @@ MainWindow::MainWindow(QWidget *parent)
     addDockWidget(Qt::RightDockWidgetArea, m_libraryDock);
     connect(m_libraryPanel, &LibraryPanel::reloadRequested, this, &MainWindow::loadLibrary);
     connect(m_libraryPanel, &LibraryPanel::placeRequested, this, &MainWindow::placePart);
+    // A component double-clicked on the sheet is shown in the panel: its
+    // part, with its footprint below the list.
+    connect(m_sheetEditor, &SheetEditor::componentOpened, m_libraryPanel,
+            &LibraryPanel::showProjectPart);
     // A part dragged out of the panel is placed the same way: it follows the
     // mouse, R and X turn it, and letting go over the sheet puts it down and
     // placing goes on; letting go anywhere else calls it off.

@@ -107,6 +107,22 @@ void SheetEditor::press(const QPointF &at, bool adding)
     emit changed();
 }
 
+void SheetEditor::doubleClick(const QPointF &at, bool adding)
+{
+    const bool placing = m_placing;
+    press(at, adding);
+    const Sheet *sheet = currentSheet();
+    if (placing || sheet == nullptr)
+        return;
+    const ObjectId hit = objectAt(shapes(), at, pixelsToMm(HIT_PIXELS));
+    for (const Component &component : sheet->components) {
+        if (component.id == hit) {
+            emit componentOpened(component.part, component.footprint);
+            return;
+        }
+    }
+}
+
 void SheetEditor::move(const QPointF &at)
 {
     const Sheet *sheet = currentSheet();

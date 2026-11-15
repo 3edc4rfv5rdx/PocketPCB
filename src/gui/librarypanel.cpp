@@ -319,6 +319,37 @@ LibraryPanel::Source LibraryPanel::currentSource() const
     return item == nullptr ? Source::Library : Source(item->data(0, SOURCE_ROLE).toInt());
 }
 
+bool LibraryPanel::showProjectPart(const QString &part, const QString &footprint)
+{
+    QTreeWidgetItem *item = findPartItem(Source::Project, part);
+    if (item == nullptr)
+        return false;
+    // Fills the footprint box with the part's footprints.
+    m_tree->setCurrentItem(item);
+    const int index = m_footprintBox->findText(footprint);
+    if (index >= 0)
+        m_footprintBox->setCurrentIndex(index);
+    // A part hidden by the search stays hidden; its drawing is shown all the same.
+    if (!item->isHidden()) {
+        item->parent()->setExpanded(true);
+        m_tree->scrollToItem(item);
+    }
+    return true;
+}
+
+QTreeWidgetItem *LibraryPanel::findPartItem(Source source, const QString &part) const
+{
+    if (part.isEmpty())
+        return nullptr;
+    for (QTreeWidgetItemIterator it(m_tree); *it != nullptr; ++it) {
+        if ((*it)->data(0, PART_ROLE).toString() == part
+            && Source((*it)->data(0, SOURCE_ROLE).toInt()) == source) {
+            return *it;
+        }
+    }
+    return nullptr;
+}
+
 void LibraryPanel::rebuild()
 {
     // The chosen part is kept across the rebuild when it is still there.
@@ -331,13 +362,8 @@ void LibraryPanel::rebuild()
     if (!m_project.parts.isEmpty())
         addSection(tr("Project"), m_project, Source::Project, QSet<QString>());
 
-    for (QTreeWidgetItemIterator it(m_tree); *it != nullptr; ++it) {
-        if ((*it)->data(0, PART_ROLE).toString() == part && !part.isEmpty()
-            && Source((*it)->data(0, SOURCE_ROLE).toInt()) == source) {
-            m_tree->setCurrentItem(*it);
-            break;
-        }
-    }
+    if (QTreeWidgetItem *item = findPartItem(source, part))
+        m_tree->setCurrentItem(item);
     applyFilter();
     showCurrentPart();
     // Laid out now, so that the scroll bar has its range back.

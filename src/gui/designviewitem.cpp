@@ -133,6 +133,17 @@ void DesignViewItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
     event->accept();
 }
 
+void DesignViewItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
+{
+    SheetEditor *editor = activeEditor();
+    if (editor == nullptr || event->button() != Qt::LeftButton) {
+        event->ignore();
+        return;
+    }
+    editor->doubleClick(event->scenePos(), event->modifiers().testFlag(Qt::ControlModifier));
+    event->accept();
+}
+
 void DesignViewItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     if (SheetEditor *editor = activeEditor())

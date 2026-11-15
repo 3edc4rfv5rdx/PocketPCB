@@ -64,6 +64,9 @@ public:
     void press(const QPointF &at, bool adding);
     void move(const QPointF &at);
     void release(const QPointF &at);
+    // A second click in a row: the press it also is, and a component under
+    // the cursor is opened (see componentOpened). Not while placing.
+    void doubleClick(const QPointF &at, bool adding);
     // Esc: placing ends, or a drag is called off, or the selection is dropped.
     void cancel();
 
@@ -75,6 +78,8 @@ public:
 signals:
     // The selection, the preview or the rubber band changed: redraw.
     void changed();
+    // A component was double-clicked: its part and its footprint.
+    void componentOpened(const QString &part, const QString &footprint);
 
 private:
     const Sheet *currentSheet() const;
