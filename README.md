@@ -14,7 +14,7 @@ Early development. What works now:
 - Library panel: search, parts grouped by designator prefix (international or GOST), a drawing of the symbol and footprint; a double click on a part on the sheet shows its part and footprint there.
 - Schematic sheet: choose with a click or a rectangle, drag along the grid, rotate, mirror, delete, copy, cut, paste and duplicate (pasted parts are numbered on), draw wires (W; Space turns the corner, / slants it) with junction dots placed by themselves, Undo/Redo.
 
-Planned next: placing parts from the library, wires, labels and power symbols, nets, ERC; then the board editor with ratsnest, tracks and DRC; Gerber and Excellon export; 1:1 printing for toner transfer; schematic printing with a title block and a BOM; an AppImage.
+Planned next: wires that follow dragged parts, labels and power symbols, nets, ERC; then the board editor with ratsnest, tracks and DRC; Gerber and Excellon export; 1:1 printing for toner transfer; schematic printing with a title block and a BOM; an AppImage.
 
 The full specification is in [`tz.md`](tz.md) (English) and [`tz.ru.md`](tz.ru.md) (Russian original).
 
