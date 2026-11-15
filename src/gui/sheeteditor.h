@@ -19,7 +19,7 @@ class CanvasView;
 // off), turning and mirroring the selection with the wires on it following
 // too, and deleting it. A click on a
 // wire chooses the segment under it: a drag moves it, or one end of the
-// wire when taken near it; Delete removes it. A double click chooses the
+// wire when taken near it, unless that end is on a pin; Delete removes it. A double click chooses the
 // whole wire, Shift and a click every wire joined to it.
 // Positions come in scene millimetres.
 class SheetEditor : public QObject
@@ -186,7 +186,8 @@ private:
     Point m_dragAnchor;
 
     bool m_dragging = false;
-    // The press took a wire near one of its ends, which a drag moves alone:
+    // The press took a wire near one of its ends that is on no pin, which a
+    // drag moves alone:
     // the wire, and its last end or its first. Set by every press.
     ObjectId m_endWire;
     bool m_endIsLast = false;

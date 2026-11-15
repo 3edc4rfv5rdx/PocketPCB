@@ -143,10 +143,13 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
             m_segmentIndex = segmentAt(*wire, at);
             const double first = QLineF(at, toMm(wire->points.first())).length();
             const double last = QLineF(at, toMm(wire->points.last())).length();
-            if (qMin(first, last) <= pixelsToMm(END_PIXELS)) {
+            // An end on a pin is not taken alone: that would tear it off.
+            const Point end = last < first ? wire->points.last() : wire->points.first();
+            const bool onPin = pinPoints(*sheet, m_document->design().library).contains(end);
+            if (qMin(first, last) <= pixelsToMm(END_PIXELS) && !onPin) {
                 m_endWire = hit;
                 m_endIsLast = last < first;
-                m_dragAnchor = m_endIsLast ? wire->points.last() : wire->points.first();
+                m_dragAnchor = end;
             } else {
                 m_dragAnchor = wire->points.at(m_segmentIndex);
             }

@@ -657,6 +657,26 @@ private slots:
         QCOMPARE(editor->sheet(), -1);
     }
 
+    // The demo's first wire ends on the left pin of R1. Taken at that end
+    // and dragged down, its segment goes and a bend keeps the end on the pin.
+    void aWireEndOnAPinIsNotDraggedOffIt()
+    {
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QVERIFY(window.openProject(QStringLiteral(PPCB_SOURCE_DIR "/examples/demo/demo.ppcb")));
+        SheetEditor *editor = window.sheetEditor();
+        const auto wire = [&window]() {
+            return window.document()->design().schematic.sheets.at(0).wires.at(0);
+        };
+        const Point pin = wire().points.last();
+        editor->press(toMm(pin), false);
+        editor->move(toMm(pin) + QPointF(0, 5.2), false);
+        editor->release(toMm(pin) + QPointF(0, 5.2), false);
+        QCOMPARE(wire().points.last(), pin);
+        QCOMPARE(wire().points.first().y, pin.y + 5080000);
+    }
+
     void partsArePlacedUntilEsc()
     {
         MainWindow window;
