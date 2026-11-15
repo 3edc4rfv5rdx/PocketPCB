@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The end of a dragged wire segment that lies on another wire slides along it with its junction, from a pin too, instead of staying behind
 - N: A click on a wire chooses the segment under it, which a drag moves across and Delete removes; a double click chooses the whole wire, whose ends stay on their pins and wires when it is dragged
 - N: A wire taken near one of its ends drags that end alone, laid clear of bodies and pins
 - N: Wires stay on the parts and wires dragged on a sheet, their last segment sliding along or bending round the bodies of parts and clear of their pins, and pins that touched get a wire between them; Shift while dragging tears them off

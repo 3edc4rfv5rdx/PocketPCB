@@ -446,6 +446,39 @@ private slots:
         QCOMPARE(moved(2, mm(4, 0)), sheet.wires);
     }
 
+    // A wire across from one rail to another, its ends on their middles.
+    void aSegmentSlidesAlongTheWiresItsEndsLieOn()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.wires = {wire({mm(0, 0), mm(20, 0)}), wire({mm(0, 10), mm(20, 10)}),
+                       wire({mm(10, 0), mm(10, 10)})};
+        const ObjectId id = sheet.wires.at(2).id;
+        // Along the rails: the ends, and the junctions, go along.
+        QCOMPARE(withSegmentMoved(sheet, library, id, 0, mm(3, 0)).wires.at(2).points,
+                 QList<Point>({mm(13, 0), mm(13, 10)}));
+        // The rails stay as they are.
+        QCOMPARE(withSegmentMoved(sheet, library, id, 0, mm(3, 0)).wires.at(0).points,
+                 sheet.wires.at(0).points);
+    }
+
+    // A level wire from the right pin of a part at the origin, with an
+    // upright wire going down from the same pin: moved down, the level one
+    // slides down the upright one instead of leaving a bend over it.
+    void aSegmentSlidesOffAPinAlongAWireThere()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0))};
+        sheet.wires = {wire({mm(5, 0), mm(5, 20)}), wire({mm(5, 0), mm(20, 0)})};
+        const ObjectId id = sheet.wires.at(1).id;
+        QCOMPARE(withSegmentMoved(sheet, library, id, 0, mm(0, 4)).wires.at(1).points,
+                 QList<Point>({mm(5, 4), mm(20, 4)}));
+        // The upright one stays as it is.
+        QCOMPARE(withSegmentMoved(sheet, library, id, 0, mm(0, 4)).wires.at(0).points,
+                 sheet.wires.at(0).points);
+    }
+
     void segmentsAreFoundCutAndCopied()
     {
         Sheet sheet;

@@ -69,8 +69,9 @@ Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &
 // 'sheet' with the segment 'index' (from point 'index' to the next) of the
 // wire 'wire' moved by 'delta', across itself only when it is level or
 // upright. The segments next to it grow or shrink, or bend to reach it; an
-// end of the wire that is joined to a pin or a wire stays, and a bend leads
-// to it. The ends of other wires on the segment go along with it. 'sheet'
+// end of the wire that lies on another wire slides along it when the move
+// goes that way, even from a pin there, else an end joined to a pin or a
+// wire stays, and a bend leads to it. The ends of other wires on the segment go along with it. 'sheet'
 // as it is when it has no such segment or the move is nothing.
 Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &wire,
                        int index, const Point &delta);

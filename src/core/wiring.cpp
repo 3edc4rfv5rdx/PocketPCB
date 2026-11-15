@@ -728,8 +728,26 @@ Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectI
             return other.id != wire && other.points.size() >= 2 && isOnWire(other, point);
         });
     };
-    const bool aStays = index == 0 && held(a);
-    const bool bStays = index + 2 == n && held(b);
+    // Unless it can slide along a wire it lies on, to where it goes: what
+    // else is there stays joined to it through that wire.
+    const auto slides = [&](const Point &point, const Point &to) {
+        return std::any_of(sheet.wires.cbegin(), sheet.wires.cend(), [&](const Wire &other) {
+            if (other.id == wire)
+                return false;
+            for (int i = 1; i < other.points.size(); ++i) {
+                const Point &s0 = other.points.at(i - 1);
+                const Point &s1 = other.points.at(i);
+                if (isOnSegment(s0, s1, point) && isOnSegment(s0, s1, to))
+                    return true;
+            }
+            return false;
+        });
+    };
+    // The wire's ends held by something: they stay, or slide along it.
+    const bool aHeld = index == 0 && held(a);
+    const bool bHeld = index + 2 == n && held(b);
+    const bool aStays = aHeld && !slides(a, na);
+    const bool bStays = bHeld && !slides(b, nb);
 
     QList<Point> points;
     if (index > 0) {
@@ -763,7 +781,8 @@ Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectI
         if (other.points.size() < 2)
             continue;
         const auto goes = [&](const Point &end) {
-            return isOnWire(segment, end) && !(aStays && end == a) && !(bStays && end == b);
+            // What holds an end of the wire does not go with it.
+            return isOnWire(segment, end) && !(aHeld && end == a) && !(bHeld && end == b);
         };
         const bool first = goes(other.points.first());
         const bool last = goes(other.points.last());
