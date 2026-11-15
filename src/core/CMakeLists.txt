@@ -18,6 +18,7 @@ add_library(pocketpcb_core STATIC
     schematic.h schematic.cpp
     sheetedit.h sheetedit.cpp
     symbol.h symbol.cpp
+    wiring.h wiring.cpp
 )
 target_include_directories(pocketpcb_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(pocketpcb_core PUBLIC Qt6::Core Qt6::Gui)

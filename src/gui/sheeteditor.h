@@ -28,7 +28,7 @@ public:
     static QString sheetName(const Sheet &sheet, int index);
 
     // What is done to a selection: the name of the menu item and of the step.
-    enum class Action { Move, Rotate, Mirror, Delete, Place, Copy, Cut, Paste, Duplicate };
+    enum class Action { Move, Rotate, Mirror, Delete, Place, Copy, Cut, Paste, Duplicate, Wire };
     static QString actionName(Action action);
 
     // The sheet being edited, or -1 when the page shown is not a sheet.
@@ -42,7 +42,10 @@ public:
 
     // What the canvas shows instead of the sheet while dragging or placing;
     // null when neither is going on.
-    const Sheet *preview() const { return m_dragging || m_placing ? &m_preview : nullptr; }
+    const Sheet *preview() const
+    {
+        return m_dragging || m_placing || isDrawingWire() ? &m_preview : nullptr;
+    }
     // The library to draw the preview with: the project's, with the parts
     // being placed; null when nothing is placed.
     const Library *previewLibrary() const { return m_placing ? &m_placeLibrary : nullptr; }
@@ -68,6 +71,17 @@ public:
     // click puts it down once and chooses it.
     void paste();
     void duplicateSelection();
+
+    // Drawing wires, until cancel() with no wire begun: a click begins a
+    // wire and every next one sets a corner; the wire follows the cursor
+    // with one corner. A click on a pin or a wire, or a second click on the
+    // same point, ends it; cancel() drops the wire begun.
+    void startWiring();
+    bool isWiring() const { return m_wiring; }
+    // The corner of the wire that follows the cursor: the other way round,
+    // and slanted at 45 degrees or square.
+    void swapWireCorner();
+    void toggleWireSlant();
     // The rectangle being drawn to choose with; empty when there is none.
     QRectF rubberBand() const { return m_rubberBanding ? m_rubberBand : QRectF(); }
 
@@ -112,6 +126,14 @@ private:
     // Builds the preview of what follows the cursor, numbered on.
     void updateFloating();
     void placeFloating();
+    bool isDrawingWire() const { return m_wiring && !m_wirePoints.isEmpty(); }
+    void wireClick(const Point &at);
+    // Puts the wire begun on the sheet as one step, when it has a length.
+    void finishWire();
+    // Builds the preview of the wire begun, up to the cursor.
+    void updateWire();
+    // The document changed under what follows the cursor: build it again.
+    void refreshPreview();
     // Deletes the selection as one step named 'action'.
     void removeSelection(Action action);
     // Makes 'edited' the sheet as one step of the history named 'action'.
@@ -158,6 +180,14 @@ private:
     // down: the floating objects where the cursor is, numbered on.
     Library m_placeLibrary;
     Sheet m_placed;
+
+    // Drawing wires: the points set so far (none before the first click),
+    // where the cursor is, and the shape of the corner that follows it.
+    bool m_wiring = false;
+    QList<Point> m_wirePoints;
+    Point m_wireCursor;
+    bool m_wireSwapped = false;
+    bool m_wireSlanted = false;
 
     // The clipboard: objects about the origin, and the library their parts are in.
     Sheet m_clipboard;

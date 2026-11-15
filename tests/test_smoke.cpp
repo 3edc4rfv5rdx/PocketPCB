@@ -10,6 +10,7 @@
 #include "mainwindow.h"
 #include "saveprojectdialog.h"
 #include "sheeteditor.h"
+#include "wiring.h"
 
 #include <QAction>
 #include <QApplication>
@@ -673,6 +674,53 @@ private slots:
         window.showPage(window.designItem()->boardPage());
         QVERIFY(!window.placePart(LibraryPanel::Source::Library, QStringLiteral("capacitor"),
                                   QStringLiteral("capacitor-5.08")));
+    }
+
+    void wiresAreDrawnUntilEsc()
+    {
+        MainWindow window;
+        window.showPage(0);
+        SheetEditor *editor = window.sheetEditor();
+        const auto sheet = [&window]() { return window.document()->design().schematic.sheets.at(0); };
+        const auto at = [](double x, double y) { return Point{mmToNm(x), mmToNm(y)}; };
+        QAction *deselect = window.findChild<QAction *>(QStringLiteral("actionDeselect"));
+
+        window.findChild<QAction *>(QStringLiteral("actionWire"))->trigger();
+        QVERIFY(editor->isWiring());
+        QVERIFY(editor->preview() == nullptr);
+        // A square corner, along X first; a second click on a point ends the wire.
+        editor->press(QPointF(10.16, 10.16), false);
+        editor->hover(at(20.32, 15.24));
+        QVERIFY(editor->preview() != nullptr);
+        editor->press(QPointF(20.32, 15.24), false);
+        editor->press(QPointF(20.32, 15.24), false);
+        QCOMPARE(sheet().wires.size(), 1);
+        QCOMPARE(sheet().wires.at(0).points,
+                 QList<Point>({at(10.16, 10.16), at(20.32, 10.16), at(20.32, 15.24)}));
+
+        // A wire that reaches the middle of another ends there by itself,
+        // with a dot, and drawing goes on.
+        window.findChild<QAction *>(QStringLiteral("actionWireCorner"))->trigger();
+        editor->press(QPointF(15.24, 20.32), false);
+        editor->press(QPointF(15.24, 10.16), false);
+        QCOMPARE(sheet().wires.size(), 2);
+        QCOMPARE(junctions(sheet(), window.document()->design().library),
+                 QList<Point>({at(15.24, 10.16)}));
+        QVERIFY(editor->isWiring());
+
+        // Esc drops the wire begun, a second one ends drawing.
+        editor->press(QPointF(30.48, 30.48), false);
+        QVERIFY(editor->preview() != nullptr);
+        deselect->trigger();
+        QVERIFY(editor->isWiring());
+        QVERIFY(editor->preview() == nullptr);
+        deselect->trigger();
+        QVERIFY(!editor->isWiring());
+        QCOMPARE(sheet().wires.size(), 2);
+
+        // Each wire is a step.
+        window.document()->undoStack()->undo();
+        QCOMPARE(sheet().wires.size(), 1);
     }
 
     void gridStepIsKeptInTheProject()

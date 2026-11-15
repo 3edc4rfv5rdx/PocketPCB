@@ -469,6 +469,14 @@
         <translation>Выделить всё</translation>
     </message>
     <message>
+        <source>Turn the wire corner the other way</source>
+        <translation>Повернуть угол провода в другую сторону</translation>
+    </message>
+    <message>
+        <source>Slant the wire corner</source>
+        <translation>Скосить угол провода</translation>
+    </message>
+    <message>
         <source>Recent projects</source>
         <translation>Недавние проекты</translation>
     </message>
@@ -538,6 +546,10 @@
     <message>
         <source>Duplicate</source>
         <translation>Дублировать</translation>
+    </message>
+    <message>
+        <source>Wire</source>
+        <translation>Провод</translation>
     </message>
 </context>
 <context>

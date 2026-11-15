@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Wires are drawn on sheets with W, ending on a pin or a wire by themselves, and junction dots are drawn where three or more meet
 - N: File menu lists the ten recent projects to open again
 - N: Copy, cut, paste and duplicate on sheets: what is pasted follows the cursor and goes down on a click, its parts numbered on, onto any sheet or project
 - F: A double click on a part on the sheet shows its part and footprint in the library panel

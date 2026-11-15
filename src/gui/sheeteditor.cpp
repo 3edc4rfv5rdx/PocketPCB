@@ -3,6 +3,7 @@
 #include "canvasview.h"
 #include "grid.h"
 #include "sheetedit.h"
+#include "wiring.h"
 
 #include <QApplication>
 #include <QLineF>
@@ -25,12 +26,15 @@ SheetEditor::SheetEditor(Document *document, CanvasView *canvas, QObject *parent
     , m_document(document)
     , m_canvas(canvas)
 {
+    connect(m_document, &Document::designChanged, this, &SheetEditor::refreshPreview);
 }
 
 void SheetEditor::setSheet(int sheet)
 {
     m_sheet = sheet;
     m_placing = false;
+    m_wiring = false;
+    m_wirePoints.clear();
     m_selection.clear();
     m_pressed = false;
     m_dragging = false;
@@ -79,6 +83,10 @@ void SheetEditor::press(const QPointF &at, bool adding)
 {
     if (currentSheet() == nullptr)
         return;
+    if (m_wiring) {
+        wireClick(snapped(at));
+        return;
+    }
     if (m_placing) {
         hover(snapped(at));
         placeFloating();
@@ -109,7 +117,10 @@ void SheetEditor::press(const QPointF &at, bool adding)
 
 void SheetEditor::doubleClick(const QPointF &at, bool adding)
 {
-    const bool placing = m_placing;
+    // The first click ended a wire: the second must not begin another.
+    if (m_wiring && m_wirePoints.isEmpty())
+        return;
+    const bool placing = m_placing || m_wiring;
     press(at, adding);
     const Sheet *sheet = currentSheet();
     if (placing || sheet == nullptr)
@@ -126,7 +137,7 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
 void SheetEditor::move(const QPointF &at)
 {
     const Sheet *sheet = currentSheet();
-    if (m_placing) {
+    if (m_placing || m_wiring) {
         hover(snapped(at));
         return;
     }
@@ -153,7 +164,7 @@ void SheetEditor::move(const QPointF &at)
 
 void SheetEditor::release(const QPointF &at)
 {
-    if (m_placing)
+    if (m_placing || m_wiring)
         return;
     move(at);
     // A drag that came back to where it started may still have turned.
@@ -178,6 +189,14 @@ void SheetEditor::cancel()
 {
     if (m_placing) {
         stopPlacing();
+        return;
+    }
+    if (m_wiring) {
+        // The wire begun goes first, the drawing of wires next.
+        if (m_wirePoints.isEmpty())
+            m_wiring = false;
+        m_wirePoints.clear();
+        emit changed();
         return;
     }
     if (m_dragging || m_rubberBanding) {
@@ -330,6 +349,8 @@ void SheetEditor::startFloating(const Sheet &piece, const Library &source, Actio
     if (currentSheet() == nullptr || objectIds(piece).isEmpty())
         return;
     m_placing = true;
+    m_wiring = false;
+    m_wirePoints.clear();
     m_dragging = false;
     m_rubberBanding = false;
     m_pressed = false;
@@ -350,6 +371,13 @@ void SheetEditor::stopPlacing()
 
 void SheetEditor::hover(const Point &at)
 {
+    if (m_wiring) {
+        if (m_wireCursor != at) {
+            m_wireCursor = at;
+            updateWire();
+        }
+        return;
+    }
     if (!m_placing || m_floatAt == at)
         return;
     m_floatAt = at;
@@ -401,6 +429,100 @@ void SheetEditor::placeFloating()
     } else {
         emit changed();
     }
+}
+
+void SheetEditor::startWiring()
+{
+    if (currentSheet() == nullptr)
+        return;
+    m_placing = false;
+    m_dragging = false;
+    m_rubberBanding = false;
+    m_pressed = false;
+    m_selection.clear();
+    m_wiring = true;
+    m_wirePoints.clear();
+    m_wireCursor = Point{m_canvas->cursorX(), m_canvas->cursorY()};
+    emit changed();
+}
+
+void SheetEditor::swapWireCorner()
+{
+    if (!m_wiring)
+        return;
+    m_wireSwapped = !m_wireSwapped;
+    updateWire();
+}
+
+void SheetEditor::toggleWireSlant()
+{
+    if (!m_wiring)
+        return;
+    m_wireSlanted = !m_wireSlanted;
+    updateWire();
+}
+
+void SheetEditor::wireClick(const Point &at)
+{
+    m_wireCursor = at;
+    if (m_wirePoints.isEmpty()) {
+        m_wirePoints.append(at);
+        updateWire();
+        return;
+    }
+    const bool again = at == m_wirePoints.last();
+    m_wirePoints.append(wireRoute(m_wirePoints.last(), at, m_wireSwapped, m_wireSlanted));
+    if (again || isConnectionPoint(*currentSheet(), m_document->design().library, at))
+        finishWire();
+    else
+        updateWire();
+}
+
+void SheetEditor::finishWire()
+{
+    Wire wire;
+    wire.id = newObjectId();
+    wire.points = simplifiedWire(m_wirePoints);
+    m_wirePoints.clear();
+    if (wire.points.size() < 2) {
+        emit changed();
+        return;
+    }
+    Design design = m_document->design();
+    design.schematic.sheets[m_sheet].wires.append(wire);
+    const QString name = actionName(Action::Wire) + QStringLiteral(" (")
+                         + sheetName(design.schematic.sheets.at(m_sheet), m_sheet)
+                         + QLatin1Char(')');
+    m_document->change(name, design, m_sheet, {wire.id});
+    emit changed();
+}
+
+void SheetEditor::updateWire()
+{
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr) {
+        m_wiring = false;
+        m_wirePoints.clear();
+        emit changed();
+        return;
+    }
+    m_preview = *sheet;
+    if (!m_wirePoints.isEmpty()) {
+        Wire wire;
+        wire.points = m_wirePoints
+                      + wireRoute(m_wirePoints.last(), m_wireCursor, m_wireSwapped, m_wireSlanted);
+        if (wire.points.size() >= 2)
+            m_preview.wires.append(wire);
+    }
+    emit changed();
+}
+
+void SheetEditor::refreshPreview()
+{
+    if (m_wiring)
+        updateWire();
+    else if (m_placing)
+        updateFloating();
 }
 
 void SheetEditor::apply(const QString &action, const Sheet &edited)
@@ -464,6 +586,8 @@ QString SheetEditor::actionName(Action action)
         return tr("Paste");
     case Action::Duplicate:
         return tr("Duplicate");
+    case Action::Wire:
+        return tr("Wire");
     }
     return QString();
 }

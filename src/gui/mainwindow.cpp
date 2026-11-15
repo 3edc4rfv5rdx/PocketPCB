@@ -83,10 +83,10 @@ MainWindow::MainWindow(QWidget *parent)
     // The part being placed follows the cursor.
     connect(m_canvas, &CanvasView::cursorMoved, m_sheetEditor,
             [this](Coord x, Coord y) { m_sheetEditor->hover(Point{x, y}); });
-    // A short right click ends placing, as Esc does.
+    // A short right click ends placing and drawing wires, as Esc does.
     connect(m_canvas, &CanvasView::contextMenuRequested, m_sheetEditor, [this] {
-        if (m_sheetEditor->isPlacing())
-            m_sheetEditor->stopPlacing();
+        if (m_sheetEditor->isPlacing() || m_sheetEditor->isWiring())
+            m_sheetEditor->cancel();
     });
     connect(m_document, &Document::designChanged, this, &MainWindow::projectChanged);
     connect(m_document, &Document::modifiedChanged, this, &MainWindow::updateTitle);
@@ -249,6 +249,13 @@ void MainWindow::createMenus()
                   QKeySequence::Paste, &SheetEditor::paste);
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Duplicate), "actionDuplicate",
                   QKeySequence(Qt::CTRL | Qt::Key_D), &SheetEditor::duplicateSelection);
+    editMenu->addSeparator();
+    addEditAction(SheetEditor::actionName(SheetEditor::Action::Wire), "actionWire",
+                  QKeySequence(Qt::Key_W), &SheetEditor::startWiring);
+    addEditAction(tr("Turn the wire corner the other way"), "actionWireCorner",
+                  QKeySequence(Qt::Key_Space), &SheetEditor::swapWireCorner);
+    addEditAction(tr("Slant the wire corner"), "actionWireSlant", QKeySequence(Qt::Key_Slash),
+                  &SheetEditor::toggleWireSlant);
     editMenu->addSeparator();
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Rotate), "actionRotate",
                   QKeySequence(Qt::Key_R), &SheetEditor::rotateSelection);

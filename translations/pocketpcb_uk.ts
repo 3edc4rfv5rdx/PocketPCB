@@ -469,6 +469,14 @@
         <translation>Виділити все</translation>
     </message>
     <message>
+        <source>Turn the wire corner the other way</source>
+        <translation>Повернути кут проводу в інший бік</translation>
+    </message>
+    <message>
+        <source>Slant the wire corner</source>
+        <translation>Скосити кут проводу</translation>
+    </message>
+    <message>
         <source>Recent projects</source>
         <translation>Нещодавні проєкти</translation>
     </message>
@@ -538,6 +546,10 @@
     <message>
         <source>Duplicate</source>
         <translation>Дублювати</translation>
+    </message>
+    <message>
+        <source>Wire</source>
+        <translation>Провід</translation>
     </message>
 </context>
 <context>

@@ -12,7 +12,7 @@ Early development. What works now:
 - Library: a built-in library and your own (`~/.local/share/PocketPCB/library`), plus the library of the open project in `amp/library/`. Parts, symbols and footprints are JSON files you can copy by hand. A project keeps copies of the parts it uses, so it opens the same even when the library changes.
 - Built-in parts: resistors, capacitors, an inductor, a trimmer, diodes and LEDs, bipolar, field-effect and MOS transistors, a thyristor, DIP chips, a crystal, a fuse, a button, a buzzer, pin headers, screw terminals, a wire pad, and panel parts (jacks, switches, a potentiometer, a speaker, a battery). Symbols follow GOST/IEC style.
 - Library panel: search, parts grouped by designator prefix (international or GOST), a drawing of the symbol and footprint; a double click on a part on the sheet shows its part and footprint there.
-- Schematic sheet: choose with a click or a rectangle, drag along the grid, rotate, mirror, delete, copy, cut, paste and duplicate (pasted parts are numbered on), Undo/Redo.
+- Schematic sheet: choose with a click or a rectangle, drag along the grid, rotate, mirror, delete, copy, cut, paste and duplicate (pasted parts are numbered on), draw wires (W; Space turns the corner, / slants it) with junction dots placed by themselves, Undo/Redo.
 
 Planned next: placing parts from the library, wires, labels and power symbols, nets, ERC; then the board editor with ratsnest, tracks and DRC; Gerber and Excellon export; 1:1 printing for toner transfer; schematic printing with a title block and a BOM; an AppImage.
 

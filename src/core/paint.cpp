@@ -1,5 +1,7 @@
 #include "paint.h"
 
+#include "wiring.h"
+
 #include <QCoreApplication>
 #include <QFont>
 #include <QFontMetricsF>
@@ -50,6 +52,8 @@ const double TITLE_TEXT_HEIGHT = 2.5;
 const double TITLE_TEXT_MARGIN = 2.0;
 const double WIRE_WIDTH = 0.15;
 const double BUS_WIDTH = 0.5;
+// The dot where wires join.
+const double JUNCTION_DIAMETER = 0.8;
 const double LABEL_TEXT_HEIGHT = 1.27;
 const double LABEL_GAP = 0.4;
 const double POWER_STEM = 2.54;
@@ -907,6 +911,11 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const Library &li
         painter.setPen(linePen(paintcolor::wire(), WIRE_WIDTH));
         painter.drawPolyline(toPolygon(wire.points));
     }
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(paintcolor::wire());
+    for (const Point &dot : junctions(sheet, library))
+        painter.drawEllipse(toMm(dot), JUNCTION_DIAMETER / 2, JUNCTION_DIAMETER / 2);
+    painter.setBrush(Qt::NoBrush);
     for (const Component &component : sheet.components)
         paintComponent(painter, library, component);
     for (const PowerSymbol &power : sheet.powerSymbols)
