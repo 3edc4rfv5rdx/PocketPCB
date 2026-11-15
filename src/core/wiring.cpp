@@ -723,8 +723,8 @@ Sheet withWiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
     // follow it: a pin on a wire is joined to it, as its dot shows.
     Sheet before = sheetBefore;
     Sheet after = sheetAfter;
-    for (const PointFollower::MovedPin &pin :
-         PointFollower(sheetBefore, sheetAfter, moved, library).movedPins()) {
+    const PointFollower uncut(sheetBefore, sheetAfter, moved, library);
+    for (const PointFollower::MovedPin &pin : uncut.movedPins()) {
         if (pin.to == pin.from)
             continue;
         for (int i = 0; i < before.wires.size(); ++i) {
