@@ -64,10 +64,12 @@ void SheetEditor::setSheet(int sheet)
 
 void SheetEditor::setSelection(const QSet<ObjectId> &ids)
 {
+    // 'ids' may be the selection itself, which is cleared next.
+    const QSet<ObjectId> wanted = ids;
     m_selection.clear();
     dropSegment();
     for (const SheetObjectShape &shape : shapes()) {
-        if (ids.contains(shape.id))
+        if (wanted.contains(shape.id))
             m_selection.insert(shape.id);
     }
     emit changed();
