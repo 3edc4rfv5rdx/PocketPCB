@@ -51,7 +51,8 @@ QList<Point> simplifiedWire(const QList<Point> &points);
 // 'after', where the objects 'moved' of 'before' have been moved, turned or
 // mirrored, with the other wires kept on them. A wire end that lay on a pin
 // of a moved component or on a moved wire goes where that point went: the
-// whole wire is shifted when both its ends went the same way, else its last
+// whole wire is shifted when both its ends went the same way, and the ends
+// of other wires on it go with it, else its last
 // segment slides along with the end, or one or two bends lead on to where
 // it goes. Of the ways to do it that keep the other wires joined to it, the
 // one through the fewest bodies of parts, then along the fewest pins and

@@ -211,6 +211,22 @@ private slots:
         QCOMPARE(moved.components, sheet.components);
     }
 
+    // Two parts joined pin to pin by a wire, with another wire going down
+    // from its middle. Both parts go up: the wire between them goes whole,
+    // and the end of the other one goes with it.
+    void aWireOnAWireThatGoesWholeFollowsIt()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0)), twoPin(mm(20, 0))};
+        sheet.wires = {wire({mm(10, 0), mm(10, 10)}), wire({mm(5, 0), mm(15, 0)})};
+        const QSet<ObjectId> both = {sheet.components.at(0).id, sheet.components.at(1).id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, both, mm(0, -4)), both, library);
+        QCOMPARE(moved.wires.at(0).points, QList<Point>({mm(10, -4), mm(10, 10)}));
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(5, -4), mm(15, -4)}));
+    }
+
     // Two wires end on the right pin of a part at the origin, one going
     // right and one going down. The part goes up: the first is led to the
     // pin through the old junction, and the second stays joined there.

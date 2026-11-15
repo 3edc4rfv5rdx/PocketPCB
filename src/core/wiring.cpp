@@ -464,6 +464,21 @@ public:
             if (now != nullptr && now->points.size() == wire.points.size())
                 m_wires.append(qMakePair(&wire, now));
         }
+        // A wire left alone whose two ends go the same way goes whole, and
+        // so does what lies on it: found one through another.
+        for (bool found = true; found;) {
+            found = false;
+            for (const Wire &wire : before.wires) {
+                if (moved.contains(wire.id) || wire.points.size() < 2 || isShifted(wire))
+                    continue;
+                const std::optional<Point> first = follow(wire.points.first());
+                const std::optional<Point> last = follow(wire.points.last());
+                if (first && last && *first - wire.points.first() == *last - wire.points.last()) {
+                    m_shifted.append(qMakePair(&wire, *first - wire.points.first()));
+                    found = true;
+                }
+            }
+        }
     }
 
     // True when the end of a pin of a component left in place is at 'point'.
@@ -487,6 +502,10 @@ public:
                     return carriedAlong(a.at(i - 1), a.at(i), b.at(i - 1), b.at(i), point);
             }
         }
+        for (const auto &[wire, shift] : m_shifted) {
+            if (isOnWire(*wire, point))
+                return point + shift;
+        }
         return std::nullopt;
     }
 
@@ -497,6 +516,14 @@ private:
     // The pins of the components that stay: an end on one of them stays too.
     QList<Point> m_stillPins;
     QList<QPair<const Wire *, const Wire *>> m_wires;
+    // The wires left alone that go whole, with the way they go.
+    QList<QPair<const Wire *, Point>> m_shifted;
+
+    bool isShifted(const Wire &wire) const
+    {
+        return std::any_of(m_shifted.cbegin(), m_shifted.cend(),
+                           [&wire](const auto &other) { return other.first == &wire; });
+    }
 };
 
 // The ends of the wires of 'sheet' other than 'wire' and those in 'skip'
@@ -771,11 +798,13 @@ Sheet withWiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
         const Point last = wire.points.last();
         std::optional<Point> newFirst = follower.follow(first);
         std::optional<Point> newLast = follower.follow(last);
-        if (newFirst && onLed(first))
+        // A wire that goes whole has other ends following it: it is not held.
+        const bool whole = newFirst && newLast && *newFirst - first == *newLast - last;
+        if (!whole && newFirst && onLed(first))
             newFirst.reset();
-        if (newLast && onLed(last))
+        if (!whole && newLast && onLed(last))
             newLast.reset();
-        if (newFirst && newLast && *newFirst - first == *newLast - last) {
+        if (whole) {
             const Point shift = *newFirst - first;
             for (Point &point : wire.points)
                 point = point + shift;
@@ -790,9 +819,10 @@ Sheet withWiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
                     kept.append(end);
             }
             QList<Point> points = wire.points;
-            if (newFirst && newLast && points.size() <= 3) {
-                // Both ends went different ways and there is no middle
-                // segment to take it up: the wire is laid again between them.
+            if (newFirst && newLast && points.size() <= 3 && kept.isEmpty()) {
+                // Both ends went different ways, there is no middle segment
+                // to take it up and no wire joined to it to keep: the wire
+                // is laid again between them.
                 const bool upright = points.at(0).x == points.at(1).x;
                 points = laidBetween(*newFirst, *newLast, upright, obstacles.without(wire.id));
             } else {
