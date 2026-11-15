@@ -3,6 +3,7 @@
 #include "document.h"
 #include "paint.h"
 
+#include <QLineF>
 #include <QObject>
 #include <QPointF>
 #include <QRectF>
@@ -15,7 +16,10 @@ class CanvasView;
 // Editing of the sheet shown on the canvas: the selection, choosing with
 // the mouse (a click, Ctrl and a click, a rectangle), dragging the
 // selection along the grid with the wires on it following (Shift tears them
-// off), and turning, mirroring and deleting it.
+// off), and turning, mirroring and deleting the selection. A click on a
+// wire chooses the segment under it: a drag moves it, or one end of the
+// wire when taken near it; Delete removes it. A double click chooses the
+// whole wire.
 // Positions come in scene millimetres.
 class SheetEditor : public QObject
 {
@@ -38,6 +42,9 @@ public:
     void setSheet(int sheet);
 
     const QSet<ObjectId> &selection() const { return m_selection; }
+    // The segment of a wire chosen alone, in millimetres; a null line when
+    // none is, or while it is dragged.
+    QLineF chosenSegment() const;
     // Keeps only the ids of objects on the sheet.
     void setSelection(const QSet<ObjectId> &ids);
 
@@ -111,6 +118,12 @@ signals:
 
 private:
     const Sheet *currentSheet() const;
+    // True when a segment of a wire is chosen alone: no whole object is,
+    // and the sheet has the segment.
+    bool hasSegment() const;
+    void dropSegment() { m_segmentWire = ObjectId(); }
+    // What a step is named by: the chosen objects, or the segment's wire.
+    QSet<ObjectId> chosenIds() const;
     QList<SheetObjectShape> shapes() const;
     // The grid point the selection on 'sheet' is turned and mirrored about:
     // a single component's own point, else the middle of the selection.
@@ -156,6 +169,10 @@ private:
     CanvasView *m_canvas;
     int m_sheet = -1;
     QSet<ObjectId> m_selection;
+    // The segment chosen by a click on a wire: its wire and its index. It
+    // counts only while 'm_selection' is empty (hasSegment()).
+    ObjectId m_segmentWire;
+    int m_segmentIndex = -1;
 
     // The press that may start a drag or a rectangle.
     bool m_pressed = false;
@@ -165,6 +182,10 @@ private:
     bool m_pressOnSelection = false;
 
     bool m_dragging = false;
+    // The press took a wire near one of its ends, which a drag moves alone:
+    // the wire, and its last end or its first. Set by every press.
+    ObjectId m_endWire;
+    bool m_endIsLast = false;
     // The sheet the drag started from, and the same with what was turned
     // on the way.
     Sheet m_dragStart;

@@ -199,10 +199,12 @@ private slots:
         QCOMPARE(moved.wires.at(0).points, QList<Point>({mm(7, 3), mm(17, 3), mm(17, 13)}));
         QCOMPARE(moved.wires.at(1).points, sheet.wires.at(1).points);
 
-        // The wire is moved itself: it leaves the pins, the parts stay.
+        // The wire is moved itself: the parts stay, and bends lead its ends
+        // back to their pins.
         const QSet<ObjectId> line = {sheet.wires.at(0).id};
         moved = withWiresFollowing(sheet, movedObjects(sheet, line, mm(2, 3)), line, library);
-        QCOMPARE(moved.wires.at(0).points, QList<Point>({mm(7, 3), mm(17, 3), mm(17, 13)}));
+        QCOMPARE(moved.wires.at(0).points, QList<Point>({mm(5, 0), mm(5, 3), mm(17, 3), mm(17, 13),
+                                                         mm(15, 13), mm(15, 10)}));
         QCOMPARE(moved.components, sheet.components);
     }
 
@@ -390,6 +392,90 @@ private slots:
         QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(10, -6), mm(4, -6)}));
         // On the corner, which stays where it was.
         QCOMPARE(moved.wires.at(2).points, sheet.wires.at(2).points);
+    }
+
+    void aWireEndIsDraggedAlone()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        // A wire from (0, 0) to (10, 0), another one ending on its middle.
+        sheet.wires = {wire({mm(0, 0), mm(10, 0)}), wire({mm(5, 0), mm(5, 5)})};
+        const ObjectId id = sheet.wires.first().id;
+        const auto ended = [&](bool last, const Point &to) {
+            return withWireEndAt(sheet, library, id, last, to).wires;
+        };
+        QCOMPARE(ended(true, mm(10, 5)).first().points,
+                 QList<Point>({mm(0, 0), mm(10, 0), mm(10, 5)}));
+        QCOMPARE(ended(false, mm(-5, 0)).first().points, QList<Point>({mm(-5, 0), mm(10, 0)}));
+        // The other wire stays as it was.
+        QCOMPARE(ended(true, mm(10, 5)).at(1).points, sheet.wires.at(1).points);
+        // Onto the other end: no length left, so no wire.
+        QCOMPARE(ended(true, mm(0, 0)).size(), 1);
+        QVERIFY(ended(true, mm(0, 0)).first().id == sheet.wires.at(1).id);
+        // A wire it does not have: the sheet as it is.
+        QCOMPARE(withWireEndAt(sheet, library, newObjectId(), true, mm(3, 3)).wires.size(), 2);
+    }
+
+    // A wire from the right pin of a part at the origin, (5, 0), right to
+    // (15, 0), down to (15, 10) and right to a free end at (25, 10); another
+    // wire ends on its middle segment at (15, 5).
+    void aSegmentIsMovedAcrossItself()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0))};
+        sheet.wires = {wire({mm(5, 0), mm(15, 0), mm(15, 10), mm(25, 10)}),
+                       wire({mm(30, 5), mm(15, 5)})};
+        const ObjectId id = sheet.wires.first().id;
+        const auto moved = [&](int index, const Point &delta) {
+            return withSegmentMoved(sheet, library, id, index, delta).wires;
+        };
+        // The upright middle one goes sideways only; the others stretch, and
+        // the wire ending on it goes along.
+        QList<Wire> wires = moved(1, mm(3, 4));
+        QCOMPARE(wires.at(0).points, QList<Point>({mm(5, 0), mm(18, 0), mm(18, 10), mm(25, 10)}));
+        QCOMPARE(wires.at(1).points, QList<Point>({mm(30, 5), mm(18, 5)}));
+        // The first one ends on a pin: a bend leads back to it.
+        wires = moved(0, mm(0, -3));
+        QCOMPARE(wires.at(0).points,
+                 QList<Point>({mm(5, 0), mm(5, -3), mm(15, -3), mm(15, 10), mm(25, 10)}));
+        // The last one ends free: it just goes.
+        wires = moved(2, mm(0, 2));
+        QCOMPARE(wires.at(0).points, QList<Point>({mm(5, 0), mm(15, 0), mm(15, 12), mm(25, 12)}));
+        // Along itself: nothing.
+        QCOMPARE(moved(2, mm(4, 0)), sheet.wires);
+    }
+
+    void segmentsAreFoundCutAndCopied()
+    {
+        Sheet sheet;
+        sheet.wires = {wire({mm(0, 0), mm(10, 0), mm(10, 10), mm(20, 10)})};
+        const Wire &line = sheet.wires.first();
+        QCOMPARE(segmentAt(line, QPointF(5, 1)), 0);
+        QCOMPARE(segmentAt(line, QPointF(11, 6)), 1);
+        QCOMPARE(segmentAt(line, QPointF(30, 10)), 2);
+        QCOMPARE(segmentAt(wire({mm(1, 1)}), QPointF(1, 1)), -1);
+
+        // The middle one cut away: two wires, the first keeps the id.
+        Sheet cut = withoutSegment(sheet, line.id, 1);
+        QCOMPARE(cut.wires.size(), 2);
+        QVERIFY(cut.wires.at(0).id == line.id);
+        QCOMPARE(cut.wires.at(0).points, QList<Point>({mm(0, 0), mm(10, 0)}));
+        QCOMPARE(cut.wires.at(1).points, QList<Point>({mm(10, 10), mm(20, 10)}));
+        QVERIFY(cut.wires.at(1).id != line.id);
+        // An end one: the rest stays one wire.
+        cut = withoutSegment(sheet, line.id, 0);
+        QCOMPARE(cut.wires.size(), 1);
+        QCOMPARE(cut.wires.at(0).points, QList<Point>({mm(10, 0), mm(10, 10), mm(20, 10)}));
+        // The only one: the wire goes.
+        Sheet single;
+        single.wires = {wire({mm(0, 0), mm(5, 0)})};
+        QVERIFY(withoutSegment(single, single.wires.first().id, 0).wires.isEmpty());
+
+        const Sheet piece = segmentOf(sheet, line.id, 2);
+        QCOMPARE(piece.wires.size(), 1);
+        QCOMPARE(piece.wires.first().points, QList<Point>({mm(10, 10), mm(20, 10)}));
+        QVERIFY(segmentOf(sheet, line.id, 3).wires.isEmpty());
     }
 };
 

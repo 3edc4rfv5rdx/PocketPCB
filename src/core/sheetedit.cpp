@@ -292,6 +292,56 @@ Sheet withoutObjects(const Sheet &sheet, const QSet<ObjectId> &ids)
     return result;
 }
 
+int segmentAt(const Wire &wire, const QPointF &point)
+{
+    int nearest = -1;
+    double nearestDistance = 0;
+    for (int i = 1; i < wire.points.size(); ++i) {
+        const double distance =
+            distanceToSegment(point, toMm(wire.points.at(i - 1)), toMm(wire.points.at(i)));
+        if (nearest < 0 || distance < nearestDistance) {
+            nearest = i - 1;
+            nearestDistance = distance;
+        }
+    }
+    return nearest;
+}
+
+Sheet withoutSegment(const Sheet &sheet, const ObjectId &wire, int index)
+{
+    Sheet result = sheet;
+    for (int i = 0; i < result.wires.size(); ++i) {
+        const Wire cut = result.wires.at(i);
+        if (cut.id != wire || index < 0 || index + 1 >= cut.points.size())
+            continue;
+        result.wires.removeAt(i);
+        Wire after = cut;
+        after.id = newObjectId();
+        after.points = cut.points.mid(index + 1);
+        if (after.points.size() >= 2)
+            result.wires.insert(i, after);
+        Wire before = cut;
+        before.points = cut.points.mid(0, index + 1);
+        if (before.points.size() >= 2)
+            result.wires.insert(i, before);
+        break;
+    }
+    return result;
+}
+
+Sheet segmentOf(const Sheet &sheet, const ObjectId &wire, int index)
+{
+    Sheet piece;
+    for (const Wire &whole : sheet.wires) {
+        if (whole.id != wire || index < 0 || index + 1 >= whole.points.size())
+            continue;
+        Wire segment = whole;
+        segment.points = whole.points.mid(index, 2);
+        piece.wires.append(segment);
+    }
+    return piece;
+}
+
 Sheet objectsOf(const Sheet &sheet, const QSet<ObjectId> &ids)
 {
     return withoutObjects(sheet, objectIds(withoutObjects(sheet, ids)));

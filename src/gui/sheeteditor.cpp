@@ -16,6 +16,8 @@ namespace {
 
 // How near the mouse must be to an object to take it, in screen pixels.
 const double HIT_PIXELS = 4.0;
+// How near the mouse must be to a wire's end to take the end alone.
+const double END_PIXELS = 8.0;
 // How many components a step's name lists before it stops.
 const int NAMED_COMPONENTS = 3;
 
@@ -36,6 +38,7 @@ void SheetEditor::setSheet(int sheet)
     m_wiring = false;
     m_wirePoints.clear();
     m_selection.clear();
+    dropSegment();
     m_pressed = false;
     m_dragging = false;
     m_rubberBanding = false;
@@ -45,6 +48,7 @@ void SheetEditor::setSheet(int sheet)
 void SheetEditor::setSelection(const QSet<ObjectId> &ids)
 {
     m_selection.clear();
+    dropSegment();
     for (const SheetObjectShape &shape : shapes()) {
         if (ids.contains(shape.id))
             m_selection.insert(shape.id);
@@ -95,6 +99,8 @@ void SheetEditor::press(const QPointF &at, bool adding)
     m_pressed = true;
     m_pressAt = at;
     m_pressAdding = adding;
+    m_endWire = ObjectId();
+    dropSegment();
     const ObjectId hit = objectAt(shapes(), at, pixelsToMm(HIT_PIXELS));
     if (hit.isNull()) {
         m_pressOnSelection = false;
@@ -108,11 +114,62 @@ void SheetEditor::press(const QPointF &at, bool adding)
             m_selection.insert(hit);
         m_pressOnSelection = false;
     } else {
-        if (!m_selection.contains(hit))
-            m_selection = {hit};
         m_pressOnSelection = true;
+        // A wire not chosen whole: the segment under the cursor is chosen,
+        // and a drag moves it, or the wire's end when taken near it.
+        const Sheet *sheet = currentSheet();
+        const Wire *wire = nullptr;
+        if (sheet != nullptr && !m_selection.contains(hit)) {
+            for (const Wire &candidate : sheet->wires) {
+                if (candidate.id == hit && candidate.points.size() >= 2)
+                    wire = &candidate;
+            }
+        }
+        if (wire != nullptr) {
+            m_selection.clear();
+            m_segmentWire = hit;
+            m_segmentIndex = segmentAt(*wire, at);
+            const double first = QLineF(at, toMm(wire->points.first())).length();
+            const double last = QLineF(at, toMm(wire->points.last())).length();
+            if (qMin(first, last) <= pixelsToMm(END_PIXELS)) {
+                m_endWire = hit;
+                m_endIsLast = last < first;
+            }
+        } else if (!m_selection.contains(hit)) {
+            m_selection = {hit};
+        }
     }
     emit changed();
+}
+
+bool SheetEditor::hasSegment() const
+{
+    const Sheet *sheet = currentSheet();
+    if (m_segmentWire.isNull() || !m_selection.isEmpty() || sheet == nullptr)
+        return false;
+    for (const Wire &wire : sheet->wires) {
+        if (wire.id == m_segmentWire)
+            return m_segmentIndex >= 0 && m_segmentIndex + 1 < wire.points.size();
+    }
+    return false;
+}
+
+QLineF SheetEditor::chosenSegment() const
+{
+    if (!hasSegment() || m_dragging)
+        return QLineF();
+    for (const Wire &wire : currentSheet()->wires) {
+        if (wire.id == m_segmentWire) {
+            return QLineF(toMm(wire.points.at(m_segmentIndex)),
+                          toMm(wire.points.at(m_segmentIndex + 1)));
+        }
+    }
+    return QLineF();
+}
+
+QSet<ObjectId> SheetEditor::chosenIds() const
+{
+    return hasSegment() ? QSet<ObjectId>{m_segmentWire} : m_selection;
 }
 
 void SheetEditor::doubleClick(const QPointF &at, bool adding)
@@ -130,6 +187,18 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
         if (component.id == hit) {
             emit componentOpened(component.part, component.footprint);
             return;
+        }
+    }
+    // A wire is chosen whole.
+    if (!adding) {
+        for (const Wire &wire : sheet->wires) {
+            if (wire.id == hit) {
+                dropSegment();
+                m_endWire = ObjectId();
+                m_selection = {hit};
+                emit changed();
+                return;
+            }
         }
     }
 }
@@ -174,7 +243,10 @@ void SheetEditor::release(const QPointF &at, bool detached)
         const Sheet moved = m_preview;
         m_dragging = false;
         apply(actionName(Action::Move), moved);
+        // The wire's segments are counted anew: none stays chosen.
+        dropSegment();
     } else if (m_rubberBanding) {
+        dropSegment();
         const QSet<ObjectId> inside = objectsInside(shapes(), m_rubberBand);
         if (m_pressAdding)
             m_selection.unite(inside);
@@ -207,6 +279,7 @@ void SheetEditor::cancel()
         m_pressed = false;
     } else {
         m_selection.clear();
+        dropSegment();
     }
     emit changed();
 }
@@ -214,6 +287,7 @@ void SheetEditor::cancel()
 void SheetEditor::selectAll()
 {
     m_selection.clear();
+    dropSegment();
     for (const SheetObjectShape &shape : shapes())
         m_selection.insert(shape.id);
     emit changed();
@@ -241,6 +315,21 @@ void SheetEditor::transformDragged(Sheet (*transform)(const Sheet &, const QSet<
 
 void SheetEditor::updateDrag()
 {
+    if (!m_endWire.isNull()) {
+        for (const Wire &wire : m_dragStart.wires) {
+            if (wire.id == m_endWire) {
+                const Point end = m_endIsLast ? wire.points.last() : wire.points.first();
+                m_preview = withWireEndAt(m_dragStart, m_document->design().library, m_endWire,
+                                          m_endIsLast, end + m_dragDelta);
+            }
+        }
+        return;
+    }
+    if (hasSegment()) {
+        m_preview = withSegmentMoved(m_dragStart, m_document->design().library, m_segmentWire,
+                                     m_segmentIndex, m_dragDelta);
+        return;
+    }
     const Sheet moved = movedObjects(m_dragBase, m_selection, m_dragDelta);
     m_preview = m_dragDetached ? moved
                                : withWiresFollowing(m_dragStart, moved, m_selection,
@@ -255,7 +344,9 @@ void SheetEditor::rotateSelection()
         return;
     }
     if (m_dragging) {
-        transformDragged(rotatedObjects);
+        // A wire's end or segment alone is not turned.
+        if (m_endWire.isNull() && !hasSegment())
+            transformDragged(rotatedObjects);
         return;
     }
     const Sheet *sheet = currentSheet();
@@ -273,7 +364,9 @@ void SheetEditor::mirrorSelection()
         return;
     }
     if (m_dragging) {
-        transformDragged(mirroredObjects);
+        // A wire's end or segment alone is not turned.
+        if (m_endWire.isNull() && !hasSegment())
+            transformDragged(mirroredObjects);
         return;
     }
     const Sheet *sheet = currentSheet();
@@ -291,6 +384,15 @@ void SheetEditor::deleteSelection()
 void SheetEditor::removeSelection(Action action)
 {
     const Sheet *sheet = currentSheet();
+    if (hasSegment()) {
+        const QString name = stepName(actionName(action));
+        Design design = m_document->design();
+        design.schematic.sheets[m_sheet] = withoutSegment(*sheet, m_segmentWire, m_segmentIndex);
+        dropSegment();
+        m_document->change(name, design, m_sheet, QSet<ObjectId>());
+        emit changed();
+        return;
+    }
     if (sheet == nullptr || m_selection.isEmpty())
         return;
     // Named before the objects are gone.
@@ -299,6 +401,7 @@ void SheetEditor::removeSelection(Action action)
     design.schematic.sheets[m_sheet] = withoutObjects(*sheet, m_selection);
     const QSet<ObjectId> deleted = m_selection;
     m_selection.clear();
+    dropSegment();
     m_document->change(name, design, m_sheet, deleted);
     emit changed();
 }
@@ -316,7 +419,7 @@ void SheetEditor::startPlacing(const Library &source, const QString &part,
 void SheetEditor::copySelection()
 {
     const Sheet *sheet = currentSheet();
-    if (sheet == nullptr || m_placing || m_selection.isEmpty())
+    if (sheet == nullptr || m_placing || (m_selection.isEmpty() && !hasSegment()))
         return;
     m_clipboard = selectionPiece(*sheet);
     m_clipboardLibrary = m_document->design().library;
@@ -340,7 +443,7 @@ void SheetEditor::paste()
 void SheetEditor::duplicateSelection()
 {
     const Sheet *sheet = currentSheet();
-    if (sheet == nullptr || m_placing || m_selection.isEmpty())
+    if (sheet == nullptr || m_placing || (m_selection.isEmpty() && !hasSegment()))
         return;
     startFloating(withNewIds(selectionPiece(*sheet)), m_document->design().library,
                   Action::Duplicate, false);
@@ -348,6 +451,12 @@ void SheetEditor::duplicateSelection()
 
 Sheet SheetEditor::selectionPiece(const Sheet &sheet) const
 {
+    if (hasSegment()) {
+        const Sheet piece = segmentOf(sheet, m_segmentWire, m_segmentIndex);
+        const QList<Point> &ends = piece.wires.first().points;
+        const Point center = snapped(QLineF(toMm(ends.first()), toMm(ends.last())).center());
+        return movedObjects(piece, objectIds(piece), Point() - center);
+    }
     const Point center = selectionCenter(sheet);
     const Sheet piece = objectsOf(sheet, m_selection);
     return movedObjects(piece, objectIds(piece), Point() - center);
@@ -365,6 +474,7 @@ void SheetEditor::startFloating(const Sheet &piece, const Library &source, Actio
     m_rubberBanding = false;
     m_pressed = false;
     m_selection.clear();
+    dropSegment();
     m_floating = piece;
     m_floatSource = source;
     m_floatAction = action;
@@ -450,6 +560,7 @@ void SheetEditor::startWiring()
     m_rubberBanding = false;
     m_pressed = false;
     m_selection.clear();
+    dropSegment();
     m_wiring = true;
     m_wirePoints.clear();
     m_wireCursor = Point{m_canvas->cursorX(), m_canvas->cursorY()};
@@ -547,7 +658,7 @@ void SheetEditor::apply(const QString &action, const Sheet &edited)
 
 QString SheetEditor::stepName(const QString &action) const
 {
-    return stepName(action, *currentSheet(), m_selection);
+    return stepName(action, *currentSheet(), chosenIds());
 }
 
 QString SheetEditor::stepName(const QString &action, const Sheet &objects,

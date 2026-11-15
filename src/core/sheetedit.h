@@ -32,6 +32,18 @@ Sheet mirroredObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point
 // The sheet without the selected objects.
 Sheet withoutObjects(const Sheet &sheet, const QSet<ObjectId> &ids);
 
+// Segments of wires: segment 'index' runs from point 'index' to the next.
+// The segment of 'wire' nearest to 'point' (millimetres); -1 when the wire
+// has no segment.
+int segmentAt(const Wire &wire, const QPointF &point);
+// The sheet without the segment 'index' of the wire 'wire': what is left on
+// either side of it stays as two wires, the second with a new id, and a side
+// with no segment goes. The sheet as it is when it has no such segment.
+Sheet withoutSegment(const Sheet &sheet, const ObjectId &wire, int index);
+// A piece of a sheet holding the segment 'index' of the wire 'wire' as a
+// wire of its own, with the wire's id; empty when there is no such segment.
+Sheet segmentOf(const Sheet &sheet, const ObjectId &wire, int index);
+
 // Copying and pasting. A piece of a sheet is a Sheet that holds only some
 // objects; its id, title and paper mean nothing.
 

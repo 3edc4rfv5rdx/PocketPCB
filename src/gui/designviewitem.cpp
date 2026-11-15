@@ -95,6 +95,10 @@ void DesignViewItem::paintSelection(QPainter &painter, const Sheet &sheet) const
     fill.setAlpha(40);
     // A line one pixel wide at any zoom.
     QPen pen(paintcolor::selection(), 0);
+    // A wire or a bus, or a segment of a wire: a wide band along it.
+    QColor bandColor = paintcolor::selection();
+    bandColor.setAlpha(110);
+    const QPen band(bandColor, SELECTED_LINE_WIDTH, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     const QList<SheetObjectShape> shapes = sheetObjectShapes(sheet, m_document->design().library);
     for (const SheetObjectShape &shape : shapes) {
         if (!editor->selection().contains(shape.id))
@@ -104,14 +108,15 @@ void DesignViewItem::paintSelection(QPainter &painter, const Sheet &sheet) const
             painter.setBrush(fill);
             painter.drawRect(shape.rect);
         } else {
-            // A wire or a bus: a wide band along it.
-            QColor bandColor = paintcolor::selection();
-            bandColor.setAlpha(110);
-            painter.setPen(QPen(bandColor, SELECTED_LINE_WIDTH, Qt::SolidLine, Qt::RoundCap,
-                                Qt::RoundJoin));
+            painter.setPen(band);
             painter.setBrush(Qt::NoBrush);
             painter.drawPolyline(shape.polyline);
         }
+    }
+    const QLineF segment = editor->chosenSegment();
+    if (!segment.isNull()) {
+        painter.setPen(band);
+        painter.drawLine(segment);
     }
     const QRectF rubber = editor->rubberBand();
     if (!rubber.isEmpty()) {
