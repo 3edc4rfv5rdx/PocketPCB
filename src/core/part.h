@@ -25,6 +25,9 @@ struct Part
     QString value;
     // Connectors and wire pads: they carry nets off the board (used by ERC).
     bool connector = false;
+    // A part that needs no value (a button, a connector): the sheet shows no
+    // mark in place of an empty one, and ERC asks for none.
+    bool noValue = false;
     // Name shown in the library panel, by interface language code
     // ("en", "uk", "ru"); may be empty.
     QMap<QString, QString> name;

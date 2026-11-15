@@ -7,5 +7,6 @@
   "prefixGost": "X",
   "value": "",
   "connector": true,
+  "noValue": true,
   "name": {"en": "Wire pad", "uk": "Площадка під провід", "ru": "Площадка под провод"}
 }

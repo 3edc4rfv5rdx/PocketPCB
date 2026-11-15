@@ -156,13 +156,14 @@ QRectF selectionBounds(const QList<SheetObjectShape> &shapes, const QSet<ObjectI
     return bounds;
 }
 
-ComponentTextHit componentTextAt(const Sheet &sheet, const QPointF &point)
+ComponentTextHit componentTextAt(const Sheet &sheet, const Library &library,
+                                 const QPointF &point)
 {
     for (auto it = sheet.components.crbegin(); it != sheet.components.crend(); ++it) {
         for (const ComponentText text : {ComponentText::Designator, ComponentText::Value}) {
-            if (componentTextShown(*it, text).isEmpty())
+            if (componentTextShown(*it, text, library).isEmpty())
                 continue;
-            if (componentTextRect(*it, text).contains(point))
+            if (componentTextRect(*it, text, library).contains(point))
                 return ComponentTextHit{it->id, text};
         }
     }

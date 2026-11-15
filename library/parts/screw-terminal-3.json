@@ -7,5 +7,6 @@
   "prefixGost": "X",
   "value": "",
   "connector": true,
+  "noValue": true,
   "name": {"en": "Screw terminal, 3 contacts", "uk": "Гвинтова клема, 3 контакти", "ru": "Винтовой клеммник, 3 контакта"}
 }

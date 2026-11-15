@@ -546,8 +546,8 @@ void paintComponent(QPainter &painter, const Library &library, const Component &
              component.designator, PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center,
              paintcolor::symbol());
     drawText(painter, toMm(componentTextPoint(component, ComponentText::Value)),
-             componentTextShown(component, ComponentText::Value), PLACEHOLDER_TEXT_HEIGHT,
-             TextAlign::Center,
+             componentTextShown(component, ComponentText::Value, library),
+             PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center,
              component.value.isEmpty() ? paintcolor::placeholder() : paintcolor::symbol());
 }
 
@@ -978,8 +978,9 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
             else
                 bounds.add(missingRect(toMm(component.at), MISSING_SYMBOL_SIZE));
         }
-        bounds.add(componentTextRect(component, ComponentText::Designator));
-        bounds.add(componentTextRect(component, ComponentText::Value));
+        bounds.add(componentTextRect(component, ComponentText::Designator, library));
+        if (!componentTextShown(component, ComponentText::Value, library).isEmpty())
+            bounds.add(componentTextRect(component, ComponentText::Value, library));
         addRect(component.id, bounds.rect());
     }
     for (const PowerSymbol &power : sheet.powerSymbols) {
@@ -1007,11 +1008,15 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
     return shapes;
 }
 
-QString componentTextShown(const Component &component, ComponentText text)
+QString componentTextShown(const Component &component, ComponentText text,
+                           const Library &library)
 {
     if (text == ComponentText::Designator)
         return component.designator;
-    return component.value.isEmpty() ? QLatin1String(VALUE_PLACEHOLDER) : component.value;
+    if (!component.value.isEmpty())
+        return component.value;
+    const Part *part = library.findPart(component.part);
+    return part != nullptr && part->noValue ? QString() : QLatin1String(VALUE_PLACEHOLDER);
 }
 
 Point componentTextPoint(const Component &component, ComponentText text)
@@ -1020,10 +1025,11 @@ Point componentTextPoint(const Component &component, ComponentText text)
            + (text == ComponentText::Designator ? component.refAt : component.valueAt);
 }
 
-QRectF componentTextRect(const Component &component, ComponentText text)
+QRectF componentTextRect(const Component &component, ComponentText text,
+                         const Library &library)
 {
     return textBounds(toMm(componentTextPoint(component, text)),
-                      componentTextShown(component, text), PLACEHOLDER_TEXT_HEIGHT,
+                      componentTextShown(component, text, library), PLACEHOLDER_TEXT_HEIGHT,
                       TextAlign::Center);
 }
 

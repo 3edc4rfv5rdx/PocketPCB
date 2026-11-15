@@ -7,5 +7,6 @@
   "prefixGost": "XS",
   "value": "",
   "connector": false,
+  "noValue": true,
   "name": {"en": "DC power jack", "uk": "Гніздо живлення", "ru": "Гнездо питания"}
 }

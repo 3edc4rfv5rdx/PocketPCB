@@ -61,6 +61,7 @@ private slots:
         QVERIFY(part.footprints.isEmpty());
         QVERIFY(part.value.isEmpty());
         QCOMPARE(part.connector, false);
+        QCOMPARE(part.noValue, false);
         QVERIFY(part.name.isEmpty());
     }
 
@@ -86,6 +87,7 @@ private slots:
         part.prefixGost = QStringLiteral("X");
         part.value = QStringLiteral("Питание ґ");
         part.connector = true;
+        part.noValue = true;
         part.name.insert(QStringLiteral("en"), QStringLiteral("Pin header"));
         part.name.insert(QStringLiteral("uk"), QStringLiteral("Штирьовий роз'єм"));
 
@@ -117,6 +119,7 @@ private slots:
         other = part; other.prefixGost = QStringLiteral("D"); QVERIFY(other != part);
         other = part; other.value.clear();                  QVERIFY(other != part);
         other = part; other.connector = true;               QVERIFY(other != part);
+        other = part; other.noValue = true;                 QVERIFY(other != part);
         other = part; other.name.remove(QStringLiteral("ru")); QVERIFY(other != part);
         other = part; other.name[QStringLiteral("en")] += QLatin1Char('x'); QVERIFY(other != part);
     }

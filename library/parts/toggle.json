@@ -7,5 +7,6 @@
   "prefixGost": "SA",
   "value": "",
   "connector": false,
+  "noValue": true,
   "name": {"en": "Toggle switch", "uk": "Тумблер", "ru": "Тумблер"}
 }

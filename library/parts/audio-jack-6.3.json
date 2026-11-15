@@ -7,5 +7,6 @@
   "prefixGost": "XS",
   "value": "",
   "connector": false,
+  "noValue": true,
   "name": {"en": "Audio jack 6.3", "uk": "Аудіогніздо 6.3", "ru": "Аудиогнездо 6.3"}
 }

@@ -10,6 +10,7 @@ const char KEY_PREFIX[] = "prefix";
 const char KEY_PREFIX_GOST[] = "prefixGost";
 const char KEY_VALUE[] = "value";
 const char KEY_CONNECTOR[] = "connector";
+const char KEY_NO_VALUE[] = "noValue";
 const char KEY_NAME[] = "name";
 
 } // namespace
@@ -17,7 +18,8 @@ const char KEY_NAME[] = "name";
 bool operator==(const Part &a, const Part &b)
 {
     return a.symbol == b.symbol && a.footprints == b.footprints && a.prefix == b.prefix
-           && a.prefixGost == b.prefixGost && a.value == b.value && a.connector == b.connector && a.name == b.name;
+           && a.prefixGost == b.prefixGost && a.value == b.value && a.connector == b.connector && a.noValue == b.noValue
+           && a.name == b.name;
 }
 
 QString Part::displayName(const QStringList &languages, const QString &fallback) const
@@ -39,6 +41,7 @@ QJsonObject partToJson(const Part &part)
     object.insert(QLatin1String(KEY_PREFIX_GOST), part.prefixGost);
     object.insert(QLatin1String(KEY_VALUE), part.value);
     object.insert(QLatin1String(KEY_CONNECTOR), part.connector);
+    object.insert(QLatin1String(KEY_NO_VALUE), part.noValue);
     QJsonObject names;
     for (auto it = part.name.constBegin(); it != part.name.constEnd(); ++it)
         names.insert(it.key(), it.value());
@@ -55,11 +58,14 @@ Part partFromJson(const QJsonObject &object, const QString &where, JsonReader &r
         part.footprints = reader.nameList(object, KEY_FOOTPRINTS, where);
     part.prefix = reader.nonEmptyString(object, KEY_PREFIX, where);
     part.prefixGost = reader.nonEmptyString(object, KEY_PREFIX_GOST, where);
-    // Optional: no value, not a connector and no name when absent.
+    // Optional: no value, not a connector, a value asked for and no name
+    // when absent.
     if (object.contains(QLatin1String(KEY_VALUE)))
         part.value = reader.string(object, KEY_VALUE, where);
     if (object.contains(QLatin1String(KEY_CONNECTOR)))
         part.connector = reader.boolean(object, KEY_CONNECTOR, where);
+    if (object.contains(QLatin1String(KEY_NO_VALUE)))
+        part.noValue = reader.boolean(object, KEY_NO_VALUE, where);
     if (object.contains(QLatin1String(KEY_NAME)))
         part.name = reader.nameMap(object, KEY_NAME, where);
     return part;

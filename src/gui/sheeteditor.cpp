@@ -149,9 +149,10 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
         const Sheet *sheet = currentSheet();
         // A component's text, unless a line is taken over it: its component
         // is chosen, and a drag moves the text alone.
-        const ComponentTextHit text = isFoundByLine(found, hit)
-                                          ? ComponentTextHit()
-                                          : componentTextAt(*sheet, at);
+        const ComponentTextHit text =
+            isFoundByLine(found, hit)
+                ? ComponentTextHit()
+                : componentTextAt(*sheet, m_document->design().library, at);
         // A wire not chosen whole: the segment under the cursor is chosen,
         // and a drag moves it, or the wire's end when taken near it.
         const Wire *wire = nullptr;
@@ -287,7 +288,8 @@ void SheetEditor::editValue(const ObjectId &id)
         edit->selectAll();
         // Over the text, at least wide enough to type a value into.
         const QRect text =
-            m_canvas->mapFromScene(componentTextRect(component, ComponentText::Value))
+            m_canvas->mapFromScene(componentTextRect(component, ComponentText::Value,
+                                                     m_document->design().library))
                 .boundingRect();
         const int width =
             qMax(text.width(), edit->fontMetrics().averageCharWidth() * VALUE_EDIT_LETTERS);

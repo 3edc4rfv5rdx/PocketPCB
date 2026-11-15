@@ -37,9 +37,10 @@ struct ComponentTextHit
 // The text under 'point' (millimetres): the topmost whose rectangle holds
 // the point. No room is added around it, as the rectangle has room enough
 // and a click on the symbol next to it must take the component. An empty
-// value is found by its mark (see componentTextShown()), an empty
-// designator not at all.
-ComponentTextHit componentTextAt(const Sheet &sheet, const QPointF &point);
+// value is found by its mark (see componentTextShown()), when 'library'
+// shows one; an empty designator not at all.
+ComponentTextHit componentTextAt(const Sheet &sheet, const Library &library,
+                                 const QPointF &point);
 // 'sheet' with the text 'text' of the component 'id' moved by 'delta'; the
 // component itself stays.
 Sheet withComponentTextMoved(const Sheet &sheet, const ObjectId &id, ComponentText text,

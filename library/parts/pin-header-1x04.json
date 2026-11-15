@@ -7,5 +7,6 @@
   "prefixGost": "X",
   "value": "",
   "connector": true,
+  "noValue": true,
   "name": {"en": "Pin header 1×4", "uk": "Штирьовий роз’єм 1×4", "ru": "Штыревой разъём 1×4"}
 }
