@@ -998,35 +998,55 @@ Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectI
     Sheet result = sheet;
     result.wires[at].points = straightened(points);
 
-    // The ends of other wires on the segment go along with it.
+    // The ends of other wires on the segment go along with it, and those
+    // on the wire next to it that it has left go to the corner it left them
+    // for, so that they stay joined.
     Wire segment;
     segment.points = {a, b};
+    Wire upToSegment;
+    upToSegment.points = p.mid(0, index + 1);
+    const Wire &was = sheet.wires.at(at);
+    const QList<Point> now = result.wires.at(at).points;
+    const auto goesTo = [&](const Point &end) -> std::optional<Point> {
+        // What holds an end of the wire does not go with it.
+        if ((aHeld && end == a) || (bHeld && end == b))
+            return std::nullopt;
+        if (isOnWire(segment, end))
+            return end + d;
+        if (isOnWire(was, end) && !liesOn(now, end))
+            return isOnWire(upToSegment, end) ? na : nb;
+        return std::nullopt;
+    };
     for (int i = 0; i < result.wires.size(); ++i) {
         if (i == at)
             continue;
         Wire &other = result.wires[i];
         if (other.points.size() < 2)
             continue;
-        const auto goes = [&](const Point &end) {
-            // What holds an end of the wire does not go with it.
-            return isOnWire(segment, end) && !(aHeld && end == a) && !(bHeld && end == b);
-        };
-        const bool first = goes(other.points.first());
-        const bool last = goes(other.points.last());
-        if (first && last) {
-            for (Point &point : other.points)
-                point = point + d;
-            continue;
-        }
+        const Point firstEnd = other.points.first();
+        const Point lastEnd = other.points.last();
+        const std::optional<Point> first = goesTo(firstEnd);
+        const std::optional<Point> last = goesTo(lastEnd);
         if (!first && !last)
             continue;
+        if (first && last && *first - firstEnd == *last - lastEnd) {
+            const Point shift = *first - firstEnd;
+            for (Point &point : other.points)
+                point = point + shift;
+            continue;
+        }
+        const Obstacles own = obstacles.without(other.id);
         QList<Point> moving = other.points;
-        if (first)
+        if (last)
+            moving = ledTo(moving, *last, jointsOn(sheet, other, {wire}, {lastEnd}), own);
+        if (first && moving.size() >= 2) {
+            QList<Point> kept = jointsOn(sheet, other, {wire}, {firstEnd});
+            if (last)
+                kept.append(*last);
             std::reverse(moving.begin(), moving.end());
-        const QList<Point> kept = jointsOn(sheet, other, {wire}, {moving.last()});
-        moving = ledTo(moving, moving.last() + d, kept, obstacles.without(other.id));
-        if (first)
+            moving = ledTo(moving, *first, kept, own);
             std::reverse(moving.begin(), moving.end());
+        }
         other.points = moving;
     }
     result.wires.removeIf([](const Wire &w) { return w.points.size() < 2; });

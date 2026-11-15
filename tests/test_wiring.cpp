@@ -553,6 +553,21 @@ private slots:
         QCOMPARE(moved(2, mm(4, 0)), sheet.wires);
     }
 
+    // An upright segment with a level one after it, and a wire ending on
+    // the upright one near the corner. The level one goes up past that end:
+    // the end goes to the corner instead of being left behind.
+    void aWireOnASegmentThatShrinksStaysJoined()
+    {
+        const Library library;
+        Sheet sheet;
+        sheet.wires = {wire({mm(0, 0), mm(0, 10), mm(10, 10)}), wire({mm(-5, 8), mm(0, 8)})};
+        const QList<Wire> wires =
+            withSegmentMoved(sheet, library, sheet.wires.first().id, 1, mm(0, -5)).wires;
+        QCOMPARE(wires.at(0).points, QList<Point>({mm(0, 0), mm(0, 5), mm(10, 5)}));
+        QCOMPARE(wires.at(1).points.first(), mm(-5, 8));
+        QCOMPARE(wires.at(1).points.last(), mm(0, 5));
+    }
+
     // A wire across from one rail to another, its ends on their middles.
     void aSegmentSlidesAlongTheWiresItsEndsLieOn()
     {

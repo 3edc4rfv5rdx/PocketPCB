@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A wire joined to the segment next to a dragged one stays joined when that segment shrinks past it
 - E: A wire joined to a wire that goes whole between dragged parts follows it instead of staying behind
 - E: Wires stay on a part turned or mirrored in place with R or X instead of being left behind
 - E: A wire that passes through a pin of a dragged part follows the part instead of staying behind
