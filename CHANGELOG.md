@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+## v0.3.76 (2026-11-15)
 - N: Each page of a project opens with the zoom and position it was last looked at, kept in a hidden .ppview file beside the project
 - F: A click on one of several chosen objects keeps it chosen alone, while a drag still takes them all
 - F: Esc in a field of the properties panel takes back what was typed instead of dropping the selection
