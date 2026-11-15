@@ -18,7 +18,10 @@ namespace ppcb {
 namespace {
 
 // Sizes of what the program adds to a drawing, in millimetres.
-const double PIN_LINE_WIDTH = 0.15;
+// Symbols and wires are drawn at least this thick on the screen and on paper,
+// whatever the width their files give.
+const double SYMBOL_LINE_WIDTH = 0.25;
+const double PIN_LINE_WIDTH = SYMBOL_LINE_WIDTH;
 const double PIN_TEXT_HEIGHT = 1.0;
 const double PIN_TEXT_GAP = 0.4;
 const double PIN_POINT_RADIUS = 0.3;
@@ -50,7 +53,7 @@ const double TITLE_BLOCK_WIDTH = 90.0;
 const double TITLE_ROW_HEIGHT = 6.0;
 const double TITLE_TEXT_HEIGHT = 2.5;
 const double TITLE_TEXT_MARGIN = 2.0;
-const double WIRE_WIDTH = 0.15;
+const double WIRE_WIDTH = SYMBOL_LINE_WIDTH;
 const double BUS_WIDTH = 0.5;
 // The dot where wires join.
 const double JUNCTION_DIAMETER = 0.8;
@@ -181,15 +184,21 @@ QRectF circleRect(const QPointF &center, double radius)
     return QRectF(center.x() - radius, center.y() - radius, 2 * radius, 2 * radius);
 }
 
+// The width a graphic's line is drawn with: its own, but not under 'minWidth'.
+double lineWidth(const Graphic &graphic, double minWidth)
+{
+    return qMax(nmToMm(graphic.width), minWidth);
+}
+
 // 'upright': see drawText().
 void paintGraphic(QPainter &painter, const Graphic &graphic, const QColor &color,
-                  bool upright = false)
+                  bool upright = false, double minWidth = 0)
 {
     const QPointF a = toMm(graphic.a);
     const QPointF b = toMm(graphic.b);
     const double radius = nmToMm(graphic.radius);
 
-    const double width = nmToMm(graphic.width);
+    const double width = lineWidth(graphic, minWidth);
     painter.setPen(graphic.dashed ? dashedPen(color, width) : linePen(color, width));
     painter.setBrush(Qt::NoBrush);
 
@@ -224,11 +233,11 @@ void paintGraphic(QPainter &painter, const Graphic &graphic, const QColor &color
     }
 }
 
-QRectF graphicBounds(const Graphic &graphic)
+QRectF graphicBounds(const Graphic &graphic, double minWidth = 0)
 {
     const QPointF a = toMm(graphic.a);
     const QPointF b = toMm(graphic.b);
-    const double half = nmToMm(graphic.width) / 2;
+    const double half = lineWidth(graphic, minWidth) / 2;
     QRectF bounds;
 
     switch (graphic.kind) {
@@ -468,7 +477,7 @@ void paintPad(QPainter &painter, const Pad &pad, BoardSide partSide = BoardSide:
 void paintSymbolBody(QPainter &painter, const Symbol &symbol, bool upright, bool markPoints)
 {
     for (const Graphic &graphic : symbol.graphics)
-        paintGraphic(painter, graphic, paintcolor::symbol(), upright);
+        paintGraphic(painter, graphic, paintcolor::symbol(), upright, SYMBOL_LINE_WIDTH);
     for (const Pin &pin : symbol.pins)
         paintPin(painter, pin, symbol.showPinNumbers, symbol.showPinNames, upright, markPoints);
 }
@@ -831,7 +840,7 @@ QRectF symbolBounds(const Symbol &symbol)
     Bounds bounds;
     addCommonBounds(bounds, symbol.refAt, symbol.valueAt);
     for (const Graphic &graphic : symbol.graphics)
-        bounds.add(graphicBounds(graphic));
+        bounds.add(graphicBounds(graphic, SYMBOL_LINE_WIDTH));
     // Room for the pin's texts on every side of its line.
     const double margin = PIN_TEXT_GAP + 2 * PIN_TEXT_HEIGHT;
     for (const Pin &pin : symbol.pins) {
@@ -952,7 +961,7 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
             // The drawing without the room symbolBounds() keeps for pin texts.
             Bounds body;
             for (const Graphic &graphic : symbol->graphics)
-                body.add(graphicBounds(graphic));
+                body.add(graphicBounds(graphic, SYMBOL_LINE_WIDTH));
             for (const Pin &pin : symbol->pins)
                 body.add(QRectF(toMm(pin.at), toMm(pinBodyEnd(pin))).normalized());
             if (!body.isEmpty())
