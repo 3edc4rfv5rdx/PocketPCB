@@ -264,6 +264,23 @@ private slots:
         QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(8, 0), mm(5, 0), mm(5, 20)}));
     }
 
+    // Two wires end on the right pin of a part at the origin, one going
+    // right and one going down. The part and the first wire go up together:
+    // that wire just goes, with no bend back to where the second one was,
+    // and the second follows the pin.
+    void aWireMovedWithItsPinIsNotLedBack()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0))};
+        sheet.wires = {wire({mm(5, 0), mm(20, 0)}), wire({mm(5, 0), mm(5, 20)})};
+        const QSet<ObjectId> both = {sheet.components.first().id, sheet.wires.first().id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, both, mm(0, -4)), both, library);
+        QCOMPARE(moved.wires.at(0).points, QList<Point>({mm(5, -4), mm(20, -4)}));
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(5, -4), mm(5, 20)}));
+    }
+
     void aWireEndOnAPinLeftInPlaceStays()
     {
         const Library library = twoPinLibrary();

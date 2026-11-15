@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A wire dragged together with the part it ends on no longer grows a bend back to where another wire met it, and a wire led after a pin stays under the end of a dragged wire held on it
 - E: Dragging a part no longer reads the list of its pins after it is gone
 - F: Wires led after a dragged part keep off each other where they lie now, not where they lay, so no needless bends are added
 - E: A dragged pin that touched another pin and lands on an unrelated wire keeps a wire to that pin instead of losing it

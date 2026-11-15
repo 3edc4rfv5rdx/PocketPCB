@@ -67,7 +67,9 @@ QList<Point> simplifiedWire(const QList<Point> &points);
 // wire ends went together, an end at a point a wire already led still
 // passes through stays there, joined to it. A moved wire
 // whose end lay on a pin of a component left in place or on a wire left in
-// place keeps that end there: a bend leads back to it, the least bad way.
+// place keeps that end there: a bend leads back to it, the least bad way,
+// and a wire led after a pin keeps passing through it. An end on a pin
+// that is moved as well just goes, whatever else lay there.
 // A wire left in place that passes through a pin that goes counts as joined
 // to it: it is cut at the pin first, and its two parts follow.
 Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
