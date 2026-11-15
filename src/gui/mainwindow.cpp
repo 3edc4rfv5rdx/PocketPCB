@@ -173,6 +173,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
         event->ignore();
         return;
     }
+    storeViews();
     AppSettings::setWindowGeometry(saveGeometry());
     AppSettings::setWindowState(saveState());
     QMainWindow::closeEvent(event);
@@ -187,7 +188,7 @@ void MainWindow::showEvent(QShowEvent *event)
     // Once the window has been laid out and the canvas knows its size.
     QTimer::singleShot(0, this, [this] {
         if (m_designItem->isVisible())
-            m_canvas->fitRect(m_designItem->pageBounds());
+            showPageView();
     });
 }
 
@@ -407,6 +408,9 @@ void MainWindow::applyZoomCenterAndWarp(bool on)
 
 void MainWindow::newProject()
 {
+    storeViews();
+    m_views.clear();
+    m_shownViewKey.clear();
     m_document->startNew();
     showPage(0);
     updateTitle();
@@ -417,10 +421,13 @@ bool MainWindow::openProject(const QString &path)
 {
     QString error;
     QStringList problems;
+    storeViews();
     if (!m_document->open(path, error, &problems)) {
         showStatus(error);
         return false;
     }
+    m_views = readProjectView(path);
+    m_shownViewKey.clear();
     showPage(0);
     updateTitle();
     AppSettings::addRecentProject(path);
@@ -582,8 +589,10 @@ bool MainWindow::chooseProjectToSaveAs()
 
 void MainWindow::showPage(int page, bool fit)
 {
+    rememberView();
     showProject();
     m_designItem->setPage(page);
+    m_shownViewKey = pageViewKey(m_designItem->page());
     {
         // The tab follows the page, not the other way round.
         const QSignalBlocker blocker(m_tabs);
@@ -593,7 +602,53 @@ void MainWindow::showPage(int page, bool fit)
     m_sheetEditor->setSheet(shown == m_designItem->boardPage() ? -1 : shown);
     applyProjectGrid();
     if (fit)
+        showPageView();
+}
+
+QString MainWindow::pageViewKey(int page) const
+{
+    const QList<Sheet> &sheets = m_document->design().schematic.sheets;
+    if (page >= 0 && page < sheets.size())
+        return idToString(sheets.at(page).id);
+    return QLatin1String(BOARD_VIEW_KEY);
+}
+
+void MainWindow::rememberView()
+{
+    if (m_designItem->isVisible() && !m_shownViewKey.isEmpty()) {
+        m_views.insert(m_shownViewKey,
+                       PageView{m_canvas->viewCenter(), m_canvas->pixelsPerMm()});
+    }
+}
+
+void MainWindow::showPageView()
+{
+    const auto found = m_views.constFind(pageViewKey(m_designItem->page()));
+    if (found != m_views.constEnd())
+        m_canvas->setView(found->center, found->pixelsPerMm);
+    else
         m_canvas->fitRect(m_designItem->pageBounds());
+}
+
+void MainWindow::storeViews()
+{
+    rememberView();
+    // The views of sheets that are gone go too.
+    QSet<QString> keys{QLatin1String(BOARD_VIEW_KEY)};
+    for (const Sheet &sheet : m_document->design().schematic.sheets)
+        keys.insert(idToString(sheet.id));
+    for (auto it = m_views.begin(); it != m_views.end();) {
+        if (keys.contains(it.key()))
+            ++it;
+        else
+            it = m_views.erase(it);
+    }
+    const QString path = m_document->projectPath();
+    if (path.isEmpty())
+        return;
+    // A view not written is not worth a word: the page is fitted next time.
+    QString error;
+    writeProjectView(path, m_views, error);
 }
 
 void MainWindow::showStep(int page, const QSet<ObjectId> &ids)
@@ -788,6 +843,7 @@ bool MainWindow::showLibraryFile(const QString &path)
         m_libraryItem->setContent(content);
     }
     // The library file takes the place of the project on the canvas.
+    rememberView();
     m_libraryItem->setVisible(true);
     m_designItem->setVisible(false);
 

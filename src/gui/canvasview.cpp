@@ -106,6 +106,21 @@ void CanvasView::fitRect(const QRectF &rect)
     updateCursor();
 }
 
+QPointF CanvasView::viewCenter() const
+{
+    const QRectF view = viewport()->rect();
+    return viewportTransform().inverted().map(view.center());
+}
+
+void CanvasView::setView(const QPointF &center, double pixelsPerMm)
+{
+    const double target = qBound(MIN_PIXELS_PER_MM, pixelsPerMm, MAX_PIXELS_PER_MM);
+    const double current = this->pixelsPerMm();
+    scale(target / current, target / current);
+    centerOn(center);
+    updateCursor();
+}
+
 void CanvasView::drawBackground(QPainter *painter, const QRectF &rect)
 {
     painter->fillRect(rect, paintcolor::background());

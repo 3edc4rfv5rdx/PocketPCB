@@ -39,6 +39,11 @@ public:
     // Zooms and scrolls so that 'rect' (scene millimetres) fills most of the
     // view. Does nothing for an empty rectangle.
     void fitRect(const QRectF &rect);
+    // The scene point (millimetres) in the middle of the view.
+    QPointF viewCenter() const;
+    // Takes the scale 'pixelsPerMm', kept within the limits, and puts
+    // 'center' (scene millimetres) in the middle of the view.
+    void setView(const QPointF &center, double pixelsPerMm);
 
     // The cursor position snapped to the grid, as last reported.
     Coord cursorX() const { return m_cursorX; }

@@ -259,6 +259,37 @@ private slots:
         }
     }
 
+    void pagesOpenAsTheyWereLastLookedAt()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("amp.ppcb"));
+        QString error;
+        QVERIFY2(DesignFiles::write(path, twoSheetDesign(), error), qPrintable(error));
+
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QVERIFY(window.openProject(path));
+        CanvasView *canvas = window.canvas();
+        canvas->setView(QPointF(30, 40), 20);
+        window.showPage(1);
+        canvas->setView(QPointF(-10, 5), 8);
+        // Back to the first sheet: as it was left.
+        window.showPage(0);
+        QCOMPARE(canvas->pixelsPerMm(), 20.0);
+        QVERIFY(QLineF(canvas->viewCenter(), QPointF(30, 40)).length() < 0.5);
+
+        // Another project, then this one again: the views come from the file.
+        window.newProject();
+        QVERIFY(QFileInfo::exists(dir.filePath(QStringLiteral(".ppview"))));
+        QVERIFY(window.openProject(path));
+        QCOMPARE(canvas->pixelsPerMm(), 20.0);
+        window.showPage(1);
+        QCOMPARE(canvas->pixelsPerMm(), 8.0);
+        QVERIFY(QLineF(canvas->viewCenter(), QPointF(-10, 5)).length() < 0.5);
+    }
+
     void projectIsOpenedAndItsPagesAreTabs()
     {
         QTemporaryDir dir;

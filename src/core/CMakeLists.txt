@@ -14,6 +14,7 @@ add_library(pocketpcb_core STATIC
     part.h part.cpp
     point.h
     project.h project.cpp
+    projectview.h projectview.cpp
     library.h library.cpp
     schematic.h schematic.cpp
     sheetedit.h sheetedit.cpp

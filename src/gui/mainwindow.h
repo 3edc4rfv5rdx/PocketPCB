@@ -3,6 +3,7 @@
 #include "appsettings.h"
 #include "library.h"
 #include "librarypanel.h"
+#include "projectview.h"
 #include "units.h"
 
 #include <QMainWindow>
@@ -55,7 +56,8 @@ public:
     // Starts placing a part from the panel on the sheet shown. False, with
     // the reason in the status bar, when no sheet is shown.
     bool placePart(LibraryPanel::Source source, const QString &part, const QString &footprint);
-    // Shows page 'page' of the project and, when 'fit', fits the view to it.
+    // Shows page 'page' of the project and, when 'fit', the view it was last
+    // seen with, or fits the view to it when it has none yet.
     void showPage(int page, bool fit = true);
 
     // Shows a symbol or footprint file of the library on the canvas in the
@@ -114,6 +116,16 @@ private:
     bool chooseProjectToSaveAs();
     // Puts the project on the canvas in the place of a library file.
     void showProject();
+    // The key of page 'page' among the views: a sheet's id, or the board's key.
+    QString pageViewKey(int page) const;
+    // Keeps how the project page shown is looked at; nothing when a library
+    // file is shown instead.
+    void rememberView();
+    // Shows the page as it was last looked at, or fitted when never yet.
+    void showPageView();
+    // Keeps the view shown and writes the views beside the project file,
+    // when the project has one.
+    void storeViews();
     // Brings the tabs and the drawing in line with the project's content.
     void projectChanged();
     void updateTitle();
@@ -162,6 +174,12 @@ private:
     // Owned by the canvas scene.
     LibraryViewItem *m_libraryItem = nullptr;
     QTimer *m_autosaveTimer = nullptr;
+
+    // How the pages of the open project were last looked at, and the key of
+    // the page shown; none right after another project came, whose view is
+    // not this one's.
+    ProjectView m_views;
+    QString m_shownViewKey;
 
     MergedLibrary m_library;
     LibraryPanel *m_libraryPanel = nullptr;

@@ -24,6 +24,7 @@ extern const char FILE_TYPE_BOARD[];
 extern const char FILE_TYPE_SYMBOL[];
 extern const char FILE_TYPE_FOOTPRINT[];
 extern const char FILE_TYPE_PART[];
+extern const char FILE_TYPE_VIEW[];
 
 // "<place>: <message>", or the message alone when there is no place.
 QString withPlace(const QString &place, const QString &message);

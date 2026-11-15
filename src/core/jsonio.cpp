@@ -18,6 +18,7 @@ const char FILE_TYPE_BOARD[] = "pocketpcb-board";
 const char FILE_TYPE_SYMBOL[] = "pocketpcb-symbol";
 const char FILE_TYPE_FOOTPRINT[] = "pocketpcb-footprint";
 const char FILE_TYPE_PART[] = "pocketpcb-part";
+const char FILE_TYPE_VIEW[] = "pocketpcb-view";
 
 namespace {
 
