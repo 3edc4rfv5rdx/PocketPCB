@@ -49,11 +49,16 @@ QList<Point> simplifiedWire(const QList<Point> &points);
 // whole wire is shifted when both its ends went the same way, else its last
 // segment slides along with the end, or one or two bends lead on to where
 // it goes. Of the ways to do it that keep the other wires joined to it, the
-// one through the fewest bodies of parts, then along the fewest pins, then
-// with the fewest corners is taken; a wire going back over itself is cut
+// one through the fewest bodies of parts, then along the fewest pins and
+// other wires, then with the fewest corners, then the shortest is taken; a wire going back over itself is cut
 // short. An end that also lay on a pin of a component left in place stays
 // there. A wire left with no length is removed. A moved pin that touched a
-// pin left in place gets a new wire to it, laid the same way. A moved wire
+// pin left in place gets a new wire to it, laid the same way, from that pin
+// or from a wire there, joining it straight across from the moved pin. A
+// moved pin that was joined to something and lands on the middle of a wire
+// cuts the wire there, so that it is joined to it. Where several
+// wire ends went together, an end at a point a wire already led still
+// passes through stays there, joined to it. A moved wire
 // whose end lay on a pin of a component left in place or on a wire left in
 // place keeps that end there: a bend leads back to it, the least bad way.
 Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,

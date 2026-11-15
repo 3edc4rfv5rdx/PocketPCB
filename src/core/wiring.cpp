@@ -80,6 +80,17 @@ struct Obstacles
 {
     QList<QPair<Point, Point>> pins;
     QList<QRectF> bodies;
+    // The segments of the wires, with the wire they belong to.
+    QList<QPair<ObjectId, QPair<Point, Point>>> wires;
+
+    // The same without the segments of the wire 'id': what that wire keeps
+    // off when it is laid again.
+    Obstacles without(const ObjectId &id) const
+    {
+        Obstacles result = *this;
+        result.wires.removeIf([&id](const auto &segment) { return segment.first == id; });
+        return result;
+    }
 };
 
 // The obstacles of the components of 'sheet' whose symbol 'library' has.
@@ -110,6 +121,12 @@ Obstacles obstaclesOf(const Sheet &sheet, const Library &library)
             first = false;
         }
         obstacles.bodies.append(QRectF(QPointF(left, top), QPointF(right, bottom)));
+    }
+    for (const Wire &wire : sheet.wires) {
+        for (int i = 1; i < wire.points.size(); ++i) {
+            obstacles.wires.append(
+                qMakePair(wire.id, qMakePair(wire.points.at(i - 1), wire.points.at(i))));
+        }
     }
     return obstacles;
 }
@@ -152,13 +169,16 @@ bool crossesInside(const Point &a, const Point &b, const QRectF &rect)
            && clip(-dy, double(a.y) - rect.top()) && clip(dy, rect.bottom() - double(a.y));
 }
 
-// How bad the wire 'points' is: the times it goes through a component's
-// body, then the times it runs along a pin, then its number of points. Less
-// is better, in that order.
-std::tuple<int, int, int> badness(const QList<Point> &points, const Obstacles &obstacles)
+// How bad a wire is: the times it goes through a component's body, then
+// the times it runs along a pin or another wire, then its number of points,
+// then its length. Less is better, in that order.
+using Badness = std::tuple<int, int, int, qint64>;
+
+Badness badness(const QList<Point> &points, const Obstacles &obstacles)
 {
     int bodies = 0;
     int pins = 0;
+    qint64 length = 0;
     for (int i = 1; i < points.size(); ++i) {
         const Point &a = points.at(i - 1);
         const Point &b = points.at(i);
@@ -170,8 +190,13 @@ std::tuple<int, int, int> badness(const QList<Point> &points, const Obstacles &o
             if (overlap(a, b, tip, end))
                 ++pins;
         }
+        for (const auto &[owner, segment] : obstacles.wires) {
+            if (overlap(a, b, segment.first, segment.second))
+                ++pins;
+        }
+        length += std::llabs(b.x - a.x) + std::llabs(b.y - a.y);
     }
-    return std::make_tuple(bodies, pins, int(points.size()));
+    return std::make_tuple(bodies, pins, int(points.size()), length);
 }
 
 // The least bad of 'candidates' (one or more); the earliest of equals.
@@ -271,7 +296,7 @@ QList<Point> ledTo(const QList<Point> &wirePoints, const Point &to, const QList<
     };
     const int n = points.size();
     QList<Point> best;
-    std::tuple<int, int, int> bestBadness;
+    Badness bestBadness;
     QList<QList<Point>> unkept;
     for (int dropped = 0; dropped < n; ++dropped) {
         QList<QList<Point>> candidates;
@@ -317,6 +342,69 @@ QList<Point> laidBetween(const Point &from, const Point &to, bool upright,
                          const Obstacles &obstacles)
 {
     return bestWire(routesBetween(from, to, upright), obstacles);
+}
+
+// 'wires' with the first wire that passes through 'point' without ending
+// there cut in two at it: the first part keeps the wire's id, the second
+// gets a new one. Both then end at 'point', and so are joined to a pin there.
+void cutAt(QList<Wire> &wires, const Point &point)
+{
+    for (int i = 0; i < wires.size(); ++i) {
+        const Wire whole = wires.at(i);
+        const QList<Point> &p = whole.points;
+        if (p.size() < 2 || p.first() == point || p.last() == point || !isOnWire(whole, point))
+            continue;
+        QList<Point> before;
+        QList<Point> after = {point};
+        bool passed = false;
+        for (int j = 0; j < p.size(); ++j) {
+            if (!passed) {
+                before.append(p.at(j));
+                if (j + 1 < p.size() && isOnSegment(p.at(j), p.at(j + 1), point)) {
+                    if (before.last() != point)
+                        before.append(point);
+                    passed = true;
+                }
+            } else if (p.at(j) != point) {
+                after.append(p.at(j));
+            }
+        }
+        wires[i].points = before;
+        Wire rest = whole;
+        rest.id = newObjectId();
+        rest.points = after;
+        wires.insert(i + 1, rest);
+        return;
+    }
+}
+
+// A new wire to 'to' from 'from' or from the wires of 'wires' that pass
+// through 'from' or end there: from 'from' itself, or from the point of one
+// of their segments straight across from 'to', joining the wire there. The
+// least bad of all the ways (bestWire()).
+QList<Point> laidToJoint(const Point &from, const Point &to, const QList<Wire> &wires,
+                         const Obstacles &obstacles)
+{
+    QList<Point> starts = {from};
+    for (const Wire &wire : wires) {
+        if (wire.points.size() < 2 || !isOnWire(wire, from))
+            continue;
+        for (int i = 1; i < wire.points.size(); ++i) {
+            const Point &a = wire.points.at(i - 1);
+            const Point &b = wire.points.at(i);
+            std::optional<Point> across;
+            if (a.y == b.y && to.x >= qMin(a.x, b.x) && to.x <= qMax(a.x, b.x))
+                across = Point{to.x, a.y};
+            else if (a.x == b.x && to.y >= qMin(a.y, b.y) && to.y <= qMax(a.y, b.y))
+                across = Point{a.x, to.y};
+            if (across && !starts.contains(*across))
+                starts.append(*across);
+        }
+    }
+    QList<QList<Point>> candidates;
+    for (const Point &start : starts)
+        candidates.append(routesBetween(start, to, false));
+    return bestWire(candidates, obstacles);
 }
 
 // Where a point of 'before' goes when the objects 'moved' become what they
@@ -582,6 +670,15 @@ Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<Obj
     };
     Sheet result = after;
     QList<Wire> wires;
+    // The wires already led on from a point to where it went, with that
+    // point. Another end at the same point stays there when one of them still
+    // passes through it, joined to it, instead of going the same way beside it.
+    QList<QPair<Point, Wire>> led;
+    const auto onLed = [&led](const Point &point) {
+        return std::any_of(led.cbegin(), led.cend(), [&point](const auto &other) {
+            return other.first == point && isOnWire(other.second, point);
+        });
+    };
     for (Wire wire : result.wires) {
         if (wire.points.size() < 2) {
             wires.append(wire);
@@ -592,11 +689,12 @@ Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<Obj
             const Wire *was = wiresBefore.value(wire.id);
             if (was != nullptr && was->points.size() == wire.points.size()) {
                 QList<Point> points = wire.points;
+                const Obstacles own = obstacles.without(wire.id);
                 if (points.last() != was->points.last() && staysJoined(was->points.last()))
-                    points = ledBack(points, was->points.last(), obstacles);
+                    points = ledBack(points, was->points.last(), own);
                 if (points.first() != was->points.first() && staysJoined(was->points.first())) {
                     std::reverse(points.begin(), points.end());
-                    points = ledBack(points, was->points.first(), obstacles);
+                    points = ledBack(points, was->points.first(), own);
                     std::reverse(points.begin(), points.end());
                 }
                 wire.points = points;
@@ -606,8 +704,12 @@ Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<Obj
         }
         const Point first = wire.points.first();
         const Point last = wire.points.last();
-        const std::optional<Point> newFirst = follower.follow(first);
-        const std::optional<Point> newLast = follower.follow(last);
+        std::optional<Point> newFirst = follower.follow(first);
+        std::optional<Point> newLast = follower.follow(last);
+        if (newFirst && onLed(first))
+            newFirst.reset();
+        if (newLast && onLed(last))
+            newLast.reset();
         if (newFirst && newLast && *newFirst - first == *newLast - last) {
             const Point shift = *newFirst - first;
             for (Point &point : wire.points)
@@ -627,21 +729,25 @@ Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<Obj
                 // Both ends went different ways and there is no middle
                 // segment to take it up: the wire is laid again between them.
                 const bool upright = points.at(0).x == points.at(1).x;
-                points = laidBetween(*newFirst, *newLast, upright, obstacles);
+                points = laidBetween(*newFirst, *newLast, upright, obstacles.without(wire.id));
             } else {
                 if (newLast)
-                    points = ledTo(points, *newLast, kept, obstacles);
+                    points = ledTo(points, *newLast, kept, obstacles.without(wire.id));
                 if (newFirst && points.size() >= 2) {
                     std::reverse(points.begin(), points.end());
                     if (newLast)
                         kept.append(*newLast);
-                    points = ledTo(points, *newFirst, kept, obstacles);
+                    points = ledTo(points, *newFirst, kept, obstacles.without(wire.id));
                     std::reverse(points.begin(), points.end());
                 }
             }
             wire.points = points;
             if (wire.points.size() < 2)
                 continue;
+            if (newFirst)
+                led.append(qMakePair(first, wire));
+            if (newLast)
+                led.append(qMakePair(last, wire));
         }
         wires.append(wire);
     }
@@ -649,6 +755,9 @@ Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<Obj
     // Pins that touched pins left in place: a new wire keeps them joined.
     // One for each pair of points.
     QSet<QPair<quint64, quint64>> joined;
+    Sheet laid = after;
+    laid.wires = wires;
+    const Obstacles now = obstaclesOf(laid, library);
     for (const PointFollower::MovedPin &pin : follower.movedPins()) {
         if (!follower.isStillPin(pin.from) || pin.to == pin.from)
             continue;
@@ -656,11 +765,34 @@ Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<Obj
         if (joined.contains(pair))
             continue;
         joined.insert(pair);
+        // Onto a wire: it is cut there below.
+        if (std::any_of(wires.cbegin(), wires.cend(),
+                        [&pin](const Wire &other) { return isOnWire(other, pin.to); }))
+            continue;
         Wire wire;
         wire.id = newObjectId();
-        wire.points = laidBetween(pin.from, pin.to, false, obstacles);
+        wire.points = laidToJoint(pin.from, pin.to, wires, now);
         if (wire.points.size() >= 2)
             wires.append(wire);
+    }
+
+    // A pin that was joined to something and has come to lie on the middle
+    // of a wire, with no wire ending there, cuts that wire, so that it is
+    // joined to it.
+    const auto endsAt = [&wires](const Point &point) {
+        return std::any_of(wires.cbegin(), wires.cend(), [&point](const Wire &w) {
+            return w.points.size() >= 2 && (w.points.first() == point || w.points.last() == point);
+        });
+    };
+    for (const PointFollower::MovedPin &pin : follower.movedPins()) {
+        const bool wasJoined =
+            follower.isStillPin(pin.from)
+            || std::any_of(before.wires.cbegin(), before.wires.cend(), [&pin](const Wire &w) {
+                   return w.points.size() >= 2
+                          && (w.points.first() == pin.from || w.points.last() == pin.from);
+               });
+        if (wasJoined && !endsAt(pin.to))
+            cutAt(wires, pin.to);
     }
     result.wires = wires;
     return result;
@@ -680,7 +812,7 @@ Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &
         // The other wires joined to this one, apart from at the end that
         // goes, must stay joined.
         const QList<Point> kept = jointsOn(sheet, dragged, {}, {points.last()});
-        points = ledTo(points, to, kept, obstaclesOf(sheet, library));
+        points = ledTo(points, to, kept, obstaclesOf(sheet, library).without(wire));
         if (!last)
             std::reverse(points.begin(), points.end());
         if (points.size() < 2)
@@ -755,7 +887,7 @@ Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectI
         points = p.mid(0, index);
         points += wireRoute(p.at(index - 1), na, p.at(index - 1).x == a.x, false);
     } else if (aStays) {
-        points = laidBetween(a, na, d.x == 0, obstacles);
+        points = laidBetween(a, na, d.x == 0, obstacles.without(wire));
     }
     if (points.isEmpty() || points.last() != na)
         points.append(na);
@@ -765,7 +897,7 @@ Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectI
         points += wireRoute(nb, p.at(index + 2), p.at(index + 2).x != b.x, false);
         points += p.mid(index + 3);
     } else if (bStays) {
-        points += laidBetween(nb, b, d.x == 0, obstacles).mid(1);
+        points += laidBetween(nb, b, d.x == 0, obstacles.without(wire)).mid(1);
     }
 
     Sheet result = sheet;
@@ -797,7 +929,7 @@ Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectI
         if (first)
             std::reverse(moving.begin(), moving.end());
         const QList<Point> kept = jointsOn(sheet, other, {wire}, {moving.last()});
-        moving = ledTo(moving, moving.last() + d, kept, obstacles);
+        moving = ledTo(moving, moving.last() + d, kept, obstacles.without(other.id));
         if (first)
             std::reverse(moving.begin(), moving.end());
         other.points = moving;

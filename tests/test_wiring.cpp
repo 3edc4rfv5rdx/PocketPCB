@@ -203,9 +203,29 @@ private slots:
         // back to their pins.
         const QSet<ObjectId> line = {sheet.wires.at(0).id};
         moved = withWiresFollowing(sheet, movedObjects(sheet, line, mm(2, 3)), line, library);
-        QCOMPARE(moved.wires.at(0).points, QList<Point>({mm(5, 0), mm(5, 3), mm(17, 3), mm(17, 13),
-                                                         mm(15, 13), mm(15, 10)}));
+        // Halfway down to the pin, on the half grid: 11.43 mm.
+        const Coord halfway = 11430000;
+        QCOMPARE(moved.wires.at(0).points,
+                 QList<Point>({mm(5, 0), mm(5, 3), mm(17, 3), Point{17 * MM, halfway},
+                               Point{15 * MM, halfway}, mm(15, 10)}));
         QCOMPARE(moved.components, sheet.components);
+    }
+
+    // Two wires end on the right pin of a part at the origin, one going
+    // right and one going down. The part goes up: the first is led to the
+    // pin through the old junction, and the second stays joined there.
+    void wiresEndingTogetherKeepTheirJunction()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0))};
+        sheet.wires = {wire({mm(5, 0), mm(20, 0)}), wire({mm(5, 0), mm(5, 20)})};
+        const QSet<ObjectId> part = {sheet.components.first().id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, part, mm(0, -4)), part, library);
+        QCOMPARE(moved.wires.at(0).points, QList<Point>({mm(5, -4), mm(5, 0), mm(20, 0)}));
+        QCOMPARE(moved.wires.at(1).points, sheet.wires.at(1).points);
+        QVERIFY(junctions(moved, library).contains(mm(5, 0)));
     }
 
     void aWireEndOnAPinLeftInPlaceStays()
@@ -222,6 +242,41 @@ private slots:
         // The pins that touched are joined by a new wire.
         QCOMPARE(moved.wires.size(), 2);
         QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(5, 0), mm(5, -5)}));
+    }
+
+    // Part A at the origin and part B touch pin to pin at (5, 0), where a
+    // wire goes up from. B goes up and right: its new wire joins that wire
+    // straight across instead of going back to the pins.
+    void aNewWireJoinsAWireAtThePinsItLeft()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0)), twoPin(mm(10, 0))};
+        sheet.wires = {wire({mm(5, 0), mm(5, -10)})};
+        const QSet<ObjectId> b = {sheet.components.at(1).id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, b, mm(5, -6)), b, library);
+        QCOMPARE(moved.wires.size(), 2);
+        QCOMPARE(moved.wires.at(0).points, sheet.wires.at(0).points);
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(5, -6), mm(10, -6)}));
+        QVERIFY(junctions(moved, library).contains(mm(5, -6)));
+    }
+
+    // The same, with B going straight up: its pin lands on the middle of the
+    // wire, which is cut there, so that two of its ends meet the pin.
+    void aPinLandingOnAWireCutsIt()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0)), twoPin(mm(10, 0))};
+        sheet.wires = {wire({mm(5, 0), mm(5, -10)})};
+        const QSet<ObjectId> b = {sheet.components.at(1).id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, b, mm(0, -6)), b, library);
+        QCOMPARE(moved.wires.size(), 2);
+        QVERIFY(moved.wires.at(0).id == sheet.wires.at(0).id);
+        QCOMPARE(moved.wires.at(0).points, QList<Point>({mm(5, 0), mm(5, -6)}));
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(5, -6), mm(5, -10)}));
     }
 
     void pinsThatTouchedAreJoinedByANewWire()
@@ -345,8 +400,9 @@ private slots:
         const QSet<ObjectId> a = {sheet.components.first().id};
         const Sheet moved =
             withWiresFollowing(sheet, movedObjects(sheet, a, mm(0, 10)), a, library);
+        // Not down over the wire from below: round it.
         QCOMPARE(moved.wires.at(0).points,
-                 QList<Point>({mm(30, 0), mm(10, 0), mm(10, 5), mm(0, 5)}));
+                 QList<Point>({mm(30, 0), Point{5080000, 0}, Point{5080000, 5 * MM}, mm(0, 5)}));
         QCOMPARE(moved.wires.at(1).points, sheet.wires.at(1).points);
     }
 
