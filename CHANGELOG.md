@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The chosen row of the library panel, a part or a section and group title, is marked in bright blue, also when the panel is not in use
 - F: In the library panel the expand button opens the chosen part's section whole, the collapse button closes everything, sections stay as left, and their titles are bold and larger
 - N: Power symbols are placed from a Power group of the library panel, or with P, which places the last one again
 - F: Power symbols are library symbols with a net name, copied into the project like parts; bar, arrow, ground and chassis are built in, and the ground hides its GND

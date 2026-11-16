@@ -70,6 +70,14 @@ protected:
     }
 };
 
+// Sections and groups: chosen like the parts, so that the chosen row is
+// marked the same bright way wherever it is, but never edited or dragged.
+const Qt::ItemFlags HEADER_FLAGS = Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+
+// The chosen item: its background and its text.
+const char CHOSEN_ITEM_STYLE[] =
+    "QTreeView::item:selected, QTreeView::item:selected:!active { background: %1; color: %2; }";
+
 // The titles of the sections are bold and this much larger than the rest.
 const double SECTION_FONT_SCALE = 1.15;
 
@@ -224,6 +232,12 @@ LibraryPanel::LibraryPanel(QWidget *parent)
     m_tree = tree;
     m_tree->setHeaderHidden(true);
     m_tree->setColumnCount(1);
+    // The chosen item in the colour of the selection on the sheet, just as
+    // bright when the panel is not the one in use. A style sheet, since some
+    // styles draw the selection their own way, whatever the palette says.
+    m_tree->setStyleSheet(QString::fromLatin1(CHOSEN_ITEM_STYLE)
+                              .arg(paintcolor::selection().name(),
+                                   paintcolor::background().name()));
 
     m_footprintBox = new QComboBox(this);
     m_footprintBox->setObjectName(QStringLiteral("libraryFootprint"));
@@ -464,7 +478,7 @@ void LibraryPanel::addSection(const QString &title, const Library &library, Sour
                               const QSet<QString> &replaced)
 {
     QTreeWidgetItem *section = new QTreeWidgetItem(m_tree, {title});
-    section->setFlags(Qt::ItemIsEnabled);
+    section->setFlags(HEADER_FLAGS);
     QFont font = section->font(0);
     font.setBold(true);
     if (font.pointSizeF() > 0)
@@ -485,7 +499,7 @@ void LibraryPanel::addSection(const QString &title, const Library &library, Sour
     }
     for (auto group = groups.begin(); group != groups.end(); ++group) {
         QTreeWidgetItem *groupItem = new QTreeWidgetItem(section, {group.key()});
-        groupItem->setFlags(Qt::ItemIsEnabled);
+        groupItem->setFlags(HEADER_FLAGS);
         std::sort(group->begin(), group->end(), [](const auto &a, const auto &b) {
             return QString::localeAwareCompare(a.first, b.first) < 0;
         });
@@ -520,7 +534,7 @@ void LibraryPanel::addPowerGroup(QTreeWidgetItem *section, const Library &librar
         return QString::localeAwareCompare(a.first, b.first) < 0;
     });
     QTreeWidgetItem *group = new QTreeWidgetItem(section, {tr("Power")});
-    group->setFlags(Qt::ItemIsEnabled);
+    group->setFlags(HEADER_FLAGS);
     for (const auto &entry : entries) {
         QTreeWidgetItem *item = new QTreeWidgetItem(group, {entry.first});
         item->setData(0, PART_ROLE, entry.second);
