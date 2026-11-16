@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A wire begun on a bus leaves it at 45 degrees as well, and one going on the line of a bus into its end steps aside to enter it at 45 degrees
 - E: A bus holds the end of a wire that enters it, and the entry stays at 45 degrees when the wire is laid again
 - F: A wire drawn square on to a bus enters it at 45 degrees over its last grid step
 - N: Buses are drawn with B like wires, named BUS1, BUS2 and so on and renamed with a double click; a wire drawn to a bus ends on it

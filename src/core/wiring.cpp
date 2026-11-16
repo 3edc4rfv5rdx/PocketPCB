@@ -659,17 +659,34 @@ QList<Point> withBusEntry(const QList<Point> &points, const Sheet &sheet, Coord 
         for (int i = 1; i < bus.points.size(); ++i) {
             const Point &a = bus.points.at(i - 1);
             const Point &b = bus.points.at(i);
-            // The bus runs across the wire here.
-            const bool across = upright ? a.y == b.y : a.x == b.x;
-            if (!across || !isOnSegment(a, b, end))
+            if (!isOnSegment(a, b, end))
                 continue;
+            const Point back{sign(way.x) * step, sign(way.y) * step};
+            // The wire goes on the line of the bus into its end: its last
+            // cell steps aside, down from a level bus, right of an upright
+            // one, and comes back at 45 degrees into the end.
+            const bool lastOfBus = end == bus.points.first() || end == bus.points.last();
+            const bool inLine = upright ? a.x == b.x : a.y == b.y;
+            if (inLine) {
+                // Along the bus, or into its corner, where the next segment
+                // may run across.
+                if (!lastOfBus || isOnSegment(a, b, from))
+                    continue;
+                const Point aside = upright ? Point{step, 0} : Point{0, step};
+                QList<Point> result = points.mid(0, n - 1);
+                result.append(from + aside);
+                result.append(end - back + aside);
+                result.append(end);
+                // Stepping aside back over a wire that came that way shortens it.
+                return straightened(result);
+            }
+            // The bus runs across the wire here.
             const Point along = upright ? Point{step, 0} : Point{0, step};
             Point target = end + along;
             if (!isOnSegment(a, b, target))
                 target = end - along;
             if (!isOnSegment(a, b, target))
                 return points;
-            const Point back{sign(way.x) * step, sign(way.y) * step};
             QList<Point> result = points.mid(0, n - 1);
             result.append(end - back);
             result.append(target);
@@ -677,6 +694,25 @@ QList<Point> withBusEntry(const QList<Point> &points, const Sheet &sheet, Coord 
         }
     }
     return points;
+}
+
+QList<Point> withBusEntries(const QList<Point> &points, const Sheet &sheet,
+                            const Library &library, Coord step)
+{
+    const auto enters = [&](const Point &end) {
+        return isOnBus(sheet, end) && !isConnectionPoint(sheet, library, end);
+    };
+    QList<Point> result = points;
+    if (result.size() < 2)
+        return result;
+    if (enters(result.last()))
+        result = withBusEntry(result, sheet, step);
+    if (enters(result.first())) {
+        std::reverse(result.begin(), result.end());
+        result = withBusEntry(result, sheet, step);
+        std::reverse(result.begin(), result.end());
+    }
+    return result;
 }
 
 QList<Point> partPinPoints(const Sheet &sheet, const Library &library)

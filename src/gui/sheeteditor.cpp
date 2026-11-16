@@ -1012,8 +1012,6 @@ void SheetEditor::wireClick(const Point &at)
     const Sheet &sheet = *currentSheet();
     const bool joins = !m_drawingBus && isConnectionPoint(sheet, m_document->design().library, at);
     const bool entersBus = !m_drawingBus && !joins && isOnBus(sheet, at);
-    if (entersBus)
-        m_wirePoints = withBusEntry(m_wirePoints, sheet, m_canvas->gridStep());
     if (again || joins || entersBus)
         finishWire();
     else
@@ -1042,7 +1040,8 @@ void SheetEditor::finishWire()
     } else {
         Wire wire;
         wire.id = id;
-        wire.points = points;
+        // Its ends on buses enter them at 45 degrees, the first as well.
+        wire.points = withBusEntries(points, sheet, design.library, m_canvas->gridStep());
         sheet.wires.append(wire);
         name = actionName(Action::Wire);
     }
@@ -1071,11 +1070,9 @@ void SheetEditor::updateWire()
             bus.name = nextBusName(m_document->design().schematic);
             m_preview.buses.append(bus);
         } else if (wire.points.size() >= 2) {
-            // Shown as it will enter a bus under the cursor.
-            if (!isConnectionPoint(*sheet, m_document->design().library, m_wireCursor)
-                && isOnBus(*sheet, m_wireCursor)) {
-                wire.points = withBusEntry(wire.points, *sheet, m_canvas->gridStep());
-            }
+            // Shown as it will enter the buses it ends on.
+            wire.points = withBusEntries(wire.points, *sheet, m_document->design().library,
+                                         m_canvas->gridStep());
             m_preview.wires.append(wire);
         }
     }

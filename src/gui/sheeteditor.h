@@ -128,9 +128,9 @@ public:
     // Drawing wires, until cancel() with no wire begun: a click begins a
     // wire and every next one sets a corner; the wire follows the cursor
     // with one corner. A click on a pin or a wire, or a second click on the
-    // same point, ends it, and so does a click on a bus, which the wire
-    // enters at 45 degrees over its last grid step (see withBusEntry());
-    // cancel() drops the wire begun.
+    // same point, ends it, and so does a click on a bus. A wire enters a bus
+    // it ends or begins on at 45 degrees over its grid step there (see
+    // withBusEntries()); cancel() drops the wire begun.
     void startWiring();
     // Drawing buses the same way, until cancel(): a second click on the
     // same point ends one, and it is put down as one step, named with

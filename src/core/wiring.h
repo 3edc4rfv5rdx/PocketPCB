@@ -52,8 +52,16 @@ bool isOnBus(const Sheet &sheet, const Point &point);
 // bus square on and is 'step' long at least, its last 'step' is turned into
 // a slant to the point 'step' along the bus, to the right of an upright wire
 // and down from a level one, or the other way where the bus does not reach.
-// 'points' as they are otherwise.
+// A last segment that goes on the line of the bus into an end of it steps
+// 'step' aside instead, down from a level bus and right of an upright one,
+// and its last 'step' is a slant back into that end. 'points' as they are
+// otherwise.
 QList<Point> withBusEntry(const QList<Point> &points, const Sheet &sheet, Coord step);
+// The same at both ends of the wire 'points', drawn on 'sheet' and not on it
+// yet: each end that lies on a bus and does not join a pin or a wire there
+// enters the bus at 45 degrees.
+QList<Point> withBusEntries(const QList<Point> &points, const Sheet &sheet,
+                            const Library &library, Coord step);
 
 // True when a wire ending at 'point' would connect there: to a pin, or to
 // a wire of 'sheet'.

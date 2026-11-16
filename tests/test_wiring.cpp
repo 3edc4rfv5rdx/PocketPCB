@@ -223,6 +223,16 @@ private slots:
                  QList<Point>({mm(30, 20), mm(21, 20), mm(20, 19)}));
         QCOMPARE(withBusEntry({mm(5, 5), mm(5, 2), mm(8, 2), mm(8, 0)}, sheet, step),
                  QList<Point>({mm(5, 5), mm(5, 2), mm(8, 2), mm(8, 1), mm(9, 0)}));
+        // On the line of the bus into its end: a step aside, then a slant.
+        QCOMPARE(withBusEntry({mm(-10, 0), mm(0, 0)}, sheet, step),
+                 QList<Point>({mm(-10, 0), mm(-10, 1), mm(-1, 1), mm(0, 0)}));
+        QCOMPARE(withBusEntry({mm(-10, 5), mm(-10, 0), mm(0, 0)}, sheet, step),
+                 QList<Point>({mm(-10, 5), mm(-10, 1), mm(-1, 1), mm(0, 0)}));
+        QCOMPARE(withBusEntry({mm(20, 30), mm(20, 20)}, sheet, step),
+                 QList<Point>({mm(20, 30), mm(21, 30), mm(21, 21), mm(20, 20)}));
+        // Into its corner on the line of one segment: across the other one.
+        QCOMPARE(withBusEntry({mm(30, 0), mm(20, 0)}, sheet, step),
+                 QList<Point>({mm(30, 0), mm(21, 0), mm(20, 1)}));
         // Left as they are: along the bus, slanted already, too short, off it.
         for (const QList<Point> &points :
              {QList<Point>({mm(-5, 0), mm(5, 0)}), QList<Point>({mm(5, 5), mm(10, 0)}),
@@ -230,6 +240,24 @@ private slots:
               QList<Point>({mm(10, 10), mm(10, 1)})}) {
             QCOMPARE(withBusEntry(points, sheet, step), points);
         }
+    }
+
+    // A wire begun on a bus leaves it at 45 degrees too; an end that joins a
+    // pin or a wire there is left as it is.
+    void wiresBegunOnBusesLeaveThemSlanted()
+    {
+        Sheet sheet;
+        Bus bus;
+        bus.points = {mm(0, 0), mm(20, 0)};
+        sheet.buses = {bus};
+        const Library library;
+        QCOMPARE(withBusEntries({mm(10, 0), mm(10, 10)}, sheet, library, MM),
+                 QList<Point>({mm(11, 0), mm(10, 1), mm(10, 10)}));
+        QCOMPARE(withBusEntries({mm(5, 0), mm(5, 10), mm(15, 10), mm(15, 0)}, sheet, library, MM),
+                 QList<Point>({mm(6, 0), mm(5, 1), mm(5, 10), mm(15, 10), mm(15, 1), mm(16, 0)}));
+        sheet.wires = {wire({mm(10, 0), mm(10, -10)})};
+        QCOMPARE(withBusEntries({mm(10, 0), mm(10, 10)}, sheet, library, MM),
+                 QList<Point>({mm(10, 0), mm(10, 10)}));
     }
 
     // A bus holds the end of a wire that enters it, and the entry stays at
