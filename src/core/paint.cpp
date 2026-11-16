@@ -5,6 +5,7 @@
 #include <QCoreApplication>
 #include <QFont>
 #include <QFontMetricsF>
+#include <QLineF>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPolygonF>
@@ -61,6 +62,12 @@ const double LABEL_TEXT_HEIGHT = 1.27;
 const double LABEL_GAP = 0.4;
 const double POWER_STEM = 2.54;
 const double POWER_BAR_HALF = 1.27;
+// The arrow's head: how far it reaches back and to each side.
+const double POWER_ARROW = 0.8;
+const int GROUND_BARS = 3;
+const double GROUND_BAR_STEP = 0.5;
+// How far each slanted stroke of the chassis reaches, back and to the side.
+const double CHASSIS_STROKE = 0.8;
 const double NO_CONNECT_HALF = 0.635;
 
 // The board.
@@ -562,18 +569,65 @@ void paintLabel(QPainter &painter, const Label &label)
     painter.restore();
 }
 
-// A stem from the connection point, a bar across its end and the name
-// beyond the bar. Not turned, the stem points up.
+// The lines of a power symbol, not turned: a stem up from the connection
+// point at the origin, and at its end what 'kind' draws.
+QList<QLineF> powerLines(PowerKind kind)
+{
+    const double s = POWER_STEM;
+    const double h = POWER_BAR_HALF;
+    QList<QLineF> lines = {QLineF(0, 0, 0, -s)};
+    switch (kind) {
+    case PowerKind::Bar:
+        lines.append(QLineF(-h, -s, h, -s));
+        break;
+    case PowerKind::Arrow:
+        lines.append(QLineF(-POWER_ARROW, -s + POWER_ARROW, 0, -s));
+        lines.append(QLineF(0, -s, POWER_ARROW, -s + POWER_ARROW));
+        break;
+    case PowerKind::Ground:
+        for (int i = 0; i < GROUND_BARS; ++i) {
+            const double half = h * (GROUND_BARS - i) / GROUND_BARS;
+            const double y = -s - i * GROUND_BAR_STEP;
+            lines.append(QLineF(-half, y, half, y));
+        }
+        break;
+    case PowerKind::Chassis:
+        lines.append(QLineF(-h, -s, h, -s));
+        for (const double x : {-h, 0.0, h})
+            lines.append(QLineF(x, -s, x - CHASSIS_STROKE, -s - CHASSIS_STROKE));
+        break;
+    }
+    return lines;
+}
+
+// The name a power symbol shows: none for a ground symbol of the usual ground.
+QString powerNameShown(const PowerSymbol &power)
+{
+    if (power.kind == PowerKind::Ground && power.name == QLatin1String(GROUND_NAME))
+        return QString();
+    return power.name;
+}
+
+// Where the name of a power symbol stands, not turned: beyond its lines.
+QPointF powerNameAt(PowerKind kind)
+{
+    double top = 0;
+    for (const QLineF &line : powerLines(kind))
+        top = std::min({top, line.y1(), line.y2()});
+    return QPointF(0, top - (LABEL_TEXT_HEIGHT / 2 + LABEL_GAP));
+}
+
+// The lines of 'kind' and the name beyond them. Not turned, the stem points up.
 void paintPowerSymbol(QPainter &painter, const PowerSymbol &power)
 {
     painter.save();
     painter.translate(toMm(power.at));
     painter.rotate(power.rotation);
     painter.setPen(linePen(paintcolor::symbol(), WIRE_WIDTH));
-    painter.drawLine(QPointF(0, 0), QPointF(0, -POWER_STEM));
-    painter.drawLine(QPointF(-POWER_BAR_HALF, -POWER_STEM), QPointF(POWER_BAR_HALF, -POWER_STEM));
-    drawText(painter, QPointF(0, -(POWER_STEM + LABEL_TEXT_HEIGHT / 2 + LABEL_GAP)), power.name,
-             LABEL_TEXT_HEIGHT, TextAlign::Center, paintcolor::symbol(), true);
+    for (const QLineF &line : powerLines(power.kind))
+        painter.drawLine(line);
+    drawText(painter, powerNameAt(power.kind), powerNameShown(power), LABEL_TEXT_HEIGHT,
+             TextAlign::Center, paintcolor::symbol(), true);
     painter.restore();
 }
 
@@ -996,9 +1050,13 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
     for (const PowerSymbol &power : sheet.powerSymbols) {
         // Drawn pointing up, then turned about its point.
         Bounds bounds;
-        bounds.add(QRectF(QPointF(-POWER_BAR_HALF, -POWER_STEM), QPointF(POWER_BAR_HALF, 0)));
-        bounds.add(textBounds(QPointF(0, -(POWER_STEM + LABEL_TEXT_HEIGHT / 2 + LABEL_GAP)),
-                              power.name, LABEL_TEXT_HEIGHT, TextAlign::Center));
+        for (const QLineF &line : powerLines(power.kind))
+            bounds.add(QRectF(line.p1(), line.p2()).normalized());
+        const QString name = powerNameShown(power);
+        if (!name.isEmpty()) {
+            bounds.add(textBounds(powerNameAt(power.kind), name, LABEL_TEXT_HEIGHT,
+                                  TextAlign::Center));
+        }
         QTransform transform;
         transform.translate(nmToMm(power.at.x), nmToMm(power.at.y));
         transform.rotate(power.rotation);

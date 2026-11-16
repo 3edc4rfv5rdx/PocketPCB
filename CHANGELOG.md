@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Power symbols are drawn as a bar, an arrow, a ground or a chassis; a ground named GND shows no name
 - E: Wires join a power symbol's point like a pin: they follow it when it moves or turns, and a dot shows where three meet
 - F: Mirroring moves from X to M, leaving X for the no-connect mark
 ## v0.3.76 (2026-11-15)

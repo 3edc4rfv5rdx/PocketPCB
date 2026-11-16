@@ -66,6 +66,7 @@ Schematic fullSchematic()
     power.at = Point{0, 5 * PIN_GRID};
     power.name = QStringLiteral("+5V");
     power.rotation = 180;
+    power.kind = PowerKind::Chassis;
     first.powerSymbols.append(power);
 
     NoConnect mark;
@@ -202,6 +203,7 @@ private slots:
         CHANGED(other.sheets[0].powerSymbols[0].at.y += 1);
         CHANGED(other.sheets[0].powerSymbols[0].name = QStringLiteral("GND"));
         CHANGED(other.sheets[0].powerSymbols[0].rotation = 0);
+        CHANGED(other.sheets[0].powerSymbols[0].kind = PowerKind::Ground);
 
         CHANGED(other.sheets[0].noConnects[0].id = id(1));
         CHANGED(other.sheets[0].noConnects[0].at.x += 1);
@@ -400,6 +402,24 @@ private slots:
 
         error = errorOfChange("power", "rotation", 30);
         QVERIFY2(error.startsWith(QStringLiteral("sheets[0].power[0].rotation: ")), qPrintable(error));
+
+        error = errorOfChange("power", "kind", QStringLiteral("star"));
+        QVERIFY2(error.startsWith(QStringLiteral("sheets[0].power[0].kind: ")), qPrintable(error));
+
+        // A power symbol written before there were kinds is a bar.
+        QJsonObject root = schematicToJson(fullSchematic());
+        QJsonArray sheets = root.value(QStringLiteral("sheets")).toArray();
+        QJsonObject sheet = sheets.at(0).toObject();
+        QJsonArray powers = sheet.value(QStringLiteral("power")).toArray();
+        QJsonObject power = powers.at(0).toObject();
+        power.remove(QStringLiteral("kind"));
+        powers.replace(0, power);
+        sheet.insert(QStringLiteral("power"), powers);
+        sheets.replace(0, sheet);
+        root.insert(QStringLiteral("sheets"), sheets);
+        const Schematic read = readBack(root, error);
+        QCOMPARE(error, QString());
+        QCOMPARE(read.sheets.at(0).powerSymbols.at(0).kind, PowerKind::Bar);
 
         error = errorOfChange("graphics", "kind", QStringLiteral("spline"));
         QVERIFY2(error.startsWith(QStringLiteral("sheets[0].graphics[0].kind: ")), qPrintable(error));

@@ -35,7 +35,8 @@
       ],
       "power": [
         {"id": "5c1a00000041", "at": [91.44, 76.2], "name": "+5V", "rotation": 0},
-        {"id": "5c1a00000042", "at": [116.84, 99.06], "name": "GND", "rotation": 180}
+        {"id": "5c1a00000042", "at": [116.84, 99.06], "name": "GND", "rotation": 180,
+         "kind": "ground"}
       ],
       "noConnects": [],
       "graphics": [

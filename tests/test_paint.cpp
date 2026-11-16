@@ -445,6 +445,11 @@ private slots:
         down.at = Point{-2000000, -4000000};
         down.rotation = 180;
         sheet.powerSymbols.append(down);
+        PowerSymbol ground;
+        ground.at = Point{-8000000, 2000000};
+        ground.name = QStringLiteral("GND");
+        ground.kind = PowerKind::Ground;
+        sheet.powerSymbols.append(ground);
 
         const QImage image = render(schematic);
         QVERIFY(isColor(colorAt(image, -5, -8), paintcolor::wire()));
@@ -458,6 +463,10 @@ private slots:
         QVERIFY(isColor(colorAt(image, -5, -0.7), paintcolor::background()));
         QVERIFY(isColor(colorAt(image, -2, -2.7), paintcolor::symbol()));
         QVERIFY(isColor(colorAt(image, -2, -5.3), paintcolor::background()));
+        // A ground symbol: three bars beyond the stem, the last 1 mm past
+        // its end, and no "GND" written beyond them.
+        QVERIFY(isColor(colorAt(image, -8, -1.54), paintcolor::symbol()));
+        QVERIFY(isColor(colorAt(image, -8, -2.2), paintcolor::background()));
 
         // The frame: 5 mm inside the paper, whose corner is the origin.
         QVERIFY(isColor(colorAt(image, 5, 8), paintcolor::sheetFrame()));
