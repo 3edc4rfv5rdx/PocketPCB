@@ -6,6 +6,8 @@
 #include "format.h"
 #include "grid.h"
 #include "librarypanel.h"
+#include "netlist.h"
+#include "netspanel.h"
 #include "propertiespanel.h"
 #include "sheeteditor.h"
 #include "libraryviewitem.h"
@@ -131,6 +133,25 @@ MainWindow::MainWindow(QWidget *parent)
     m_propertiesDock->setObjectName(QStringLiteral("propertiesDock"));
     m_propertiesDock->setWidget(m_propertiesPanel);
     splitDockWidget(m_libraryDock, m_propertiesDock, Qt::Vertical);
+    // The table of nets, under the properties.
+    m_netsPanel = new NetsPanel(m_document, m_sheetEditor, this);
+    m_netsDock = new QDockWidget(NetsPanel::netsTitle(), this);
+    m_netsDock->setObjectName(QStringLiteral("netsDock"));
+    m_netsDock->setWidget(m_netsPanel);
+    splitDockWidget(m_propertiesDock, m_netsDock, Qt::Vertical);
+    // A net chosen there is shown: on the first sheet it is on, unless the
+    // sheet shown has it.
+    connect(m_netsPanel, &NetsPanel::netChosen, this, [this](const QString &name) {
+        const Design &design = m_document->design();
+        for (const Net &net : m_sheetEditor->nets()) {
+            if (net.name != name)
+                continue;
+            const QList<int> sheets = netSheets(net, design.schematic);
+            if (!sheets.isEmpty() && !sheets.contains(m_designItem->page()))
+                showPage(sheets.first());
+            return;
+        }
+    });
     connect(m_libraryPanel, &LibraryPanel::reloadRequested, this, &MainWindow::loadLibrary);
     connect(m_libraryPanel, &LibraryPanel::placeRequested, this, &MainWindow::placePart);
     connect(m_libraryPanel, &LibraryPanel::placePowerRequested, this, &MainWindow::placePower);
@@ -350,6 +371,7 @@ void MainWindow::createMenus()
 
     viewMenu->addAction(m_libraryDock->toggleViewAction());
     viewMenu->addAction(m_propertiesDock->toggleViewAction());
+    viewMenu->addAction(m_netsDock->toggleViewAction());
     viewMenu->addSeparator();
 
     QAction *warpAction = viewMenu->addAction(tr("Center and warp cursor on zoom"));

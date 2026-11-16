@@ -26,6 +26,7 @@ Early development. What works now:
   - the mouse resting a second on a wire, a pin, a label or a power symbol lights up its whole net on the sheet, with a dot on each of its pins, and shows the net's name beside the cursor;
   - Undo/Redo.
 - Properties panel: the designator, value, footprint (one the part allows) and off-board flag of the chosen components; with several chosen, what is set goes to them all as one step.
+- Nets panel: every net with its name, class and pins, and a filter by name or pin. A net's class is chosen from a list; a net with no label gets a lasting name (NN1, NN2 …) kept by its pins, and two nets with classes joined by a wire take the stronger class. A row chosen lights its net, opening a sheet it is on; Esc on the sheet drops it.
 
 Planned next: nets, ERC; then the board editor with ratsnest, tracks and DRC; Gerber and Excellon export; 1:1 printing for toner transfer; schematic printing with a title block and a BOM; an AppImage.
 

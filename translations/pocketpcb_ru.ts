@@ -609,6 +609,37 @@
     </message>
 </context>
 <context>
+    <name>ppcb::NetsPanel</name>
+    <message>
+        <source>Nets</source>
+        <translation>Цепи</translation>
+    </message>
+    <message>
+        <source>Filter</source>
+        <translation>Фильтр</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Имя</translation>
+    </message>
+    <message>
+        <source>Class</source>
+        <translation>Класс</translation>
+    </message>
+    <message>
+        <source>Pins</source>
+        <translation>Выводы</translation>
+    </message>
+    <message>
+        <source>A net with no pins has no class</source>
+        <translation>У цепи без выводов нет класса</translation>
+    </message>
+    <message>
+        <source>Net class</source>
+        <translation>Класс цепи</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::PropertiesPanel</name>
     <message>
         <source>Properties</source>

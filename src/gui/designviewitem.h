@@ -52,9 +52,10 @@ protected:
 private:
     // The editor, when it edits the page shown.
     SheetEditor *activeEditor() const;
-    // The net under the mouse: a band along its wires, its labels and power
-    // symbols filled in, a dot on its pins.
-    void paintHoveredNet(QPainter &painter, const Sheet &sheet) const;
+    // The net lit, under the mouse or chosen in the table of nets: a band
+    // along its wires, its labels and power symbols filled in, a dot on its
+    // pins.
+    void paintLitNet(QPainter &painter, const Sheet &sheet) const;
     void paintSelection(QPainter &painter, const Sheet &sheet) const;
 
     const Document *m_document;

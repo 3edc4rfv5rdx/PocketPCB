@@ -151,8 +151,15 @@ public:
     void hoverNet(const QPointF &at);
     // The mouse left the sheet: no net is lit, and none waits to be.
     void clearHoveredNet();
-    // The net lit; null when none is.
-    const Net *hoveredNet() const;
+    // The nets of the schematic, built again after a change of the design.
+    const QList<Net> &nets() const;
+    // The net chosen in the table of nets, by name: lit whatever sheet is
+    // shown; empty for none.
+    QString chosenNet() const { return m_chosenNet; }
+    void setChosenNet(const QString &name);
+    // The net lit: the one under the mouse, else the one chosen; null when
+    // none is.
+    const Net *litNet() const;
     // The rectangle being drawn to choose with; empty when there is none.
     QRectF rubberBand() const { return m_rubberBanding ? m_rubberBand : QRectF(); }
 
@@ -169,7 +176,8 @@ public:
     // of a label or the name of a bus under it is edited in place; a wire or
     // a bus under it is chosen whole. Not while placing.
     void doubleClick(const QPointF &at, bool adding);
-    // Esc: placing ends, or a drag is called off, or the selection is dropped.
+    // Esc: placing ends, or a drag is called off, or the selection and the
+    // net chosen in the table of nets are dropped.
     void cancel();
 
     // The chosen components of the sheet edited, in the order of the sheet;
@@ -200,6 +208,8 @@ signals:
     void changed();
     // A component was double-clicked: its part and its footprint.
     void componentOpened(const QString &part, const QString &footprint);
+    // The design changed: nets() is built anew when next asked for.
+    void netsChanged();
 
 protected:
     // Keys and focus of the text being edited in place.
@@ -363,10 +373,12 @@ private:
     // The text the next label is offered.
     QString m_nextLabelText;
 
-    // The nets of the schematic, built when the mouse first looks for one
-    // after a change of the design.
-    QList<Net> m_nets;
-    bool m_netsBuilt = false;
+    // The nets of the schematic, built when first asked for after a change
+    // of the design (see nets()).
+    mutable QList<Net> m_nets;
+    mutable bool m_netsBuilt = false;
+    // The net chosen in the table of nets (see chosenNet()).
+    QString m_chosenNet;
     // The net lit under the mouse: an index in 'm_nets', or -1.
     int m_hoveredNet = -1;
     // The net under the mouse waiting to be lit: an index in 'm_nets', or

@@ -48,8 +48,8 @@ inline QColor bareHole() { return QColor(120, 120, 120); }
 inline QColor missing() { return QColor(220, 0, 0); }
 // The selection and the rectangle drawn to choose with.
 inline QColor selection() { return QColor(0, 120, 215); }
-// The net under the mouse.
-inline QColor hoveredNet() { return QColor(255, 140, 0); }
+// The net lit: under the mouse, or chosen in the table of nets.
+inline QColor litNet() { return QColor(255, 140, 0); }
 } // namespace paintcolor
 
 QPointF toMm(const Point &point);

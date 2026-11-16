@@ -217,6 +217,10 @@ private slots:
         QVERIFY(data->named);
         QCOMPARE(pinsOf(*data), QStringLiteral("R1.2, R2.1"));
         QCOMPARE(data->objects.keys(), QList<int>({0, 1}));
+        QCOMPARE(netSheets(*data, schematic), QList<int>({0, 1}));
+        // R2.2 on the second sheet, the other GND symbol on the first.
+        QCOMPARE(netSheets(*netNamed(all, QStringLiteral("GND")), schematic), QList<int>({0, 1}));
+        QCOMPARE(netSheets(*netNamed(all, QStringLiteral("CLK")), schematic), QList<int>({0}));
         QVERIFY(data->otherNames.isEmpty());
 
         const Net *ground = netNamed(all, QStringLiteral("GND"));
@@ -323,6 +327,8 @@ private slots:
         QCOMPARE(netAt(all, schematic, library, 0, QPointF(4, 0), 0.5), 0);
         QCOMPARE(netAt(all, schematic, library, 0, QPointF(6, 0), 0.5), 0);
         QCOMPARE(netAt(all, schematic, library, 0, QPointF(14, 0), 0.5), -1);
+        // Drawn with nothing, it is still on the sheet of its pins.
+        QCOMPARE(netSheets(all.first(), schematic), QList<int>({0}));
     }
 
     void aTableNameGoesToTheNetHoldingMostOfItsPins()

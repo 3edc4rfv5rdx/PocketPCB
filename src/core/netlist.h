@@ -67,6 +67,10 @@ struct Net
 QList<Net> nets(const Schematic &schematic, const Library &library,
                 const Project &project = Project());
 
+// The sheets 'net' is drawn on, in their order: those of its wires, labels
+// and power symbols, and those of the components of its pins.
+QList<int> netSheets(const Net &net, const Schematic &schematic);
+
 // True when the class 'a' of 'project' is stronger than 'b': its tracks are
 // wider. A class not in the project's list is the weakest.
 bool strongerClass(const Project &project, const QString &a, const QString &b);

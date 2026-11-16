@@ -14,10 +14,10 @@ namespace {
 
 // The band drawn along a selected wire or bus, in millimetres.
 const double SELECTED_LINE_WIDTH = 0.8;
-// How opaque the net under the mouse is drawn over the sheet, of 255.
-const int HOVERED_NET_ALPHA = 110;
-// The radius of the dot on a pin of the net under the mouse, in millimetres.
-const double HOVERED_PIN_RADIUS = 0.6;
+// How opaque the net lit is drawn over the sheet, of 255.
+const int LIT_NET_ALPHA = 110;
+// The radius of the dot on a pin of the net lit, in millimetres.
+const double LIT_PIN_RADIUS = 0.6;
 
 } // namespace
 
@@ -65,7 +65,7 @@ void DesignViewItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *op
     const Sheet *preview = editor == nullptr ? nullptr : editor->preview();
     if (preview == nullptr) {
         paintSheet(*painter, design.schematic, design.library, m_page, design.project.titleBlock);
-        paintHoveredNet(*painter, design.schematic.sheets.at(m_page));
+        paintLitNet(*painter, design.schematic.sheets.at(m_page));
         paintSelection(*painter, design.schematic.sheets.at(m_page));
         return;
     }
@@ -92,18 +92,18 @@ SheetEditor *DesignViewItem::activeEditor() const
     return m_editor;
 }
 
-void DesignViewItem::paintHoveredNet(QPainter &painter, const Sheet &sheet) const
+void DesignViewItem::paintLitNet(QPainter &painter, const Sheet &sheet) const
 {
     const SheetEditor *editor = activeEditor();
-    const Net *net = editor == nullptr ? nullptr : editor->hoveredNet();
+    const Net *net = editor == nullptr ? nullptr : editor->litNet();
     if (net == nullptr)
         return;
     const Library &library = m_document->design().library;
     const QSet<ObjectId> drawn = net->objects.value(m_page);
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
-    QColor color = paintcolor::hoveredNet();
-    color.setAlpha(HOVERED_NET_ALPHA);
+    QColor color = paintcolor::litNet();
+    color.setAlpha(LIT_NET_ALPHA);
     const QPen band(color, SELECTED_LINE_WIDTH, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     for (const SheetObjectShape &shape : sheetObjectShapes(sheet, library)) {
         if (!drawn.contains(shape.id))
@@ -122,7 +122,7 @@ void DesignViewItem::paintHoveredNet(QPainter &painter, const Sheet &sheet) cons
     painter.setBrush(color);
     for (const SheetPin &pin : sheetPins(sheet, library)) {
         if (netHasPin(*net, pin.owner, pin.number))
-            painter.drawEllipse(toMm(pin.at), HOVERED_PIN_RADIUS, HOVERED_PIN_RADIUS);
+            painter.drawEllipse(toMm(pin.at), LIT_PIN_RADIUS, LIT_PIN_RADIUS);
     }
     painter.restore();
 }

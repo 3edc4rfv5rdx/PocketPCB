@@ -52,6 +52,7 @@ SheetEditor::SheetEditor(Document *document, CanvasView *canvas, QObject *parent
     connect(m_document, &Document::designChanged, this, [this] {
         m_netsBuilt = false;
         clearHoveredNet();
+        emit netsChanged();
     });
     m_hoverTimer.setSingleShot(true);
     m_hoverTimer.setInterval(HOVER_DELAY_MS);
@@ -641,6 +642,7 @@ void SheetEditor::cancel()
     } else {
         m_selection.clear();
         dropPieces();
+        m_chosenNet.clear();
     }
     emit changed();
 }
@@ -941,12 +943,8 @@ void SheetEditor::hoverNet(const QPointF &at)
         return;
     }
     const Design &design = m_document->design();
-    if (!m_netsBuilt) {
-        m_nets = nets(design.schematic, design.library, design.project);
-        m_netsBuilt = true;
-    }
     const int net =
-        netAt(m_nets, design.schematic, design.library, m_sheet, at, pixelsToMm(HIT_PIXELS));
+        netAt(nets(), design.schematic, design.library, m_sheet, at, pixelsToMm(HIT_PIXELS));
     if (net >= 0 && net == m_hoveredNet) {
         // Shown again after it went out by itself or with a click.
         QToolTip::showText(QCursor::pos(), m_nets.at(net).name, m_canvas->viewport());
@@ -970,9 +968,35 @@ void SheetEditor::clearHoveredNet()
     setHoveredNet(-1);
 }
 
-const Net *SheetEditor::hoveredNet() const
+const QList<Net> &SheetEditor::nets() const
 {
-    return m_hoveredNet >= 0 ? &m_nets.at(m_hoveredNet) : nullptr;
+    if (!m_netsBuilt) {
+        const Design &design = m_document->design();
+        m_nets = ppcb::nets(design.schematic, design.library, design.project);
+        m_netsBuilt = true;
+    }
+    return m_nets;
+}
+
+void SheetEditor::setChosenNet(const QString &name)
+{
+    if (name == m_chosenNet)
+        return;
+    m_chosenNet = name;
+    emit changed();
+}
+
+const Net *SheetEditor::litNet() const
+{
+    if (m_hoveredNet >= 0)
+        return &m_nets.at(m_hoveredNet);
+    if (m_chosenNet.isEmpty())
+        return nullptr;
+    for (const Net &net : nets()) {
+        if (net.name == m_chosenNet)
+            return &net;
+    }
+    return nullptr;
 }
 
 void SheetEditor::setHoveredNet(int net)
