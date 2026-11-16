@@ -31,7 +31,8 @@ inline QColor padText() { return QColor(255, 255, 255); }
 inline QColor wire() { return QColor(0, 132, 0); }
 inline QColor bus() { return QColor(0, 0, 160); }
 inline QColor label() { return QColor(0, 100, 100); }
-// A label that lies on no wire and no pin, and so joins nothing.
+// The plate under the text of a label that lies on no wire and no pin, and
+// so joins nothing; the text on it has the background's colour.
 inline QColor looseLabel() { return QColor(220, 0, 0); }
 inline QColor noConnect() { return QColor(0, 0, 160); }
 inline QColor sheetGraphic() { return QColor(70, 70, 70); }

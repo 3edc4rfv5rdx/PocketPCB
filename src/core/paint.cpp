@@ -59,6 +59,8 @@ const double BUS_WIDTH = 0.5;
 const double JUNCTION_DIAMETER = 0.8;
 const double LABEL_TEXT_HEIGHT = 1.27;
 const double LABEL_GAP = 1.5;
+// How far the red plate under a label that joins nothing reaches past its text.
+const double LOOSE_LABEL_MARGIN = 0.3;
 // Stands for the text of a label that has none yet, while it is placed.
 const char EMPTY_LABEL_MARK[] = "?";
 const double NO_CONNECT_HALF = 0.635;
@@ -557,18 +559,26 @@ QPointF labelTextAt()
     return QPointF(0, -(LABEL_TEXT_HEIGHT / 2 + LABEL_GAP));
 }
 
-// The text lies along the label's direction, just above its point; red when
-// the label joins nothing, a grey question mark while it has no text yet.
+// The text lies along the label's direction, above its point; white on a
+// red plate when the label joins nothing, a grey question mark while it has
+// no text yet.
 void paintLabel(QPainter &painter, const Label &label, bool joined)
 {
     painter.save();
     painter.translate(toMm(label.at));
     painter.rotate(label.rotation);
     const bool empty = label.text.isEmpty();
-    const QColor color = empty    ? paintcolor::placeholder()
-                         : joined ? paintcolor::label()
-                                  : paintcolor::looseLabel();
     const QString text = empty ? QString::fromLatin1(EMPTY_LABEL_MARK) : label.text;
+    QColor color = empty ? paintcolor::placeholder() : paintcolor::label();
+    if (!empty && !joined) {
+        // Upright text of a turned label covers the same place, so the
+        // plate goes under it whichever way the label is turned.
+        const QRectF plate = textBounds(labelTextAt(), text, LABEL_TEXT_HEIGHT, TextAlign::Left);
+        painter.fillRect(plate.adjusted(-LOOSE_LABEL_MARGIN, -LOOSE_LABEL_MARGIN,
+                                        LOOSE_LABEL_MARGIN, LOOSE_LABEL_MARGIN),
+                         paintcolor::looseLabel());
+        color = paintcolor::background();
+    }
     drawText(painter, labelTextAt(), text, LABEL_TEXT_HEIGHT, TextAlign::Left, color, true);
     painter.restore();
 }
