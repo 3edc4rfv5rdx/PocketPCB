@@ -35,6 +35,8 @@ public:
     void setGridStyle(ppcb::GridStyle style);
     void setCursorStyle(ppcb::CursorStyle style);
     void setZoomCenterAndWarp(bool on);
+    // The colour under the grid; white at first.
+    void setBackgroundColor(const QColor &color);
 
     // Zooms and scrolls so that 'rect' (scene millimetres) fills most of the
     // view. Does nothing for an empty rectangle.
@@ -85,6 +87,7 @@ private:
     GridStyle m_gridStyle = GridStyle::Lines;
     CursorStyle m_cursorStyle = CursorStyle::SmallCross;
     bool m_zoomCenterAndWarp = true;
+    QColor m_background;
 
     // Mouse position in viewport pixels; valid while m_cursorInside.
     QPoint m_cursorViewPos;

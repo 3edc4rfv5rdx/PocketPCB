@@ -2,6 +2,7 @@
 
 #include "document.h"
 #include "library.h"
+#include "paint.h"
 #include "version.h"
 
 #include <QCoreApplication>
@@ -23,6 +24,7 @@ const char KEY_LANGUAGE[] = "general/language";
 const char KEY_GRID_STYLE[] = "view/gridStyle";
 const char KEY_CURSOR_STYLE[] = "view/cursorStyle";
 const char KEY_ZOOM_WARP[] = "view/zoomCenterAndWarp";
+const char KEY_SHEET_BACKGROUND[] = "view/sheetBackground";
 const char KEY_LAST_LIBRARY_FOLDER[] = "library/lastFolder";
 const char KEY_USER_LIBRARY_FOLDER[] = "library/folder";
 const char KEY_LAST_PROJECT_FOLDER[] = "project/lastFolder";
@@ -92,6 +94,26 @@ QString AppSettings::language()
 void AppSettings::setLanguage(const QString &language)
 {
     writeValue(KEY_LANGUAGE, language);
+}
+
+QColor AppSettings::sheetBackground()
+{
+    const QColor color(
+        readValue(KEY_SHEET_BACKGROUND, paintcolor::background().name()).toString());
+    return color.isValid() ? color : paintcolor::background();
+}
+
+void AppSettings::setSheetBackground(const QColor &color)
+{
+    writeValue(KEY_SHEET_BACKGROUND, color.name());
+}
+
+QList<QColor> AppSettings::sheetBackgrounds()
+{
+    return {paintcolor::background(), QColor(0xFF, 0xFE, 0xF2), QColor(0xFB, 0xF7, 0xE9),
+            QColor(0xFF, 0xFB, 0xDC), QColor(0xF1, 0xF8, 0xEC), QColor(0xEC, 0xF7, 0xF3),
+            QColor(0xED, 0xF3, 0xFA), QColor(0xF3, 0xF3, 0xF3), QColor(0xF3, 0xF0, 0xF9),
+            QColor(0xFB, 0xF0, 0xEF)};
 }
 
 GridStyle AppSettings::gridStyle()

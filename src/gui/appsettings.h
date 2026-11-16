@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QByteArray>
+#include <QColor>
 #include <QString>
 #include <QStringList>
 
@@ -29,6 +30,13 @@ public:
 
     static CursorStyle cursorStyle();
     static void setCursorStyle(CursorStyle style);
+
+    // The paper of the schematic sheets; white by default. Not kept in the
+    // project: each user sees their own.
+    static QColor sheetBackground();
+    static void setSheetBackground(const QColor &color);
+    // The pale colours offered for it, white first.
+    static QList<QColor> sheetBackgrounds();
 
     // true: the point under the cursor is moved to the view centre on zoom
     // and the mouse cursor follows it; false: the point stays where it is.

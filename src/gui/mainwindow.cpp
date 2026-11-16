@@ -7,6 +7,7 @@
 #include "grid.h"
 #include "librarypanel.h"
 #include "netlist.h"
+#include "paint.h"
 #include "netspanel.h"
 #include "propertiespanel.h"
 #include "sheeteditor.h"
@@ -24,19 +25,25 @@
 #include <QFileInfo>
 #include <QFileSystemWatcher>
 #include <QGraphicsScene>
+#include <QGridLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QPainter>
+#include <QPixmap>
 #include <QPushButton>
 #include <QShowEvent>
 #include <QSignalBlocker>
 #include <QStatusBar>
 #include <QTabBar>
 #include <QTimer>
+#include <QToolButton>
 #include <QUndoStack>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <QWidgetAction>
 
 namespace ppcb {
 
@@ -47,7 +54,14 @@ const int DEFAULT_HEIGHT = 750;
 // Wait after a change of the watched file before reading it, milliseconds.
 const int RELOAD_DELAY_MS = 150;
 const int MS_PER_MINUTE = 60 * 1000;
-
+// The table of the colours of the paper: its swatches, in pixels, and how
+// many stand in a row. The one chosen has a frame in the selection colour.
+const int SWATCH_WIDTH = 48;
+const int SWATCH_HEIGHT = 30;
+const int SWATCH_SPACING = 6;
+const int SWATCH_COLUMNS = 5;
+const char SWATCH_STYLE[] = "QToolButton { border: 1px solid #a0a0a0; padding: 2px; }"
+                            "QToolButton:checked { border: 3px solid %1; padding: 0px; }";
 const char APP_TITLE[] = "PocketPCB";
 
 // The saved mark: white bold text on soft green, red or grey.
@@ -57,6 +71,22 @@ const char SAVED_MARK_STYLE[] =
 const char SAVED_COLOR[] = "#5f9462";
 const char NOT_SAVED_COLOR[] = "#c25450";
 const char NEW_COLOR[] = "#8c8c8c";
+
+// A piece of paper of 'color' with a wire and a symbol on it.
+QPixmap paperSwatch(const QColor &color)
+{
+    QPixmap pixmap(SWATCH_WIDTH, SWATCH_HEIGHT);
+    pixmap.fill(color);
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    const int middle = SWATCH_HEIGHT / 2;
+    painter.setPen(QPen(paintcolor::wire(), 2));
+    painter.drawLine(4, middle, SWATCH_WIDTH / 2, middle);
+    painter.setPen(QPen(paintcolor::symbol(), 2));
+    painter.drawRect(SWATCH_WIDTH / 2, middle - SWATCH_HEIGHT / 4, SWATCH_WIDTH / 3,
+                     SWATCH_HEIGHT / 2);
+    return pixmap;
+}
 
 } // namespace
 
@@ -371,6 +401,35 @@ void MainWindow::createMenus()
     connect(fullCrossAction, &QAction::triggered, this,
             [this] { applyCursorStyle(CursorStyle::FullCross); });
 
+    // A table of pale colours, each a piece of paper with a wire and a
+    // symbol on it; its code is its tip.
+    QMenu *backgroundMenu = viewMenu->addMenu(tr("Sheet background"));
+    QWidget *table = new QWidget(backgroundMenu);
+    table->setStyleSheet(QString::fromLatin1(SWATCH_STYLE).arg(paintcolor::selection().name()));
+    QGridLayout *grid = new QGridLayout(table);
+    grid->setSpacing(SWATCH_SPACING);
+    grid->setContentsMargins(SWATCH_SPACING, SWATCH_SPACING, SWATCH_SPACING, SWATCH_SPACING);
+    const QColor background = AppSettings::sheetBackground();
+    const QList<QColor> colors = AppSettings::sheetBackgrounds();
+    for (int i = 0; i < colors.size(); ++i) {
+        const QColor color = colors.at(i);
+        QToolButton *button = new QToolButton(table);
+        button->setCheckable(true);
+        button->setAutoExclusive(true);
+        button->setChecked(color == background);
+        button->setIcon(QIcon(paperSwatch(color)));
+        button->setIconSize(QSize(SWATCH_WIDTH, SWATCH_HEIGHT));
+        button->setToolTip(color.name().toUpper());
+        grid->addWidget(button, i / SWATCH_COLUMNS, i % SWATCH_COLUMNS);
+        connect(button, &QToolButton::clicked, this, [this, color, viewMenu] {
+            applySheetBackground(color);
+            viewMenu->close();
+        });
+    }
+    QWidgetAction *tableAction = new QWidgetAction(backgroundMenu);
+    tableAction->setDefaultWidget(table);
+    backgroundMenu->addAction(tableAction);
+
     viewMenu->addSeparator();
 
     viewMenu->addAction(m_libraryDock->toggleViewAction());
@@ -479,6 +538,20 @@ void MainWindow::applyCursorStyle(CursorStyle style)
 {
     m_canvas->setCursorStyle(style);
     AppSettings::setCursorStyle(style);
+}
+
+void MainWindow::applySheetBackground(const QColor &color)
+{
+    AppSettings::setSheetBackground(color);
+    updateCanvasBackground();
+}
+
+void MainWindow::updateCanvasBackground()
+{
+    const bool sheet =
+        m_designItem->isVisible() && m_designItem->page() != m_designItem->boardPage();
+    m_canvas->setBackgroundColor(sheet ? AppSettings::sheetBackground()
+                                       : paintcolor::background());
 }
 
 void MainWindow::applyZoomCenterAndWarp(bool on)
@@ -674,6 +747,7 @@ void MainWindow::showPage(int page, bool fit)
     showProject();
     m_designItem->setPage(page);
     m_shownViewKey = pageViewKey(m_designItem->page());
+    updateCanvasBackground();
     {
         // The tab follows the page, not the other way round.
         const QSignalBlocker blocker(m_tabs);
@@ -973,6 +1047,7 @@ bool MainWindow::showLibraryFile(const QString &path)
     rememberView();
     m_libraryItem->setVisible(true);
     m_designItem->setVisible(false);
+    updateCanvasBackground();
 
     const QString name = QFileInfo(path).fileName();
     QString message;

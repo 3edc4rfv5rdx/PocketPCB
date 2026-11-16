@@ -14,6 +14,7 @@ Early development. What works now:
 - Library panel: search, parts grouped by designator prefix (international or GOST) after a group of power symbols, a drawing of the symbol and footprint; a double click on a part on the sheet shows its part and footprint there.
 - Power symbols are library symbols with a net name: a bar, an arrow, a ground and a chassis are built in, and your own are added as files. Symbols with one name are one net, whatever they look like.
 - Schematic sheet:
+  - the colour of the paper is chosen from a table of pale ones in View > Sheet background; it is kept with the program, not in the project;
   - choose with a click or a rectangle; a click on one of several chosen objects keeps it alone; what is chosen stays chosen after a change;
   - drag along the grid with the wires following (Shift tears them off), rotate and mirror with the wires following too, delete, copy, cut, paste and duplicate (pasted parts are numbered on);
   - draw wires (W; Space turns the corner, / slants it) with junction dots placed by themselves;

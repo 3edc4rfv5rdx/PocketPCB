@@ -40,6 +40,7 @@ const QColor CURSOR_COLOR(60, 60, 60);
 CanvasView::CanvasView(QWidget *parent)
     : QGraphicsView(parent)
     , m_gridStep(DEFAULT_GRID_STEP)
+    , m_background(paintcolor::background())
 {
     setScene(new QGraphicsScene(this));
     scene()->setSceneRect(-SCENE_HALF_SIZE_MM, -SCENE_HALF_SIZE_MM,
@@ -121,9 +122,17 @@ void CanvasView::setView(const QPointF &center, double pixelsPerMm)
     updateCursor();
 }
 
+void CanvasView::setBackgroundColor(const QColor &color)
+{
+    if (color == m_background)
+        return;
+    m_background = color;
+    viewport()->update();
+}
+
 void CanvasView::drawBackground(QPainter *painter, const QRectF &rect)
 {
-    painter->fillRect(rect, paintcolor::background());
+    painter->fillRect(rect, m_background);
 
     const double step = nmToMm(m_gridStep);
     if (step * pixelsPerMm() < MIN_GRID_PIXELS)

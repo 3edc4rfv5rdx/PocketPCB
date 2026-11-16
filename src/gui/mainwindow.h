@@ -111,6 +111,11 @@ private:
 
     void applyGridStyle(GridStyle style);
     void applyCursorStyle(CursorStyle style);
+    // Keeps 'color' as the paper of the sheets and shows it.
+    void applySheetBackground(const QColor &color);
+    // The canvas takes the paper of the sheets when a sheet is shown, white
+    // under the board and a library file.
+    void updateCanvasBackground();
     void applyZoomCenterAndWarp(bool on);
 
     void autosaveProject();
