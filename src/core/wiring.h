@@ -100,12 +100,14 @@ QList<Point> simplifiedWire(const QList<Point> &points);
 // wire ends went together, an end at a point a wire already led still
 // passes through stays there, joined to it, unless it would run along
 // that wire from there: then it goes too. A moved wire
-// whose end lay on a pin of a component left in place or on a wire left in
-// place keeps that end there: a bend leads back to it, the least bad way,
+// whose end lay on a pin of a component left in place, on a wire left in
+// place or on a bus left in place keeps that end there: a bend leads back to it, the least bad way,
 // and a wire led after a pin keeps passing through it. An end on a pin
 // that is moved as well just goes, whatever else lay there.
 // A wire left in place that passes through a pin that goes counts as joined
 // to it: it is cut at the pin first, and its two parts follow.
+// A wire that entered a bus at 45 degrees and still ends on one enters it
+// at 45 degrees again where it comes to it (see withBusEntry()).
 // A label or a no-connect mark not among 'moved' that lay on a pin goes with
 // the pin; a label that lay on a wire stays as far along the same segment as
 // it was while the wire keeps its number of corners, else where it was while
@@ -126,8 +128,8 @@ Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &
 // upright. The segments next to it grow or shrink, or bend to reach it; an
 // end of the wire that lies on another wire slides along it when the move
 // goes that way, even from a pin there, as far as the wires there reach,
-// and a bend leads on from where it gets to; else an end joined to a pin
-// or a wire stays, and a bend leads to it. The ends of other wires on the segment
+// and a bend leads on from where it gets to; else an end joined to a pin,
+// a wire or a bus stays, and a bend leads to it. The ends of other wires on the segment
 // go along with it; those on a segment next to it that shrinks away from
 // them go to the corner it leaves them for; labels on the wire go with it as
 // in withWiresFollowing(). 'sheet' as it is when it has no such segment or

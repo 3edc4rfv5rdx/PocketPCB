@@ -232,6 +232,46 @@ private slots:
         }
     }
 
+    // A bus holds the end of a wire that enters it, and the entry stays at
+    // 45 degrees however the wire is laid again.
+    void busesHoldTheirEntries()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0))};
+        Bus bus;
+        bus.id = newObjectId();
+        bus.points = {mm(-20, -10), mm(20, -10)};
+        bus.name = QStringLiteral("BUS1");
+        sheet.buses = {bus};
+        // From the right pin up, into the bus over the last millimetre.
+        sheet.wires = {wire({mm(5, 0), mm(5, -9), mm(6, -10)})};
+        const auto entersSlanted = [](const Wire &w) {
+            const Point way = w.points.last() - w.points.at(w.points.size() - 2);
+            return way.x != 0 && std::llabs(way.x) == std::llabs(way.y);
+        };
+
+        // The part goes: the wire follows its pin and keeps its entry.
+        const QSet<ObjectId> part = {sheet.components.first().id};
+        Sheet moved = withWiresFollowing(sheet, movedObjects(sheet, part, mm(3, 0)), part, library);
+        QCOMPARE(moved.wires.first().points.first(), mm(8, 0));
+        QCOMPARE(moved.wires.first().points.last(), mm(6, -10));
+        QVERIFY(entersSlanted(moved.wires.first()));
+
+        // Its upright segment goes sideways: the pin end stays, and the wire
+        // enters the bus where it now comes to it, not along it.
+        moved = withSegmentMoved(sheet, library, sheet.wires.first().id, 0, mm(2, 0));
+        QCOMPARE(moved.wires.first().points,
+                 QList<Point>({mm(5, 0), mm(7, 0), mm(7, -9), mm(8, -10)}));
+
+        // The wire itself goes along the bus: its end on the pin is led back,
+        // and its entry slides along the bus with it.
+        const QSet<ObjectId> line = {sheet.wires.first().id};
+        moved = withWiresFollowing(sheet, movedObjects(sheet, line, mm(2, 0)), line, library);
+        QCOMPARE(moved.wires.first().points,
+                 QList<Point>({mm(5, 0), mm(7, 0), mm(7, -9), mm(8, -10)}));
+    }
+
     void pointsOnWires()
     {
         const Wire w = wire({mm(0, 0), mm(10, 0), mm(15, 5)});

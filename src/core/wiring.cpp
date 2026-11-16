@@ -870,6 +870,15 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
     const auto heldAt = [&](const Point &end) -> std::optional<Point> {
         if (follower.isStillPin(end))
             return end;
+        // A bus left in place keeps the end of a wire that enters it.
+        const bool onStillBus =
+            std::any_of(before.buses.cbegin(), before.buses.cend(), [&](const Bus &bus) {
+                Wire line;
+                line.points = bus.points;
+                return !moved.contains(bus.id) && isOnWire(line, end);
+            });
+        if (onStillBus)
+            return end;
         if (follower.isMovedPin(end))
             return std::nullopt;
         if (const std::optional<Point> to = follower.shiftedWith(end))
@@ -1101,10 +1110,10 @@ static Sheet segmentMoved(const Sheet &sheet, const Library &library, const Obje
     const Point na = a + d;
     const Point nb = b + d;
     const Obstacles obstacles = obstaclesOf(sheet, library);
-    // An end of the wire stays where a pin or another wire holds it.
+    // An end of the wire stays where a pin, another wire or a bus holds it.
     const QList<Point> pins = pinPoints(sheet, library);
     const auto held = [&](const Point &point) {
-        if (pins.contains(point))
+        if (pins.contains(point) || isOnBus(sheet, point))
             return true;
         return std::any_of(sheet.wires.cbegin(), sheet.wires.cend(), [&](const Wire &other) {
             return other.id != wire && other.points.size() >= 2 && isOnWire(other, point);
@@ -1262,6 +1271,44 @@ Point nearestOnWire(const Wire &wire, const Point &point)
     return best;
 }
 
+// 'after', where the wires that entered a bus of 'before' at 45 degrees and
+// still end on a bus enter it at 45 degrees again over the same length (see
+// withBusEntry()), where they come to it: a tail laid along the bus is cut
+// off first.
+Sheet withBusEntriesKept(const Sheet &before, const Sheet &after)
+{
+    Sheet result = after;
+    for (Wire &wire : result.wires) {
+        const auto was = std::find_if(before.wires.cbegin(), before.wires.cend(),
+                                      [&wire](const Wire &w) { return w.id == wire.id; });
+        if (was == before.wires.cend())
+            continue;
+        for (const bool last : {true, false}) {
+            QList<Point> old = was->points;
+            QList<Point> now = wire.points;
+            if (old.size() < 2 || now.size() < 2)
+                continue;
+            if (!last) {
+                std::reverse(old.begin(), old.end());
+                std::reverse(now.begin(), now.end());
+            }
+            const Point way = old.last() - old.at(old.size() - 2);
+            const bool slanted = way.x != 0 && std::llabs(way.x) == std::llabs(way.y);
+            if (!slanted || !isOnBus(before, old.last()) || !isOnBus(after, now.last()))
+                continue;
+            // A tail laid along the bus goes: the wire enters where it
+            // comes to the bus.
+            while (now.size() >= 3 && isOnBus(after, now.at(now.size() - 2)))
+                now.removeLast();
+            QList<Point> entered = withBusEntry(now, after, std::llabs(way.x));
+            if (!last)
+                std::reverse(entered.begin(), entered.end());
+            wire.points = entered;
+        }
+    }
+    return result;
+}
+
 // Where the pin of 'before' at 'at' is in 'after': the same pin of the same
 // owner. Nothing when no pin of 'before' is there, or 'after' lacks it.
 std::optional<Point> pinMovedFrom(const QList<SheetPin> &pinsBefore,
@@ -1351,8 +1398,8 @@ Sheet withMarksCarried(const Sheet &before, const Sheet &after, const QSet<Objec
 Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
                          const Library &library)
 {
-    return withMarksCarried(before, wiresFollowing(before, after, moved, library), moved,
-                             library);
+    const Sheet followed = withBusEntriesKept(before, wiresFollowing(before, after, moved, library));
+    return withMarksCarried(before, followed, moved, library);
 }
 
 Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &wire, bool last,
@@ -1365,8 +1412,8 @@ Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &
 Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &wire,
                        int index, const Point &delta)
 {
-    return withMarksCarried(sheet, segmentMoved(sheet, library, wire, index, delta),
-                             QSet<ObjectId>(), library);
+    const Sheet moved = withBusEntriesKept(sheet, segmentMoved(sheet, library, wire, index, delta));
+    return withMarksCarried(sheet, moved, QSet<ObjectId>(), library);
 }
 
 } // namespace ppcb
