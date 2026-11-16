@@ -520,6 +520,10 @@
         <source>Place label</source>
         <translation>Поставити мітку</translation>
     </message>
+    <message>
+        <source>Place no-connect mark</source>
+        <translation>Поставити знак непідключеного виводу</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>

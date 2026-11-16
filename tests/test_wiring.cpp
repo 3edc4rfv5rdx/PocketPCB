@@ -158,6 +158,14 @@ private slots:
             return result;
         };
         sheet.labels = {label(mm(5, 0)), label(mm(-10, 0)), label(mm(5, 30)), label(mm(50, 50))};
+        // A no-connect mark on the free pin too, and one on nothing.
+        NoConnect mark;
+        mark.id = newObjectId();
+        mark.at = mm(5, 0);
+        NoConnect stray = mark;
+        stray.id = newObjectId();
+        stray.at = mm(40, 40);
+        sheet.noConnects = {mark, stray};
         const QSet<ObjectId> part = {sheet.components.first().id};
 
         // The part goes along its wire: the label on its pin goes too, the
@@ -166,6 +174,9 @@ private slots:
         QCOMPARE(moved.labels.at(0).at, mm(8, 0));
         QCOMPARE(moved.labels.at(1).at, mm(-10, 0));
         QCOMPARE(moved.labels.at(3).at, mm(50, 50));
+        QCOMPARE(moved.noConnects.at(0).at, mm(8, 0));
+        QCOMPARE(moved.noConnects.at(1).at, mm(40, 40));
+        QCOMPARE(partPinPoints(sheet, library), QList<Point>({mm(-5, 0), mm(5, 0)}));
         // Across: the wire gets a bend, and the label stays where it is on it.
         moved = withWiresFollowing(sheet, movedObjects(sheet, part, mm(0, 5)), part, library);
         QCOMPARE(moved.labels.at(0).at, mm(5, 5));

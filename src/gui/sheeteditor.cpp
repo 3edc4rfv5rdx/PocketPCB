@@ -124,6 +124,14 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
     }
     if (m_placing) {
         hover(snapped(at));
+        if (m_onPartPin && !m_floating.noConnects.isEmpty()) {
+            const Point point = m_floatAt;
+            const Sheet *sheet = currentSheet();
+            const bool marked = std::any_of(sheet->noConnects.cbegin(), sheet->noConnects.cend(),
+                                            [&point](const NoConnect &m) { return m.at == point; });
+            if (marked || !partPinPoints(*sheet, m_document->design().library).contains(point))
+                return;
+        }
         placeFloating();
         return;
     }
@@ -752,6 +760,16 @@ void SheetEditor::startPlacingLabel()
     m_askLabelText = m_placing;
 }
 
+void SheetEditor::startPlacingNoConnect()
+{
+    NoConnect mark;
+    mark.id = newObjectId();
+    Sheet piece;
+    piece.noConnects.append(mark);
+    startFloating(piece, m_document->design().library, Action::Place, true);
+    m_onPartPin = m_placing;
+}
+
 void SheetEditor::placeLabel(const QString &text)
 {
     const QString trimmed = text.trimmed();
@@ -820,6 +838,7 @@ void SheetEditor::startFloating(const Sheet &piece, const Library &source, Actio
         return;
     m_placing = true;
     m_askLabelText = false;
+    m_onPartPin = false;
     m_wiring = false;
     m_wirePoints.clear();
     m_dragging = false;

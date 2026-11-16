@@ -35,6 +35,8 @@ inline QColor label() { return QColor(0, 100, 100); }
 // so joins nothing; the text on it has the background's colour.
 inline QColor looseLabel() { return QColor(220, 0, 0); }
 inline QColor noConnect() { return QColor(0, 0, 160); }
+// A no-connect mark on no pin of a part.
+inline QColor looseNoConnect() { return QColor(220, 0, 0); }
 inline QColor sheetGraphic() { return QColor(70, 70, 70); }
 inline QColor sheetFrame() { return QColor(90, 90, 90); }
 // The board. Copper has the colours of the pads: padFront() on the top

@@ -633,6 +633,19 @@ QList<Point> pinPoints(const Sheet &sheet, const Library &library)
     return points;
 }
 
+QList<Point> partPinPoints(const Sheet &sheet, const Library &library)
+{
+    QList<Point> points;
+    for (const SheetPin &pin : sheetPins(sheet, library)) {
+        const bool ofPart =
+            std::any_of(sheet.components.cbegin(), sheet.components.cend(),
+                        [&pin](const Component &component) { return component.id == pin.owner; });
+        if (ofPart)
+            points.append(pin.at);
+    }
+    return points;
+}
+
 bool isOnWire(const Wire &wire, const Point &point)
 {
     if (wire.points.size() == 1)
@@ -1203,14 +1216,42 @@ Point nearestOnWire(const Wire &wire, const Point &point)
     return best;
 }
 
-// 'after', where the labels that lay on a pin or a wire of 'before' and
-// are not among 'moved' have gone with it: see withWiresFollowing().
-Sheet withLabelsCarried(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
-                        const Library &library)
+// Where the pin of 'before' at 'at' is in 'after': the same pin of the same
+// owner. Nothing when no pin of 'before' is there, or 'after' lacks it.
+std::optional<Point> pinMovedFrom(const QList<SheetPin> &pinsBefore,
+                                  const QList<SheetPin> &pinsAfter, const Point &at)
+{
+    const auto pin = std::find_if(pinsBefore.cbegin(), pinsBefore.cend(),
+                                  [&at](const SheetPin &p) { return p.at == at; });
+    if (pin == pinsBefore.cend())
+        return std::nullopt;
+    const auto index = std::count_if(pinsBefore.cbegin(), pin,
+                                     [&pin](const SheetPin &p) { return p.owner == pin->owner; });
+    int seen = 0;
+    for (const SheetPin &now : pinsAfter) {
+        if (now.owner == pin->owner && seen++ == index)
+            return now.at;
+    }
+    return std::nullopt;
+}
+
+// 'after', where the labels and the no-connect marks that lay on a pin of
+// 'before', and the labels that lay on a wire, and are not among 'moved',
+// have gone with it: see withWiresFollowing().
+Sheet withMarksCarried(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
+                       const Library &library)
 {
     Sheet result = after;
     const QList<SheetPin> pinsBefore = sheetPins(before, library);
     const QList<SheetPin> pinsAfter = sheetPins(after, library);
+    for (NoConnect &mark : result.noConnects) {
+        const auto was = std::find_if(before.noConnects.cbegin(), before.noConnects.cend(),
+                                      [&mark](const NoConnect &m) { return m.id == mark.id; });
+        if (moved.contains(mark.id) || was == before.noConnects.cend() || was->at != mark.at)
+            continue;
+        if (const std::optional<Point> now = pinMovedFrom(pinsBefore, pinsAfter, mark.at))
+            mark.at = *now;
+    }
     for (Label &label : result.labels) {
         if (moved.contains(label.id))
             continue;
@@ -1222,19 +1263,10 @@ Sheet withLabelsCarried(const Sheet &before, const Sheet &after, const QSet<Obje
         const Point at = label.at;
 
         // On a pin: the same pin of the same owner, where it is now.
-        const auto pin = std::find_if(pinsBefore.cbegin(), pinsBefore.cend(),
-                                      [&at](const SheetPin &p) { return p.at == at; });
-        if (pin != pinsBefore.cend()) {
-            const auto index = std::count_if(pinsBefore.cbegin(), pin, [&pin](const SheetPin &p) {
-                return p.owner == pin->owner;
-            });
-            int seen = 0;
-            for (const SheetPin &now : pinsAfter) {
-                if (now.owner == pin->owner && seen++ == index) {
-                    label.at = now.at;
-                    break;
-                }
-            }
+        if (std::any_of(pinsBefore.cbegin(), pinsBefore.cend(),
+                        [&at](const SheetPin &p) { return p.at == at; })) {
+            if (const std::optional<Point> now = pinMovedFrom(pinsBefore, pinsAfter, at))
+                label.at = *now;
             continue;
         }
 
@@ -1273,21 +1305,21 @@ Sheet withLabelsCarried(const Sheet &before, const Sheet &after, const QSet<Obje
 Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
                          const Library &library)
 {
-    return withLabelsCarried(before, wiresFollowing(before, after, moved, library), moved,
+    return withMarksCarried(before, wiresFollowing(before, after, moved, library), moved,
                              library);
 }
 
 Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &wire, bool last,
                     const Point &to)
 {
-    return withLabelsCarried(sheet, wireEndAt(sheet, library, wire, last, to), QSet<ObjectId>(),
+    return withMarksCarried(sheet, wireEndAt(sheet, library, wire, last, to), QSet<ObjectId>(),
                              library);
 }
 
 Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &wire,
                        int index, const Point &delta)
 {
-    return withLabelsCarried(sheet, segmentMoved(sheet, library, wire, index, delta),
+    return withMarksCarried(sheet, segmentMoved(sheet, library, wire, index, delta),
                              QSet<ObjectId>(), library);
 }
 

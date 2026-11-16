@@ -103,6 +103,10 @@ public:
     // Enter or a click elsewhere puts it down with that text as one step and
     // the next one follows; Esc in the line drops that one only.
     void startPlacingLabel();
+    // Placing no-connect marks: one follows the cursor, red while it is on
+    // no pin of a part; a click puts it down only on such a pin, and on one
+    // that has none yet.
+    void startPlacingNoConnect();
     void stopPlacing();
     // Placing, pasting or duplicating: something follows the cursor.
     bool isPlacing() const { return m_placing; }
@@ -322,6 +326,9 @@ private:
     ObjectId m_textOwner;
     // Placing labels: a click asks for the text (see startPlacingLabel()).
     bool m_askLabelText = false;
+    // Placing no-connect marks: a click puts one down only on a free pin of
+    // a part (see startPlacingNoConnect()).
+    bool m_onPartPin = false;
     // The text the next label is offered.
     QString m_nextLabelText;
 

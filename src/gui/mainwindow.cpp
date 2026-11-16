@@ -277,6 +277,10 @@ void MainWindow::createMenus()
     labelAction->setObjectName(QStringLiteral("actionPlaceLabel"));
     labelAction->setShortcut(QKeySequence(Qt::Key_L));
     connect(labelAction, &QAction::triggered, this, &MainWindow::placeLabel);
+    QAction *noConnectAction = editMenu->addAction(tr("Place no-connect mark"));
+    noConnectAction->setObjectName(QStringLiteral("actionPlaceNoConnect"));
+    noConnectAction->setShortcut(QKeySequence(Qt::Key_X));
+    connect(noConnectAction, &QAction::triggered, this, &MainWindow::placeNoConnect);
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Wire), "actionWire",
                   QKeySequence(Qt::Key_W), &SheetEditor::startWiring);
     addEditAction(tr("Turn the wire corner the other way"), "actionWireCorner",
@@ -809,6 +813,15 @@ bool MainWindow::placeLabel()
     if (!canPlace())
         return false;
     m_sheetEditor->startPlacingLabel();
+    m_canvas->setFocus();
+    return m_sheetEditor->isPlacing();
+}
+
+bool MainWindow::placeNoConnect()
+{
+    if (!canPlace())
+        return false;
+    m_sheetEditor->startPlacingNoConnect();
     m_canvas->setFocus();
     return m_sheetEditor->isPlacing();
 }

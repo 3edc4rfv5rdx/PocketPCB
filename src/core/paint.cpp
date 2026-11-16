@@ -644,11 +644,13 @@ void paintPowerSymbol(QPainter &painter, const Library &library, const PowerSymb
              LABEL_TEXT_HEIGHT, TextAlign::Center, paintcolor::symbol());
 }
 
-void paintNoConnect(QPainter &painter, const NoConnect &mark)
+// A cross; red when it stands on no pin of a part.
+void paintNoConnect(QPainter &painter, const NoConnect &mark, bool onPin)
 {
     const QPointF at = toMm(mark.at);
     const double half = NO_CONNECT_HALF;
-    painter.setPen(linePen(paintcolor::noConnect(), WIRE_WIDTH));
+    painter.setPen(linePen(onPin ? paintcolor::noConnect() : paintcolor::looseNoConnect(),
+                           WIRE_WIDTH));
     painter.drawLine(at + QPointF(-half, -half), at + QPointF(half, half));
     painter.drawLine(at + QPointF(-half, half), at + QPointF(half, -half));
 }
@@ -1019,8 +1021,9 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const Library &li
                            [&label](const Wire &wire) { return isOnWire(wire, label.at); });
         paintLabel(painter, label, joined);
     }
+    const QList<Point> partPins = partPinPoints(sheet, library);
     for (const NoConnect &mark : sheet.noConnects)
-        paintNoConnect(painter, mark);
+        paintNoConnect(painter, mark, partPins.contains(mark.at));
     painter.restore();
 }
 

@@ -1033,6 +1033,34 @@ private slots:
         QCOMPARE(labels().last().textAt, Point({0, -mmToNm(5.08)}));
     }
 
+    // X: a no-connect mark is put down only on a pin of a part that has
+    // none yet; elsewhere a click does nothing and placing goes on.
+    void noConnectMarksGoOnPinsOnly()
+    {
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QVERIFY(window.openProject(QStringLiteral(PPCB_SOURCE_DIR "/examples/demo/demo.ppcb")));
+        SheetEditor *editor = window.sheetEditor();
+        const auto marks = [&window]() {
+            return window.document()->design().schematic.sheets.at(0).noConnects;
+        };
+        const int before = int(marks().size());
+        window.findChild<QAction *>(QStringLiteral("actionPlaceNoConnect"))->trigger();
+        QVERIFY(editor->isPlacing());
+        editor->press(QPointF(50.8, 50.8), false);
+        QCOMPARE(int(marks().size()), before);
+        // The left pin of R1.
+        editor->press(QPointF(96.52, 76.2), false);
+        QCOMPARE(int(marks().size()), before + 1);
+        QCOMPARE(marks().last().at, Point({mmToNm(96.52), mmToNm(76.2)}));
+        editor->press(QPointF(96.52, 76.2), false);
+        QCOMPARE(int(marks().size()), before + 1);
+        QVERIFY(editor->isPlacing());
+        window.findChild<QAction *>(QStringLiteral("actionDeselect"))->trigger();
+        QVERIFY(!editor->isPlacing());
+    }
+
     void wiresAreDrawnUntilEsc()
     {
         MainWindow window;

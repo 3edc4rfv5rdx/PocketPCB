@@ -37,6 +37,8 @@ QList<SheetPin> sheetPins(const Sheet &sheet, const Library &library);
 
 // The points of sheetPins().
 QList<Point> pinPoints(const Sheet &sheet, const Library &library);
+// The points of the pins of components alone: where a no-connect mark goes.
+QList<Point> partPinPoints(const Sheet &sheet, const Library &library);
 
 // True when 'point' lies on 'wire': on one of its segments, ends included.
 bool isOnWire(const Wire &wire, const Point &point);
@@ -92,10 +94,10 @@ QList<Point> simplifiedWire(const QList<Point> &points);
 // that is moved as well just goes, whatever else lay there.
 // A wire left in place that passes through a pin that goes counts as joined
 // to it: it is cut at the pin first, and its two parts follow.
-// A label not among 'moved' that lay on a pin goes with the pin; one that lay
-// on a wire stays as far along the same segment as it was while the wire
-// keeps its number of corners, else where it was while still on the wire,
-// else at the nearest point of the wire.
+// A label or a no-connect mark not among 'moved' that lay on a pin goes with
+// the pin; a label that lay on a wire stays as far along the same segment as
+// it was while the wire keeps its number of corners, else where it was while
+// still on the wire, else at the nearest point of the wire.
 Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
                          const Library &library);
 

@@ -62,6 +62,8 @@ public:
     bool placeLastPower();
     // Starts placing labels (see SheetEditor::startPlacingLabel()).
     bool placeLabel();
+    // Starts placing no-connect marks (see SheetEditor::startPlacingNoConnect()).
+    bool placeNoConnect();
     // Shows page 'page' of the project and, when 'fit', the view it was last
     // seen with, or fits the view to it when it has none yet.
     void showPage(int page, bool fit = true);
