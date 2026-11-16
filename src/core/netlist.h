@@ -67,6 +67,9 @@ struct Net
 QList<Net> nets(const Schematic &schematic, const Library &library,
                 const Project &project = Project());
 
+// "R1.2, C3.1": the designators and numbers of 'pins'.
+QString pinsText(const QList<NetPin> &pins);
+
 // The sheets 'net' is drawn on, in their order: those of its wires, labels
 // and power symbols, and those of the components of its pins.
 QList<int> netSheets(const Net &net, const Schematic &schematic);

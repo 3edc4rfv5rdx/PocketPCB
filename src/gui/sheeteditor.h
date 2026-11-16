@@ -224,6 +224,8 @@ private:
     // Lights the net 'net' of 'm_nets', or none for -1; hides the name
     // beside the cursor when none is.
     void setHoveredNet(int net);
+    // Shows the name of 'net' beside the cursor.
+    void showNetTip(const Net &net);
     // Closes the line; 'keep' sets what it holds.
     void finishTextEdit(bool keep);
     // Puts the label being placed down with 'text', as one step, and offers

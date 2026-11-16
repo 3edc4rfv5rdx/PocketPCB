@@ -371,6 +371,14 @@ QList<Net> nets(const Schematic &schematic, const Library &library, const Projec
     return named + unnamed;
 }
 
+QString pinsText(const QList<NetPin> &pins)
+{
+    QStringList texts;
+    for (const NetPin &pin : pins)
+        texts.append(pin.designator + QLatin1Char('.') + pin.number);
+    return texts.join(QStringLiteral(", "));
+}
+
 QList<int> netSheets(const Net &net, const Schematic &schematic)
 {
     QList<int> result;

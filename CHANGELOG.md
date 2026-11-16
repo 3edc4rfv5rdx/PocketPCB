@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The pins of a net in the nets panel show whole in a tip
 - N: A nets panel lists every net with its class and pins; the class is chosen there, and a row chosen lights its net on the sheet
 - I: A net's class is worked out from the table of nets, its labels and power symbols, the strongest winning; a net with no name given a class is named NN1, NN2 … by its pins, kept in the project file
 - N: The mouse resting a second on a wire, a pin, a label or a power symbol lights up its net on the sheet and shows the net's name beside the cursor

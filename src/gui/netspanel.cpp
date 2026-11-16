@@ -21,15 +21,6 @@ namespace {
 
 enum Column { NameColumn, ClassColumn, PinsColumn, ColumnCount };
 
-// "R1.2, C3.1": the pins of a net.
-QString pinsText(const Net &net)
-{
-    QStringList pins;
-    for (const NetPin &pin : net.pins)
-        pins.append(pin.designator + QLatin1Char('.') + pin.number);
-    return pins.join(QStringLiteral(", "));
-}
-
 const Net *findNet(const QList<Net> &all, const QString &name)
 {
     for (const Net &net : all) {
@@ -98,7 +89,14 @@ void NetsPanel::refresh()
     for (int row = 0; row < all.size(); ++row) {
         const Net &net = all.at(row);
         m_table->setItem(row, NameColumn, new QTableWidgetItem(net.name));
-        m_table->setItem(row, PinsColumn, new QTableWidgetItem(pinsText(net)));
+        const QString pins = pinsText(net.pins);
+        QTableWidgetItem *pinsItem = new QTableWidgetItem(pins);
+        // As rich text, so that a long list wraps.
+        if (!pins.isEmpty()) {
+            pinsItem->setToolTip(QStringLiteral("<p>") + pins.toHtmlEscaped()
+                                 + QStringLiteral("</p>"));
+        }
+        m_table->setItem(row, PinsColumn, pinsItem);
         QComboBox *box = new QComboBox(m_table);
         box->addItems(classes);
         box->installEventFilter(this);

@@ -64,7 +64,7 @@ SheetEditor::SheetEditor(Document *document, CanvasView *canvas, QObject *parent
         }
         setHoveredNet(m_pendingNet);
         if (m_hoveredNet >= 0)
-            QToolTip::showText(QCursor::pos(), m_nets.at(m_hoveredNet).name, m_canvas->viewport());
+            showNetTip(m_nets.at(m_hoveredNet));
     });
 }
 
@@ -947,7 +947,7 @@ void SheetEditor::hoverNet(const QPointF &at)
         netAt(nets(), design.schematic, design.library, m_sheet, at, pixelsToMm(HIT_PIXELS));
     if (net >= 0 && net == m_hoveredNet) {
         // Shown again after it went out by itself or with a click.
-        QToolTip::showText(QCursor::pos(), m_nets.at(net).name, m_canvas->viewport());
+        showNetTip(m_nets.at(net));
         return;
     }
     // Off the net lit: it goes out at once, and the next waits its time.
@@ -997,6 +997,11 @@ const Net *SheetEditor::litNet() const
             return &net;
     }
     return nullptr;
+}
+
+void SheetEditor::showNetTip(const Net &net)
+{
+    QToolTip::showText(QCursor::pos(), net.name, m_canvas->viewport());
 }
 
 void SheetEditor::setHoveredNet(int net)
