@@ -198,6 +198,19 @@ private slots:
         QCOMPARE(moved.labels.at(2).at, mm(5, 30));
     }
 
+    void wiresEndOnBuses()
+    {
+        Sheet sheet;
+        Bus bus;
+        bus.points = {mm(0, 0), mm(20, 0), mm(20, 20)};
+        sheet.buses = {bus};
+        QVERIFY(isOnBus(sheet, mm(10, 0)));
+        QVERIFY(isOnBus(sheet, mm(20, 15)));
+        QVERIFY(!isOnBus(sheet, mm(10, 1)));
+        // A bus is no connection point: only its labels join anything.
+        QVERIFY(!isConnectionPoint(sheet, Library(), mm(10, 0)));
+    }
+
     void pointsOnWires()
     {
         const Wire w = wire({mm(0, 0), mm(10, 0), mm(15, 5)});

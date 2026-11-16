@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Buses are drawn with B like wires, named BUS1, BUS2 and so on and renamed with a double click; a wire drawn to a bus ends on it
 - N: No-connect marks are put on pins of parts with X; one on no pin is red, and they go with the pin when the part moves
 - F: A label's point shows as a small hollow diamond instead of a dot, which looked like a junction
 - N: A label's text is chosen and dragged alone, like a part's designator, while its point stays on the wire and shows as a dot

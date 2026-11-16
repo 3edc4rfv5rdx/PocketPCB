@@ -9,6 +9,9 @@ namespace ppcb {
 
 namespace {
 
+// What a bus is named with a number after it (see nextBusName()).
+const char BUS_NAME_PREFIX[] = "BUS";
+
 const int QUARTER_TURN = 90;
 const int HALF_TURN_DEGREES = 180;
 const int FULL_TURN_DEGREES = 360;
@@ -288,6 +291,33 @@ Sheet withLabelText(const Sheet &sheet, const QSet<ObjectId> &ids, const QString
             label.text = trimmed;
     }
     return result;
+}
+
+Sheet withBusName(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &name)
+{
+    const QString trimmed = name.trimmed();
+    if (trimmed.isEmpty())
+        return sheet;
+    Sheet result = sheet;
+    for (Bus &bus : result.buses) {
+        if (ids.contains(bus.id))
+            bus.name = trimmed;
+    }
+    return result;
+}
+
+QString nextBusName(const Schematic &schematic)
+{
+    const QString prefix = QLatin1String(BUS_NAME_PREFIX);
+    QSet<QString> taken;
+    for (const Sheet &sheet : schematic.sheets) {
+        for (const Bus &bus : sheet.buses)
+            taken.insert(bus.name);
+    }
+    int number = 1;
+    while (taken.contains(prefix + QString::number(number)))
+        ++number;
+    return prefix + QString::number(number);
 }
 
 QString nextLabelText(const QString &text)

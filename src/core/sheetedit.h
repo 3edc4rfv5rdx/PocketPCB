@@ -65,6 +65,12 @@ Sheet withComponentValue(const Sheet &sheet, const QSet<ObjectId> &ids, const QS
 Sheet withPowerName(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &name);
 // The same for the text of the labels 'ids'.
 Sheet withLabelText(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &text);
+// The same for the name of the buses 'ids'.
+Sheet withBusName(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &name);
+// The name a new bus gets: "BUS" and the lowest number no bus of the
+// schematic has ("BUS1" first). Only a label joins a net, so the name is a
+// caption and may be anything; it is given so that a bus always has one.
+QString nextBusName(const Schematic &schematic);
 // The text a label placed after one with 'text' is offered: the number at
 // its end one more, as wide as it was at least ("D0" gives "D1", "A09"
 // gives "A10"); 'text' itself when it ends in no number.

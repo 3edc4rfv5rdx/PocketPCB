@@ -57,7 +57,8 @@ public:
         Footprint,
         OffBoard,
         OnBoard,
-        Rename
+        Rename,
+        Bus
     };
     static QString actionName(Action action);
 
@@ -129,6 +130,10 @@ public:
     // with one corner. A click on a pin or a wire, or a second click on the
     // same point, ends it; cancel() drops the wire begun.
     void startWiring();
+    // Drawing buses the same way, until cancel(): a second click on the
+    // same point ends one, and it is put down as one step, named with
+    // nextBusName(); a double click on the name renames it.
+    void startDrawingBus();
     bool isWiring() const { return m_wiring; }
     // The corner of the wire that follows the cursor: the other way round,
     // and slanted at 45 degrees or square.
@@ -146,8 +151,9 @@ public:
     void release(const QPointF &at, bool detached);
     // A second click in a row: the press it also is, and a component under
     // the cursor is opened (see componentOpened), or its value edited in
-    // place when that is under it; the net name of a power symbol or the
-    // text of a label under it is edited in place. Not while placing.
+    // place when that is under it; the net name of a power symbol, the text
+    // of a label or the name of a bus under it is edited in place. Not while
+    // placing.
     void doubleClick(const QPointF &at, bool adding);
     // Esc: placing ends, or a drag is called off, or the selection is dropped.
     void cancel();
@@ -166,6 +172,9 @@ public:
     void setPowerName(const QSet<ObjectId> &ids, const QString &name);
     // The same for the text of the labels 'ids'.
     void setLabelText(const QSet<ObjectId> &ids, const QString &text);
+    // The same for the name of the buses 'ids'; a blank name gives them
+    // nextBusName().
+    void setBusName(const QSet<ObjectId> &ids, const QString &name);
 
     void selectAll();
     void rotateSelection();
@@ -234,8 +243,11 @@ private:
     void updateFloating();
     void placeFloating();
     bool isDrawingWire() const { return m_wiring && !m_wirePoints.isEmpty(); }
+    // Begins drawing wires, or buses when 'bus'.
+    void beginLines(bool bus);
     void wireClick(const Point &at);
-    // Puts the wire begun on the sheet as one step, when it has a length.
+    // Puts the wire or the bus begun on the sheet as one step, when it has
+    // a length.
     void finishWire();
     // Builds the preview of the wire begun, up to the cursor.
     void updateWire();
@@ -319,6 +331,8 @@ private:
     Point m_wireCursor;
     bool m_wireSwapped = false;
     bool m_wireSlanted = false;
+    // What is drawn: buses rather than wires.
+    bool m_drawingBus = false;
 
     // The text being edited in place: the line, and the component, power
     // symbol or label it belongs to.

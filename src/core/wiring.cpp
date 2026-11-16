@@ -633,6 +633,15 @@ QList<Point> pinPoints(const Sheet &sheet, const Library &library)
     return points;
 }
 
+bool isOnBus(const Sheet &sheet, const Point &point)
+{
+    return std::any_of(sheet.buses.cbegin(), sheet.buses.cend(), [&point](const Bus &bus) {
+        Wire line;
+        line.points = bus.points;
+        return isOnWire(line, point);
+    });
+}
+
 QList<Point> partPinPoints(const Sheet &sheet, const Library &library)
 {
     QList<Point> points;

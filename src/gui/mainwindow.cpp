@@ -283,6 +283,8 @@ void MainWindow::createMenus()
     connect(noConnectAction, &QAction::triggered, this, &MainWindow::placeNoConnect);
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Wire), "actionWire",
                   QKeySequence(Qt::Key_W), &SheetEditor::startWiring);
+    addEditAction(tr("Draw bus"), "actionBus", QKeySequence(Qt::Key_B),
+                  &SheetEditor::startDrawingBus);
     addEditAction(tr("Turn the wire corner the other way"), "actionWireCorner",
                   QKeySequence(Qt::Key_Space), &SheetEditor::swapWireCorner);
     addEditAction(tr("Slant the wire corner"), "actionWireSlant", QKeySequence(Qt::Key_Slash),

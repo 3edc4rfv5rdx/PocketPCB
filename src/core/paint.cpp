@@ -601,6 +601,12 @@ void paintLabel(QPainter &painter, const Label &label, bool joined)
     painter.restore();
 }
 
+// Where the name of a bus stands: above its first point.
+QPointF busNameAt(const Bus &bus)
+{
+    return toMm(bus.points.value(0)) - QPointF(0, LABEL_TEXT_HEIGHT / 2 + BUS_WIDTH + LABEL_GAP);
+}
+
 // From the coordinates of a power symbol's drawing to those of the sheet:
 // turned clockwise about its pin, then moved.
 QTransform powerTransform(const PowerSymbol &power)
@@ -995,10 +1001,8 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const Library &li
     for (const Bus &bus : sheet.buses) {
         painter.setPen(linePen(paintcolor::bus(), BUS_WIDTH));
         painter.drawPolyline(toPolygon(bus.points));
-        // The name sits above the bus's first point.
-        const QPointF nameAt = toMm(bus.points.value(0))
-                               - QPointF(0, LABEL_TEXT_HEIGHT / 2 + BUS_WIDTH + LABEL_GAP);
-        drawText(painter, nameAt, bus.name, LABEL_TEXT_HEIGHT, TextAlign::Left, paintcolor::bus());
+        drawText(painter, busNameAt(bus), bus.name, LABEL_TEXT_HEIGHT, TextAlign::Left,
+                 paintcolor::bus());
     }
     for (const Wire &wire : sheet.wires) {
         painter.setPen(linePen(paintcolor::wire(), WIRE_WIDTH));
@@ -1099,6 +1103,11 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
     for (const NoConnect &mark : sheet.noConnects)
         addRect(mark.id, squareAround(toMm(mark.at), 2 * NO_CONNECT_HALF));
     return shapes;
+}
+
+QRectF busNameRect(const Bus &bus)
+{
+    return textBounds(busNameAt(bus), bus.name, LABEL_TEXT_HEIGHT, TextAlign::Left);
 }
 
 Point labelTextPoint(const Label &label)

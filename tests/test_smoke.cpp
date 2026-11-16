@@ -1061,6 +1061,57 @@ private slots:
         QVERIFY(!editor->isPlacing());
     }
 
+    // B draws buses like wires, each named BUS and a number of its own; a
+    // wire drawn to a bus ends on it; a double click on the name renames it.
+    void busesAreDrawnAndRenamed()
+    {
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QVERIFY(window.openProject(QStringLiteral(PPCB_SOURCE_DIR "/examples/demo/demo.ppcb")));
+        SheetEditor *editor = window.sheetEditor();
+        const auto sheet = [&window]() -> const Sheet & {
+            return window.document()->design().schematic.sheets.at(0);
+        };
+        const int buses = int(sheet().buses.size());
+        const int wires = int(sheet().wires.size());
+
+        window.findChild<QAction *>(QStringLiteral("actionBus"))->trigger();
+        QVERIFY(editor->isWiring());
+        editor->press(QPointF(30.48, 30.48), false);
+        editor->press(QPointF(60.96, 30.48), false);
+        editor->press(QPointF(60.96, 30.48), false);
+        QCOMPARE(int(sheet().buses.size()), buses + 1);
+        QCOMPARE(sheet().buses.last().name, QStringLiteral("BUS1"));
+        QCOMPARE(sheet().buses.last().points,
+                 QList<Point>({Point({mmToNm(30.48), mmToNm(30.48)}),
+                               Point({mmToNm(60.96), mmToNm(30.48)})}));
+        QCOMPARE(int(sheet().wires.size()), wires);
+
+        // A wire from below ends where it reaches the bus.
+        window.findChild<QAction *>(QStringLiteral("actionWire"))->trigger();
+        editor->press(QPointF(45.72, 40.64), false);
+        editor->press(QPointF(45.72, 30.48), false);
+        QCOMPARE(int(sheet().wires.size()), wires + 1);
+        window.findChild<QAction *>(QStringLiteral("actionDeselect"))->trigger();
+        window.findChild<QAction *>(QStringLiteral("actionDeselect"))->trigger();
+        QVERIFY(!editor->isWiring());
+
+        // Its name stands above its first point.
+        const QPointF name = busNameRect(sheet().buses.last()).center();
+        editor->doubleClick(name, false);
+        QLineEdit *line = nullptr;
+        for (QLineEdit *edit : window.canvas()->viewport()->findChildren<QLineEdit *>()) {
+            if (edit->isVisible())
+                line = edit;
+        }
+        QVERIFY(line != nullptr);
+        QCOMPARE(line->text(), QStringLiteral("BUS1"));
+        line->setText(QStringLiteral("D[0..7]"));
+        QTest::keyClick(line, Qt::Key_Return);
+        QCOMPARE(sheet().buses.last().name, QStringLiteral("D[0..7]"));
+    }
+
     void wiresAreDrawnUntilEsc()
     {
         MainWindow window;

@@ -43,6 +43,10 @@ QList<Point> partPinPoints(const Sheet &sheet, const Library &library);
 // True when 'point' lies on 'wire': on one of its segments, ends included.
 bool isOnWire(const Wire &wire, const Point &point);
 
+// True when 'point' lies on a bus of 'sheet': a wire drawn to it ends there,
+// as an entry into the bus, though it connects only by its label.
+bool isOnBus(const Sheet &sheet, const Point &point);
+
 // True when a wire ending at 'point' would connect there: to a pin, or to
 // a wire of 'sheet'.
 bool isConnectionPoint(const Sheet &sheet, const Library &library, const Point &point);

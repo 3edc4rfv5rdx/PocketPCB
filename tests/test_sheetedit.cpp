@@ -231,6 +231,26 @@ private slots:
         QCOMPARE(nextLabelText(QString()), QString());
     }
 
+    void busesAreNamed()
+    {
+        Schematic schematic;
+        schematic.sheets = {Sheet(), Sheet()};
+        QCOMPARE(nextBusName(schematic), QStringLiteral("BUS1"));
+        Bus bus;
+        bus.name = QStringLiteral("BUS1");
+        schematic.sheets[0].buses.append(bus);
+        bus.name = QStringLiteral("BUS3");
+        schematic.sheets[1].buses.append(bus);
+        bus.name = QStringLiteral("D[0..7]");
+        schematic.sheets[1].buses.append(bus);
+        QCOMPARE(nextBusName(schematic), QStringLiteral("BUS2"));
+
+        const Sheet sheet = fullSheet();
+        QCOMPARE(withBusName(sheet, {id(3)}, QStringLiteral(" A[0..3] ")).buses.at(0).name,
+                 QStringLiteral("A[0..3]"));
+        QVERIFY(withBusName(sheet, {id(3)}, QStringLiteral(" ")) == sheet);
+    }
+
     void rectangleTakesWhatIsWhollyInside()
     {
         const QList<SheetObjectShape> shapes = sheetObjectShapes(fullSheet(), resistorLibrary());

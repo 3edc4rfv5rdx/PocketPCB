@@ -19,13 +19,14 @@ Early development. What works now:
   - draw wires (W; Space turns the corner, / slants it) with junction dots placed by themselves;
   - place power symbols from the panel, or with P, which places the last one again (the ground at first); wires join them like pins, and a double click edits the net name in place;
   - place net labels with L: a click asks for the text, the next label is offered numbered on (D0, D1, …); a label on no wire and no pin shows white on a red plate, one on a wire or a pin goes with it when that moves; a click on its text chooses the text alone and a drag moves it away from the point, which stays and shows as a small hollow diamond; a double click edits its text;
+  - draw buses with B, the way wires are drawn: each is named BUS1, BUS2 … at first, and a double click renames it (D[0..7]); a wire drawn to a bus ends on it, and joins the others by its label;
   - put no-connect marks on pins with X: a mark goes only on a pin of a part, is red elsewhere, and goes with the pin when the part moves;
   - a click on a wire chooses its segment: a drag moves it across, Delete removes it, and taken near the wire's end it drags that end, unless the end is on a pin; a double click chooses the whole wire, Shift and a click every wire joined to it;
   - a click on a part's designator or value chooses that text alone, and a drag moves it; an empty value shows as a grey VALUE mark, except on parts that need none, such as switches and connectors; a double click on the value edits it in place;
   - Undo/Redo.
 - Properties panel: the designator, value, footprint (one the part allows) and off-board flag of the chosen components; with several chosen, what is set goes to them all as one step.
 
-Planned next: buses, nets, ERC; then the board editor with ratsnest, tracks and DRC; Gerber and Excellon export; 1:1 printing for toner transfer; schematic printing with a title block and a BOM; an AppImage.
+Planned next: nets, ERC; then the board editor with ratsnest, tracks and DRC; Gerber and Excellon export; 1:1 printing for toner transfer; schematic printing with a title block and a BOM; an AppImage.
 
 The full specification is in [`tz.md`](tz.md) (English) and [`tz.ru.md`](tz.ru.md) (Russian original).
 

@@ -299,6 +299,13 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
             return;
         }
     }
+    // A bus by its line or by its name.
+    for (const Bus &bus : sheet->buses) {
+        if (bus.id == hit || busNameRect(bus).contains(at)) {
+            editText(bus.id);
+            return;
+        }
+    }
     for (const Label &label : sheet->labels) {
         if (label.id == hit) {
             editText(hit);
@@ -344,6 +351,12 @@ void SheetEditor::editText(const ObjectId &id)
         if (power.id == id) {
             text = power.name;
             rect = powerNameRect(power, library);
+        }
+    }
+    for (const Bus &bus : sheet->buses) {
+        if (bus.id == id) {
+            text = bus.name;
+            rect = busNameRect(bus);
         }
     }
     // A label of the sheet, or the one being placed, where it stands.
@@ -414,6 +427,12 @@ void SheetEditor::finishTextEdit(bool keep)
             return;
         }
     }
+    for (const Bus &bus : sheet->buses) {
+        if (bus.id == m_textOwner) {
+            setBusName({m_textOwner}, value);
+            return;
+        }
+    }
     setComponentValue({m_textOwner}, value);
 }
 
@@ -440,6 +459,16 @@ void SheetEditor::setLabelText(const QSet<ObjectId> &ids, const QString &text)
 {
     if (const Sheet *sheet = currentSheet())
         applyToComponents(Action::Rename, ids, withLabelText(*sheet, ids, text));
+}
+
+void SheetEditor::setBusName(const QSet<ObjectId> &ids, const QString &name)
+{
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr)
+        return;
+    const QString given =
+        name.trimmed().isEmpty() ? nextBusName(m_document->design().schematic) : name;
+    applyToComponents(Action::Rename, ids, withBusName(*sheet, ids, given));
 }
 
 void SheetEditor::setPowerName(const QSet<ObjectId> &ids, const QString &name)
@@ -927,8 +956,19 @@ void SheetEditor::placeFloating()
 
 void SheetEditor::startWiring()
 {
+    beginLines(false);
+}
+
+void SheetEditor::startDrawingBus()
+{
+    beginLines(true);
+}
+
+void SheetEditor::beginLines(bool bus)
+{
     if (currentSheet() == nullptr)
         return;
+    m_drawingBus = bus;
     m_placing = false;
     m_dragging = false;
     m_rubberBanding = false;
@@ -967,7 +1007,13 @@ void SheetEditor::wireClick(const Point &at)
     }
     const bool again = at == m_wirePoints.last();
     m_wirePoints.append(wireRoute(m_wirePoints.last(), at, m_wireSwapped, m_wireSlanted));
-    if (again || isConnectionPoint(*currentSheet(), m_document->design().library, at))
+    // A bus goes on until the second click on its end; a wire stops where it
+    // joins something, or on a bus, which it enters.
+    const Sheet &sheet = *currentSheet();
+    const bool joins = !m_drawingBus
+                       && (isConnectionPoint(sheet, m_document->design().library, at)
+                           || isOnBus(sheet, at));
+    if (again || joins)
         finishWire();
     else
         updateWire();
@@ -975,20 +1021,32 @@ void SheetEditor::wireClick(const Point &at)
 
 void SheetEditor::finishWire()
 {
-    Wire wire;
-    wire.id = newObjectId();
-    wire.points = simplifiedWire(m_wirePoints);
+    const QList<Point> points = simplifiedWire(m_wirePoints);
     m_wirePoints.clear();
-    if (wire.points.size() < 2) {
+    if (points.size() < 2) {
         emit changed();
         return;
     }
     Design design = m_document->design();
-    design.schematic.sheets[m_sheet].wires.append(wire);
-    const QString name = actionName(Action::Wire) + QStringLiteral(" (")
-                         + sheetName(design.schematic.sheets.at(m_sheet), m_sheet)
-                         + QLatin1Char(')');
-    m_document->change(name, design, m_sheet, {wire.id});
+    Sheet &sheet = design.schematic.sheets[m_sheet];
+    ObjectId id = newObjectId();
+    QString name;
+    if (m_drawingBus) {
+        Bus bus;
+        bus.id = id;
+        bus.points = points;
+        bus.name = nextBusName(design.schematic);
+        sheet.buses.append(bus);
+        name = actionName(Action::Bus) + QLatin1Char(' ') + bus.name;
+    } else {
+        Wire wire;
+        wire.id = id;
+        wire.points = points;
+        sheet.wires.append(wire);
+        name = actionName(Action::Wire);
+    }
+    name += QStringLiteral(" (") + sheetName(sheet, m_sheet) + QLatin1Char(')');
+    m_document->change(name, design, m_sheet, {id});
     emit changed();
 }
 
@@ -1006,8 +1064,14 @@ void SheetEditor::updateWire()
         Wire wire;
         wire.points = m_wirePoints
                       + wireRoute(m_wirePoints.last(), m_wireCursor, m_wireSwapped, m_wireSlanted);
-        if (wire.points.size() >= 2)
+        if (wire.points.size() >= 2 && m_drawingBus) {
+            Bus bus;
+            bus.points = wire.points;
+            bus.name = nextBusName(m_document->design().schematic);
+            m_preview.buses.append(bus);
+        } else if (wire.points.size() >= 2) {
             m_preview.wires.append(wire);
+        }
     }
     emit changed();
 }
@@ -1051,6 +1115,10 @@ QString SheetEditor::stepName(const QString &action, const Sheet &objects,
     for (const Label &label : objects.labels) {
         if (ids.contains(label.id))
             names.append(label.text);
+    }
+    for (const Bus &bus : objects.buses) {
+        if (ids.contains(bus.id))
+            names.append(bus.name);
     }
     const int others = int(ids.size() - names.size());
     std::sort(names.begin(), names.end());
@@ -1103,6 +1171,8 @@ QString SheetEditor::actionName(Action action)
         return tr("Put on board");
     case Action::Rename:
         return tr("Rename");
+    case Action::Bus:
+        return tr("Bus");
     }
     return QString();
 }

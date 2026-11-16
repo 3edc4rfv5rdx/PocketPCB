@@ -524,6 +524,10 @@
         <source>Place no-connect mark</source>
         <translation>Поставити знак непідключеного виводу</translation>
     </message>
+    <message>
+        <source>Draw bus</source>
+        <translation>Намалювати шину</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>
@@ -598,6 +602,10 @@
     <message>
         <source>Rename</source>
         <translation>Перейменувати</translation>
+    </message>
+    <message>
+        <source>Bus</source>
+        <translation>Шина</translation>
     </message>
 </context>
 <context>
