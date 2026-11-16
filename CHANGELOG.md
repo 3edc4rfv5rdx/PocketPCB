@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A click on a bus's name takes the name, even close to the bus's line, instead of finding nothing or the line
 - F: A bus is chosen whole with a double click, like a wire, and its name is chosen and dragged alone like a part's designator; a double click on the name renames the bus
 - F: The built-in chassis symbol is a stem with a thick bar, the European way, instead of a bar with slanted strokes
 - N: Buses are dragged by their segments and ends like wires, and the wires that enter them go along

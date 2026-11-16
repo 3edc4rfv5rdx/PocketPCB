@@ -143,7 +143,16 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
     m_narrowTo = ObjectId();
     dropSegment();
     const QList<SheetObjectShape> found = shapes();
-    const ObjectId hit = objectAt(found, at, pixelsToMm(HIT_PIXELS));
+    ObjectId hit = objectAt(found, at, pixelsToMm(HIT_PIXELS));
+    // The name of a bus lies off its line, which alone finds the bus, or
+    // near enough for the line to be found: a click on the name takes it.
+    const TextHit name = textAt(*currentSheet(), m_document->design().library, at);
+    const bool onName =
+        !name.owner.isNull() && (hit.isNull() || hit == name.owner)
+        && std::any_of(currentSheet()->buses.cbegin(), currentSheet()->buses.cend(),
+                       [&name](const Bus &bus) { return bus.id == name.owner; });
+    if (onName)
+        hit = name.owner;
     m_dragAnchor = dragAnchor(*currentSheet(), hit, at);
     // Shift on a wire: every wire joined to it, added with Ctrl.
     const QSet<ObjectId> wires = net ? joinedWires(*currentSheet(), hit) : QSet<ObjectId>();
@@ -172,8 +181,9 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
         const Sheet *sheet = currentSheet();
         // A text of a component or a label, unless a line is taken over it:
         // it is chosen alone, and a drag moves it while its object stays.
-        const TextHit text =
-            isFoundByLine(found, hit) ? TextHit() : textAt(*sheet, m_document->design().library, at);
+        const TextHit text = isFoundByLine(found, hit) && !onName
+                                 ? TextHit()
+                                 : textAt(*sheet, m_document->design().library, at);
         // A wire or a bus not chosen whole: the segment under the cursor is
         // chosen, and a drag moves it, or the line's end when taken near it.
         QList<Point> line;
