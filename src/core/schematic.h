@@ -47,6 +47,9 @@ struct Bus
     ObjectId id;
     QList<Point> points;
     QString name;
+    // Where the name stands, relative to the first point: just above it,
+    // unless moved away from it.
+    Point nameAt;
 };
 
 enum class LabelScope { Global, Local };

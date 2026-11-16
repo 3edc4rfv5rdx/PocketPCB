@@ -3,8 +3,9 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A bus is chosen whole with a double click, like a wire, and its name is chosen and dragged alone like a part's designator; a double click on the name renames the bus
 - F: The built-in chassis symbol is a stem with a thick bar, the European way, instead of a bar with slanted strokes
-- N: Buses are dragged by their segments and ends like wires, chosen whole by their name, and the wires that enter them go along
+- N: Buses are dragged by their segments and ends like wires, and the wires that enter them go along
 - F: A wire begun on a bus leaves it at 45 degrees as well, and one going on the line of a bus into its end steps aside to enter it at 45 degrees
 - E: A bus holds the end of a wire that enters it, and the entry stays at 45 degrees when the wire is laid again
 - F: A wire drawn square on to a bus enters it at 45 degrees over its last grid step

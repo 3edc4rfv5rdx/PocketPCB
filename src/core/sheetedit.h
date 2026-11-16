@@ -29,8 +29,8 @@ QRectF selectionBounds(const QList<SheetObjectShape> &shapes, const QSet<ObjectI
 Point dragAnchor(const Sheet &sheet, const ObjectId &id, const QPointF &near);
 
 // A text that a click chooses alone and a drag moves while its object
-// stays: the designator or the value of a component, or the text of a
-// label, whose 'text' is not used. A null owner when there is none.
+// stays: the designator or the value of a component, the text of a label or
+// the name of a bus, whose 'text' is not used. A null owner when there is none.
 struct TextHit
 {
     ObjectId owner;

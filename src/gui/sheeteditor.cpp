@@ -143,7 +143,7 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
     m_narrowTo = ObjectId();
     dropSegment();
     const QList<SheetObjectShape> found = shapes();
-    ObjectId hit = objectAt(found, at, pixelsToMm(HIT_PIXELS));
+    const ObjectId hit = objectAt(found, at, pixelsToMm(HIT_PIXELS));
     m_dragAnchor = dragAnchor(*currentSheet(), hit, at);
     // Shift on a wire: every wire joined to it, added with Ctrl.
     const QSet<ObjectId> wires = net ? joinedWires(*currentSheet(), hit) : QSet<ObjectId>();
@@ -155,26 +155,6 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
         m_pressOnSelection = !adding;
         emit changed();
         return;
-    }
-    // The name of a bus takes the whole bus, which its line does not.
-    if (hit.isNull()) {
-        for (const Bus &bus : currentSheet()->buses) {
-            if (busNameRect(bus).contains(at)) {
-                hit = bus.id;
-                m_dragAnchor = dragAnchor(*currentSheet(), hit, at);
-            }
-        }
-        if (!hit.isNull()) {
-            if (adding && m_selection.contains(hit))
-                m_selection.remove(hit);
-            else if (adding)
-                m_selection.insert(hit);
-            else if (!m_selection.contains(hit))
-                m_selection = {hit};
-            m_pressOnSelection = !adding;
-            emit changed();
-            return;
-        }
     }
     if (hit.isNull()) {
         m_pressOnSelection = false;
@@ -293,11 +273,15 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
     const Sheet *sheet = currentSheet();
     if (placing || sheet == nullptr)
         return;
-    // The value of a component or the text of a label chosen alone.
+    // The value of a component, the text of a label or the name of a bus
+    // chosen alone.
     if (hasText()) {
+        const ObjectId owner = m_chosenText.owner;
         const bool label = std::any_of(sheet->labels.cbegin(), sheet->labels.cend(),
-                                       [this](const Label &l) { return l.id == m_chosenText.owner; });
-        if (label || m_chosenText.text == ComponentText::Value) {
+                                       [&owner](const Label &l) { return l.id == owner; });
+        const bool bus = std::any_of(sheet->buses.cbegin(), sheet->buses.cend(),
+                                     [&owner](const Bus &b) { return b.id == owner; });
+        if (label || bus || m_chosenText.text == ComponentText::Value) {
             editText(m_chosenText.owner);
             return;
         }
@@ -306,13 +290,6 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
     for (const PowerSymbol &power : sheet->powerSymbols) {
         if (power.id == hit) {
             editText(hit);
-            return;
-        }
-    }
-    // A bus by its line or by its name.
-    for (const Bus &bus : sheet->buses) {
-        if (bus.id == hit || busNameRect(bus).contains(at)) {
-            editText(bus.id);
             return;
         }
     }
@@ -328,16 +305,17 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
             return;
         }
     }
-    // A wire is chosen whole.
+    // A wire or a bus is chosen whole.
     if (!adding) {
-        for (const Wire &wire : sheet->wires) {
-            if (wire.id == hit) {
-                dropSegment();
-                m_endLine = ObjectId();
-                m_selection = {hit};
-                emit changed();
-                return;
-            }
+        const bool line = std::any_of(sheet->wires.cbegin(), sheet->wires.cend(),
+                                      [&hit](const Wire &w) { return w.id == hit; })
+                          || std::any_of(sheet->buses.cbegin(), sheet->buses.cend(),
+                                         [&hit](const Bus &b) { return b.id == hit; });
+        if (line) {
+            dropSegment();
+            m_endLine = ObjectId();
+            m_selection = {hit};
+            emit changed();
         }
     }
 }

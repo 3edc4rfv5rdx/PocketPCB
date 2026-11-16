@@ -601,10 +601,10 @@ void paintLabel(QPainter &painter, const Label &label, bool joined)
     painter.restore();
 }
 
-// Where the name of a bus stands: above its first point.
+// Where the name of a bus is drawn: just above where it stands.
 QPointF busNameAt(const Bus &bus)
 {
-    return toMm(bus.points.value(0)) - QPointF(0, LABEL_TEXT_HEIGHT / 2 + BUS_WIDTH + LABEL_GAP);
+    return toMm(busNamePoint(bus)) - QPointF(0, LABEL_TEXT_HEIGHT / 2 + BUS_WIDTH + LABEL_GAP);
 }
 
 // From the coordinates of a power symbol's drawing to those of the sheet:
@@ -1103,6 +1103,11 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
     for (const NoConnect &mark : sheet.noConnects)
         addRect(mark.id, squareAround(toMm(mark.at), 2 * NO_CONNECT_HALF));
     return shapes;
+}
+
+Point busNamePoint(const Bus &bus)
+{
+    return bus.points.value(0) + bus.nameAt;
 }
 
 QRectF busNameRect(const Bus &bus)

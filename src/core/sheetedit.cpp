@@ -89,6 +89,7 @@ Sheet transformed(const Sheet &sheet, const QSet<ObjectId> &ids, const Transform
         if (ids.contains(bus.id)) {
             for (Point &point : bus.points)
                 point = transform.point(point);
+            bus.nameAt = transform.offset(bus.nameAt);
         }
     }
     for (Label &label : result.labels) {
@@ -186,6 +187,10 @@ TextHit textAt(const Sheet &sheet, const Library &library, const QPointF &point)
         if (labelTextRect(*it).contains(point))
             return TextHit{it->id, ComponentText::Designator};
     }
+    for (auto it = sheet.buses.crbegin(); it != sheet.buses.crend(); ++it) {
+        if (busNameRect(*it).contains(point))
+            return TextHit{it->id, ComponentText::Designator};
+    }
     return TextHit();
 }
 
@@ -218,7 +223,8 @@ bool hasText(const Sheet &sheet, const TextHit &hit)
 {
     return !hit.owner.isNull()
            && (ownerOf(sheet.components, hit.owner) != nullptr
-               || ownerOf(sheet.labels, hit.owner) != nullptr);
+               || ownerOf(sheet.labels, hit.owner) != nullptr
+               || ownerOf(sheet.buses, hit.owner) != nullptr);
 }
 
 Point textPoint(const Sheet &sheet, const TextHit &hit)
@@ -227,6 +233,8 @@ Point textPoint(const Sheet &sheet, const TextHit &hit)
         return componentTextPoint(*component, hit.text);
     if (const Label *label = ownerOf(sheet.labels, hit.owner))
         return labelTextPoint(*label);
+    if (const Bus *bus = ownerOf(sheet.buses, hit.owner))
+        return busNamePoint(*bus);
     return Point();
 }
 
@@ -236,6 +244,8 @@ Point textOwnerPoint(const Sheet &sheet, const TextHit &hit)
         return component->at;
     if (const Label *label = ownerOf(sheet.labels, hit.owner))
         return label->at;
+    if (const Bus *bus = ownerOf(sheet.buses, hit.owner))
+        return bus->points.value(0);
     return Point();
 }
 
@@ -245,6 +255,8 @@ QRectF textRect(const Sheet &sheet, const Library &library, const TextHit &hit)
         return componentTextRect(*component, hit.text, library);
     if (const Label *label = ownerOf(sheet.labels, hit.owner))
         return labelTextRect(*label);
+    if (const Bus *bus = ownerOf(sheet.buses, hit.owner))
+        return busNameRect(*bus);
     return QRectF();
 }
 
@@ -258,6 +270,8 @@ Sheet withTextMoved(const Sheet &sheet, const TextHit &hit, const Point &delta)
     }
     if (Label *label = ownerOf(result.labels, hit.owner))
         label->textAt = label->textAt + delta;
+    if (Bus *bus = ownerOf(result.buses, hit.owner))
+        bus->nameAt = bus->nameAt + delta;
     return result;
 }
 

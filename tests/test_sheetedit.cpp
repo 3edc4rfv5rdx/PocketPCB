@@ -258,6 +258,26 @@ private slots:
                  QList<Point>({Point{10 * MM, 10 * MM}, Point{20 * MM, 10 * MM}}));
     }
 
+    // The name of a bus is chosen and moved alone, as a label's text is.
+    void busNamesAreMovedAlone()
+    {
+        Sheet sheet;
+        Bus bus;
+        bus.id = id(1);
+        bus.points = {Point{20 * MM, 20 * MM}, Point{40 * MM, 20 * MM}};
+        bus.name = QStringLiteral("D[0..7]");
+        sheet.buses = {bus};
+        const TextHit hit = textAt(sheet, Library(), busNameRect(bus).center());
+        QCOMPARE(hit.owner, id(1));
+        QCOMPARE(textOwnerPoint(sheet, hit), bus.points.first());
+        const Point delta{5 * MM, -3 * MM};
+        const Sheet moved = withTextMoved(sheet, hit, delta);
+        QCOMPARE(moved.buses.at(0).points, bus.points);
+        QCOMPARE(moved.buses.at(0).nameAt, delta);
+        QCOMPARE(textPoint(moved, hit), bus.points.first() + delta);
+        QCOMPARE(textRect(moved, Library(), hit), busNameRect(bus).translated(5, -3));
+    }
+
     void busesAreNamed()
     {
         Schematic schematic;

@@ -154,8 +154,8 @@ public:
     // A second click in a row: the press it also is, and a component under
     // the cursor is opened (see componentOpened), or its value edited in
     // place when that is under it; the net name of a power symbol, the text
-    // of a label or the name of a bus under it is edited in place. Not while
-    // placing.
+    // of a label or the name of a bus under it is edited in place; a wire or
+    // a bus under it is chosen whole. Not while placing.
     void doubleClick(const QPointF &at, bool adding);
     // Esc: placing ends, or a drag is called off, or the selection is dropped.
     void cancel();

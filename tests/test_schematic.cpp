@@ -50,6 +50,7 @@ Schematic fullSchematic()
     bus.points = {Point{0, 8 * PIN_GRID}, Point{4 * PIN_GRID, 8 * PIN_GRID},
                   Point{5 * PIN_GRID, 9 * PIN_GRID}};
     bus.name = QStringLiteral("D[0..7]");
+    bus.nameAt = Point{PIN_GRID, -PIN_GRID};
     first.buses.append(bus);
 
     Label label;
@@ -191,6 +192,7 @@ private slots:
         CHANGED(other.sheets[0].buses[0].id = id(1));
         CHANGED(other.sheets[0].buses[0].points[1].y += 1);
         CHANGED(other.sheets[0].buses[0].name = QStringLiteral("A[0..3]"));
+        CHANGED(other.sheets[0].buses[0].nameAt.x += 1);
         CHANGED(other.sheets[0].buses.clear());
 
         CHANGED(other.sheets[0].labels[0].id = id(1));
