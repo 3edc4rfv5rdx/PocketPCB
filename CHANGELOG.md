@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A label's point shows as a small hollow diamond instead of a dot, which looked like a junction
 - N: A label's text is chosen and dragged alone, like a part's designator, while its point stays on the wire and shows as a dot
 - F: A label that joins nothing is white on a red plate instead of red text
 - F: Labels go with the pin or the wire they lie on when parts, wires, segments or wire ends are moved

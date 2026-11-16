@@ -59,8 +59,10 @@ const double BUS_WIDTH = 0.5;
 const double JUNCTION_DIAMETER = 0.8;
 const double LABEL_TEXT_HEIGHT = 1.27;
 const double LABEL_GAP = 0.4;
-// The circle on a label's point, which it is taken by.
-const double LABEL_POINT_RADIUS = 0.3;
+// The hollow diamond on a label's point, which it is taken by: from its
+// centre to each corner, and the width of its line.
+const double LABEL_POINT_HALF = 0.4;
+const double LABEL_POINT_LINE = 0.12;
 // A label is taken by its point within this square, besides its text.
 const double LABEL_POINT_GRIP = 1.0;
 // How far the red plate under a label that joins nothing reaches past its text.
@@ -563,8 +565,8 @@ QPointF labelTextAt()
     return QPointF(0, -(LABEL_TEXT_HEIGHT / 2 + LABEL_GAP));
 }
 
-// A circle on its point and the text along the label's direction, just
-// above where it stands; the text is white on a red plate, and the circle
+// A diamond on its point and the text along the label's direction, just
+// above where it stands; the text is white on a red plate, and the diamond
 // red, when the label joins nothing, a grey question mark while it has no
 // text yet.
 void paintLabel(QPainter &painter, const Label &label, bool joined)
@@ -572,9 +574,13 @@ void paintLabel(QPainter &painter, const Label &label, bool joined)
     const bool empty = label.text.isEmpty();
     const QColor mark = joined || empty ? paintcolor::label() : paintcolor::looseLabel();
     painter.save();
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(mark);
-    painter.drawEllipse(toMm(label.at), LABEL_POINT_RADIUS, LABEL_POINT_RADIUS);
+    // Hollow, so that it is not taken for the dot where wires join.
+    const QPointF at = toMm(label.at);
+    const double h = LABEL_POINT_HALF;
+    painter.setPen(linePen(mark, LABEL_POINT_LINE));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawPolygon(QPolygonF({at + QPointF(0, -h), at + QPointF(h, 0), at + QPointF(0, h),
+                                   at + QPointF(-h, 0)}));
     painter.restore();
 
     painter.save();
