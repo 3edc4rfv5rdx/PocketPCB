@@ -101,6 +101,11 @@ Point componentTextPoint(const Component &component, ComponentText text);
 QRectF componentTextRect(const Component &component, ComponentText text,
                          const Library &library);
 
+// A rectangle surely holding the net name of a power symbol, in
+// millimetres, where it is drawn or would be if its symbol did not hide it;
+// a square around its point when 'library' lacks the symbol.
+QRectF powerNameRect(const PowerSymbol &power, const Library &library);
+
 // A rectangle that holds everything paintBoard() draws; never empty.
 QRectF boardBounds(const Board &board, const Library &library);
 // The board as seen from the top: bottom copper under top copper, the

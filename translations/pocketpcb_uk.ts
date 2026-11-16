@@ -587,6 +587,10 @@
         <source>Put on board</source>
         <translation>Повернути на плату</translation>
     </message>
+    <message>
+        <source>Rename</source>
+        <translation>Перейменувати</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::PropertiesPanel</name>

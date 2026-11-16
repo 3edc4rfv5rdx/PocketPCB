@@ -201,6 +201,19 @@ Sheet withComponentValue(const Sheet &sheet, const QSet<ObjectId> &ids, const QS
     return withComponentsChanged(sheet, ids, [&trimmed](Component &c) { c.value = trimmed; });
 }
 
+Sheet withPowerName(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &name)
+{
+    const QString trimmed = name.trimmed();
+    if (trimmed.isEmpty())
+        return sheet;
+    Sheet result = sheet;
+    for (PowerSymbol &power : result.powerSymbols) {
+        if (ids.contains(power.id))
+            power.name = trimmed;
+    }
+    return result;
+}
+
 Sheet withComponentDesignator(const Sheet &sheet, const QSet<ObjectId> &ids,
                               const QString &designator)
 {

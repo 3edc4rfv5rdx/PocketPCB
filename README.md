@@ -17,7 +17,7 @@ Early development. What works now:
   - choose with a click or a rectangle; a click on one of several chosen objects keeps it alone; what is chosen stays chosen after a change;
   - drag along the grid with the wires following (Shift tears them off), rotate and mirror with the wires following too, delete, copy, cut, paste and duplicate (pasted parts are numbered on);
   - draw wires (W; Space turns the corner, / slants it) with junction dots placed by themselves;
-  - place power symbols from the panel, or with P, which places the last one again (the ground at first); wires join them like pins;
+  - place power symbols from the panel, or with P, which places the last one again (the ground at first); wires join them like pins, and a double click edits the net name in place;
   - a click on a wire chooses its segment: a drag moves it across, Delete removes it, and taken near the wire's end it drags that end, unless the end is on a pin; a double click chooses the whole wire, Shift and a click every wire joined to it;
   - a click on a part's designator or value chooses that text alone, and a drag moves it; an empty value shows as a grey VALUE mark, except on parts that need none, such as switches and connectors; a double click on the value edits it in place;
   - Undo/Redo.

@@ -204,6 +204,17 @@ private slots:
         QVERIFY(withSymbolFrom(Library(), library, QStringLiteral("absent")).symbols.isEmpty());
     }
 
+    void powerNamesAreSetTrimmed()
+    {
+        const Sheet sheet = fullSheet();
+        const Sheet renamed = withPowerName(sheet, {id(5)}, QStringLiteral(" +12V "));
+        QCOMPARE(renamed.powerSymbols.at(0).name, QStringLiteral("+12V"));
+        // Only power symbols: the component's id changes nothing.
+        QVERIFY(withPowerName(sheet, {id(1)}, QStringLiteral("X")) == sheet);
+        // A blank name is no name.
+        QVERIFY(withPowerName(sheet, {id(5)}, QStringLiteral("  ")) == sheet);
+    }
+
     void rectangleTakesWhatIsWhollyInside()
     {
         const QList<SheetObjectShape> shapes = sheetObjectShapes(fullSheet(), resistorLibrary());

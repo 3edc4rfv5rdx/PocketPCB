@@ -1057,6 +1057,15 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
     return shapes;
 }
 
+QRectF powerNameRect(const PowerSymbol &power, const Library &library)
+{
+    const Symbol *symbol = library.findSymbol(power.symbol);
+    if (symbol == nullptr)
+        return missingRect(toMm(power.at), MISSING_SYMBOL_SIZE);
+    return textBounds(powerNameAt(power, *symbol), power.name, LABEL_TEXT_HEIGHT,
+                      TextAlign::Center);
+}
+
 QString componentTextShown(const Component &component, ComponentText text,
                            const Library &library)
 {

@@ -49,7 +49,7 @@ SheetEditor::SheetEditor(Document *document, CanvasView *canvas, QObject *parent
 void SheetEditor::setSheet(int sheet)
 {
     // Set on the sheet it was begun on.
-    finishValueEdit(true);
+    finishTextEdit(true);
     m_sheet = sheet;
     m_placing = false;
     m_wiring = false;
@@ -283,10 +283,16 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
     if (placing || sheet == nullptr)
         return;
     if (hasText() && m_text == ComponentText::Value) {
-        editValue(m_textComponent);
+        editText(m_textComponent);
         return;
     }
     const ObjectId hit = objectAt(shapes(), at, pixelsToMm(HIT_PIXELS));
+    for (const PowerSymbol &power : sheet->powerSymbols) {
+        if (power.id == hit) {
+            editText(hit);
+            return;
+        }
+    }
     for (const Component &component : sheet->components) {
         if (component.id == hit) {
             emit componentOpened(component.part, component.footprint);
@@ -307,47 +313,56 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
     }
 }
 
-void SheetEditor::editValue(const ObjectId &id)
+void SheetEditor::editText(const ObjectId &id)
 {
-    finishValueEdit(true);
+    finishTextEdit(true);
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr)
         return;
+    const Library &library = m_document->design().library;
+    QString text;
+    QRectF rect;
     for (const Component &component : sheet->components) {
-        if (component.id != id)
-            continue;
-        m_valueComponent = id;
-        auto *edit = new QLineEdit(component.value, m_canvas->viewport());
-        edit->selectAll();
-        // Over the text, at least wide enough to type a value into.
-        const QRect text =
-            m_canvas->mapFromScene(componentTextRect(component, ComponentText::Value,
-                                                     m_document->design().library))
-                .boundingRect();
-        const int width =
-            qMax(text.width(), edit->fontMetrics().averageCharWidth() * VALUE_EDIT_LETTERS);
-        const int height = edit->sizeHint().height();
-        edit->setGeometry(text.center().x() - width / 2, text.center().y() - height / 2, width,
-                          height);
-        edit->installEventFilter(this);
-        connect(edit, &QLineEdit::returnPressed, this, [this]() { finishValueEdit(true); });
-        // The line stays where it was put: moving the view ends it.
-        const auto end = [this]() { finishValueEdit(true); };
-        connect(m_canvas->horizontalScrollBar(), &QScrollBar::valueChanged, edit, end);
-        connect(m_canvas->verticalScrollBar(), &QScrollBar::valueChanged, edit, end);
-        m_valueEdit = edit;
-        edit->show();
-        edit->setFocus();
-        return;
+        if (component.id == id) {
+            text = component.value;
+            rect = componentTextRect(component, ComponentText::Value, library);
+        }
     }
+    for (const PowerSymbol &power : sheet->powerSymbols) {
+        if (power.id == id) {
+            text = power.name;
+            rect = powerNameRect(power, library);
+        }
+    }
+    if (rect.isNull())
+        return;
+    m_textOwner = id;
+    auto *edit = new QLineEdit(text, m_canvas->viewport());
+    edit->selectAll();
+    // Over the text, at least wide enough to type a value into.
+    const QRect place = m_canvas->mapFromScene(rect).boundingRect();
+    const int width =
+        qMax(place.width(), edit->fontMetrics().averageCharWidth() * VALUE_EDIT_LETTERS);
+    const int height = edit->sizeHint().height();
+    edit->setGeometry(place.center().x() - width / 2, place.center().y() - height / 2, width,
+                      height);
+    edit->installEventFilter(this);
+    connect(edit, &QLineEdit::returnPressed, this, [this]() { finishTextEdit(true); });
+    // The line stays where it was put: moving the view ends it.
+    const auto end = [this]() { finishTextEdit(true); };
+    connect(m_canvas->horizontalScrollBar(), &QScrollBar::valueChanged, edit, end);
+    connect(m_canvas->verticalScrollBar(), &QScrollBar::valueChanged, edit, end);
+    m_textEdit = edit;
+    edit->show();
+    edit->setFocus();
 }
 
-void SheetEditor::finishValueEdit(bool keep)
+void SheetEditor::finishTextEdit(bool keep)
 {
-    if (m_valueEdit.isNull())
+    if (m_textEdit.isNull())
         return;
-    QLineEdit *edit = m_valueEdit;
-    m_valueEdit.clear();
+    QLineEdit *edit = m_textEdit;
+    m_textEdit.clear();
     // Hiding it takes its focus away: that must not end it again.
     edit->removeEventFilter(this);
     edit->disconnect(this);
@@ -357,8 +372,18 @@ void SheetEditor::finishValueEdit(bool keep)
     edit->hide();
     edit->deleteLater();
     m_canvas->setFocus();
-    if (keep)
-        setComponentValue({m_valueComponent}, value);
+    if (!keep)
+        return;
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr)
+        return;
+    for (const PowerSymbol &power : sheet->powerSymbols) {
+        if (power.id == m_textOwner) {
+            setPowerName({m_textOwner}, value);
+            return;
+        }
+    }
+    setComponentValue({m_textOwner}, value);
 }
 
 QList<Component> SheetEditor::chosenComponents() const
@@ -378,6 +403,12 @@ void SheetEditor::setComponentValue(const QSet<ObjectId> &ids, const QString &va
 {
     if (const Sheet *sheet = currentSheet())
         applyToComponents(Action::Value, ids, withComponentValue(*sheet, ids, value));
+}
+
+void SheetEditor::setPowerName(const QSet<ObjectId> &ids, const QString &name)
+{
+    if (const Sheet *sheet = currentSheet())
+        applyToComponents(Action::Rename, ids, withPowerName(*sheet, ids, name));
 }
 
 void SheetEditor::setComponentDesignator(const ObjectId &id, const QString &designator)
@@ -416,7 +447,7 @@ void SheetEditor::applyToComponents(Action action, const QSet<ObjectId> &ids,
 
 bool SheetEditor::eventFilter(QObject *watched, QEvent *event)
 {
-    if (watched != m_valueEdit.data())
+    if (watched != m_textEdit.data())
         return QObject::eventFilter(watched, event);
     switch (event->type()) {
     case QEvent::ShortcutOverride: {
@@ -430,12 +461,12 @@ bool SheetEditor::eventFilter(QObject *watched, QEvent *event)
     }
     case QEvent::KeyPress:
         if (static_cast<QKeyEvent *>(event)->key() == Qt::Key_Escape) {
-            finishValueEdit(false);
+            finishTextEdit(false);
             return true;
         }
         break;
     case QEvent::FocusOut:
-        finishValueEdit(true);
+        finishTextEdit(true);
         break;
     default:
         break;
@@ -990,6 +1021,8 @@ QString SheetEditor::actionName(Action action)
         return tr("Take off board");
     case Action::OnBoard:
         return tr("Put on board");
+    case Action::Rename:
+        return tr("Rename");
     }
     return QString();
 }

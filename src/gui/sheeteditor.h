@@ -55,7 +55,8 @@ public:
         Designator,
         Footprint,
         OffBoard,
-        OnBoard
+        OnBoard,
+        Rename
     };
     static QString actionName(Action action);
 
@@ -135,7 +136,8 @@ public:
     void release(const QPointF &at, bool detached);
     // A second click in a row: the press it also is, and a component under
     // the cursor is opened (see componentOpened), or its value edited in
-    // place when that is under it. Not while placing.
+    // place when that is under it; the net name of a power symbol under it
+    // is edited in place. Not while placing.
     void doubleClick(const QPointF &at, bool adding);
     // Esc: placing ends, or a drag is called off, or the selection is dropped.
     void cancel();
@@ -149,6 +151,9 @@ public:
     void setComponentDesignator(const ObjectId &id, const QString &designator);
     void setComponentFootprint(const QSet<ObjectId> &ids, const QString &footprint);
     void setComponentOffBoard(const QSet<ObjectId> &ids, bool offBoard);
+    // The net name of the power symbols 'ids', as one step; nothing happens
+    // when it changes nothing or 'name' is blank.
+    void setPowerName(const QSet<ObjectId> &ids, const QString &name);
 
     void selectAll();
     void rotateSelection();
@@ -162,15 +167,16 @@ signals:
     void componentOpened(const QString &part, const QString &footprint);
 
 protected:
-    // Keys and focus of the value being edited in place.
+    // Keys and focus of the text being edited in place.
     bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
-    // Opens a line on the canvas over the value of the component 'id': Enter
-    // or leaving it sets the value as one step, Esc drops it.
-    void editValue(const ObjectId &id);
-    // Closes the line; 'keep' sets what it holds as the value.
-    void finishValueEdit(bool keep);
+    // Opens a line on the canvas over the value of the component 'id', or
+    // over the net name of the power symbol 'id': Enter or leaving it sets
+    // the text as one step, Esc drops it.
+    void editText(const ObjectId &id);
+    // Closes the line; 'keep' sets what it holds.
+    void finishTextEdit(bool keep);
     const Sheet *currentSheet() const;
     // True when a segment of a wire is chosen alone: no whole object is,
     // and the sheet has the segment.
@@ -223,7 +229,8 @@ private:
     void removeSelection(Action action);
     // Makes 'edited' the sheet as one step of the history named 'action'.
     void apply(const QString &action, const Sheet &edited);
-    // The same for a change of the components 'ids', named after them.
+    // The same for a change of the components or power symbols 'ids', named
+    // after them as they were.
     void applyToComponents(Action action, const QSet<ObjectId> &ids, const Sheet &edited);
     // "Move R1, C2 (Sheet 1)": the step's name in the Edit menu, for the
     // objects 'ids' of 'objects', on the sheet edited.
@@ -298,9 +305,10 @@ private:
     bool m_wireSwapped = false;
     bool m_wireSlanted = false;
 
-    // The value being edited in place: the line, and its component.
-    QPointer<QLineEdit> m_valueEdit;
-    ObjectId m_valueComponent;
+    // The text being edited in place: the line, and the component whose
+    // value or the power symbol whose net name it is.
+    QPointer<QLineEdit> m_textEdit;
+    ObjectId m_textOwner;
 
     // The clipboard: objects about the origin, and the library their parts are in.
     Sheet m_clipboard;

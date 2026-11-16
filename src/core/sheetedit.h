@@ -51,6 +51,9 @@ Sheet withComponentTextMoved(const Sheet &sheet, const ObjectId &id, ComponentTe
 
 // The value set to 'value', without the spaces around it.
 Sheet withComponentValue(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &value);
+// The net name of the power symbols 'ids' set to 'name', without the spaces
+// around it; 'sheet' as it is when that leaves no name.
+Sheet withPowerName(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &name);
 // The designator set to 'designator', without the spaces around it; an empty
 // one leaves the designator as it was.
 Sheet withComponentDesignator(const Sheet &sheet, const QSet<ObjectId> &ids,

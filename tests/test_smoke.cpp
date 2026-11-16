@@ -919,6 +919,52 @@ private slots:
         QVERIFY(!window.placePower(LibraryPanel::Source::Library, QStringLiteral("resistor")));
     }
 
+    // A double click on a power symbol opens a line over its net name: Enter
+    // renames it as one step, Esc and a blank name leave it as it is.
+    void powerNamesAreEditedInPlace()
+    {
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QVERIFY(window.openProject(QStringLiteral(PPCB_SOURCE_DIR "/examples/demo/demo.ppcb")));
+        SheetEditor *editor = window.sheetEditor();
+        const auto name = [&window]() {
+            return window.document()->design().schematic.sheets.at(0).powerSymbols.at(0).name;
+        };
+        // The line shown: one closed is hidden until it is deleted.
+        const auto line = [&window]() -> QLineEdit * {
+            for (QLineEdit *edit : window.canvas()->viewport()->findChildren<QLineEdit *>()) {
+                if (edit->isVisible())
+                    return edit;
+            }
+            return nullptr;
+        };
+        // Between the bar of the +5V symbol and its name, clear of the wire
+        // from its point.
+        const QPointF stem(91.44, 73.0);
+
+        editor->doubleClick(stem, false);
+        QVERIFY(line() != nullptr);
+        QCOMPARE(line()->text(), QStringLiteral("+5V"));
+        line()->setText(QStringLiteral(" +12V "));
+        QTest::keyClick(line(), Qt::Key_Return);
+        QCOMPARE(name(), QStringLiteral("+12V"));
+        QVERIFY(window.document()->undoStack()->undoText().startsWith(QStringLiteral("Rename +5V")));
+
+        editor->doubleClick(stem, false);
+        line()->setText(QStringLiteral("+9V"));
+        QTest::keyClick(line(), Qt::Key_Escape);
+        QCOMPARE(name(), QStringLiteral("+12V"));
+
+        editor->doubleClick(stem, false);
+        line()->setText(QStringLiteral("  "));
+        QTest::keyClick(line(), Qt::Key_Return);
+        QCOMPARE(name(), QStringLiteral("+12V"));
+
+        window.document()->undoStack()->undo();
+        QCOMPARE(name(), QStringLiteral("+5V"));
+    }
+
     void wiresAreDrawnUntilEsc()
     {
         MainWindow window;
