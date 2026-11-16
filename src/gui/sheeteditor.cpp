@@ -110,6 +110,18 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
         wireClick(snapped(at));
         return;
     }
+    if (m_placing && m_askLabelText) {
+        // A click with the line open takes what it holds; else the label
+        // stops where it is and the line opens over it.
+        if (!m_textEdit.isNull()) {
+            finishTextEdit(true);
+            return;
+        }
+        hover(snapped(at));
+        if (!m_floating.labels.isEmpty())
+            editText(m_floating.labels.first().id);
+        return;
+    }
     if (m_placing) {
         hover(snapped(at));
         placeFloating();
@@ -293,6 +305,12 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
             return;
         }
     }
+    for (const Label &label : sheet->labels) {
+        if (label.id == hit) {
+            editText(hit);
+            return;
+        }
+    }
     for (const Component &component : sheet->components) {
         if (component.id == hit) {
             emit componentOpened(component.part, component.footprint);
@@ -332,6 +350,14 @@ void SheetEditor::editText(const ObjectId &id)
         if (power.id == id) {
             text = power.name;
             rect = powerNameRect(power, library);
+        }
+    }
+    // A label of the sheet, or the one being placed, where it stands.
+    const QList<Label> labels = sheet->labels + (m_placing ? m_placed.labels : QList<Label>());
+    for (const Label &label : labels) {
+        if (label.id == id) {
+            text = label.text;
+            rect = labelTextRect(label);
         }
     }
     if (rect.isNull())
@@ -377,9 +403,20 @@ void SheetEditor::finishTextEdit(bool keep)
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr)
         return;
+    if (m_placing && m_askLabelText && !m_floating.labels.isEmpty()
+        && m_floating.labels.first().id == m_textOwner) {
+        placeLabel(value);
+        return;
+    }
     for (const PowerSymbol &power : sheet->powerSymbols) {
         if (power.id == m_textOwner) {
             setPowerName({m_textOwner}, value);
+            return;
+        }
+    }
+    for (const Label &label : sheet->labels) {
+        if (label.id == m_textOwner) {
+            setLabelText({m_textOwner}, value);
             return;
         }
     }
@@ -403,6 +440,12 @@ void SheetEditor::setComponentValue(const QSet<ObjectId> &ids, const QString &va
 {
     if (const Sheet *sheet = currentSheet())
         applyToComponents(Action::Value, ids, withComponentValue(*sheet, ids, value));
+}
+
+void SheetEditor::setLabelText(const QSet<ObjectId> &ids, const QString &text)
+{
+    if (const Sheet *sheet = currentSheet())
+        applyToComponents(Action::Rename, ids, withLabelText(*sheet, ids, text));
 }
 
 void SheetEditor::setPowerName(const QSet<ObjectId> &ids, const QString &name)
@@ -712,6 +755,32 @@ void SheetEditor::startPlacingPower(const Library &source, const QString &symbol
     startFloating(piece, source, Action::Place, true);
 }
 
+void SheetEditor::startPlacingLabel()
+{
+    Label label;
+    label.id = newObjectId();
+    label.text = m_nextLabelText;
+    Sheet piece;
+    piece.labels.append(label);
+    startFloating(piece, m_document->design().library, Action::Place, true);
+    m_askLabelText = m_placing;
+}
+
+void SheetEditor::placeLabel(const QString &text)
+{
+    const QString trimmed = text.trimmed();
+    if (trimmed.isEmpty())
+        return;
+    m_floating.labels.first().text = trimmed;
+    placeFloating();
+    // The next one, numbered on, follows the cursor again.
+    m_nextLabelText = nextLabelText(trimmed);
+    if (m_placing && !m_floating.labels.isEmpty()) {
+        m_floating.labels.first().text = m_nextLabelText;
+        updateFloating();
+    }
+}
+
 void SheetEditor::copySelection()
 {
     const Sheet *sheet = currentSheet();
@@ -764,6 +833,7 @@ void SheetEditor::startFloating(const Sheet &piece, const Library &source, Actio
     if (currentSheet() == nullptr || objectIds(piece).isEmpty())
         return;
     m_placing = true;
+    m_askLabelText = false;
     m_wiring = false;
     m_wirePoints.clear();
     m_dragging = false;
@@ -794,7 +864,8 @@ void SheetEditor::hover(const Point &at)
         }
         return;
     }
-    if (!m_placing || m_floatAt == at)
+    // A label waiting for its text stays where it is.
+    if (!m_placing || m_floatAt == at || !m_textEdit.isNull())
         return;
     m_floatAt = at;
     updateFloating();
@@ -971,6 +1042,10 @@ QString SheetEditor::stepName(const QString &action, const Sheet &objects,
     for (const PowerSymbol &power : objects.powerSymbols) {
         if (ids.contains(power.id))
             names.append(power.name);
+    }
+    for (const Label &label : objects.labels) {
+        if (ids.contains(label.id))
+            names.append(label.text);
     }
     const int others = int(ids.size() - names.size());
     std::sort(names.begin(), names.end());

@@ -965,6 +965,65 @@ private slots:
         QCOMPARE(name(), QStringLiteral("+5V"));
     }
 
+    // L: a label follows the cursor, a click asks for its text, Enter puts
+    // it down and offers the next one numbered on; Esc in the line drops
+    // that one only. A double click on a label edits its text.
+    void labelsArePlacedWithTheirText()
+    {
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QVERIFY(window.openProject(QStringLiteral(PPCB_SOURCE_DIR "/examples/demo/demo.ppcb")));
+        SheetEditor *editor = window.sheetEditor();
+        const auto labels = [&window]() {
+            return window.document()->design().schematic.sheets.at(0).labels;
+        };
+        const auto line = [&window]() -> QLineEdit * {
+            for (QLineEdit *edit : window.canvas()->viewport()->findChildren<QLineEdit *>()) {
+                if (edit->isVisible())
+                    return edit;
+            }
+            return nullptr;
+        };
+        const int before = int(labels().size());
+
+        window.findChild<QAction *>(QStringLiteral("actionPlaceLabel"))->trigger();
+        QVERIFY(editor->isPlacing());
+        editor->press(QPointF(50.8, 50.8), false);
+        QVERIFY(line() != nullptr);
+        QCOMPARE(line()->text(), QString());
+        // Nothing comes of a blank text: the line closes, the label waits.
+        QTest::keyClick(line(), Qt::Key_Return);
+        QCOMPARE(int(labels().size()), before);
+        editor->press(QPointF(50.8, 50.8), false);
+        line()->setText(QStringLiteral("D0"));
+        QTest::keyClick(line(), Qt::Key_Return);
+        QCOMPARE(int(labels().size()), before + 1);
+        QCOMPARE(labels().last().text, QStringLiteral("D0"));
+        QCOMPARE(labels().last().at, Point({mmToNm(50.8), mmToNm(50.8)}));
+        QVERIFY(editor->isPlacing());
+
+        editor->hover(Point{mmToNm(50.8), mmToNm(55.88)});
+        editor->press(QPointF(50.8, 55.88), false);
+        QCOMPARE(line()->text(), QStringLiteral("D1"));
+        QTest::keyClick(line(), Qt::Key_Escape);
+        QCOMPARE(int(labels().size()), before + 1);
+        QVERIFY(editor->isPlacing());
+        editor->press(QPointF(50.8, 55.88), false);
+        QTest::keyClick(line(), Qt::Key_Return);
+        QCOMPARE(labels().last().text, QStringLiteral("D1"));
+        window.findChild<QAction *>(QStringLiteral("actionDeselect"))->trigger();
+        QVERIFY(!editor->isPlacing());
+        QVERIFY(window.document()->undoStack()->undoText().startsWith(QStringLiteral("Place D1")));
+
+        editor->doubleClick(QPointF(51.5, 54.9), false);
+        QVERIFY(line() != nullptr);
+        QCOMPARE(line()->text(), QStringLiteral("D1"));
+        line()->setText(QStringLiteral("CLK"));
+        QTest::keyClick(line(), Qt::Key_Return);
+        QCOMPARE(labels().last().text, QStringLiteral("CLK"));
+    }
+
     void wiresAreDrawnUntilEsc()
     {
         MainWindow window;

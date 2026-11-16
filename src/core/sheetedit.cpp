@@ -214,6 +214,35 @@ Sheet withPowerName(const Sheet &sheet, const QSet<ObjectId> &ids, const QString
     return result;
 }
 
+Sheet withLabelText(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &text)
+{
+    const QString trimmed = text.trimmed();
+    if (trimmed.isEmpty())
+        return sheet;
+    Sheet result = sheet;
+    for (Label &label : result.labels) {
+        if (ids.contains(label.id))
+            label.text = trimmed;
+    }
+    return result;
+}
+
+QString nextLabelText(const QString &text)
+{
+    int digits = 0;
+    while (digits < text.size() && text.at(text.size() - 1 - digits).isDigit())
+        ++digits;
+    if (digits == 0)
+        return text;
+    const QString head = text.left(text.size() - digits);
+    bool ok = false;
+    const qulonglong number = text.right(digits).toULongLong(&ok);
+    // Too long a number to count on: left as it is.
+    if (!ok)
+        return text;
+    return head + QStringLiteral("%1").arg(number + 1, digits, 10, QLatin1Char('0'));
+}
+
 Sheet withComponentDesignator(const Sheet &sheet, const QSet<ObjectId> &ids,
                               const QString &designator)
 {

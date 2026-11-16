@@ -18,12 +18,13 @@ Early development. What works now:
   - drag along the grid with the wires following (Shift tears them off), rotate and mirror with the wires following too, delete, copy, cut, paste and duplicate (pasted parts are numbered on);
   - draw wires (W; Space turns the corner, / slants it) with junction dots placed by themselves;
   - place power symbols from the panel, or with P, which places the last one again (the ground at first); wires join them like pins, and a double click edits the net name in place;
+  - place net labels with L: a click asks for the text, the next label is offered numbered on (D0, D1, …); a label on no wire and no pin is red; a double click edits its text;
   - a click on a wire chooses its segment: a drag moves it across, Delete removes it, and taken near the wire's end it drags that end, unless the end is on a pin; a double click chooses the whole wire, Shift and a click every wire joined to it;
   - a click on a part's designator or value chooses that text alone, and a drag moves it; an empty value shows as a grey VALUE mark, except on parts that need none, such as switches and connectors; a double click on the value edits it in place;
   - Undo/Redo.
 - Properties panel: the designator, value, footprint (one the part allows) and off-board flag of the chosen components; with several chosen, what is set goes to them all as one step.
 
-Planned next: labels, no-connect marks and buses, nets, ERC; then the board editor with ratsnest, tracks and DRC; Gerber and Excellon export; 1:1 printing for toner transfer; schematic printing with a title block and a BOM; an AppImage.
+Planned next: no-connect marks and buses, nets, ERC; then the board editor with ratsnest, tracks and DRC; Gerber and Excellon export; 1:1 printing for toner transfer; schematic printing with a title block and a BOM; an AppImage.
 
 The full specification is in [`tz.md`](tz.md) (English) and [`tz.ru.md`](tz.ru.md) (Russian original).
 

@@ -97,6 +97,11 @@ public:
     // 'source', named with its net name. Does nothing when 'source' lacks
     // such a power symbol.
     void startPlacingPower(const Library &source, const QString &symbol);
+    // Placing labels: one follows the cursor, a click opens a line over it
+    // for its text, offered as the last text numbered on ("D0", then "D1").
+    // Enter or a click elsewhere puts it down with that text as one step and
+    // the next one follows; Esc in the line drops that one only.
+    void startPlacingLabel();
     void stopPlacing();
     // Placing, pasting or duplicating: something follows the cursor.
     bool isPlacing() const { return m_placing; }
@@ -136,8 +141,8 @@ public:
     void release(const QPointF &at, bool detached);
     // A second click in a row: the press it also is, and a component under
     // the cursor is opened (see componentOpened), or its value edited in
-    // place when that is under it; the net name of a power symbol under it
-    // is edited in place. Not while placing.
+    // place when that is under it; the net name of a power symbol or the
+    // text of a label under it is edited in place. Not while placing.
     void doubleClick(const QPointF &at, bool adding);
     // Esc: placing ends, or a drag is called off, or the selection is dropped.
     void cancel();
@@ -154,6 +159,8 @@ public:
     // The net name of the power symbols 'ids', as one step; nothing happens
     // when it changes nothing or 'name' is blank.
     void setPowerName(const QSet<ObjectId> &ids, const QString &name);
+    // The same for the text of the labels 'ids'.
+    void setLabelText(const QSet<ObjectId> &ids, const QString &text);
 
     void selectAll();
     void rotateSelection();
@@ -171,12 +178,16 @@ protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
-    // Opens a line on the canvas over the value of the component 'id', or
-    // over the net name of the power symbol 'id': Enter or leaving it sets
-    // the text as one step, Esc drops it.
+    // Opens a line on the canvas over the value of the component 'id', over
+    // the net name of the power symbol 'id' or over the text of the label
+    // 'id', the one being placed among them: Enter or leaving it sets the
+    // text as one step, or puts that label down, Esc drops it.
     void editText(const ObjectId &id);
     // Closes the line; 'keep' sets what it holds.
     void finishTextEdit(bool keep);
+    // Puts the label being placed down with 'text', as one step, and offers
+    // the next one; nothing happens when 'text' is blank.
+    void placeLabel(const QString &text);
     const Sheet *currentSheet() const;
     // True when a segment of a wire is chosen alone: no whole object is,
     // and the sheet has the segment.
@@ -305,10 +316,14 @@ private:
     bool m_wireSwapped = false;
     bool m_wireSlanted = false;
 
-    // The text being edited in place: the line, and the component whose
-    // value or the power symbol whose net name it is.
+    // The text being edited in place: the line, and the component, power
+    // symbol or label it belongs to.
     QPointer<QLineEdit> m_textEdit;
     ObjectId m_textOwner;
+    // Placing labels: a click asks for the text (see startPlacingLabel()).
+    bool m_askLabelText = false;
+    // The text the next label is offered.
+    QString m_nextLabelText;
 
     // The clipboard: objects about the origin, and the library their parts are in.
     Sheet m_clipboard;

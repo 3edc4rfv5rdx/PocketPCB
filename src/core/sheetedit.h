@@ -54,6 +54,12 @@ Sheet withComponentValue(const Sheet &sheet, const QSet<ObjectId> &ids, const QS
 // The net name of the power symbols 'ids' set to 'name', without the spaces
 // around it; 'sheet' as it is when that leaves no name.
 Sheet withPowerName(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &name);
+// The same for the text of the labels 'ids'.
+Sheet withLabelText(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &text);
+// The text a label placed after one with 'text' is offered: the number at
+// its end one more, as wide as it was at least ("D0" gives "D1", "A09"
+// gives "A10"); 'text' itself when it ends in no number.
+QString nextLabelText(const QString &text);
 // The designator set to 'designator', without the spaces around it; an empty
 // one leaves the designator as it was.
 Sheet withComponentDesignator(const Sheet &sheet, const QSet<ObjectId> &ids,

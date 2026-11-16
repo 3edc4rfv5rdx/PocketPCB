@@ -60,6 +60,8 @@ public:
     bool placePower(LibraryPanel::Source source, const QString &symbol);
     // Places again the power symbol placed last, the ground at first.
     bool placeLastPower();
+    // Starts placing labels (see SheetEditor::startPlacingLabel()).
+    bool placeLabel();
     // Shows page 'page' of the project and, when 'fit', the view it was last
     // seen with, or fits the view to it when it has none yet.
     void showPage(int page, bool fit = true);

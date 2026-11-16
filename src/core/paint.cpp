@@ -59,6 +59,8 @@ const double BUS_WIDTH = 0.5;
 const double JUNCTION_DIAMETER = 0.8;
 const double LABEL_TEXT_HEIGHT = 1.27;
 const double LABEL_GAP = 0.4;
+// Stands for the text of a label that has none yet, while it is placed.
+const char EMPTY_LABEL_MARK[] = "?";
 const double NO_CONNECT_HALF = 0.635;
 
 // The board.
@@ -549,14 +551,25 @@ void paintComponent(QPainter &painter, const Library &library, const Component &
              component.value.isEmpty() ? paintcolor::placeholder() : paintcolor::symbol());
 }
 
-// The text lies along the label's direction, just above its point.
-void paintLabel(QPainter &painter, const Label &label)
+// Where a label's text stands, not turned: just above its point.
+QPointF labelTextAt()
+{
+    return QPointF(0, -(LABEL_TEXT_HEIGHT / 2 + LABEL_GAP));
+}
+
+// The text lies along the label's direction, just above its point; red when
+// the label joins nothing, a grey question mark while it has no text yet.
+void paintLabel(QPainter &painter, const Label &label, bool joined)
 {
     painter.save();
     painter.translate(toMm(label.at));
     painter.rotate(label.rotation);
-    drawText(painter, QPointF(0, -(LABEL_TEXT_HEIGHT / 2 + LABEL_GAP)), label.text,
-             LABEL_TEXT_HEIGHT, TextAlign::Left, paintcolor::label(), true);
+    const bool empty = label.text.isEmpty();
+    const QColor color = empty    ? paintcolor::placeholder()
+                         : joined ? paintcolor::label()
+                                  : paintcolor::looseLabel();
+    const QString text = empty ? QString::fromLatin1(EMPTY_LABEL_MARK) : label.text;
+    drawText(painter, labelTextAt(), text, LABEL_TEXT_HEIGHT, TextAlign::Left, color, true);
     painter.restore();
 }
 
@@ -970,8 +983,14 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const Library &li
         paintComponent(painter, library, component);
     for (const PowerSymbol &power : sheet.powerSymbols)
         paintPowerSymbol(painter, library, power);
-    for (const Label &label : sheet.labels)
-        paintLabel(painter, label);
+    const QList<Point> pins = pinPoints(sheet, library);
+    for (const Label &label : sheet.labels) {
+        const bool joined =
+            pins.contains(label.at)
+            || std::any_of(sheet.wires.cbegin(), sheet.wires.cend(),
+                           [&label](const Wire &wire) { return isOnWire(wire, label.at); });
+        paintLabel(painter, label, joined);
+    }
     for (const NoConnect &mark : sheet.noConnects)
         paintNoConnect(painter, mark);
     painter.restore();
@@ -1043,18 +1062,22 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
         }
         addRect(power.id, bounds.rect());
     }
-    for (const Label &label : sheet.labels) {
-        QTransform transform;
-        transform.translate(nmToMm(label.at.x), nmToMm(label.at.y));
-        transform.rotate(label.rotation);
-        const QRectF text = textBounds(QPointF(0, -(LABEL_TEXT_HEIGHT / 2 + LABEL_GAP)),
-                                       label.text, LABEL_TEXT_HEIGHT, TextAlign::Left);
-        // The label's point belongs to it too.
-        addRect(label.id, transform.mapRect(text.united(QRectF(0, -LABEL_GAP, 0, LABEL_GAP))));
-    }
+    for (const Label &label : sheet.labels)
+        addRect(label.id, labelTextRect(label));
     for (const NoConnect &mark : sheet.noConnects)
         addRect(mark.id, squareAround(toMm(mark.at), 2 * NO_CONNECT_HALF));
     return shapes;
+}
+
+QRectF labelTextRect(const Label &label)
+{
+    QTransform transform;
+    transform.translate(nmToMm(label.at.x), nmToMm(label.at.y));
+    transform.rotate(label.rotation);
+    // The question mark of a label with no text yet.
+    const QString text = label.text.isEmpty() ? QString::fromLatin1(EMPTY_LABEL_MARK) : label.text;
+    const QRectF rect = textBounds(labelTextAt(), text, LABEL_TEXT_HEIGHT, TextAlign::Left);
+    return transform.mapRect(rect.united(QRectF(0, -LABEL_GAP, 0, LABEL_GAP)));
 }
 
 QRectF powerNameRect(const PowerSymbol &power, const Library &library)

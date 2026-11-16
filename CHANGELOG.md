@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Net labels are placed with L, typing the text at the click and numbering the next one on; a label joining nothing is red, and a double click edits its text
 - N: A double click on a power symbol edits its net name in place
 - F: The chosen row of the library panel, a part or a section and group title, is marked in bright blue, also when the panel is not in use
 - F: In the library panel the expand button opens the chosen part's section whole, the collapse button closes everything, sections stay as left, and their titles are bold and larger

@@ -215,6 +215,22 @@ private slots:
         QVERIFY(withPowerName(sheet, {id(5)}, QStringLiteral("  ")) == sheet);
     }
 
+    void labelTextsAreSetAndNumberedOn()
+    {
+        const Sheet sheet = fullSheet();
+        QCOMPARE(withLabelText(sheet, {id(4)}, QStringLiteral(" DATA ")).labels.at(0).text,
+                 QStringLiteral("DATA"));
+        QVERIFY(withLabelText(sheet, {id(4)}, QStringLiteral(" ")) == sheet);
+        QVERIFY(withLabelText(sheet, {id(5)}, QStringLiteral("X")) == sheet);
+
+        QCOMPARE(nextLabelText(QStringLiteral("D0")), QStringLiteral("D1"));
+        QCOMPARE(nextLabelText(QStringLiteral("D9")), QStringLiteral("D10"));
+        QCOMPARE(nextLabelText(QStringLiteral("A09")), QStringLiteral("A10"));
+        QCOMPARE(nextLabelText(QStringLiteral("7")), QStringLiteral("8"));
+        QCOMPARE(nextLabelText(QStringLiteral("CLK")), QStringLiteral("CLK"));
+        QCOMPARE(nextLabelText(QString()), QString());
+    }
+
     void rectangleTakesWhatIsWhollyInside()
     {
         const QList<SheetObjectShape> shapes = sheetObjectShapes(fullSheet(), resistorLibrary());

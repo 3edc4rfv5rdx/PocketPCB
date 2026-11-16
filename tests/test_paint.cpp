@@ -456,6 +456,14 @@ private slots:
         down.at = Point{-2000000, -4000000};
         down.rotation = 180;
         sheet.powerSymbols.append(down);
+        // A label on the wire, and one on nothing, which is red.
+        Label joined;
+        joined.at = Point{-4000000, -8000000};
+        joined.text = QStringLiteral("A");
+        sheet.labels.append(joined);
+        Label loose = joined;
+        loose.at = Point{-4000000, 6000000};
+        sheet.labels.append(loose);
         // One the library lacks is a red square.
         PowerSymbol lacking = up;
         lacking.at = Point{-8000000, 3000000};
@@ -475,6 +483,9 @@ private slots:
         QVERIFY(isColor(colorAt(image, -2, -2.7), paintcolor::symbol()));
         QVERIFY(isColor(colorAt(image, -2, -5.3), paintcolor::background()));
         QVERIFY(anyColor(image, -11, 0.5, -5, 5.5, paintcolor::missing()));
+        QVERIFY(anyColor(image, -4, -10, -2, -8, paintcolor::label()));
+        QVERIFY(!anyColor(image, -4, -10, -2, -8, paintcolor::looseLabel()));
+        QVERIFY(anyColor(image, -4, 4, -2, 6, paintcolor::looseLabel()));
 
         // The frame: 5 mm inside the paper, whose corner is the origin.
         QVERIFY(isColor(colorAt(image, 5, 8), paintcolor::sheetFrame()));

@@ -516,6 +516,10 @@
         <source>Place power symbol</source>
         <translation>Поставити символ живлення</translation>
     </message>
+    <message>
+        <source>Place label</source>
+        <translation>Поставити мітку</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>

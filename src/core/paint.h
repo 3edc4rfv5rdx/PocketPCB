@@ -31,6 +31,8 @@ inline QColor padText() { return QColor(255, 255, 255); }
 inline QColor wire() { return QColor(0, 132, 0); }
 inline QColor bus() { return QColor(0, 0, 160); }
 inline QColor label() { return QColor(0, 100, 100); }
+// A label that lies on no wire and no pin, and so joins nothing.
+inline QColor looseLabel() { return QColor(220, 0, 0); }
 inline QColor noConnect() { return QColor(0, 0, 160); }
 inline QColor sheetGraphic() { return QColor(70, 70, 70); }
 inline QColor sheetFrame() { return QColor(90, 90, 90); }
@@ -100,6 +102,10 @@ Point componentTextPoint(const Component &component, ComponentText text);
 // A rectangle surely holding the text as it is drawn, in millimetres.
 QRectF componentTextRect(const Component &component, ComponentText text,
                          const Library &library);
+
+// A rectangle surely holding the text of a label, in millimetres; with its
+// point, which belongs to it too.
+QRectF labelTextRect(const Label &label);
 
 // A rectangle surely holding the net name of a power symbol, in
 // millimetres, where it is drawn or would be if its symbol did not hide it;

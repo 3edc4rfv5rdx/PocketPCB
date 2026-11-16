@@ -273,6 +273,10 @@ void MainWindow::createMenus()
     powerAction->setObjectName(QStringLiteral("actionPlacePower"));
     powerAction->setShortcut(QKeySequence(Qt::Key_P));
     connect(powerAction, &QAction::triggered, this, &MainWindow::placeLastPower);
+    QAction *labelAction = editMenu->addAction(tr("Place label"));
+    labelAction->setObjectName(QStringLiteral("actionPlaceLabel"));
+    labelAction->setShortcut(QKeySequence(Qt::Key_L));
+    connect(labelAction, &QAction::triggered, this, &MainWindow::placeLabel);
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Wire), "actionWire",
                   QKeySequence(Qt::Key_W), &SheetEditor::startWiring);
     addEditAction(tr("Turn the wire corner the other way"), "actionWireCorner",
@@ -798,6 +802,15 @@ bool MainWindow::placePower(LibraryPanel::Source source, const QString &symbol)
     m_lastPowerSource = source;
     m_lastPowerSymbol = symbol;
     return true;
+}
+
+bool MainWindow::placeLabel()
+{
+    if (!canPlace())
+        return false;
+    m_sheetEditor->startPlacingLabel();
+    m_canvas->setFocus();
+    return m_sheetEditor->isPlacing();
 }
 
 bool MainWindow::placeLastPower()
