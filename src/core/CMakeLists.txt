@@ -16,6 +16,7 @@ add_library(pocketpcb_core STATIC
     project.h project.cpp
     projectview.h projectview.cpp
     library.h library.cpp
+    netlist.h netlist.cpp
     schematic.h schematic.cpp
     sheetedit.h sheetedit.cpp
     symbol.h symbol.cpp
