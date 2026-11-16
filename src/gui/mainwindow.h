@@ -68,6 +68,11 @@ public:
     // Shows page 'page' of the project and, when 'fit', the view it was last
     // seen with, or fits the view to it when it has none yet.
     void showPage(int page, bool fit = true);
+    // The menu of the sheet shown, for a short right click at 'globalPos':
+    // what is chosen can be turned, mirrored, deleted, copied, cut or
+    // duplicated, and the text of what is under the cursor edited in place;
+    // with nothing chosen, things are pasted, drawn and placed.
+    void showSheetMenu(const QPoint &globalPos);
 
     // Shows a symbol or footprint file of the library on the canvas in the
     // place of the project and keeps watching it: the drawing follows every

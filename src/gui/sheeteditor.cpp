@@ -354,6 +354,61 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
     }
 }
 
+ObjectId SheetEditor::chooseForMenu(const QPointF &at)
+{
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr || m_placing || m_wiring)
+        return ObjectId();
+    finishTextEdit(true);
+    const Library &library = m_document->design().library;
+    const ObjectId hit = objectAt(shapes(), at, pixelsToMm(HIT_PIXELS));
+    const TextHit text = textAt(*sheet, library, at);
+    const bool chosen =
+        (!hit.isNull() && m_selection.contains(hit))
+        || (hasText() && text.owner == m_chosenText.owner && text.text == m_chosenText.text)
+        || (hasSegment() && hit == m_segmentLine
+            && segmentAt(linePoints(*sheet, hit), at) == m_segmentIndex);
+    if (!chosen && (!hit.isNull() || !text.owner.isNull())) {
+        press(at, false);
+        release(at, false);
+    }
+    const auto isIn = [](const auto &objects, const ObjectId &id) {
+        return std::any_of(objects.cbegin(), objects.cend(),
+                           [&id](const auto &object) { return object.id == id; });
+    };
+    // A label's text, a bus's name or a component's value under the cursor.
+    if (!text.owner.isNull()
+        && (isIn(sheet->labels, text.owner) || isIn(sheet->buses, text.owner)
+            || text.text == ComponentText::Value)) {
+        return text.owner;
+    }
+    if (isIn(sheet->powerSymbols, hit) || isIn(sheet->labels, hit) || isIn(sheet->buses, hit))
+        return hit;
+    for (const Component &component : sheet->components) {
+        if (component.id == hit
+            && !componentTextShown(component, ComponentText::Value, library).isEmpty()) {
+            return hit;
+        }
+    }
+    return ObjectId();
+}
+
+QString SheetEditor::editInPlaceName(const ObjectId &id) const
+{
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr)
+        return QString();
+    const auto isIn = [&id](const auto &objects) {
+        return std::any_of(objects.cbegin(), objects.cend(),
+                           [&id](const auto &object) { return object.id == id; });
+    };
+    if (isIn(sheet->components))
+        return actionName(Action::Value);
+    if (isIn(sheet->powerSymbols) || isIn(sheet->labels) || isIn(sheet->buses))
+        return actionName(Action::Rename);
+    return QString();
+}
+
 void SheetEditor::editText(const ObjectId &id)
 {
     finishTextEdit(true);

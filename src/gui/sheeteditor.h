@@ -176,6 +176,20 @@ public:
     // of a label or the name of a bus under it is edited in place; a wire or
     // a bus under it is chosen whole. Not while placing.
     void doubleClick(const QPointF &at, bool adding);
+    // A short right click at 'at', before the menu opens: what is under it is
+    // chosen as a click chooses it, unless it is chosen already (whole, or
+    // the segment or the text chosen alone there); nothing under it leaves
+    // the selection as it is. Returns what under it has a text edited in
+    // place (a component's value it shows, a power symbol's net name, a
+    // label's text, a bus's name), or a null id. Not while placing.
+    ObjectId chooseForMenu(const QPointF &at);
+    // Something is chosen: objects, or a segment or a text alone.
+    bool hasChosen() const { return !m_selection.isEmpty() || hasSegment() || hasText(); }
+    // The text of 'id' edited in place, as a double click does.
+    void editInPlace(const ObjectId &id) { editText(id); }
+    // The name of the menu item that edits the text of 'id' in place; empty
+    // when the sheet edited has no such object.
+    QString editInPlaceName(const ObjectId &id) const;
     // Esc: placing ends, or a drag is called off, or the selection and the
     // net chosen in the table of nets are dropped.
     void cancel();

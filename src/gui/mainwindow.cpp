@@ -96,9 +96,13 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_canvas, &CanvasView::cursorMoved, m_sheetEditor,
             [this](Coord x, Coord y) { m_sheetEditor->hover(Point{x, y}); });
     // A short right click ends placing and drawing wires, as Esc does.
-    connect(m_canvas, &CanvasView::contextMenuRequested, m_sheetEditor, [this] {
+    // A short right click ends placing and drawing wires, as Esc does; else
+    // it opens the menu of the sheet.
+    connect(m_canvas, &CanvasView::contextMenuRequested, this, [this](const QPoint &globalPos) {
         if (m_sheetEditor->isPlacing() || m_sheetEditor->isWiring())
             m_sheetEditor->cancel();
+        else
+            showSheetMenu(globalPos);
     });
     connect(m_document, &Document::designChanged, this, &MainWindow::projectChanged);
     connect(m_document, &Document::modifiedChanged, this, &MainWindow::updateTitle);
@@ -415,6 +419,45 @@ void MainWindow::createStatusBar()
 
     showGridStep(m_canvas->gridStep());
     showCursorPosition(0, 0);
+}
+
+void MainWindow::showSheetMenu(const QPoint &globalPos)
+{
+    QPointF at;
+    if (m_sheetEditor->sheet() < 0 || !m_canvas->sceneAtGlobal(globalPos, at))
+        return;
+    const ObjectId editable = m_sheetEditor->chooseForMenu(at);
+    QMenu menu(this);
+    // The items of the Edit menu, with their keys.
+    const auto add = [this, &menu](const char *name) {
+        if (QAction *action = findChild<QAction *>(QLatin1String(name)))
+            menu.addAction(action);
+    };
+    if (m_sheetEditor->hasChosen()) {
+        if (!editable.isNull()) {
+            QAction *edit = menu.addAction(m_sheetEditor->editInPlaceName(editable));
+            connect(edit, &QAction::triggered, m_sheetEditor,
+                    [this, editable] { m_sheetEditor->editInPlace(editable); });
+            menu.addSeparator();
+        }
+        add("actionRotate");
+        add("actionMirror");
+        add("actionDelete");
+        menu.addSeparator();
+        add("actionCopy");
+        add("actionCut");
+        add("actionDuplicate");
+    } else {
+        add("actionPaste");
+        menu.addSeparator();
+        add("actionWire");
+        add("actionBus");
+        add("actionPlaceLabel");
+        add("actionPlacePower");
+        menu.addSeparator();
+        add("actionSelectAll");
+    }
+    menu.exec(globalPos);
 }
 
 QAction *MainWindow::addChoice(QMenu *menu, QActionGroup *group, const QString &text, bool checked)
