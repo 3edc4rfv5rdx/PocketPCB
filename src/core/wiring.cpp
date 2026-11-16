@@ -642,6 +642,43 @@ bool isOnBus(const Sheet &sheet, const Point &point)
     });
 }
 
+QList<Point> withBusEntry(const QList<Point> &points, const Sheet &sheet, Coord step)
+{
+    const int n = int(points.size());
+    if (n < 2 || step <= 0)
+        return points;
+    const Point end = points.at(n - 1);
+    const Point from = points.at(n - 2);
+    const Point way = end - from;
+    // Only a wire that comes square on, from far enough.
+    const bool upright = way.x == 0 && std::llabs(way.y) >= step;
+    const bool level = way.y == 0 && std::llabs(way.x) >= step;
+    if (!upright && !level)
+        return points;
+    for (const Bus &bus : sheet.buses) {
+        for (int i = 1; i < bus.points.size(); ++i) {
+            const Point &a = bus.points.at(i - 1);
+            const Point &b = bus.points.at(i);
+            // The bus runs across the wire here.
+            const bool across = upright ? a.y == b.y : a.x == b.x;
+            if (!across || !isOnSegment(a, b, end))
+                continue;
+            const Point along = upright ? Point{step, 0} : Point{0, step};
+            Point target = end + along;
+            if (!isOnSegment(a, b, target))
+                target = end - along;
+            if (!isOnSegment(a, b, target))
+                return points;
+            const Point back{sign(way.x) * step, sign(way.y) * step};
+            QList<Point> result = points.mid(0, n - 1);
+            result.append(end - back);
+            result.append(target);
+            return simplifiedWire(result);
+        }
+    }
+    return points;
+}
+
 QList<Point> partPinPoints(const Sheet &sheet, const Library &library)
 {
     QList<Point> points;

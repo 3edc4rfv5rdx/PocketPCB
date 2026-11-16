@@ -209,6 +209,27 @@ private slots:
         QVERIFY(!isOnBus(sheet, mm(10, 1)));
         // A bus is no connection point: only its labels join anything.
         QVERIFY(!isConnectionPoint(sheet, Library(), mm(10, 0)));
+
+        // Entering it: the last step turns into a slant to the right of an
+        // upright wire, down from a level one, the other way at its end.
+        const Coord step = MM;
+        QCOMPARE(withBusEntry({mm(10, 10), mm(10, 0)}, sheet, step),
+                 QList<Point>({mm(10, 10), mm(10, 1), mm(11, 0)}));
+        QCOMPARE(withBusEntry({mm(10, -10), mm(10, 0)}, sheet, step),
+                 QList<Point>({mm(10, -10), mm(10, -1), mm(11, 0)}));
+        QCOMPARE(withBusEntry({mm(30, 5), mm(20, 5)}, sheet, step),
+                 QList<Point>({mm(30, 5), mm(21, 5), mm(20, 6)}));
+        QCOMPARE(withBusEntry({mm(30, 20), mm(20, 20)}, sheet, step),
+                 QList<Point>({mm(30, 20), mm(21, 20), mm(20, 19)}));
+        QCOMPARE(withBusEntry({mm(5, 5), mm(5, 2), mm(8, 2), mm(8, 0)}, sheet, step),
+                 QList<Point>({mm(5, 5), mm(5, 2), mm(8, 2), mm(8, 1), mm(9, 0)}));
+        // Left as they are: along the bus, slanted already, too short, off it.
+        for (const QList<Point> &points :
+             {QList<Point>({mm(-5, 0), mm(5, 0)}), QList<Point>({mm(5, 5), mm(10, 0)}),
+              QList<Point>({Point{10 * MM, MM / 2}, mm(10, 0)}),
+              QList<Point>({mm(10, 10), mm(10, 1)})}) {
+            QCOMPARE(withBusEntry(points, sheet, step), points);
+        }
     }
 
     void pointsOnWires()

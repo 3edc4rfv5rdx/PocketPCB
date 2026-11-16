@@ -1088,11 +1088,17 @@ private slots:
                                Point({mmToNm(60.96), mmToNm(30.48)})}));
         QCOMPARE(int(sheet().wires.size()), wires);
 
-        // A wire from below ends where it reaches the bus.
+        // A wire from below ends where it reaches the bus, entering it at
+        // 45 degrees over its last grid step.
         window.findChild<QAction *>(QStringLiteral("actionWire"))->trigger();
         editor->press(QPointF(45.72, 40.64), false);
         editor->press(QPointF(45.72, 30.48), false);
         QCOMPARE(int(sheet().wires.size()), wires + 1);
+        const QList<Point> entry = sheet().wires.last().points;
+        QCOMPARE(int(entry.size()), 3);
+        const Coord step = window.canvas()->gridStep();
+        QCOMPARE(entry.last(), Point({mmToNm(45.72) + step, mmToNm(30.48)}));
+        QCOMPARE(entry.at(1), Point({mmToNm(45.72), mmToNm(30.48) + step}));
         window.findChild<QAction *>(QStringLiteral("actionDeselect"))->trigger();
         window.findChild<QAction *>(QStringLiteral("actionDeselect"))->trigger();
         QVERIFY(!editor->isWiring());
