@@ -145,4 +145,13 @@ Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &
 Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &wire,
                        int index, const Point &delta);
 
+// withWireEndAt() and withSegmentMoved() for the bus 'bus': it is laid the
+// way a wire is, and the wires that enter it go with it as the wires on a
+// wire do, entering it at 45 degrees again. A whole bus moved in
+// withWiresFollowing() takes the wires that enter it along the same way.
+Sheet withBusEndAt(const Sheet &sheet, const Library &library, const ObjectId &bus, bool last,
+                   const Point &to);
+Sheet withBusSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &bus,
+                          int index, const Point &delta);
+
 } // namespace ppcb

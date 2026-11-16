@@ -1431,11 +1431,92 @@ Sheet withMarksCarried(const Sheet &before, const Sheet &after, const QSet<Objec
 
 } // namespace
 
+namespace {
+
+// 'sheet' with its bus 'id' laid as a wire of the same id and points, last
+// of the wires, so that the wire functions lay it and the wires that enter
+// it as they do wires joined to one; 'sheet' as it is without such a bus.
+Sheet busAsWire(const Sheet &sheet, const ObjectId &id)
+{
+    Sheet result = sheet;
+    for (int i = 0; i < result.buses.size(); ++i) {
+        if (result.buses.at(i).id != id)
+            continue;
+        Wire line;
+        line.id = id;
+        line.points = result.buses.at(i).points;
+        result.buses.removeAt(i);
+        result.wires.append(line);
+        break;
+    }
+    return result;
+}
+
+// 'edited', a sheet of busAsWire(), with the wire 'id' made the bus of
+// 'original' again, where it was among the buses, with the wire's points,
+// or with its own when 'own'; gone when 'edited' has no such wire.
+Sheet wireAsBus(const Sheet &edited, const Sheet &original, const ObjectId &id, bool own)
+{
+    Sheet result = edited;
+    QList<Point> points;
+    bool laid = false;
+    for (int i = 0; i < result.wires.size(); ++i) {
+        if (result.wires.at(i).id == id) {
+            points = result.wires.at(i).points;
+            result.wires.removeAt(i);
+            laid = true;
+            break;
+        }
+    }
+    for (int i = 0; i < original.buses.size(); ++i) {
+        if (original.buses.at(i).id != id || !laid)
+            continue;
+        Bus bus = original.buses.at(i);
+        if (!own)
+            bus.points = points;
+        result.buses.insert(qMin(i, int(result.buses.size())), bus);
+    }
+    return result;
+}
+
+} // namespace
+
 Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
                          const Library &library)
 {
-    const Sheet followed = withBusEntriesKept(before, wiresFollowing(before, after, moved, library));
+    // A moved bus takes the wires that enter it along, as a moved wire does
+    // the wires on it; it goes itself just as it was moved.
+    Sheet from = before;
+    Sheet to = after;
+    QList<ObjectId> buses;
+    for (const Bus &bus : before.buses) {
+        if (moved.contains(bus.id)) {
+            buses.append(bus.id);
+            from = busAsWire(from, bus.id);
+            to = busAsWire(to, bus.id);
+        }
+    }
+    Sheet followed = wiresFollowing(from, to, moved, library);
+    for (const ObjectId &bus : buses)
+        followed = wireAsBus(followed, after, bus, true);
+    followed = withBusEntriesKept(before, followed);
     return withMarksCarried(before, followed, moved, library);
+}
+
+Sheet withBusEndAt(const Sheet &sheet, const Library &library, const ObjectId &bus, bool last,
+                   const Point &to)
+{
+    const Sheet laid = wireEndAt(busAsWire(sheet, bus), library, bus, last, to);
+    const Sheet result = withBusEntriesKept(sheet, wireAsBus(laid, sheet, bus, false));
+    return withMarksCarried(sheet, result, QSet<ObjectId>(), library);
+}
+
+Sheet withBusSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &bus,
+                          int index, const Point &delta)
+{
+    const Sheet laid = segmentMoved(busAsWire(sheet, bus), library, bus, index, delta);
+    const Sheet result = withBusEntriesKept(sheet, wireAsBus(laid, sheet, bus, false));
+    return withMarksCarried(sheet, result, QSet<ObjectId>(), library);
 }
 
 Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &wire, bool last,

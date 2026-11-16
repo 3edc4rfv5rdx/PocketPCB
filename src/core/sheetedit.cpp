@@ -556,13 +556,13 @@ Point dragAnchor(const Sheet &sheet, const ObjectId &id, const QPointF &near)
     return Point{mmToNm(near.x()), mmToNm(near.y())};
 }
 
-int segmentAt(const Wire &wire, const QPointF &point)
+int segmentAt(const QList<Point> &points, const QPointF &point)
 {
     int nearest = -1;
     double nearestDistance = 0;
-    for (int i = 1; i < wire.points.size(); ++i) {
+    for (int i = 1; i < points.size(); ++i) {
         const double distance =
-            distanceToSegment(point, toMm(wire.points.at(i - 1)), toMm(wire.points.at(i)));
+            distanceToSegment(point, toMm(points.at(i - 1)), toMm(points.at(i)));
         if (nearest < 0 || distance < nearestDistance) {
             nearest = i - 1;
             nearestDistance = distance;
@@ -571,38 +571,72 @@ int segmentAt(const Wire &wire, const QPointF &point)
     return nearest;
 }
 
-Sheet withoutSegment(const Sheet &sheet, const ObjectId &wire, int index)
+int segmentAt(const Wire &wire, const QPointF &point)
 {
-    Sheet result = sheet;
-    for (int i = 0; i < result.wires.size(); ++i) {
-        const Wire cut = result.wires.at(i);
-        if (cut.id != wire || index < 0 || index + 1 >= cut.points.size())
+    return segmentAt(wire.points, point);
+}
+
+QList<Point> linePoints(const Sheet &sheet, const ObjectId &line)
+{
+    if (const Wire *wire = ownerOf(sheet.wires, line))
+        return wire->points;
+    if (const Bus *bus = ownerOf(sheet.buses, line))
+        return bus->points;
+    return QList<Point>();
+}
+
+namespace {
+
+// withoutSegment() on a list of wires or of buses.
+template <typename Line>
+void cutSegment(QList<Line> &lines, const ObjectId &line, int index)
+{
+    for (int i = 0; i < lines.size(); ++i) {
+        const Line cut = lines.at(i);
+        if (cut.id != line || index < 0 || index + 1 >= cut.points.size())
             continue;
-        result.wires.removeAt(i);
-        Wire after = cut;
+        lines.removeAt(i);
+        Line after = cut;
         after.id = newObjectId();
         after.points = cut.points.mid(index + 1);
         if (after.points.size() >= 2)
-            result.wires.insert(i, after);
-        Wire before = cut;
+            lines.insert(i, after);
+        Line before = cut;
         before.points = cut.points.mid(0, index + 1);
         if (before.points.size() >= 2)
-            result.wires.insert(i, before);
-        break;
+            lines.insert(i, before);
+        return;
     }
+}
+
+// segmentOf() on a list of wires or of buses.
+template <typename Line>
+void takeSegment(const QList<Line> &lines, QList<Line> &piece, const ObjectId &line, int index)
+{
+    for (const Line &whole : lines) {
+        if (whole.id != line || index < 0 || index + 1 >= whole.points.size())
+            continue;
+        Line segment = whole;
+        segment.points = whole.points.mid(index, 2);
+        piece.append(segment);
+    }
+}
+
+} // namespace
+
+Sheet withoutSegment(const Sheet &sheet, const ObjectId &line, int index)
+{
+    Sheet result = sheet;
+    cutSegment(result.wires, line, index);
+    cutSegment(result.buses, line, index);
     return result;
 }
 
-Sheet segmentOf(const Sheet &sheet, const ObjectId &wire, int index)
+Sheet segmentOf(const Sheet &sheet, const ObjectId &line, int index)
 {
     Sheet piece;
-    for (const Wire &whole : sheet.wires) {
-        if (whole.id != wire || index < 0 || index + 1 >= whole.points.size())
-            continue;
-        Wire segment = whole;
-        segment.points = whole.points.mid(index, 2);
-        piece.wires.append(segment);
-    }
+    takeSegment(sheet.wires, piece.wires, line, index);
+    takeSegment(sheet.buses, piece.buses, line, index);
     return piece;
 }
 

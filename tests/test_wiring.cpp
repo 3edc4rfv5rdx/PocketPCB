@@ -260,6 +260,45 @@ private slots:
                  QList<Point>({mm(10, 0), mm(10, 10)}));
     }
 
+    // A bus is dragged by its segments, its ends or whole, as a wire is,
+    // and the wires that enter it go along, entering it at 45 degrees.
+    void busesAreDraggedWithTheirEntries()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        Bus bus;
+        bus.id = newObjectId();
+        bus.points = {mm(0, 0), mm(20, 0)};
+        bus.name = QStringLiteral("BUS1");
+        sheet.buses = {bus};
+        sheet.wires = {wire({mm(10, 10), mm(10, 1), mm(11, 0)})};
+        const auto entersBusAt = [](const Sheet &s, Coord y) {
+            const Wire &entry = s.wires.first();
+            const Point way = entry.points.last() - entry.points.at(entry.points.size() - 2);
+            return entry.points.first() == mm(10, 10) && entry.points.last().y == y
+                   && isOnBus(s, entry.points.last()) && way.x != 0
+                   && std::llabs(way.x) == std::llabs(way.y);
+        };
+
+        // Its segment up: the bus goes, the wire's end with it.
+        Sheet moved = withBusSegmentMoved(sheet, library, bus.id, 0, mm(0, -5));
+        QCOMPARE(moved.buses.first().points, QList<Point>({mm(0, -5), mm(20, -5)}));
+        QCOMPARE(moved.buses.first().name, bus.name);
+        QVERIFY(moved.wires.size() == 1 && moved.buses.size() == 1);
+        QVERIFY(entersBusAt(moved, -5 * MM));
+
+        // Its end further: the wire stays as it is.
+        moved = withBusEndAt(sheet, library, bus.id, true, mm(30, 0));
+        QCOMPARE(moved.buses.first().points, QList<Point>({mm(0, 0), mm(30, 0)}));
+        QCOMPARE(moved.wires.first().points, sheet.wires.first().points);
+
+        // The whole bus up: the same as its segment.
+        const QSet<ObjectId> whole = {bus.id};
+        moved = withWiresFollowing(sheet, movedObjects(sheet, whole, mm(0, -5)), whole, library);
+        QCOMPARE(moved.buses.first().points, QList<Point>({mm(0, -5), mm(20, -5)}));
+        QVERIFY(entersBusAt(moved, -5 * MM));
+    }
+
     // A bus holds the end of a wire that enters it, and the entry stays at
     // 45 degrees however the wire is laid again.
     void busesHoldTheirEntries()

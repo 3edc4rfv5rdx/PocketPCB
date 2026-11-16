@@ -231,6 +231,33 @@ private slots:
         QCOMPARE(nextLabelText(QString()), QString());
     }
 
+    // A segment of a bus is cut out or copied as one of a wire is.
+    void busSegmentsAreCutAndCopied()
+    {
+        Sheet sheet;
+        Bus bus;
+        bus.id = id(1);
+        bus.points = {Point{0, 0}, Point{10 * MM, 0}, Point{10 * MM, 10 * MM}, Point{20 * MM, 10 * MM}};
+        bus.name = QStringLiteral("D[0..7]");
+        sheet.buses = {bus};
+        QCOMPARE(linePoints(sheet, id(1)), bus.points);
+        QCOMPARE(segmentAt(bus.points, QPointF(10.2, 5)), 1);
+
+        const Sheet cut = withoutSegment(sheet, id(1), 1);
+        QCOMPARE(int(cut.buses.size()), 2);
+        QCOMPARE(cut.buses.at(0).id, id(1));
+        QCOMPARE(cut.buses.at(0).points, QList<Point>({Point{0, 0}, Point{10 * MM, 0}}));
+        QCOMPARE(cut.buses.at(1).points,
+                 QList<Point>({Point{10 * MM, 10 * MM}, Point{20 * MM, 10 * MM}}));
+        QCOMPARE(cut.buses.at(1).name, bus.name);
+
+        const Sheet piece = segmentOf(sheet, id(1), 2);
+        QVERIFY(piece.wires.isEmpty());
+        QCOMPARE(int(piece.buses.size()), 1);
+        QCOMPARE(piece.buses.at(0).points,
+                 QList<Point>({Point{10 * MM, 10 * MM}, Point{20 * MM, 10 * MM}}));
+    }
+
     void busesAreNamed()
     {
         Schematic schematic;

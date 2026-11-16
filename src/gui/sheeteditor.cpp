@@ -138,12 +138,12 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
     m_pressed = true;
     m_pressAt = at;
     m_pressAdding = adding;
-    m_endWire = ObjectId();
+    m_endLine = ObjectId();
     m_chosenText = TextHit();
     m_narrowTo = ObjectId();
     dropSegment();
     const QList<SheetObjectShape> found = shapes();
-    const ObjectId hit = objectAt(found, at, pixelsToMm(HIT_PIXELS));
+    ObjectId hit = objectAt(found, at, pixelsToMm(HIT_PIXELS));
     m_dragAnchor = dragAnchor(*currentSheet(), hit, at);
     // Shift on a wire: every wire joined to it, added with Ctrl.
     const QSet<ObjectId> wires = net ? joinedWires(*currentSheet(), hit) : QSet<ObjectId>();
@@ -155,6 +155,26 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
         m_pressOnSelection = !adding;
         emit changed();
         return;
+    }
+    // The name of a bus takes the whole bus, which its line does not.
+    if (hit.isNull()) {
+        for (const Bus &bus : currentSheet()->buses) {
+            if (busNameRect(bus).contains(at)) {
+                hit = bus.id;
+                m_dragAnchor = dragAnchor(*currentSheet(), hit, at);
+            }
+        }
+        if (!hit.isNull()) {
+            if (adding && m_selection.contains(hit))
+                m_selection.remove(hit);
+            else if (adding)
+                m_selection.insert(hit);
+            else if (!m_selection.contains(hit))
+                m_selection = {hit};
+            m_pressOnSelection = !adding;
+            emit changed();
+            return;
+        }
     }
     if (hit.isNull()) {
         m_pressOnSelection = false;
@@ -174,34 +194,33 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
         // it is chosen alone, and a drag moves it while its object stays.
         const TextHit text =
             isFoundByLine(found, hit) ? TextHit() : textAt(*sheet, m_document->design().library, at);
-        // A wire not chosen whole: the segment under the cursor is chosen,
-        // and a drag moves it, or the wire's end when taken near it.
-        const Wire *wire = nullptr;
-        if (text.owner.isNull() && !m_selection.contains(hit)) {
-            for (const Wire &candidate : sheet->wires) {
-                if (candidate.id == hit && candidate.points.size() >= 2)
-                    wire = &candidate;
-            }
-        }
+        // A wire or a bus not chosen whole: the segment under the cursor is
+        // chosen, and a drag moves it, or the line's end when taken near it.
+        QList<Point> line;
+        if (text.owner.isNull() && !m_selection.contains(hit))
+            line = linePoints(*sheet, hit);
+        const bool isBus = std::any_of(sheet->buses.cbegin(), sheet->buses.cend(),
+                                       [&hit](const Bus &bus) { return bus.id == hit; });
         if (!text.owner.isNull()) {
             m_selection.clear();
             m_chosenText = text;
             m_dragAnchor = textPoint(*sheet, text);
-        } else if (wire != nullptr) {
+        } else if (line.size() >= 2) {
             m_selection.clear();
-            m_segmentWire = hit;
-            m_segmentIndex = segmentAt(*wire, at);
-            const double first = QLineF(at, toMm(wire->points.first())).length();
-            const double last = QLineF(at, toMm(wire->points.last())).length();
-            // An end on a pin is not taken alone: that would tear it off.
-            const Point end = last < first ? wire->points.last() : wire->points.first();
-            const bool onPin = pinPoints(*sheet, m_document->design().library).contains(end);
+            m_segmentLine = hit;
+            m_segmentIndex = segmentAt(line, at);
+            const double first = QLineF(at, toMm(line.first())).length();
+            const double last = QLineF(at, toMm(line.last())).length();
+            // A wire's end on a pin is not taken alone: that would tear it off.
+            const Point end = last < first ? line.last() : line.first();
+            const bool onPin =
+                !isBus && pinPoints(*sheet, m_document->design().library).contains(end);
             if (qMin(first, last) <= pixelsToMm(END_PIXELS) && !onPin) {
-                m_endWire = hit;
+                m_endLine = hit;
                 m_endIsLast = last < first;
                 m_dragAnchor = end;
             } else {
-                m_dragAnchor = wire->points.at(m_segmentIndex);
+                m_dragAnchor = line.at(m_segmentIndex);
             }
         } else if (!m_selection.contains(hit)) {
             m_selection = {hit};
@@ -216,26 +235,17 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
 bool SheetEditor::hasSegment() const
 {
     const Sheet *sheet = currentSheet();
-    if (m_segmentWire.isNull() || !m_selection.isEmpty() || sheet == nullptr)
+    if (m_segmentLine.isNull() || !m_selection.isEmpty() || sheet == nullptr)
         return false;
-    for (const Wire &wire : sheet->wires) {
-        if (wire.id == m_segmentWire)
-            return m_segmentIndex >= 0 && m_segmentIndex + 1 < wire.points.size();
-    }
-    return false;
+    return m_segmentIndex >= 0 && m_segmentIndex + 1 < linePoints(*sheet, m_segmentLine).size();
 }
 
 QLineF SheetEditor::chosenSegment() const
 {
     if (!hasSegment() || m_dragging)
         return QLineF();
-    for (const Wire &wire : currentSheet()->wires) {
-        if (wire.id == m_segmentWire) {
-            return QLineF(toMm(wire.points.at(m_segmentIndex)),
-                          toMm(wire.points.at(m_segmentIndex + 1)));
-        }
-    }
-    return QLineF();
+    const QList<Point> line = linePoints(*currentSheet(), m_segmentLine);
+    return QLineF(toMm(line.at(m_segmentIndex)), toMm(line.at(m_segmentIndex + 1)));
 }
 
 bool SheetEditor::hasText() const
@@ -261,13 +271,13 @@ QLineF SheetEditor::textGuide() const
 
 bool SheetEditor::dragsWhole() const
 {
-    return m_endWire.isNull() && !hasText() && !hasSegment();
+    return m_endLine.isNull() && !hasText() && !hasSegment();
 }
 
 QSet<ObjectId> SheetEditor::chosenIds() const
 {
     if (hasSegment())
-        return {m_segmentWire};
+        return {m_segmentLine};
     if (hasText())
         return {m_chosenText.owner};
     return m_selection;
@@ -323,7 +333,7 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
         for (const Wire &wire : sheet->wires) {
             if (wire.id == hit) {
                 dropSegment();
-                m_endWire = ObjectId();
+                m_endLine = ObjectId();
                 m_selection = {hit};
                 emit changed();
                 return;
@@ -663,19 +673,27 @@ void SheetEditor::updateDrag()
         m_preview = withTextMoved(m_dragStart, m_chosenText, m_dragDelta);
         return;
     }
-    if (!m_endWire.isNull()) {
-        for (const Wire &wire : m_dragStart.wires) {
-            if (wire.id == m_endWire) {
-                const Point end = m_endIsLast ? wire.points.last() : wire.points.first();
-                m_preview = withWireEndAt(m_dragStart, m_document->design().library, m_endWire,
-                                          m_endIsLast, end + m_dragDelta);
-            }
+    const Library &library = m_document->design().library;
+    const auto isBus = [this](const ObjectId &id) {
+        return std::any_of(m_dragStart.buses.cbegin(), m_dragStart.buses.cend(),
+                           [&id](const Bus &bus) { return bus.id == id; });
+    };
+    if (!m_endLine.isNull()) {
+        const QList<Point> line = linePoints(m_dragStart, m_endLine);
+        if (!line.isEmpty()) {
+            const Point to = (m_endIsLast ? line.last() : line.first()) + m_dragDelta;
+            m_preview = isBus(m_endLine)
+                            ? withBusEndAt(m_dragStart, library, m_endLine, m_endIsLast, to)
+                            : withWireEndAt(m_dragStart, library, m_endLine, m_endIsLast, to);
         }
         return;
     }
     if (hasSegment()) {
-        m_preview = withSegmentMoved(m_dragStart, m_document->design().library, m_segmentWire,
-                                     m_segmentIndex, m_dragDelta);
+        m_preview = isBus(m_segmentLine)
+                        ? withBusSegmentMoved(m_dragStart, library, m_segmentLine,
+                                              m_segmentIndex, m_dragDelta)
+                        : withSegmentMoved(m_dragStart, library, m_segmentLine, m_segmentIndex,
+                                           m_dragDelta);
         return;
     }
     const Sheet moved = movedObjects(m_dragBase, m_selection, m_dragDelta);
@@ -735,7 +753,7 @@ void SheetEditor::removeSelection(Action action)
     if (hasSegment()) {
         const QString name = stepName(actionName(action));
         Design design = m_document->design();
-        design.schematic.sheets[m_sheet] = withoutSegment(*sheet, m_segmentWire, m_segmentIndex);
+        design.schematic.sheets[m_sheet] = withoutSegment(*sheet, m_segmentLine, m_segmentIndex);
         dropSegment();
         m_document->change(name, design, m_sheet, QSet<ObjectId>());
         emit changed();
@@ -850,8 +868,8 @@ void SheetEditor::duplicateSelection()
 Sheet SheetEditor::selectionPiece(const Sheet &sheet) const
 {
     if (hasSegment()) {
-        const Sheet piece = segmentOf(sheet, m_segmentWire, m_segmentIndex);
-        const QList<Point> &ends = piece.wires.first().points;
+        const Sheet piece = segmentOf(sheet, m_segmentLine, m_segmentIndex);
+        const QList<Point> ends = linePoints(piece, m_segmentLine);
         const Point center = snapped(QLineF(toMm(ends.first()), toMm(ends.last())).center());
         return movedObjects(piece, objectIds(piece), Point() - center);
     }

@@ -208,7 +208,7 @@ private:
     // True when a segment of a wire is chosen alone: no whole object is,
     // and the sheet has the segment.
     bool hasSegment() const;
-    void dropSegment() { m_segmentWire = ObjectId(); }
+    void dropSegment() { m_segmentLine = ObjectId(); }
     // True when a text of a component or a label is chosen alone: no whole
     // object is, and the sheet has the text.
     bool hasText() const;
@@ -275,9 +275,9 @@ private:
     CanvasView *m_canvas;
     int m_sheet = -1;
     QSet<ObjectId> m_selection;
-    // The segment chosen by a click on a wire: its wire and its index. It
-    // counts only while 'm_selection' is empty (hasSegment()).
-    ObjectId m_segmentWire;
+    // The segment chosen by a click on a wire or a bus: its line and its
+    // index. It counts only while 'm_selection' is empty (hasSegment()).
+    ObjectId m_segmentLine;
     int m_segmentIndex = -1;
 
     // The press that may start a drag or a rectangle.
@@ -293,10 +293,10 @@ private:
     Point m_dragAnchor;
 
     bool m_dragging = false;
-    // The press took a wire near one of its ends that is on no pin, which a
-    // drag moves alone:
-    // the wire, and its last end or its first. Set by every press.
-    ObjectId m_endWire;
+    // The press took a wire near one of its ends that is on no pin, or a bus
+    // near one of its ends, which a drag moves alone: the line, and its last
+    // end or its first. Set by every press.
+    ObjectId m_endLine;
     bool m_endIsLast = false;
     // The text chosen alone by a click on it, which a drag moves: of a
     // component or of a label. It counts only while 'm_selection' is empty
