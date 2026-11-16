@@ -92,13 +92,18 @@ QList<Point> simplifiedWire(const QList<Point> &points);
 // that is moved as well just goes, whatever else lay there.
 // A wire left in place that passes through a pin that goes counts as joined
 // to it: it is cut at the pin first, and its two parts follow.
+// A label not among 'moved' that lay on a pin goes with the pin; one that lay
+// on a wire stays as far along the same segment as it was while the wire
+// keeps its number of corners, else where it was while still on the wire,
+// else at the nearest point of the wire.
 Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
                          const Library &library);
 
 // 'sheet' with one end of the wire 'wire' taken to 'to': the last end when
 // 'last', else the first. The wire is led there the way withWiresFollowing()
 // leads a wire end, keeping the other wires joined to it; it is removed when
-// left with no length. 'sheet' as it is when it has no such wire.
+// left with no length; labels on it go with it as in withWiresFollowing().
+// 'sheet' as it is when it has no such wire.
 Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &wire, bool last,
                     const Point &to);
 
@@ -110,8 +115,9 @@ Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &
 // and a bend leads on from where it gets to; else an end joined to a pin
 // or a wire stays, and a bend leads to it. The ends of other wires on the segment
 // go along with it; those on a segment next to it that shrinks away from
-// them go to the corner it leaves them for. 'sheet' as it is when it has no
-// such segment or the move is nothing.
+// them go to the corner it leaves them for; labels on the wire go with it as
+// in withWiresFollowing(). 'sheet' as it is when it has no such segment or
+// the move is nothing.
 Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &wire,
                        int index, const Point &delta);
 

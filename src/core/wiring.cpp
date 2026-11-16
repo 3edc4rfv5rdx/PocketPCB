@@ -763,8 +763,8 @@ QList<Point> simplifiedWire(const QList<Point> &points)
     return result;
 }
 
-Sheet withWiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
-                         const QSet<ObjectId> &moved, const Library &library)
+static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
+                            const QSet<ObjectId> &moved, const Library &library)
 {
     // A wire left in place that passes through a pin that goes is cut there
     // first, in both sheets alike, so that its two parts end on the pin and
@@ -989,8 +989,8 @@ Sheet withWiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
     return result;
 }
 
-Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &wire, bool last,
-                    const Point &to)
+static Sheet wireEndAt(const Sheet &sheet, const Library &library, const ObjectId &wire,
+                       bool last, const Point &to)
 {
     Sheet result = sheet;
     for (int i = 0; i < result.wires.size(); ++i) {
@@ -1015,8 +1015,8 @@ Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &
     return result;
 }
 
-Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &wire,
-                       int index, const Point &delta)
+static Sheet segmentMoved(const Sheet &sheet, const Library &library, const ObjectId &wire,
+                          int index, const Point &delta)
 {
     int at = -1;
     for (int i = 0; i < sheet.wires.size(); ++i) {
@@ -1170,6 +1170,125 @@ Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectI
     }
     result.wires.removeIf([](const Wire &w) { return w.points.size() < 2; });
     return result;
+}
+
+namespace {
+
+// The point of 'wire' nearest to 'point': on a level or upright segment
+// straight across from it, else the nearer end of the segment, so that it
+// stays on the grid the wire is on.
+Point nearestOnWire(const Wire &wire, const Point &point)
+{
+    Point best = wire.points.first();
+    double bestDistance = -1;
+    const auto consider = [&](const Point &candidate) {
+        const double dx = double(candidate.x - point.x);
+        const double dy = double(candidate.y - point.y);
+        const double distance = dx * dx + dy * dy;
+        if (bestDistance < 0 || distance < bestDistance) {
+            best = candidate;
+            bestDistance = distance;
+        }
+    };
+    for (int i = 1; i < wire.points.size(); ++i) {
+        const Point &a = wire.points.at(i - 1);
+        const Point &b = wire.points.at(i);
+        if (a.y == b.y)
+            consider(Point{qBound(qMin(a.x, b.x), point.x, qMax(a.x, b.x)), a.y});
+        else if (a.x == b.x)
+            consider(Point{a.x, qBound(qMin(a.y, b.y), point.y, qMax(a.y, b.y))});
+        consider(a);
+        consider(b);
+    }
+    return best;
+}
+
+// 'after', where the labels that lay on a pin or a wire of 'before' and
+// are not among 'moved' have gone with it: see withWiresFollowing().
+Sheet withLabelsCarried(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
+                        const Library &library)
+{
+    Sheet result = after;
+    const QList<SheetPin> pinsBefore = sheetPins(before, library);
+    const QList<SheetPin> pinsAfter = sheetPins(after, library);
+    for (Label &label : result.labels) {
+        if (moved.contains(label.id))
+            continue;
+        // Only where it was left in place.
+        const auto was = std::find_if(before.labels.cbegin(), before.labels.cend(),
+                                      [&label](const Label &l) { return l.id == label.id; });
+        if (was == before.labels.cend() || was->at != label.at)
+            continue;
+        const Point at = label.at;
+
+        // On a pin: the same pin of the same owner, where it is now.
+        const auto pin = std::find_if(pinsBefore.cbegin(), pinsBefore.cend(),
+                                      [&at](const SheetPin &p) { return p.at == at; });
+        if (pin != pinsBefore.cend()) {
+            const auto index = std::count_if(pinsBefore.cbegin(), pin, [&pin](const SheetPin &p) {
+                return p.owner == pin->owner;
+            });
+            int seen = 0;
+            for (const SheetPin &now : pinsAfter) {
+                if (now.owner == pin->owner && seen++ == index) {
+                    label.at = now.at;
+                    break;
+                }
+            }
+            continue;
+        }
+
+        // On a wire: as far along the same segment as it was, when the wire
+        // kept its shape; else where it was if the wire is still there, or
+        // the nearest point of the wire.
+        for (const Wire &wire : before.wires) {
+            if (wire.points.size() < 2 || !isOnWire(wire, at))
+                continue;
+            const auto now = std::find_if(after.wires.cbegin(), after.wires.cend(),
+                                          [&wire](const Wire &w) { return w.id == wire.id; });
+            if (now == after.wires.cend() || now->points.size() < 2)
+                break;
+            if (now->points.size() == wire.points.size()) {
+                int segment = 1;
+                while (!isOnSegment(wire.points.at(segment - 1), wire.points.at(segment), at))
+                    ++segment;
+                const Point &from = wire.points.at(segment - 1);
+                const Point &a = now->points.at(segment - 1);
+                const Point &b = now->points.at(segment);
+                const Coord along = qMax(std::llabs(at.x - from.x), std::llabs(at.y - from.y));
+                const Coord length = qMax(std::llabs(b.x - a.x), std::llabs(b.y - a.y));
+                const Coord reach = qMin(along, length);
+                label.at = a + Point{sign(b.x - a.x) * reach, sign(b.y - a.y) * reach};
+            } else if (!isOnWire(*now, at)) {
+                label.at = nearestOnWire(*now, at);
+            }
+            break;
+        }
+    }
+    return result;
+}
+
+} // namespace
+
+Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
+                         const Library &library)
+{
+    return withLabelsCarried(before, wiresFollowing(before, after, moved, library), moved,
+                             library);
+}
+
+Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &wire, bool last,
+                    const Point &to)
+{
+    return withLabelsCarried(sheet, wireEndAt(sheet, library, wire, last, to), QSet<ObjectId>(),
+                             library);
+}
+
+Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &wire,
+                       int index, const Point &delta)
+{
+    return withLabelsCarried(sheet, segmentMoved(sheet, library, wire, index, delta),
+                             QSet<ObjectId>(), library);
 }
 
 } // namespace ppcb

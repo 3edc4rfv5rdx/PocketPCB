@@ -141,6 +141,52 @@ private slots:
         QCOMPARE(moved.wires.first().points.last(), mm(20, 0));
     }
 
+    // Labels left in place go with the pin or the wire they lie on.
+    void labelsGoWithWhatTheyLieOn()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        // A part at the origin with a wire from its left pin, a free wire,
+        // and labels on the pin, on each wire and on nothing.
+        sheet.components = {twoPin(mm(0, 0))};
+        sheet.wires = {wire({mm(-20, 0), mm(-5, 0)}), wire({mm(0, 30), mm(10, 30)})};
+        const auto label = [](const Point &at) {
+            Label result;
+            result.id = newObjectId();
+            result.at = at;
+            result.text = QStringLiteral("N");
+            return result;
+        };
+        sheet.labels = {label(mm(5, 0)), label(mm(-10, 0)), label(mm(5, 30)), label(mm(50, 50))};
+        const QSet<ObjectId> part = {sheet.components.first().id};
+
+        // The part goes along its wire: the label on its pin goes too, the
+        // one on the wire stays as far from the wire's far end.
+        Sheet moved = withWiresFollowing(sheet, movedObjects(sheet, part, mm(3, 0)), part, library);
+        QCOMPARE(moved.labels.at(0).at, mm(8, 0));
+        QCOMPARE(moved.labels.at(1).at, mm(-10, 0));
+        QCOMPARE(moved.labels.at(3).at, mm(50, 50));
+        // Across: the wire gets a bend, and the label stays where it is on it.
+        moved = withWiresFollowing(sheet, movedObjects(sheet, part, mm(0, 5)), part, library);
+        QCOMPARE(moved.labels.at(0).at, mm(5, 5));
+        QCOMPARE(moved.labels.at(1).at, mm(-10, 0));
+
+        // The free wire moved: its label comes along.
+        const QSet<ObjectId> free = {sheet.wires.at(1).id};
+        moved = withWiresFollowing(sheet, movedObjects(sheet, free, mm(2, 3)), free, library);
+        QCOMPARE(moved.labels.at(2).at, mm(7, 33));
+        // A label moved with it is not moved twice.
+        const QSet<ObjectId> both = {sheet.wires.at(1).id, sheet.labels.at(2).id};
+        moved = withWiresFollowing(sheet, movedObjects(sheet, both, mm(2, 3)), both, library);
+        QCOMPARE(moved.labels.at(2).at, mm(7, 33));
+
+        // Its segment dragged down, and its end dragged further.
+        moved = withSegmentMoved(sheet, library, sheet.wires.at(1).id, 0, mm(0, 4));
+        QCOMPARE(moved.labels.at(2).at, mm(5, 34));
+        moved = withWireEndAt(sheet, library, sheet.wires.at(1).id, true, mm(20, 30));
+        QCOMPARE(moved.labels.at(2).at, mm(5, 30));
+    }
+
     void pointsOnWires()
     {
         const Wire w = wire({mm(0, 0), mm(10, 0), mm(15, 5)});
