@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Power symbols are placed from a Power group of the library panel, or with P, which places the last one again
 - F: Power symbols are library symbols with a net name, copied into the project like parts; bar, arrow, ground and chassis are built in, and the ground hides its GND
 - I: Tests build again and expect a wire end on a power symbol to stay there
 - E: Wires join a power symbol's point like a pin: they follow it when it moves or turns, and a dot shows where three meet

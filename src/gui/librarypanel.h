@@ -67,7 +67,8 @@ private:
 
 // The parts of the library to choose from: a search field, the parts of the
 // built-in and the user's library and those of the open project, each
-// grouped by designator prefix, and the drawing of the chosen one.
+// grouped by designator prefix after a group of power symbols, and the
+// drawing of the chosen one.
 class LibraryPanel : public QWidget
 {
     Q_OBJECT
@@ -94,9 +95,11 @@ public:
     // groups stay so when the list is built again.
     void setAllGroupsExpanded(bool expanded);
 
-    // The chosen part and where it is from; an empty name when none is.
+    // The chosen part, or power symbol, and where it is from; an empty name
+    // when none is.
     QString currentPart() const;
     Source currentSource() const;
+    bool currentIsPower() const;
     // Chooses the project's part 'part' and, below the list, 'footprint'
     // when the part allows it. False when the project has no such part.
     bool showProjectPart(const QString &part, const QString &footprint);
@@ -111,10 +114,13 @@ signals:
     // A part was double-clicked: it is to be placed on the sheet.
     void placeRequested(ppcb::LibraryPanel::Source source, const QString &part,
                         const QString &footprint);
+    // The same for a power symbol, by the name of its symbol.
+    void placePowerRequested(ppcb::LibraryPanel::Source source, const QString &symbol);
     // A part is dragged out of the list or the drawing: it is to be placed,
     // following the mouse, and put down where the button is let go.
     void dragStarted(ppcb::LibraryPanel::Source source, const QString &part,
                      const QString &footprint);
+    void powerDragStarted(ppcb::LibraryPanel::Source source, const QString &symbol);
     void dragMoved(const QPoint &globalPos);
     void dragEnded(const QPoint &globalPos);
 
@@ -122,6 +128,11 @@ private:
     void rebuild();
     // The item of the part 'part' of 'source'; null when there is none.
     QTreeWidgetItem *findPartItem(Source source, const QString &part) const;
+    // Asks for the part or the power symbol of 'item' to be placed, or
+    // dragged when 'drag'; false when 'item' is neither.
+    bool requestPlacing(const QTreeWidgetItem *item, bool drag);
+    // Adds the power symbols of 'library' as the first group of 'section'.
+    void addPowerGroup(QTreeWidgetItem *section, const Library &library, Source source);
     // Adds the parts of 'library' under a new top item 'title'.
     void addSection(const QString &title, const Library &library, Source source,
                     const QSet<QString> &replaced);

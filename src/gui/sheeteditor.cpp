@@ -667,6 +667,20 @@ void SheetEditor::startPlacing(const Library &source, const QString &part,
     startFloating(piece, source, Action::Place, true);
 }
 
+void SheetEditor::startPlacingPower(const Library &source, const QString &symbol)
+{
+    const Symbol *drawing = source.findSymbol(symbol);
+    if (drawing == nullptr || !drawing->isPower())
+        return;
+    PowerSymbol power;
+    power.id = newObjectId();
+    power.name = drawing->power;
+    power.symbol = symbol;
+    Sheet piece;
+    piece.powerSymbols.append(power);
+    startFloating(piece, source, Action::Place, true);
+}
+
 void SheetEditor::copySelection()
 {
     const Sheet *sheet = currentSheet();
@@ -922,6 +936,10 @@ QString SheetEditor::stepName(const QString &action, const Sheet &objects,
     for (const Component &component : objects.components) {
         if (ids.contains(component.id))
             names.append(component.designator);
+    }
+    for (const PowerSymbol &power : objects.powerSymbols) {
+        if (ids.contains(power.id))
+            names.append(power.name);
     }
     const int others = int(ids.size() - names.size());
     std::sort(names.begin(), names.end());

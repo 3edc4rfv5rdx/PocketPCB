@@ -92,6 +92,10 @@ public:
     // R and X turn and mirror the one that follows. Does nothing when no
     // sheet is edited or 'source' lacks the part.
     void startPlacing(const Library &source, const QString &part, const QString &footprint);
+    // The same for a power symbol drawn with the power symbol 'symbol' of
+    // 'source', named with its net name. Does nothing when 'source' lacks
+    // such a power symbol.
+    void startPlacingPower(const Library &source, const QString &symbol);
     void stopPlacing();
     // Placing, pasting or duplicating: something follows the cursor.
     bool isPlacing() const { return m_placing; }

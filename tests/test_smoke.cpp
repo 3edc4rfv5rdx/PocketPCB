@@ -607,6 +607,20 @@ private slots:
         QVERIFY(!group(QStringLiteral("TST"))->isHidden());
         QVERIFY(group(QStringLiteral("R"))->isHidden());
         panel->setFilter(QString());
+
+        // The power symbols come first, in a group of their own; one chosen
+        // has no footprint, and a search finds it by its net name too.
+        QTreeWidgetItem *power = tree->topLevelItem(0)->child(0);
+        QCOMPARE(power->text(0), QStringLiteral("Power"));
+        QVERIFY(power->childCount() >= 4);
+        tree->setCurrentItem(power->child(0));
+        QVERIFY(panel->currentIsPower());
+        QCOMPARE(panel->footprintBox()->count(), 0);
+        panel->setFilter(QStringLiteral("GND"));
+        QVERIFY(!power->isHidden());
+        QVERIFY(group(QStringLiteral("R"))->isHidden());
+        panel->setFilter(QString());
+
         QVERIFY(QFile::remove(ownPath));
         QVERIFY(QFile::remove(secondPath));
 
@@ -848,6 +862,48 @@ private slots:
         window.showPage(window.designItem()->boardPage());
         QVERIFY(!window.placePart(LibraryPanel::Source::Library, QStringLiteral("capacitor"),
                                   QStringLiteral("capacitor-5.08")));
+    }
+
+    // P places the ground first, then the power symbol placed last; each
+    // one gets the net name of its symbol, which is copied into the project.
+    void powerSymbolsArePlacedWithP()
+    {
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QVERIFY(window.openProject(QStringLiteral(PPCB_SOURCE_DIR "/examples/demo/demo.ppcb")));
+        SheetEditor *editor = window.sheetEditor();
+        const auto powers = [&window]() {
+            return window.document()->design().schematic.sheets.at(0).powerSymbols;
+        };
+        const int before = int(powers().size());
+        QAction *place = window.findChild<QAction *>(QStringLiteral("actionPlacePower"));
+        QVERIFY(place != nullptr);
+
+        place->trigger();
+        QVERIFY(editor->isPlacing());
+        editor->hover(Point{mmToNm(50.8), mmToNm(50.8)});
+        editor->press(QPointF(50.8, 50.8), false);
+        window.findChild<QAction *>(QStringLiteral("actionDeselect"))->trigger();
+        QCOMPARE(int(powers().size()), before + 1);
+        QCOMPARE(powers().last().symbol, QStringLiteral("ground"));
+        QCOMPARE(powers().last().name, QStringLiteral("GND"));
+        QCOMPARE(powers().last().at, Point({mmToNm(50.8), mmToNm(50.8)}));
+
+        QVERIFY(window.placePower(LibraryPanel::Source::Library, QStringLiteral("power-arrow")));
+        window.findChild<QAction *>(QStringLiteral("actionDeselect"))->trigger();
+        place->trigger();
+        editor->hover(Point{mmToNm(60.96), mmToNm(50.8)});
+        editor->press(QPointF(60.96, 50.8), false);
+        window.findChild<QAction *>(QStringLiteral("actionDeselect"))->trigger();
+        QCOMPARE(int(powers().size()), before + 2);
+        QCOMPARE(powers().last().symbol, QStringLiteral("power-arrow"));
+        QCOMPARE(powers().last().name, QStringLiteral("+5V"));
+        QVERIFY(window.document()->design().library.findSymbol(QStringLiteral("power-arrow"))
+                != nullptr);
+
+        // A symbol that is not a power symbol is not placed as one.
+        QVERIFY(!window.placePower(LibraryPanel::Source::Library, QStringLiteral("resistor")));
     }
 
     void wiresAreDrawnUntilEsc()

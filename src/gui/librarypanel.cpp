@@ -26,10 +26,24 @@ namespace ppcb {
 
 namespace {
 
-// Item data: the part's name, on part items only, and the source, on part
-// and section items.
+// Item data: the name of the part or of the power symbol, on their items
+// only; the source, on those items and on section items; and on the items of
+// power symbols, that they are.
 const int PART_ROLE = Qt::UserRole;
 const int SOURCE_ROLE = Qt::UserRole + 1;
+const int POWER_ROLE = Qt::UserRole + 2;
+
+bool isPowerItem(const QTreeWidgetItem *item)
+{
+    return item != nullptr && item->data(0, POWER_ROLE).toBool();
+}
+
+// True when 'library' has a power symbol.
+bool hasPowerSymbols(const Library &library)
+{
+    return std::any_of(library.symbols.cbegin(), library.symbols.cend(),
+                       [](const Symbol &symbol) { return symbol.isPower(); });
+}
 
 // The list of parts, from which a part can be dragged onto a sheet.
 class PartTree : public QTreeWidget
@@ -200,12 +214,7 @@ LibraryPanel::LibraryPanel(QWidget *parent)
 
     PartTree *tree = new PartTree(this);
     tree->drag.start = [this, tree](const QPoint &pressPos) {
-        const QTreeWidgetItem *item = tree->itemAt(pressPos);
-        const QString part = item == nullptr ? QString() : item->data(0, PART_ROLE).toString();
-        if (part.isEmpty())
-            return false;
-        emit dragStarted(Source(item->data(0, SOURCE_ROLE).toInt()), part, footprintFor(item));
-        return true;
+        return requestPlacing(tree->itemAt(pressPos), true);
     };
     tree->drag.moved = [this](const QPoint &at) { emit dragMoved(at); };
     tree->drag.ended = [this](const QPoint &at) { emit dragEnded(at); };
@@ -217,11 +226,7 @@ LibraryPanel::LibraryPanel(QWidget *parent)
     m_footprintBox->setObjectName(QStringLiteral("libraryFootprint"));
     m_preview = new PartPreview(this);
     m_preview->drag.start = [this](const QPoint &) {
-        const QString part = currentPart();
-        if (part.isEmpty())
-            return false;
-        emit dragStarted(currentSource(), part, m_footprintBox->currentText());
-        return true;
+        return requestPlacing(m_tree->currentItem(), true);
     };
     m_preview->drag.moved = [this](const QPoint &at) { emit dragMoved(at); };
     m_preview->drag.ended = [this](const QPoint &at) { emit dragEnded(at); };
@@ -247,11 +252,8 @@ LibraryPanel::LibraryPanel(QWidget *parent)
     connect(collapseButton, &QToolButton::clicked, this,
             [this] { setAllGroupsExpanded(false); });
     connect(m_tree, &QTreeWidget::currentItemChanged, this, &LibraryPanel::showCurrentPart);
-    connect(m_tree, &QTreeWidget::itemDoubleClicked, this, [this](QTreeWidgetItem *item) {
-        const QString part = item->data(0, PART_ROLE).toString();
-        if (!part.isEmpty())
-            emit placeRequested(Source(item->data(0, SOURCE_ROLE).toInt()), part, footprintFor(item));
-    });
+    connect(m_tree, &QTreeWidget::itemDoubleClicked, this,
+            [this](QTreeWidgetItem *item) { requestPlacing(item, false); });
     connect(m_tree, &QTreeWidget::itemExpanded, this,
             [this](QTreeWidgetItem *item) { noteExpanded(item, true); });
     connect(m_tree, &QTreeWidget::itemCollapsed, this,
@@ -319,6 +321,30 @@ LibraryPanel::Source LibraryPanel::currentSource() const
     return item == nullptr ? Source::Library : Source(item->data(0, SOURCE_ROLE).toInt());
 }
 
+bool LibraryPanel::currentIsPower() const
+{
+    return isPowerItem(m_tree->currentItem());
+}
+
+bool LibraryPanel::requestPlacing(const QTreeWidgetItem *item, bool drag)
+{
+    const QString name = item == nullptr ? QString() : item->data(0, PART_ROLE).toString();
+    if (name.isEmpty())
+        return false;
+    const Source source = Source(item->data(0, SOURCE_ROLE).toInt());
+    if (isPowerItem(item)) {
+        if (drag)
+            emit powerDragStarted(source, name);
+        else
+            emit placePowerRequested(source, name);
+    } else if (drag) {
+        emit dragStarted(source, name, footprintFor(item));
+    } else {
+        emit placeRequested(source, name, footprintFor(item));
+    }
+    return true;
+}
+
 bool LibraryPanel::showProjectPart(const QString &part, const QString &footprint)
 {
     QTreeWidgetItem *item = findPartItem(Source::Project, part);
@@ -342,7 +368,7 @@ QTreeWidgetItem *LibraryPanel::findPartItem(Source source, const QString &part) 
     if (part.isEmpty())
         return nullptr;
     for (QTreeWidgetItemIterator it(m_tree); *it != nullptr; ++it) {
-        if ((*it)->data(0, PART_ROLE).toString() == part
+        if ((*it)->data(0, PART_ROLE).toString() == part && !isPowerItem(*it)
             && Source((*it)->data(0, SOURCE_ROLE).toInt()) == source) {
             return *it;
         }
@@ -355,15 +381,21 @@ void LibraryPanel::rebuild()
     // The chosen part is kept across the rebuild when it is still there.
     const QString part = currentPart();
     const Source source = currentSource();
+    const bool power = currentIsPower();
     const int scroll = m_tree->verticalScrollBar()->value();
 
     m_tree->clear();
     addSection(libraryTitle(), m_library.items, Source::Library, m_library.replacedParts);
-    if (!m_project.parts.isEmpty())
+    if (!m_project.parts.isEmpty() || hasPowerSymbols(m_project))
         addSection(tr("Project"), m_project, Source::Project, QSet<QString>());
 
-    if (QTreeWidgetItem *item = findPartItem(source, part))
-        m_tree->setCurrentItem(item);
+    for (QTreeWidgetItemIterator it(m_tree); *it != nullptr; ++it) {
+        if ((*it)->data(0, PART_ROLE).toString() == part && isPowerItem(*it) == power
+            && Source((*it)->data(0, SOURCE_ROLE).toInt()) == source && !part.isEmpty()) {
+            m_tree->setCurrentItem(*it);
+            break;
+        }
+    }
     applyFilter();
     showCurrentPart();
     // Laid out now, so that the scroll bar has its range back.
@@ -399,6 +431,8 @@ void LibraryPanel::addSection(const QString &title, const Library &library, Sour
     section->setData(0, SOURCE_ROLE, int(source));
     const QStringList languages = nameLanguages();
 
+    addPowerGroup(section, library, source);
+
     // Prefixes in order, parts by their shown name inside each.
     QMap<QString, QList<QPair<QString, QString>>> groups;
     for (auto it = library.parts.constBegin(); it != library.parts.constEnd(); ++it) {
@@ -428,6 +462,32 @@ void LibraryPanel::addSection(const QString &title, const Library &library, Sour
     section->setExpanded(true);
 }
 
+void LibraryPanel::addPowerGroup(QTreeWidgetItem *section, const Library &library, Source source)
+{
+    if (!hasPowerSymbols(library))
+        return;
+    const QStringList languages = nameLanguages();
+    QList<QPair<QString, QString>> entries;
+    for (auto it = library.symbols.constBegin(); it != library.symbols.constEnd(); ++it) {
+        if (it.value().isPower())
+            entries.append({it.value().displayName(languages, it.key()), it.key()});
+    }
+    std::sort(entries.begin(), entries.end(), [](const auto &a, const auto &b) {
+        return QString::localeAwareCompare(a.first, b.first) < 0;
+    });
+    QTreeWidgetItem *group = new QTreeWidgetItem(section, {tr("Power")});
+    group->setFlags(Qt::ItemIsEnabled);
+    for (const auto &entry : entries) {
+        QTreeWidgetItem *item = new QTreeWidgetItem(group, {entry.first});
+        item->setData(0, PART_ROLE, entry.second);
+        item->setData(0, SOURCE_ROLE, int(source));
+        item->setData(0, POWER_ROLE, true);
+        // The net name it is placed with, and its file.
+        item->setToolTip(0, library.symbols.value(entry.second).power + QStringLiteral(" — ")
+                                + entry.second);
+    }
+}
+
 void LibraryPanel::applyFilter()
 {
     const QString text = m_search->text().trimmed();
@@ -443,12 +503,17 @@ void LibraryPanel::applyFilter()
             for (int p = 0; p < group->childCount(); ++p) {
                 QTreeWidgetItem *item = group->child(p);
                 const QString name = item->data(0, PART_ROLE).toString();
-                const Part part = library.parts.value(name);
-                const bool shown = text.isEmpty()
-                                   || item->text(0).contains(text, Qt::CaseInsensitive)
-                                   || name.contains(text, Qt::CaseInsensitive)
-                                   || part.prefix.compare(text, Qt::CaseInsensitive) == 0
-                                   || part.prefixGost.compare(text, Qt::CaseInsensitive) == 0;
+                bool shown = text.isEmpty() || item->text(0).contains(text, Qt::CaseInsensitive)
+                             || name.contains(text, Qt::CaseInsensitive);
+                if (isPowerItem(item)) {
+                    // Also by the net name it is placed with.
+                    shown = shown
+                            || library.symbols.value(name).power.contains(text, Qt::CaseInsensitive);
+                } else {
+                    const Part part = library.parts.value(name);
+                    shown = shown || part.prefix.compare(text, Qt::CaseInsensitive) == 0
+                            || part.prefixGost.compare(text, Qt::CaseInsensitive) == 0;
+                }
                 item->setHidden(!shown);
                 groupShown += shown ? 1 : 0;
             }
@@ -481,7 +546,8 @@ const Library &LibraryPanel::currentLibrary() const
 
 void LibraryPanel::showCurrentPart()
 {
-    const Part *part = currentLibrary().findPart(currentPart());
+    // A power symbol has no footprints.
+    const Part *part = currentIsPower() ? nullptr : currentLibrary().findPart(currentPart());
     {
         const QSignalBlocker blocker(m_footprintBox);
         m_footprintBox->clear();
@@ -496,8 +562,10 @@ void LibraryPanel::showCurrentFootprint()
 {
     const Library &library = currentLibrary();
     const QString part = currentPart();
-    m_preview->setContent(part.isEmpty() ? nullptr : library.findSymbolOfPart(part),
-                          library.findFootprint(m_footprintBox->currentText()));
+    const Symbol *symbol = nullptr;
+    if (!part.isEmpty())
+        symbol = currentIsPower() ? library.findSymbol(part) : library.findSymbolOfPart(part);
+    m_preview->setContent(symbol, library.findFootprint(m_footprintBox->currentText()));
 }
 
 } // namespace ppcb

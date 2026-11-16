@@ -294,6 +294,10 @@
         <source>Collapse all</source>
         <translation>Свернуть все</translation>
     </message>
+    <message>
+        <source>Power</source>
+        <translation>Питание</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::LibraryFolder</name>
@@ -507,6 +511,10 @@
     <message>
         <source>Open a sheet to place parts on</source>
         <translation>Откройте лист, чтобы ставить на него детали</translation>
+    </message>
+    <message>
+        <source>Place power symbol</source>
+        <translation>Поставить символ питания</translation>
     </message>
 </context>
 <context>

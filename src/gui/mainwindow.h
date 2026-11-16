@@ -56,6 +56,10 @@ public:
     // Starts placing a part from the panel on the sheet shown. False, with
     // the reason in the status bar, when no sheet is shown.
     bool placePart(LibraryPanel::Source source, const QString &part, const QString &footprint);
+    // The same for a power symbol; it becomes the one P places.
+    bool placePower(LibraryPanel::Source source, const QString &symbol);
+    // Places again the power symbol placed last, the ground at first.
+    bool placeLastPower();
     // Shows page 'page' of the project and, when 'fit', the view it was last
     // seen with, or fits the view to it when it has none yet.
     void showPage(int page, bool fit = true);
@@ -139,6 +143,10 @@ private:
     void openLibraryFolder();
     // Shows the loaded libraries and the open project's in the panel.
     void updateLibraryPanel();
+    // True when a sheet is shown to place on; else says so in the status bar.
+    bool canPlace();
+    // The library a part or power symbol of the panel is taken from.
+    const Library &sourceLibrary(LibraryPanel::Source source) const;
     // Reads 'path' and puts it on the canvas; the common part of opening
     // and reloading.
     bool showLibraryFile(const QString &path);
@@ -182,6 +190,9 @@ private:
     QString m_shownViewKey;
 
     MergedLibrary m_library;
+    // The power symbol P places: where it was taken from, and its name.
+    LibraryPanel::Source m_lastPowerSource = LibraryPanel::Source::Library;
+    QString m_lastPowerSymbol = QStringLiteral("ground");
     LibraryPanel *m_libraryPanel = nullptr;
     QDockWidget *m_libraryDock = nullptr;
     PropertiesPanel *m_propertiesPanel = nullptr;

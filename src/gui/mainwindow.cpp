@@ -133,6 +133,7 @@ MainWindow::MainWindow(QWidget *parent)
     splitDockWidget(m_libraryDock, m_propertiesDock, Qt::Vertical);
     connect(m_libraryPanel, &LibraryPanel::reloadRequested, this, &MainWindow::loadLibrary);
     connect(m_libraryPanel, &LibraryPanel::placeRequested, this, &MainWindow::placePart);
+    connect(m_libraryPanel, &LibraryPanel::placePowerRequested, this, &MainWindow::placePower);
     // A component double-clicked on the sheet is shown in the panel: its
     // part, with its footprint below the list.
     connect(m_sheetEditor, &SheetEditor::componentOpened, m_libraryPanel,
@@ -141,6 +142,7 @@ MainWindow::MainWindow(QWidget *parent)
     // mouse, R and X turn it, and letting go over the sheet puts it down and
     // placing goes on; letting go anywhere else calls it off.
     connect(m_libraryPanel, &LibraryPanel::dragStarted, this, &MainWindow::placePart);
+    connect(m_libraryPanel, &LibraryPanel::powerDragStarted, this, &MainWindow::placePower);
     connect(m_libraryPanel, &LibraryPanel::dragMoved, this, [this](const QPoint &at) {
         if (m_sheetEditor->isPlacing())
             m_canvas->followGlobalPos(at);
@@ -267,6 +269,10 @@ void MainWindow::createMenus()
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Duplicate), "actionDuplicate",
                   QKeySequence(Qt::CTRL | Qt::Key_D), &SheetEditor::duplicateSelection);
     editMenu->addSeparator();
+    QAction *powerAction = editMenu->addAction(tr("Place power symbol"));
+    powerAction->setObjectName(QStringLiteral("actionPlacePower"));
+    powerAction->setShortcut(QKeySequence(Qt::Key_P));
+    connect(powerAction, &QAction::triggered, this, &MainWindow::placeLastPower);
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Wire), "actionWire",
                   QKeySequence(Qt::Key_W), &SheetEditor::startWiring);
     addEditAction(tr("Turn the wire corner the other way"), "actionWireCorner",
@@ -774,15 +780,43 @@ void MainWindow::loadLibrary()
 bool MainWindow::placePart(LibraryPanel::Source source, const QString &part,
                            const QString &footprint)
 {
-    if (!m_designItem->isVisible() || m_sheetEditor->sheet() < 0) {
-        showStatus(tr("Open a sheet to place parts on"));
+    if (!canPlace())
         return false;
-    }
-    const Library &library =
-        source == LibraryPanel::Source::Project ? m_document->design().library : m_library.items;
-    m_sheetEditor->startPlacing(library, part, footprint);
+    m_sheetEditor->startPlacing(sourceLibrary(source), part, footprint);
     m_canvas->setFocus();
     return m_sheetEditor->isPlacing();
+}
+
+bool MainWindow::placePower(LibraryPanel::Source source, const QString &symbol)
+{
+    if (!canPlace())
+        return false;
+    m_sheetEditor->startPlacingPower(sourceLibrary(source), symbol);
+    m_canvas->setFocus();
+    if (!m_sheetEditor->isPlacing())
+        return false;
+    m_lastPowerSource = source;
+    m_lastPowerSymbol = symbol;
+    return true;
+}
+
+bool MainWindow::placeLastPower()
+{
+    return placePower(m_lastPowerSource, m_lastPowerSymbol);
+}
+
+bool MainWindow::canPlace()
+{
+    if (m_designItem->isVisible() && m_sheetEditor->sheet() >= 0)
+        return true;
+    showStatus(tr("Open a sheet to place parts on"));
+    return false;
+}
+
+const Library &MainWindow::sourceLibrary(LibraryPanel::Source source) const
+{
+    return source == LibraryPanel::Source::Project ? m_document->design().library
+                                                   : m_library.items;
 }
 
 void MainWindow::updateLibraryPanel()
