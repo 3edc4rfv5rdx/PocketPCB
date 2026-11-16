@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The built-in chassis symbol is a stem with a thick bar, the European way, instead of a bar with slanted strokes
 - N: Buses are dragged by their segments and ends like wires, chosen whole by their name, and the wires that enter them go along
 - F: A wire begun on a bus leaves it at 45 degrees as well, and one going on the line of a bus into its end steps aside to enter it at 45 degrees
 - E: A bus holds the end of a wire that enters it, and the entry stays at 45 degrees when the wire is laid again
