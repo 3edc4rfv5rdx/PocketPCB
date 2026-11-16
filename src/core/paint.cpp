@@ -836,6 +836,16 @@ Point pinBodyEnd(const Pin &pin)
     return pin.at;
 }
 
+Point powerStemEnd(const PowerSymbol &power)
+{
+    // Not turned, the stem points up; a quarter turn clockwise on screen,
+    // where Y grows downwards, as QPainter::rotate() turns it.
+    Point stem{0, -mmToNm(POWER_STEM)};
+    for (int turn = 0; turn < power.rotation / 90; ++turn)
+        stem = Point{-stem.y, stem.x};
+    return power.at + stem;
+}
+
 QRectF symbolBounds(const Symbol &symbol)
 {
     Bounds bounds;

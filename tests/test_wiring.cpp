@@ -1,3 +1,4 @@
+#include "paint.h"
 #include "sheetedit.h"
 #include "wiring.h"
 
@@ -79,6 +80,49 @@ private slots:
         missing.part = QStringLiteral("absent");
         sheet.components.append(missing);
         QCOMPARE(pinPoints(sheet, twoPinLibrary()), QList<Point>({mm(10, 5), mm(10, 15)}));
+    }
+
+    // A power symbol is a pin of its own: wires end on its point, keep off
+    // its stem and follow it when it goes.
+    void powerSymbolsArePins()
+    {
+        const Library library = twoPinLibrary();
+        PowerSymbol power;
+        power.id = newObjectId();
+        power.at = mm(20, 0);
+        power.name = QStringLiteral("+5V");
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0))};
+        sheet.powerSymbols = {power};
+        sheet.wires = {wire({mm(5, 0), mm(20, 0)})};
+
+        const Coord stem = 2540000;
+        const QList<SheetPin> pins = sheetPins(sheet, library);
+        QCOMPARE(pins.size(), 3);
+        QCOMPARE(pins.last().owner, power.id);
+        QCOMPARE(pins.last().at, mm(20, 0));
+        QCOMPARE(pins.last().bodyEnd, mm(20, 0) - Point{0, stem});
+        power.rotation = 90;
+        QCOMPARE(powerStemEnd(power), mm(20, 0) + Point{stem, 0});
+        power.rotation = 180;
+        QCOMPARE(powerStemEnd(power), mm(20, 0) + Point{0, stem});
+        QVERIFY(isConnectionPoint(sheet, library, mm(20, 0)));
+        // A second wire on the symbol's point makes a dot with the first.
+        Sheet joined = sheet;
+        joined.wires.append(wire({mm(20, 0), mm(20, 10)}));
+        QCOMPARE(junctions(joined, library), QList<Point>({mm(20, 0)}));
+
+        // Moved, the symbol takes the wire end along.
+        const QSet<ObjectId> symbol = {sheet.powerSymbols.first().id};
+        Sheet moved = withWiresFollowing(sheet, movedObjects(sheet, symbol, mm(3, 0)), symbol,
+                                         library);
+        QCOMPARE(moved.wires.first().points, QList<Point>({mm(5, 0), mm(23, 0)}));
+
+        // The wire moved alone keeps its end on the symbol left in place.
+        const QSet<ObjectId> line = {sheet.wires.first().id};
+        moved = withWiresFollowing(sheet, movedObjects(sheet, line, mm(0, 5)), line, library);
+        QCOMPARE(moved.wires.first().points.first(), mm(5, 0));
+        QCOMPARE(moved.wires.first().points.last(), mm(20, 0));
     }
 
     void pointsOnWires()

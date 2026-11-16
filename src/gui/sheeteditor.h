@@ -188,7 +188,8 @@ private:
     // component's text alone: only then does it turn and mirror on the way.
     bool dragsWhole() const;
     // The grid point the selection on 'sheet' is turned and mirrored about:
-    // a single component's own point, else the middle of the selection.
+    // a single component's or power symbol's own point, else the middle of
+    // the selection.
     Point selectionCenter(const Sheet &sheet) const;
     // The selected objects of 'sheet', placed about the point they are
     // turned about, which comes to lie at the origin.

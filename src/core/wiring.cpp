@@ -104,14 +104,12 @@ struct Obstacles
 Obstacles obstaclesOf(const Sheet &sheet, const Library &library)
 {
     Obstacles obstacles;
+    for (const SheetPin &pin : sheetPins(sheet, library))
+        obstacles.pins.append(qMakePair(pin.at, pin.bodyEnd));
     for (const Component &component : sheet.components) {
         const Symbol *symbol = library.findSymbolOfPart(component.part);
         if (symbol == nullptr)
             continue;
-        for (const Pin &pin : symbol->pins) {
-            obstacles.pins.append(qMakePair(componentPoint(component, pin.at),
-                                            componentPoint(component, pinBodyEnd(pin))));
-        }
         const QRectF body = symbolBodyBounds(*symbol);
         if (body.isNull())
             continue;
@@ -454,23 +452,20 @@ public:
     PointFollower(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
                   const Library &library)
     {
-        QHash<ObjectId, const Component *> movedComponents;
-        for (const Component &component : after.components) {
-            if (moved.contains(component.id))
-                movedComponents.insert(component.id, &component);
+        // Where the pins of each moved owner are now, in the order of sheetPins().
+        QHash<ObjectId, QList<Point>> pinsNow;
+        for (const SheetPin &pin : sheetPins(after, library)) {
+            if (moved.contains(pin.owner))
+                pinsNow[pin.owner].append(pin.at);
         }
-        for (const Component &component : before.components) {
-            const Symbol *symbol = library.findSymbolOfPart(component.part);
-            if (symbol == nullptr)
-                continue;
-            const Component *now = movedComponents.value(component.id);
-            for (const Pin &pin : symbol->pins) {
-                const Point from = componentPoint(component, pin.at);
-                if (now != nullptr)
-                    m_pins.append({from, componentPoint(*now, pin.at)});
-                else
-                    m_stillPins.append(from);
-            }
+        QHash<ObjectId, int> taken;
+        for (const SheetPin &pin : sheetPins(before, library)) {
+            const QList<Point> now = pinsNow.value(pin.owner);
+            const int index = taken[pin.owner]++;
+            if (index < now.size())
+                m_pins.append({pin.at, now.at(index)});
+            else
+                m_stillPins.append(pin.at);
         }
         QHash<ObjectId, const Wire *> movedWires;
         for (const Wire &wire : after.wires) {
@@ -601,16 +596,28 @@ Point componentPoint(const Component &component, const Point &point)
     return component.at + p;
 }
 
-QList<Point> pinPoints(const Sheet &sheet, const Library &library)
+QList<SheetPin> sheetPins(const Sheet &sheet, const Library &library)
 {
-    QList<Point> points;
+    QList<SheetPin> pins;
     for (const Component &component : sheet.components) {
         const Symbol *symbol = library.findSymbolOfPart(component.part);
         if (symbol == nullptr)
             continue;
-        for (const Pin &pin : symbol->pins)
-            points.append(componentPoint(component, pin.at));
+        for (const Pin &pin : symbol->pins) {
+            pins.append(SheetPin{component.id, componentPoint(component, pin.at),
+                                 componentPoint(component, pinBodyEnd(pin))});
+        }
     }
+    for (const PowerSymbol &power : sheet.powerSymbols)
+        pins.append(SheetPin{power.id, power.at, powerStemEnd(power)});
+    return pins;
+}
+
+QList<Point> pinPoints(const Sheet &sheet, const Library &library)
+{
+    QList<Point> points;
+    for (const SheetPin &pin : sheetPins(sheet, library))
+        points.append(pin.at);
     return points;
 }
 

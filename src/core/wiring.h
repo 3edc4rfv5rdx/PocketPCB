@@ -16,8 +16,22 @@ namespace ppcb {
 // for 'component': mirrored first, then turned, then moved to its place.
 Point componentPoint(const Component &component, const Point &point);
 
-// The points wires connect to on the pins of every component of 'sheet'
-// whose symbol 'library' has.
+// A point of 'sheet' that wires connect to: the end of a pin of a component
+// whose symbol the library has, or the point of a power symbol.
+struct SheetPin
+{
+    // The component or the power symbol it belongs to.
+    ObjectId owner;
+    Point at;
+    // The other end of its line, which wires laid by the program keep off.
+    Point bodyEnd;
+};
+
+// The pins of 'sheet': of every component in the order of its symbol's
+// pins, then of every power symbol.
+QList<SheetPin> sheetPins(const Sheet &sheet, const Library &library);
+
+// The points of sheetPins().
 QList<Point> pinPoints(const Sheet &sheet, const Library &library);
 
 // True when 'point' lies on 'wire': on one of its segments, ends included.

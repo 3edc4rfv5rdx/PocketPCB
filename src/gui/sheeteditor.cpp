@@ -543,6 +543,10 @@ Point SheetEditor::selectionCenter(const Sheet &sheet) const
             if (m_selection.contains(component.id))
                 return component.at;
         }
+        for (const PowerSymbol &power : sheet.powerSymbols) {
+            if (m_selection.contains(power.id))
+                return power.at;
+        }
     }
     const QList<SheetObjectShape> found = sheetObjectShapes(sheet, m_document->design().library);
     return snapped(selectionBounds(found, m_selection).center());

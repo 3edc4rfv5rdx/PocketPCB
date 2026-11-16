@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: Wires join a power symbol's point like a pin: they follow it when it moves or turns, and a dot shows where three meet
 - F: Mirroring moves from X to M, leaving X for the no-connect mark
 ## v0.3.76 (2026-11-15)
 - N: Each page of a project opens with the zoom and position it was last looked at, kept in a hidden .ppview file beside the project
