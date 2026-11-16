@@ -277,7 +277,7 @@ void MainWindow::createMenus()
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Rotate), "actionRotate",
                   QKeySequence(Qt::Key_R), &SheetEditor::rotateSelection);
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Mirror), "actionMirror",
-                  QKeySequence(Qt::Key_X), &SheetEditor::mirrorSelection);
+                  QKeySequence(Qt::Key_M), &SheetEditor::mirrorSelection);
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Delete), "actionDelete",
                   QKeySequence::Delete, &SheetEditor::deleteSelection);
     editMenu->addSeparator();
