@@ -62,6 +62,14 @@ const int SWATCH_SPACING = 6;
 const int SWATCH_COLUMNS = 5;
 const char SWATCH_STYLE[] = "QToolButton { border: 1px solid #a0a0a0; padding: 2px; }"
                             "QToolButton:checked { border: 3px solid %1; padding: 0px; }";
+// The menu of the sheet stands out from the paper under it: a dark frame,
+// the item under the mouse in the colour of the selection.
+const char SHEET_MENU_STYLE[] =
+    "QMenu { background: #ffffff; border: 1px solid #505050; padding: 2px; }"
+    "QMenu::item { padding: 3px 20px 3px 10px; }"
+    "QMenu::item:selected { background: %1; color: #ffffff; }"
+    "QMenu::separator { height: 1px; background: #c8c8c8; margin: 2px 6px; }";
+
 const char APP_TITLE[] = "PocketPCB";
 
 // The saved mark: white bold text on soft green, red or grey.
@@ -487,6 +495,8 @@ void MainWindow::showSheetMenu(const QPoint &globalPos)
         return;
     const ObjectId editable = m_sheetEditor->chooseForMenu(at);
     QMenu menu(this);
+    menu.setStyleSheet(
+        QString::fromLatin1(SHEET_MENU_STYLE).arg(paintcolor::selection().name()));
     // The items of the Edit menu, with their keys.
     const auto add = [this, &menu](const char *name) {
         if (QAction *action = findChild<QAction *>(QLatin1String(name)))
