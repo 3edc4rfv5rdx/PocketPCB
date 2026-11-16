@@ -101,11 +101,11 @@ private slots:
         QCOMPARE(pins.size(), 3);
         QCOMPARE(pins.last().owner, power.id);
         QCOMPARE(pins.last().at, mm(20, 0));
-        QCOMPARE(pins.last().bodyEnd, mm(20, 0) - Point{0, stem});
+        QCOMPARE(pins.last().bodyEnd, mm(20, 0) - Point({0, stem}));
         power.rotation = 90;
-        QCOMPARE(powerStemEnd(power), mm(20, 0) + Point{stem, 0});
+        QCOMPARE(powerStemEnd(power), mm(20, 0) + Point({stem, 0}));
         power.rotation = 180;
-        QCOMPARE(powerStemEnd(power), mm(20, 0) + Point{0, stem});
+        QCOMPARE(powerStemEnd(power), mm(20, 0) + Point({0, stem}));
         QVERIFY(isConnectionPoint(sheet, library, mm(20, 0)));
         // A second wire on the symbol's point makes a dot with the first.
         Sheet joined = sheet;

@@ -32,6 +32,8 @@
 #include <QTimer>
 #include <QtTest>
 
+#include <algorithm>
+
 using namespace ppcb;
 
 namespace {
@@ -785,12 +787,18 @@ private slots:
         const auto wire = [&window]() {
             return window.document()->design().schematic.sheets.at(0).wires.at(0);
         };
+        // The wire runs from the +5V symbol's point to a pin: both hold its
+        // ends, so the segment goes down and bends lead back to them.
+        const Point power = wire().points.first();
         const Point pin = wire().points.last();
         editor->press(toMm(pin), false);
         editor->move(toMm(pin) + QPointF(0, 5.2), false);
         editor->release(toMm(pin) + QPointF(0, 5.2), false);
         QCOMPARE(wire().points.last(), pin);
-        QCOMPARE(wire().points.first().y, pin.y + 5080000);
+        QCOMPARE(wire().points.first(), power);
+        const QList<Point> points = wire().points;
+        QVERIFY(std::any_of(points.cbegin(), points.cend(),
+                            [&pin](const Point &p) { return p.y == pin.y + 5080000; }));
     }
 
     void partsArePlacedUntilEsc()
