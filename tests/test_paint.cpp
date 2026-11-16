@@ -483,9 +483,9 @@ private slots:
         QVERIFY(isColor(colorAt(image, -2, -2.7), paintcolor::symbol()));
         QVERIFY(isColor(colorAt(image, -2, -5.3), paintcolor::background()));
         QVERIFY(anyColor(image, -11, 0.5, -5, 5.5, paintcolor::missing()));
-        QVERIFY(anyColor(image, -4, -10, -2, -8, paintcolor::label()));
-        QVERIFY(!anyColor(image, -4, -10, -2, -8, paintcolor::looseLabel()));
-        QVERIFY(anyColor(image, -4, 4, -2, 6, paintcolor::looseLabel()));
+        QVERIFY(anyColor(image, -4, -11, -2, -8, paintcolor::label()));
+        QVERIFY(!anyColor(image, -4, -11, -2, -8, paintcolor::looseLabel()));
+        QVERIFY(anyColor(image, -4, 3, -2, 6, paintcolor::looseLabel()));
 
         // The frame: 5 mm inside the paper, whose corner is the origin.
         QVERIFY(isColor(colorAt(image, 5, 8), paintcolor::sheetFrame()));

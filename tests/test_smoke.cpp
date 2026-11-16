@@ -1016,7 +1016,7 @@ private slots:
         QVERIFY(!editor->isPlacing());
         QVERIFY(window.document()->undoStack()->undoText().startsWith(QStringLiteral("Place D1")));
 
-        editor->doubleClick(QPointF(51.5, 54.9), false);
+        editor->doubleClick(QPointF(51.5, 53.8), false);
         QVERIFY(line() != nullptr);
         QCOMPARE(line()->text(), QStringLiteral("D1"));
         line()->setText(QStringLiteral("CLK"));

@@ -58,7 +58,7 @@ const double BUS_WIDTH = 0.5;
 // The dot where wires join.
 const double JUNCTION_DIAMETER = 0.8;
 const double LABEL_TEXT_HEIGHT = 1.27;
-const double LABEL_GAP = 0.4;
+const double LABEL_GAP = 1.5;
 // Stands for the text of a label that has none yet, while it is placed.
 const char EMPTY_LABEL_MARK[] = "?";
 const double NO_CONNECT_HALF = 0.635;
