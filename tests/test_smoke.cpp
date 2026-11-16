@@ -591,16 +591,29 @@ private slots:
         QVERIFY(group(QStringLiteral("R"))->isExpanded());
         QVERIFY(!group(QStringLiteral("TST"))->isExpanded());
 
-        // All groups at once, kept across a rebuild.
-        panel->setAllGroupsExpanded(true);
+        // The section of the chosen part opens whole, kept across a rebuild.
+        panel->expandChosenSection();
         QVERIFY(group(QStringLiteral("TST"))->isExpanded());
         QVERIFY(group(QStringLiteral("R"))->isExpanded());
         window.loadLibrary();
         QVERIFY(group(QStringLiteral("TST"))->isExpanded());
-        panel->setAllGroupsExpanded(false);
+        // Closing closes the sections too, and they stay closed after a
+        // rebuild; a search opens what it finds, and its end closes it again.
+        panel->collapseAll();
         QVERIFY(!group(QStringLiteral("R"))->isExpanded());
-        // The sections stay open.
+        QVERIFY(!tree->topLevelItem(0)->isExpanded());
+        window.loadLibrary();
+        QVERIFY(!tree->topLevelItem(0)->isExpanded());
+        panel->setFilter(QStringLiteral("second"));
         QVERIFY(tree->topLevelItem(0)->isExpanded());
+        panel->setFilter(QString());
+        QVERIFY(!tree->topLevelItem(0)->isExpanded());
+        // A section opened by hand stays open.
+        tree->expandItem(tree->topLevelItem(0));
+        window.loadLibrary();
+        QVERIFY(tree->topLevelItem(0)->isExpanded());
+        // The title of a section stands out.
+        QVERIFY(tree->topLevelItem(0)->font(0).bold());
 
         // The search goes by prefix too.
         panel->setFilter(QStringLiteral("tst"));

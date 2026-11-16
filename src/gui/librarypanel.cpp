@@ -70,6 +70,9 @@ protected:
     }
 };
 
+// The titles of the sections are bold and this much larger than the rest.
+const double SECTION_FONT_SCALE = 1.15;
+
 // Room around the drawings, as a share of the preview's size.
 const double PREVIEW_MARGIN_SHARE = 0.1;
 
@@ -200,7 +203,7 @@ LibraryPanel::LibraryPanel(QWidget *parent)
     QToolButton *expandButton = new QToolButton(this);
     expandButton->setObjectName(QStringLiteral("libraryExpandAll"));
     expandButton->setText(QStringLiteral("⊞"));
-    expandButton->setToolTip(tr("Expand all"));
+    expandButton->setToolTip(tr("Expand the chosen section"));
     QToolButton *collapseButton = new QToolButton(this);
     collapseButton->setObjectName(QStringLiteral("libraryCollapseAll"));
     collapseButton->setText(QStringLiteral("⊟"));
@@ -248,9 +251,9 @@ LibraryPanel::LibraryPanel(QWidget *parent)
 
     connect(m_search, &QLineEdit::textChanged, this, &LibraryPanel::applyFilter);
     connect(reloadButton, &QToolButton::clicked, this, &LibraryPanel::reloadRequested);
-    connect(expandButton, &QToolButton::clicked, this, [this] { setAllGroupsExpanded(true); });
+    connect(expandButton, &QToolButton::clicked, this, &LibraryPanel::expandChosenSection);
     connect(collapseButton, &QToolButton::clicked, this,
-            [this] { setAllGroupsExpanded(false); });
+            &LibraryPanel::collapseAll);
     connect(m_tree, &QTreeWidget::currentItemChanged, this, &LibraryPanel::showCurrentPart);
     connect(m_tree, &QTreeWidget::itemDoubleClicked, this,
             [this](QTreeWidgetItem *item) { requestPlacing(item, false); });
@@ -288,24 +291,47 @@ void LibraryPanel::setFilter(const QString &text)
     m_search->setText(text);
 }
 
-void LibraryPanel::setAllGroupsExpanded(bool expanded)
+void LibraryPanel::expandChosenSection()
+{
+    // The section of the chosen item; every section when none is chosen.
+    const QTreeWidgetItem *chosen = m_tree->currentItem();
+    while (chosen != nullptr && chosen->parent() != nullptr)
+        chosen = chosen->parent();
+    const bool searching = !m_search->text().trimmed().isEmpty();
+    const QSignalBlocker blocker(m_tree);
+    for (int s = 0; s < m_tree->topLevelItemCount(); ++s) {
+        QTreeWidgetItem *section = m_tree->topLevelItem(s);
+        if (chosen != nullptr && section != chosen)
+            continue;
+        section->setExpanded(true);
+        for (int g = 0; g < section->childCount(); ++g) {
+            QTreeWidgetItem *group = section->child(g);
+            if (group->isHidden())
+                continue;
+            group->setExpanded(true);
+            if (!searching)
+                m_expandedGroups.insert(groupKey(group));
+        }
+        if (!searching)
+            m_collapsedSections.remove(sectionKey(section));
+    }
+}
+
+void LibraryPanel::collapseAll()
 {
     const bool searching = !m_search->text().trimmed().isEmpty();
     const QSignalBlocker blocker(m_tree);
     for (int s = 0; s < m_tree->topLevelItemCount(); ++s) {
         QTreeWidgetItem *section = m_tree->topLevelItem(s);
+        section->setExpanded(false);
         for (int g = 0; g < section->childCount(); ++g) {
             QTreeWidgetItem *group = section->child(g);
-            if (group->isHidden())
-                continue;
-            group->setExpanded(expanded);
-            if (searching)
-                continue;
-            if (expanded)
-                m_expandedGroups.insert(groupKey(group));
-            else
+            group->setExpanded(false);
+            if (!searching)
                 m_expandedGroups.remove(groupKey(group));
         }
+        if (!searching)
+            m_collapsedSections.insert(sectionKey(section));
     }
 }
 
@@ -405,16 +431,27 @@ void LibraryPanel::rebuild()
 
 QString LibraryPanel::groupKey(const QTreeWidgetItem *group)
 {
-    return QString::number(group->parent()->data(0, SOURCE_ROLE).toInt()) + QLatin1Char('/')
-           + group->text(0);
+    return sectionKey(group->parent()) + QLatin1Char('/') + group->text(0);
+}
+
+QString LibraryPanel::sectionKey(const QTreeWidgetItem *section)
+{
+    return QString::number(section->data(0, SOURCE_ROLE).toInt());
 }
 
 void LibraryPanel::noteExpanded(QTreeWidgetItem *item, bool expanded)
 {
-    // Only groups, and only the user's own choice: a search opens groups by
-    // itself.
-    if (item->parent() == nullptr || !item->data(0, PART_ROLE).toString().isEmpty()
+    // Only sections and groups, and only the user's own choice: a search
+    // opens them by itself.
+    if (!item->data(0, PART_ROLE).toString().isEmpty()
         || !m_search->text().trimmed().isEmpty()) {
+        return;
+    }
+    if (item->parent() == nullptr) {
+        if (expanded)
+            m_collapsedSections.remove(sectionKey(item));
+        else
+            m_collapsedSections.insert(sectionKey(item));
         return;
     }
     if (expanded)
@@ -428,6 +465,13 @@ void LibraryPanel::addSection(const QString &title, const Library &library, Sour
 {
     QTreeWidgetItem *section = new QTreeWidgetItem(m_tree, {title});
     section->setFlags(Qt::ItemIsEnabled);
+    QFont font = section->font(0);
+    font.setBold(true);
+    if (font.pointSizeF() > 0)
+        font.setPointSizeF(font.pointSizeF() * SECTION_FONT_SCALE);
+    else
+        font.setPixelSize(qRound(font.pixelSize() * SECTION_FONT_SCALE));
+    section->setFont(0, font);
     section->setData(0, SOURCE_ROLE, int(source));
     const QStringList languages = nameLanguages();
 
@@ -459,7 +503,7 @@ void LibraryPanel::addSection(const QString &title, const Library &library, Sour
             partItem->setToolTip(0, tip);
         }
     }
-    section->setExpanded(true);
+    section->setExpanded(!m_collapsedSections.contains(sectionKey(section)));
 }
 
 void LibraryPanel::addPowerGroup(QTreeWidgetItem *section, const Library &library, Source source)
@@ -526,6 +570,10 @@ void LibraryPanel::applyFilter()
             sectionShown += groupShown;
         }
         section->setHidden(sectionShown == 0);
+        // The same for the section.
+        const QSignalBlocker blocker(m_tree);
+        section->setExpanded(text.isEmpty() ? !m_collapsedSections.contains(sectionKey(section))
+                                            : sectionShown > 0);
     }
 }
 

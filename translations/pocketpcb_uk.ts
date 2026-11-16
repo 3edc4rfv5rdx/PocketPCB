@@ -287,8 +287,8 @@
         <translation>замінено бібліотекою користувача</translation>
     </message>
     <message>
-        <source>Expand all</source>
-        <translation>Розгорнути все</translation>
+        <source>Expand the chosen section</source>
+        <translation>Розгорнути вибраний розділ</translation>
     </message>
     <message>
         <source>Collapse all</source>

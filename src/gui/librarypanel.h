@@ -91,9 +91,13 @@ public:
     // Hides the parts whose name, file name or prefixes do not hold 'text'.
     void setFilter(const QString &text);
 
-    // Opens or closes every group that is shown. Without a search on, the
-    // groups stay so when the list is built again.
-    void setAllGroupsExpanded(bool expanded);
+    // Opens the section of the chosen item, every section when none is
+    // chosen, with all the groups in it that are shown.
+    void expandChosenSection();
+    // Closes every section and every group.
+    // Without a search on, both stay as they are left when the list is
+    // built again.
+    void collapseAll();
 
     // The chosen part, or power symbol, and where it is from; an empty name
     // when none is.
@@ -145,10 +149,13 @@ private:
     // The footprint a part item is placed with: the one chosen below the
     // list for the current part, else the part's first.
     QString footprintFor(const QTreeWidgetItem *item) const;
-    // Notes a group the user opened or closed, while no search is on.
+    // Notes a section or a group the user opened or closed, while no search
+    // is on.
     void noteExpanded(QTreeWidgetItem *item, bool expanded);
     // The key a group is remembered by: its section and its prefix.
     static QString groupKey(const QTreeWidgetItem *group);
+    // The key a section is remembered by: its source.
+    static QString sectionKey(const QTreeWidgetItem *section);
 
     MergedLibrary m_library;
     Library m_project;
@@ -157,6 +164,8 @@ private:
     // The groups the user keeps open, by groupKey(); they stay open when
     // the list is built again and when a search ends.
     QSet<QString> m_expandedGroups;
+    // The sections the user keeps closed, by sectionKey().
+    QSet<QString> m_collapsedSections;
 
     QLineEdit *m_search = nullptr;
     QTreeWidget *m_tree = nullptr;
