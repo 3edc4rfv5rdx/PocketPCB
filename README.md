@@ -23,6 +23,7 @@ Early development. What works now:
   - put no-connect marks on pins with X: a mark goes only on a pin of a part, is red elsewhere, and goes with the pin when the part moves;
   - a click on a wire chooses its segment: a drag moves it across, Delete removes it, and taken near the wire's end it drags that end, unless the end is on a pin; a double click chooses the whole wire, Shift and a click every wire joined to it;
   - a click on a part's designator or value chooses that text alone, and a drag moves it; an empty value shows as a grey VALUE mark, except on parts that need none, such as switches and connectors; a double click on the value edits it in place;
+  - the mouse resting a second on a wire, a pin, a label or a power symbol lights up its whole net on the sheet, with a dot on each of its pins, and shows the net's name beside the cursor;
   - Undo/Redo.
 - Properties panel: the designator, value, footprint (one the part allows) and off-board flag of the chosen components; with several chosen, what is set goes to them all as one step.
 

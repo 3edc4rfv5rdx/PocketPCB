@@ -242,6 +242,61 @@ private slots:
         QCOMPARE(pinsOf(all.at(0)), QStringLiteral("R1.2"));
         QCOMPARE(pinsOf(all.at(1)), QStringLiteral("R2.1"));
     }
+
+    // The mouse finds a net by its wires, labels and power symbols on the
+    // sheet looked at, and by the lines of its pins.
+    void netsAreFoundUnderThePoint()
+    {
+        Schematic schematic;
+        Sheet first;
+        first.components = {part(QStringLiteral("R1"), mm(0, 0))};
+        first.wires = {wire({mm(5, 0), mm(15, 0)})};
+        first.labels = {label(QStringLiteral("DATA"), mm(15, 0))};
+        Sheet second;
+        second.wires = {wire({mm(0, 20), mm(10, 20)})};
+        second.labels = {label(QStringLiteral("DATA"), mm(0, 20))};
+        // Its symbol is not in the library: found by the square drawn instead.
+        second.powerSymbols = {power(QStringLiteral("GND"), mm(30, 30))};
+        schematic.sheets = {first, second};
+        const Library library = twoPinLibrary();
+        const QList<Net> all = nets(schematic, library);
+        const int data = int(netNamed(all, QStringLiteral("DATA")) - all.constData());
+        const int ground = int(netNamed(all, QStringLiteral("GND")) - all.constData());
+        QCOMPARE(int(all.size()), 2);
+        const double tolerance = 0.5;
+
+        QCOMPARE(netAt(all, schematic, library, 0, QPointF(10, 0.4), tolerance), data);
+        QCOMPARE(netAt(all, schematic, library, 1, QPointF(5, 20), tolerance), data);
+        QCOMPARE(netAt(all, schematic, library, 1, QPointF(30, 30), tolerance), ground);
+        // R1.2's line, from (5, 0) towards the body, off the wire's end.
+        QCOMPARE(netAt(all, schematic, library, 0, QPointF(3.5, 0.2), tolerance), data);
+        // R1.1 is joined to nothing; R1's middle, empty paper, the power
+        // symbol's place on the other sheet, a sheet that is not there.
+        QCOMPARE(netAt(all, schematic, library, 0, QPointF(-3.5, 0), tolerance), -1);
+        QCOMPARE(netAt(all, schematic, library, 0, QPointF(0, 0), tolerance), -1);
+        QCOMPARE(netAt(all, schematic, library, 0, QPointF(10, 8), tolerance), -1);
+        QCOMPARE(netAt(all, schematic, library, 0, QPointF(30, 30), tolerance), -1);
+        QCOMPARE(netAt(all, schematic, library, 2, QPointF(10, 0), tolerance), -1);
+    }
+
+    // Pins joined at one point make a net drawn with nothing: their lines
+    // still find it.
+    void aNetOfPinsAloneIsFoundByThem()
+    {
+        Schematic schematic;
+        Sheet sheet;
+        sheet.components = {part(QStringLiteral("R1"), mm(0, 0)),
+                            part(QStringLiteral("R2"), mm(10, 0))};
+        schematic.sheets = {sheet};
+        const Library library = twoPinLibrary();
+        const QList<Net> all = nets(schematic, library);
+        QCOMPARE(int(all.size()), 1);
+        QVERIFY(netHasPin(all.first(), sheet.components.at(1).id, QStringLiteral("1")));
+        QVERIFY(!netHasPin(all.first(), sheet.components.at(1).id, QStringLiteral("2")));
+        QCOMPARE(netAt(all, schematic, library, 0, QPointF(4, 0), 0.5), 0);
+        QCOMPARE(netAt(all, schematic, library, 0, QPointF(6, 0), 0.5), 0);
+        QCOMPARE(netAt(all, schematic, library, 0, QPointF(14, 0), 0.5), -1);
+    }
 };
 
 QTEST_GUILESS_MAIN(TestNetlist)

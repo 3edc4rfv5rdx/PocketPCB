@@ -1,5 +1,6 @@
 #include "netlist.h"
 
+#include "sheetedit.h"
 #include "wiring.h"
 
 #include <QHash>
@@ -60,6 +61,58 @@ bool pinLess(const NetPin &a, const NetPin &b)
 bool operator==(const NetPin &a, const NetPin &b)
 {
     return a.component == b.component && a.designator == b.designator && a.number == b.number;
+}
+
+bool netHasPin(const Net &net, const ObjectId &component, const QString &number)
+{
+    return std::any_of(net.pins.cbegin(), net.pins.cend(), [&](const NetPin &pin) {
+        return pin.component == component && pin.number == number;
+    });
+}
+
+int netAt(const QList<Net> &nets, const Schematic &schematic, const Library &library, int sheet,
+          const QPointF &point, double tolerance)
+{
+    if (sheet < 0 || sheet >= schematic.sheets.size())
+        return -1;
+    const Sheet &on = schematic.sheets.at(sheet);
+    // The net drawn with a wire, a label or a power symbol of the sheet.
+    const auto netOf = [&](const ObjectId &id) {
+        for (int i = 0; i < nets.size(); ++i) {
+            if (nets.at(i).objects.value(sheet).contains(id))
+                return i;
+        }
+        return -1;
+    };
+    const QList<SheetObjectShape> shapes = sheetObjectShapes(on, library);
+    const ObjectId hit = objectAt(shapes, point, tolerance);
+    // A wire comes first, as objectAt() takes a line before a rectangle.
+    const bool byLine =
+        std::any_of(shapes.cbegin(), shapes.cend(), [&hit](const SheetObjectShape &shape) {
+            return shape.id == hit && !shape.polyline.isEmpty();
+        });
+    if (byLine) {
+        const int net = netOf(hit);
+        if (net >= 0)
+            return net;
+    }
+    // Then the line of a pin, thinner than the rectangle around its owner.
+    for (const SheetPin &pin : sheetPins(on, library)) {
+        QPolygonF line;
+        line << toMm(pin.at) << toMm(pin.bodyEnd);
+        if (!isNearPolyline(line, point, tolerance))
+            continue;
+        // A power symbol is drawn with its net; a component's pin is on one.
+        const int net = netOf(pin.owner);
+        if (net >= 0)
+            return net;
+        for (int i = 0; i < nets.size(); ++i) {
+            if (netHasPin(nets.at(i), pin.owner, pin.number))
+                return i;
+        }
+        return -1;
+    }
+    return netOf(hit);
 }
 
 bool naturalLess(const QString &a, const QString &b)

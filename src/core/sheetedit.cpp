@@ -32,15 +32,6 @@ double distanceToSegment(const QPointF &point, const QPointF &a, const QPointF &
     return QLineF(point, a + t * ab).length();
 }
 
-bool isNearPolyline(const QPolygonF &polyline, const QPointF &point, double tolerance)
-{
-    for (int i = 1; i < polyline.size(); ++i) {
-        if (distanceToSegment(point, polyline.at(i - 1), polyline.at(i)) <= tolerance)
-            return true;
-    }
-    return polyline.size() == 1 && QLineF(point, polyline.first()).length() <= tolerance;
-}
-
 // 'sheet' with 'edit' done to each component of 'ids'.
 Sheet withComponentsChanged(const Sheet &sheet, const QSet<ObjectId> &ids,
                             const std::function<void(Component &)> &edit)
@@ -123,6 +114,15 @@ Sheet transformed(const Sheet &sheet, const QSet<ObjectId> &ids, const Transform
 }
 
 } // namespace
+
+bool isNearPolyline(const QPolygonF &polyline, const QPointF &point, double tolerance)
+{
+    for (int i = 1; i < polyline.size(); ++i) {
+        if (distanceToSegment(point, polyline.at(i - 1), polyline.at(i)) <= tolerance)
+            return true;
+    }
+    return polyline.size() == 1 && QLineF(point, polyline.first()).length() <= tolerance;
+}
 
 ObjectId objectAt(const QList<SheetObjectShape> &shapes, const QPointF &point, double tolerance)
 {

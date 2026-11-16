@@ -32,7 +32,8 @@ public:
     QRectF pageBounds() const;
 
     // Sheets are edited through 'editor': the item hands it the left mouse
-    // button and draws what it holds (the selection, a drag, a rectangle).
+    // button and the hovering mouse, and draws what it holds (the
+    // selection, a drag, a rectangle, the net under the mouse).
     // The editor must outlive the item.
     void setEditor(SheetEditor *editor);
 
@@ -44,10 +45,16 @@ protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
+    void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
 
 private:
     // The editor, when it edits the page shown.
     SheetEditor *activeEditor() const;
+    // The net under the mouse: a band along its wires, its labels and power
+    // symbols filled in, a dot on its pins.
+    void paintHoveredNet(QPainter &painter, const Sheet &sheet) const;
     void paintSelection(QPainter &painter, const Sheet &sheet) const;
 
     const Document *m_document;

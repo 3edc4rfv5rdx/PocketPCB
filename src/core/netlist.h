@@ -4,6 +4,7 @@
 #include "schematic.h"
 
 #include <QMap>
+#include <QPointF>
 #include <QSet>
 
 namespace ppcb {
@@ -49,6 +50,17 @@ struct Net
 // symbols from 'library': first the named ones, then the others, each in
 // the order of their names. A wire joined to nothing is a net of its own.
 QList<Net> nets(const Schematic &schematic, const Library &library);
+
+// True when the pin 'number' of the component 'component' is on 'net'.
+bool netHasPin(const Net &net, const ObjectId &component, const QString &number);
+
+// The index in 'nets' of the net under 'point' (millimetres) on sheet
+// 'sheet' of 'schematic', drawn with 'library': of a wire within
+// 'tolerance' of it; else of the line of a pin; else of a label or a power
+// symbol whose rectangle, grown by 'tolerance', holds it. -1 when there is
+// none, or what is there is on no net (a pin joined to nothing).
+int netAt(const QList<Net> &nets, const Schematic &schematic, const Library &library, int sheet,
+          const QPointF &point, double tolerance);
 
 // True when 'a' comes before 'b' with the numbers in them read as numbers:
 // "R2" before "R10".

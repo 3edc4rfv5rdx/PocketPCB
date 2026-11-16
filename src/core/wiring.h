@@ -29,6 +29,8 @@ struct SheetPin
     Point at;
     // The other end of its line, which wires laid by the program keep off.
     Point bodyEnd;
+    // The number of a component's pin; empty for a power symbol.
+    QString number;
 };
 
 // The pins of 'sheet': of every component in the order of its symbol's

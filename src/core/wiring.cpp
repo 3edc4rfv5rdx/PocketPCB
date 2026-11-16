@@ -610,7 +610,7 @@ QList<SheetPin> sheetPins(const Sheet &sheet, const Library &library)
             continue;
         for (const Pin &pin : symbol->pins) {
             pins.append(SheetPin{component.id, componentPoint(component, pin.at),
-                                 componentPoint(component, pinBodyEnd(pin))});
+                                 componentPoint(component, pinBodyEnd(pin)), pin.number});
         }
     }
     for (const PowerSymbol &power : sheet.powerSymbols) {
@@ -620,7 +620,8 @@ QList<SheetPin> sheetPins(const Sheet &sheet, const Library &library)
         const Point end = symbol == nullptr || symbol->pins.isEmpty()
                               ? Point()
                               : pinBodyEnd(symbol->pins.first());
-        pins.append(SheetPin{power.id, power.at, placedPoint(power.at, power.rotation, false, end)});
+        pins.append(SheetPin{power.id, power.at, placedPoint(power.at, power.rotation, false, end),
+                             QString()});
     }
     return pins;
 }

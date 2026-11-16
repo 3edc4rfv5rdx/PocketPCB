@@ -1,6 +1,7 @@
 #pragma once
 
 #include "document.h"
+#include "netlist.h"
 #include "paint.h"
 #include "sheetedit.h"
 
@@ -10,6 +11,7 @@
 #include <QPointF>
 #include <QRectF>
 #include <QSet>
+#include <QTimer>
 
 class QLineEdit;
 
@@ -141,6 +143,16 @@ public:
     // and slanted at 45 degrees or square.
     void swapWireCorner();
     void toggleWireSlant();
+    // The mouse over the sheet with no button held: the net of a wire, of
+    // the line of a pin, of a label or of a power symbol under 'at' is lit
+    // and its name shown beside the cursor, once the mouse has stayed on
+    // that net for a while. None is while placing, drawing wires or with a
+    // button held.
+    void hoverNet(const QPointF &at);
+    // The mouse left the sheet: no net is lit, and none waits to be.
+    void clearHoveredNet();
+    // The net lit; null when none is.
+    const Net *hoveredNet() const;
     // The rectangle being drawn to choose with; empty when there is none.
     QRectF rubberBand() const { return m_rubberBanding ? m_rubberBand : QRectF(); }
 
@@ -199,6 +211,9 @@ private:
     // 'id', the one being placed among them: Enter or leaving it sets the
     // text as one step, or puts that label down, Esc drops it.
     void editText(const ObjectId &id);
+    // Lights the net 'net' of 'm_nets', or none for -1; hides the name
+    // beside the cursor when none is.
+    void setHoveredNet(int net);
     // Closes the line; 'keep' sets what it holds.
     void finishTextEdit(bool keep);
     // Puts the label being placed down with 'text', as one step, and offers
@@ -347,6 +362,17 @@ private:
     bool m_onPartPin = false;
     // The text the next label is offered.
     QString m_nextLabelText;
+
+    // The nets of the schematic, built when the mouse first looks for one
+    // after a change of the design.
+    QList<Net> m_nets;
+    bool m_netsBuilt = false;
+    // The net lit under the mouse: an index in 'm_nets', or -1.
+    int m_hoveredNet = -1;
+    // The net under the mouse waiting to be lit: an index in 'm_nets', or
+    // -1; the timer lights it.
+    int m_pendingNet = -1;
+    QTimer m_hoverTimer;
 
     // The clipboard: objects about the origin, and the library their parts are in.
     Sheet m_clipboard;

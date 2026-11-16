@@ -10,6 +10,10 @@ namespace ppcb {
 // A selection is a set of object ids; ids of objects not on the sheet are
 // left alone, so a selection may outlive the objects it names.
 
+// True when 'point' lies within 'tolerance' of the line 'polyline' (all in
+// millimetres), or of its one point.
+bool isNearPolyline(const QPolygonF &polyline, const QPointF &point, double tolerance);
+
 // The object under 'point' (millimetres): one found by its line when within
 // 'tolerance' of it, any other when the point is in its rectangle grown by
 // 'tolerance'. One found by its line comes first, so that a wire can be

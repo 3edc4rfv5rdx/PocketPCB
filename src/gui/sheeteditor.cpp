@@ -6,10 +6,12 @@
 #include "wiring.h"
 
 #include <QApplication>
+#include <QCursor>
 #include <QKeyEvent>
 #include <QLineEdit>
 #include <QLineF>
 #include <QScrollBar>
+#include <QToolTip>
 
 #include <algorithm>
 
@@ -21,6 +23,8 @@ namespace {
 const double HIT_PIXELS = 4.0;
 // How near the mouse must be to a wire's end to take the end alone.
 const double END_PIXELS = 8.0;
+// How long the mouse stays on a net before it is lit, in milliseconds.
+const int HOVER_DELAY_MS = 1000;
 // How many components a step's name lists before it stops.
 const int NAMED_COMPONENTS = 3;
 // The line a value is edited in holds at least this many letters.
@@ -44,6 +48,23 @@ SheetEditor::SheetEditor(Document *document, CanvasView *canvas, QObject *parent
     , m_canvas(canvas)
 {
     connect(m_document, &Document::designChanged, this, &SheetEditor::refreshPreview);
+    // The nets are stale, and so is the index of the one lit.
+    connect(m_document, &Document::designChanged, this, [this] {
+        m_netsBuilt = false;
+        clearHoveredNet();
+    });
+    m_hoverTimer.setSingleShot(true);
+    m_hoverTimer.setInterval(HOVER_DELAY_MS);
+    connect(&m_hoverTimer, &QTimer::timeout, this, [this] {
+        // Placing or drawing wires may have begun from the keyboard since.
+        if (currentSheet() == nullptr || m_placing || m_wiring || m_pressed) {
+            clearHoveredNet();
+            return;
+        }
+        setHoveredNet(m_pendingNet);
+        if (m_hoveredNet >= 0)
+            QToolTip::showText(QCursor::pos(), m_nets.at(m_hoveredNet).name, m_canvas->viewport());
+    });
 }
 
 void SheetEditor::setSheet(int sheet)
@@ -59,6 +80,7 @@ void SheetEditor::setSheet(int sheet)
     m_pressed = false;
     m_dragging = false;
     m_rubberBanding = false;
+    clearHoveredNet();
     emit changed();
 }
 
@@ -106,6 +128,7 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
 {
     if (currentSheet() == nullptr)
         return;
+    clearHoveredNet();
     if (m_wiring) {
         wireClick(snapped(at));
         return;
@@ -909,6 +932,57 @@ void SheetEditor::hover(const Point &at)
         return;
     m_floatAt = at;
     updateFloating();
+}
+
+void SheetEditor::hoverNet(const QPointF &at)
+{
+    if (currentSheet() == nullptr || m_placing || m_wiring || m_pressed) {
+        clearHoveredNet();
+        return;
+    }
+    const Design &design = m_document->design();
+    if (!m_netsBuilt) {
+        m_nets = nets(design.schematic, design.library);
+        m_netsBuilt = true;
+    }
+    const int net =
+        netAt(m_nets, design.schematic, design.library, m_sheet, at, pixelsToMm(HIT_PIXELS));
+    if (net >= 0 && net == m_hoveredNet) {
+        // Shown again after it went out by itself or with a click.
+        QToolTip::showText(QCursor::pos(), m_nets.at(net).name, m_canvas->viewport());
+        return;
+    }
+    // Off the net lit: it goes out at once, and the next waits its time.
+    setHoveredNet(-1);
+    if (net < 0) {
+        m_hoverTimer.stop();
+        m_pendingNet = -1;
+    } else if (net != m_pendingNet) {
+        m_pendingNet = net;
+        m_hoverTimer.start();
+    }
+}
+
+void SheetEditor::clearHoveredNet()
+{
+    m_hoverTimer.stop();
+    m_pendingNet = -1;
+    setHoveredNet(-1);
+}
+
+const Net *SheetEditor::hoveredNet() const
+{
+    return m_hoveredNet >= 0 ? &m_nets.at(m_hoveredNet) : nullptr;
+}
+
+void SheetEditor::setHoveredNet(int net)
+{
+    if (net == m_hoveredNet)
+        return;
+    m_hoveredNet = net;
+    if (net < 0)
+        QToolTip::hideText();
+    emit changed();
 }
 
 void SheetEditor::updateFloating()

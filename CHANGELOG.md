@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: The mouse resting a second on a wire, a pin, a label or a power symbol lights up its net on the sheet and shows the net's name beside the cursor
 - E: A click on a bus's name takes the name, even close to the bus's line, instead of finding nothing or the line
 - I: Nets are built from pins, wires, labels and power symbols on all sheets, named by a power symbol, a label or N and a number
 - F: A bus is chosen whole with a double click, like a wire, and its name is chosen and dragged alone like a part's designator; a double click on the name renames the bus
