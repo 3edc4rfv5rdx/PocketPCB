@@ -1016,12 +1016,21 @@ private slots:
         QVERIFY(!editor->isPlacing());
         QVERIFY(window.document()->undoStack()->undoText().startsWith(QStringLiteral("Place D1")));
 
-        editor->doubleClick(QPointF(51.5, 53.8), false);
+        editor->doubleClick(QPointF(51.5, 54.9), false);
         QVERIFY(line() != nullptr);
         QCOMPARE(line()->text(), QStringLiteral("D1"));
         line()->setText(QStringLiteral("CLK"));
         QTest::keyClick(line(), Qt::Key_Return);
         QCOMPARE(labels().last().text, QStringLiteral("CLK"));
+
+        // Its text dragged two grid steps up, far enough to be a drag at
+        // this zoom: the point stays.
+        const Point point = labels().last().at;
+        editor->press(QPointF(51.5, 54.9), false);
+        editor->move(QPointF(51.5, 49.82), false);
+        editor->release(QPointF(51.5, 49.82), false);
+        QCOMPARE(labels().last().at, point);
+        QCOMPARE(labels().last().textAt, Point({0, -mmToNm(5.08)}));
     }
 
     void wiresAreDrawnUntilEsc()

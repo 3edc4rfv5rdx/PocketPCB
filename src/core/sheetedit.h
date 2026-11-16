@@ -28,23 +28,32 @@ QRectF selectionBounds(const QList<SheetObjectShape> &shapes, const QSet<ObjectI
 // nanometres, when the sheet has no such object.
 Point dragAnchor(const Sheet &sheet, const ObjectId &id, const QPointF &near);
 
-// A text of a component, found by the mouse; a null component when none is.
-struct ComponentTextHit
+// A text that a click chooses alone and a drag moves while its object
+// stays: the designator or the value of a component, or the text of a
+// label, whose 'text' is not used. A null owner when there is none.
+struct TextHit
 {
-    ObjectId component;
+    ObjectId owner;
     ComponentText text = ComponentText::Designator;
 };
 // The text under 'point' (millimetres): the topmost whose rectangle holds
-// the point. No room is added around it, as the rectangle has room enough
-// and a click on the symbol next to it must take the component. An empty
-// value is found by its mark (see componentTextShown()), when 'library'
-// shows one; an empty designator not at all.
-ComponentTextHit componentTextAt(const Sheet &sheet, const Library &library,
-                                 const QPointF &point);
-// 'sheet' with the text 'text' of the component 'id' moved by 'delta'; the
-// component itself stays.
-Sheet withComponentTextMoved(const Sheet &sheet, const ObjectId &id, ComponentText text,
-                             const Point &delta);
+// the point, the texts of components first. No room is added around it, as
+// the rectangle has room enough and a click on the symbol next to it must
+// take the component. An empty value is found by its mark (see
+// componentTextShown()), when 'library' shows one; an empty designator not
+// at all.
+TextHit textAt(const Sheet &sheet, const Library &library, const QPointF &point);
+// True when 'sheet' has the text 'hit'.
+bool hasText(const Sheet &sheet, const TextHit &hit);
+// Where the text stands, which a drag lands on the grid, and the point of
+// its object; the origin when 'sheet' has no such text.
+Point textPoint(const Sheet &sheet, const TextHit &hit);
+Point textOwnerPoint(const Sheet &sheet, const TextHit &hit);
+// A rectangle surely holding the text, in millimetres; empty when 'sheet'
+// has no such text.
+QRectF textRect(const Sheet &sheet, const Library &library, const TextHit &hit);
+// 'sheet' with the text 'hit' moved by 'delta'; its object stays.
+Sheet withTextMoved(const Sheet &sheet, const TextHit &hit, const Point &delta);
 
 // Properties of components. Each returns 'sheet' with the components of
 // 'ids' changed; the other objects stay as they are.

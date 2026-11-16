@@ -3,8 +3,8 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: A label's text is chosen and dragged alone, like a part's designator, while its point stays on the wire and shows as a dot
 - F: A label that joins nothing is white on a red plate instead of red text
-- F: Label and bus name texts stand 1.5 mm off their line instead of 0.4 mm
 - F: Labels go with the pin or the wire they lie on when parts, wires, segments or wire ends are moved
 - N: Net labels are placed with L, typing the text at the click and numbering the next one on; a label joining nothing is red, and a double click edits its text
 - N: A double click on a power symbol edits its net name in place

@@ -56,6 +56,7 @@ Schematic fullSchematic()
     label.id = id(0x13);
     label.at = Point{PIN_GRID, 0};
     label.text = QStringLiteral("CLK");
+    label.textAt = Point{0, -2 * PIN_GRID};
     label.scope = LabelScope::Local;
     label.rotation = 90;
     label.netClass = QStringLiteral("Power");
@@ -195,6 +196,7 @@ private slots:
         CHANGED(other.sheets[0].labels[0].id = id(1));
         CHANGED(other.sheets[0].labels[0].at.x += 1);
         CHANGED(other.sheets[0].labels[0].text = QStringLiteral("DATA"));
+        CHANGED(other.sheets[0].labels[0].textAt.y += 1);
         CHANGED(other.sheets[0].labels[0].scope = LabelScope::Global);
         CHANGED(other.sheets[0].labels[0].rotation = 0);
         CHANGED(other.sheets[0].labels[0].netClass.clear());

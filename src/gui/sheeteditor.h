@@ -2,6 +2,7 @@
 
 #include "document.h"
 #include "paint.h"
+#include "sheetedit.h"
 
 #include <QLineF>
 #include <QObject>
@@ -69,8 +70,8 @@ public:
     // The segment of a wire chosen alone, in millimetres; a null line when
     // none is, or while it is dragged.
     QLineF chosenSegment() const;
-    // While a component's text is dragged: from the component's point to
-    // the text's; a null line otherwise.
+    // While a text of a component or a label is dragged: from its object's
+    // point to the text's; a null line otherwise.
     QLineF textGuide() const;
     // The rectangle of the text chosen alone, in millimetres; empty when
     // none is, or while it is dragged.
@@ -193,14 +194,14 @@ private:
     // and the sheet has the segment.
     bool hasSegment() const;
     void dropSegment() { m_segmentWire = ObjectId(); }
-    // True when a text of a component is chosen alone: no whole object is,
-    // and the sheet has the component.
+    // True when a text of a component or a label is chosen alone: no whole
+    // object is, and the sheet has the text.
     bool hasText() const;
     // Drops the segment and the text chosen alone.
     void dropPieces()
     {
         dropSegment();
-        m_textComponent = ObjectId();
+        m_chosenText = TextHit();
     }
     // What a step is named by: the chosen objects, or the segment's wire.
     QSet<ObjectId> chosenIds() const;
@@ -279,11 +280,10 @@ private:
     // the wire, and its last end or its first. Set by every press.
     ObjectId m_endWire;
     bool m_endIsLast = false;
-    // The text chosen alone by a click on it, which a drag moves: its
-    // component and which text. It counts only while 'm_selection' is empty
+    // The text chosen alone by a click on it, which a drag moves: of a
+    // component or of a label. It counts only while 'm_selection' is empty
     // (hasText()).
-    ObjectId m_textComponent;
-    ComponentText m_text = ComponentText::Designator;
+    TextHit m_chosenText;
     // The sheet the drag started from, and the same with what was turned
     // on the way.
     Sheet m_dragStart;

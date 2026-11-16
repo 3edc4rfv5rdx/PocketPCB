@@ -91,6 +91,7 @@ Sheet transformed(const Sheet &sheet, const QSet<ObjectId> &ids, const Transform
     for (Label &label : result.labels) {
         if (ids.contains(label.id)) {
             label.at = transform.point(label.at);
+            label.textAt = transform.offset(label.textAt);
             label.rotation = transform.labelRotation(label.rotation);
         }
     }
@@ -168,30 +169,92 @@ QRectF selectionBounds(const QList<SheetObjectShape> &shapes, const QSet<ObjectI
     return bounds;
 }
 
-ComponentTextHit componentTextAt(const Sheet &sheet, const Library &library,
-                                 const QPointF &point)
+TextHit textAt(const Sheet &sheet, const Library &library, const QPointF &point)
 {
     for (auto it = sheet.components.crbegin(); it != sheet.components.crend(); ++it) {
         for (const ComponentText text : {ComponentText::Designator, ComponentText::Value}) {
             if (componentTextShown(*it, text, library).isEmpty())
                 continue;
             if (componentTextRect(*it, text, library).contains(point))
-                return ComponentTextHit{it->id, text};
+                return TextHit{it->id, text};
         }
     }
-    return ComponentTextHit();
+    for (auto it = sheet.labels.crbegin(); it != sheet.labels.crend(); ++it) {
+        if (labelTextRect(*it).contains(point))
+            return TextHit{it->id, ComponentText::Designator};
+    }
+    return TextHit();
 }
 
-Sheet withComponentTextMoved(const Sheet &sheet, const ObjectId &id, ComponentText text,
-                             const Point &delta)
+namespace {
+
+// The item of 'items' with the id 'id'; null when there is none.
+template <typename Item>
+Item *ownerOf(QList<Item> &items, const ObjectId &id)
+{
+    for (Item &item : items) {
+        if (item.id == id)
+            return &item;
+    }
+    return nullptr;
+}
+
+template <typename Item>
+const Item *ownerOf(const QList<Item> &items, const ObjectId &id)
+{
+    for (const Item &item : items) {
+        if (item.id == id)
+            return &item;
+    }
+    return nullptr;
+}
+
+} // namespace
+
+bool hasText(const Sheet &sheet, const TextHit &hit)
+{
+    return !hit.owner.isNull()
+           && (ownerOf(sheet.components, hit.owner) != nullptr
+               || ownerOf(sheet.labels, hit.owner) != nullptr);
+}
+
+Point textPoint(const Sheet &sheet, const TextHit &hit)
+{
+    if (const Component *component = ownerOf(sheet.components, hit.owner))
+        return componentTextPoint(*component, hit.text);
+    if (const Label *label = ownerOf(sheet.labels, hit.owner))
+        return labelTextPoint(*label);
+    return Point();
+}
+
+Point textOwnerPoint(const Sheet &sheet, const TextHit &hit)
+{
+    if (const Component *component = ownerOf(sheet.components, hit.owner))
+        return component->at;
+    if (const Label *label = ownerOf(sheet.labels, hit.owner))
+        return label->at;
+    return Point();
+}
+
+QRectF textRect(const Sheet &sheet, const Library &library, const TextHit &hit)
+{
+    if (const Component *component = ownerOf(sheet.components, hit.owner))
+        return componentTextRect(*component, hit.text, library);
+    if (const Label *label = ownerOf(sheet.labels, hit.owner))
+        return labelTextRect(*label);
+    return QRectF();
+}
+
+Sheet withTextMoved(const Sheet &sheet, const TextHit &hit, const Point &delta)
 {
     Sheet result = sheet;
-    for (Component &component : result.components) {
-        if (component.id != id)
-            continue;
-        Point &offset = text == ComponentText::Designator ? component.refAt : component.valueAt;
+    if (Component *component = ownerOf(result.components, hit.owner)) {
+        Point &offset =
+            hit.text == ComponentText::Designator ? component->refAt : component->valueAt;
         offset = offset + delta;
     }
+    if (Label *label = ownerOf(result.labels, hit.owner))
+        label->textAt = label->textAt + delta;
     return result;
 }
 

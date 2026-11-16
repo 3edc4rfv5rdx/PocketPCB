@@ -131,7 +131,7 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
     m_pressAt = at;
     m_pressAdding = adding;
     m_endWire = ObjectId();
-    m_textComponent = ObjectId();
+    m_chosenText = TextHit();
     m_narrowTo = ObjectId();
     dropSegment();
     const QList<SheetObjectShape> found = shapes();
@@ -162,29 +162,23 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
     } else {
         m_pressOnSelection = true;
         const Sheet *sheet = currentSheet();
-        // A component's text, unless a line is taken over it: its component
-        // is chosen, and a drag moves the text alone.
-        const ComponentTextHit text =
-            isFoundByLine(found, hit)
-                ? ComponentTextHit()
-                : componentTextAt(*sheet, m_document->design().library, at);
+        // A text of a component or a label, unless a line is taken over it:
+        // it is chosen alone, and a drag moves it while its object stays.
+        const TextHit text =
+            isFoundByLine(found, hit) ? TextHit() : textAt(*sheet, m_document->design().library, at);
         // A wire not chosen whole: the segment under the cursor is chosen,
         // and a drag moves it, or the wire's end when taken near it.
         const Wire *wire = nullptr;
-        if (text.component.isNull() && !m_selection.contains(hit)) {
+        if (text.owner.isNull() && !m_selection.contains(hit)) {
             for (const Wire &candidate : sheet->wires) {
                 if (candidate.id == hit && candidate.points.size() >= 2)
                     wire = &candidate;
             }
         }
-        if (!text.component.isNull()) {
+        if (!text.owner.isNull()) {
             m_selection.clear();
-            m_textComponent = text.component;
-            m_text = text.text;
-            for (const Component &component : sheet->components) {
-                if (component.id == text.component)
-                    m_dragAnchor = componentTextPoint(component, text.text);
-            }
+            m_chosenText = text;
+            m_dragAnchor = textPoint(*sheet, text);
         } else if (wire != nullptr) {
             m_selection.clear();
             m_segmentWire = hit;
@@ -239,35 +233,22 @@ QLineF SheetEditor::chosenSegment() const
 bool SheetEditor::hasText() const
 {
     const Sheet *sheet = currentSheet();
-    if (m_textComponent.isNull() || !m_selection.isEmpty() || sheet == nullptr)
-        return false;
-    for (const Component &component : sheet->components) {
-        if (component.id == m_textComponent)
-            return true;
-    }
-    return false;
+    return m_selection.isEmpty() && sheet != nullptr && ppcb::hasText(*sheet, m_chosenText);
 }
 
 QRectF SheetEditor::chosenText() const
 {
     if (!hasText() || m_dragging)
         return QRectF();
-    for (const Component &component : currentSheet()->components) {
-        if (component.id == m_textComponent)
-            return componentTextRect(component, m_text, m_document->design().library);
-    }
-    return QRectF();
+    return textRect(*currentSheet(), m_document->design().library, m_chosenText);
 }
 
 QLineF SheetEditor::textGuide() const
 {
     if (!m_dragging || !hasText())
         return QLineF();
-    for (const Component &component : m_preview.components) {
-        if (component.id == m_textComponent)
-            return QLineF(toMm(component.at), toMm(componentTextPoint(component, m_text)));
-    }
-    return QLineF();
+    return QLineF(toMm(textOwnerPoint(m_preview, m_chosenText)),
+                  toMm(textPoint(m_preview, m_chosenText)));
 }
 
 bool SheetEditor::dragsWhole() const
@@ -280,7 +261,7 @@ QSet<ObjectId> SheetEditor::chosenIds() const
     if (hasSegment())
         return {m_segmentWire};
     if (hasText())
-        return {m_textComponent};
+        return {m_chosenText.owner};
     return m_selection;
 }
 
@@ -294,9 +275,14 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
     const Sheet *sheet = currentSheet();
     if (placing || sheet == nullptr)
         return;
-    if (hasText() && m_text == ComponentText::Value) {
-        editText(m_textComponent);
-        return;
+    // The value of a component or the text of a label chosen alone.
+    if (hasText()) {
+        const bool label = std::any_of(sheet->labels.cbegin(), sheet->labels.cend(),
+                                       [this](const Label &l) { return l.id == m_chosenText.owner; });
+        if (label || m_chosenText.text == ComponentText::Value) {
+            editText(m_chosenText.owner);
+            return;
+        }
     }
     const ObjectId hit = objectAt(shapes(), at, pixelsToMm(HIT_PIXELS));
     for (const PowerSymbol &power : sheet->powerSymbols) {
@@ -637,7 +623,7 @@ void SheetEditor::transformDragged(Sheet (*transform)(const Sheet &, const QSet<
 void SheetEditor::updateDrag()
 {
     if (hasText()) {
-        m_preview = withComponentTextMoved(m_dragStart, m_textComponent, m_text, m_dragDelta);
+        m_preview = withTextMoved(m_dragStart, m_chosenText, m_dragDelta);
         return;
     }
     if (!m_endWire.isNull()) {

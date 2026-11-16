@@ -58,7 +58,11 @@ const double BUS_WIDTH = 0.5;
 // The dot where wires join.
 const double JUNCTION_DIAMETER = 0.8;
 const double LABEL_TEXT_HEIGHT = 1.27;
-const double LABEL_GAP = 1.5;
+const double LABEL_GAP = 0.4;
+// The circle on a label's point, which it is taken by.
+const double LABEL_POINT_RADIUS = 0.3;
+// A label is taken by its point within this square, besides its text.
+const double LABEL_POINT_GRIP = 1.0;
 // How far the red plate under a label that joins nothing reaches past its text.
 const double LOOSE_LABEL_MARGIN = 0.3;
 // Stands for the text of a label that has none yet, while it is placed.
@@ -559,15 +563,23 @@ QPointF labelTextAt()
     return QPointF(0, -(LABEL_TEXT_HEIGHT / 2 + LABEL_GAP));
 }
 
-// The text lies along the label's direction, above its point; white on a
-// red plate when the label joins nothing, a grey question mark while it has
-// no text yet.
+// A circle on its point and the text along the label's direction, just
+// above where it stands; the text is white on a red plate, and the circle
+// red, when the label joins nothing, a grey question mark while it has no
+// text yet.
 void paintLabel(QPainter &painter, const Label &label, bool joined)
 {
-    painter.save();
-    painter.translate(toMm(label.at));
-    painter.rotate(label.rotation);
     const bool empty = label.text.isEmpty();
+    const QColor mark = joined || empty ? paintcolor::label() : paintcolor::looseLabel();
+    painter.save();
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(mark);
+    painter.drawEllipse(toMm(label.at), LABEL_POINT_RADIUS, LABEL_POINT_RADIUS);
+    painter.restore();
+
+    painter.save();
+    painter.translate(toMm(labelTextPoint(label)));
+    painter.rotate(label.rotation);
     const QString text = empty ? QString::fromLatin1(EMPTY_LABEL_MARK) : label.text;
     QColor color = empty ? paintcolor::placeholder() : paintcolor::label();
     if (!empty && !joined) {
@@ -1073,21 +1085,27 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
         addRect(power.id, bounds.rect());
     }
     for (const Label &label : sheet.labels)
-        addRect(label.id, labelTextRect(label));
+        addRect(label.id, labelTextRect(label).united(squareAround(toMm(label.at),
+                                                                   LABEL_POINT_GRIP)));
     for (const NoConnect &mark : sheet.noConnects)
         addRect(mark.id, squareAround(toMm(mark.at), 2 * NO_CONNECT_HALF));
     return shapes;
 }
 
+Point labelTextPoint(const Label &label)
+{
+    return label.at + label.textAt;
+}
+
 QRectF labelTextRect(const Label &label)
 {
     QTransform transform;
-    transform.translate(nmToMm(label.at.x), nmToMm(label.at.y));
+    const QPointF at = toMm(labelTextPoint(label));
+    transform.translate(at.x(), at.y());
     transform.rotate(label.rotation);
     // The question mark of a label with no text yet.
     const QString text = label.text.isEmpty() ? QString::fromLatin1(EMPTY_LABEL_MARK) : label.text;
-    const QRectF rect = textBounds(labelTextAt(), text, LABEL_TEXT_HEIGHT, TextAlign::Left);
-    return transform.mapRect(rect.united(QRectF(0, -LABEL_GAP, 0, LABEL_GAP)));
+    return transform.mapRect(textBounds(labelTextAt(), text, LABEL_TEXT_HEIGHT, TextAlign::Left));
 }
 
 QRectF powerNameRect(const PowerSymbol &power, const Library &library)

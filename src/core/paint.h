@@ -104,8 +104,10 @@ Point componentTextPoint(const Component &component, ComponentText text);
 QRectF componentTextRect(const Component &component, ComponentText text,
                          const Library &library);
 
-// A rectangle surely holding the text of a label, in millimetres; with its
-// point, which belongs to it too.
+// Where the text of a label stands: its point and the text's offset.
+Point labelTextPoint(const Label &label);
+// A rectangle surely holding the text of a label, in millimetres. The
+// label as a whole is also found by its point (see sheetObjectShapes()).
 QRectF labelTextRect(const Label &label);
 
 // A rectangle surely holding the net name of a power symbol, in

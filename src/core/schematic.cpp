@@ -31,6 +31,7 @@ const char KEY_VALUE_AT[] = "valueAt";
 
 const char KEY_POINTS[] = "points";
 const char KEY_TEXT[] = "text";
+const char KEY_TEXT_AT[] = "textAt";
 const char KEY_SCOPE[] = "scope";
 const char KEY_NET_CLASS[] = "netClass";
 const char KEY_NAME[] = "name";
@@ -169,6 +170,7 @@ QJsonObject labelToJson(const Label &label)
     object.insert(QLatin1String(KEY_ID), idToJson(label.id));
     object.insert(QLatin1String(KEY_AT), pointToJson(label.at));
     object.insert(QLatin1String(KEY_TEXT), label.text);
+    object.insert(QLatin1String(KEY_TEXT_AT), pointToJson(label.textAt));
     object.insert(QLatin1String(KEY_SCOPE), scopeNames().at(int(label.scope)));
     object.insert(QLatin1String(KEY_ROTATION), label.rotation);
     object.insert(QLatin1String(KEY_NET_CLASS), label.netClass);
@@ -182,6 +184,9 @@ Label labelFromJson(const QJsonObject &object, const QString &where, ReadContext
     label.id = reader.uniqueId(object, KEY_ID, where, context.ids);
     label.at = reader.point(object, KEY_AT, where);
     label.text = reader.nonEmptyString(object, KEY_TEXT, where);
+    // Labels written before their text could be moved have it at the point.
+    if (object.contains(QLatin1String(KEY_TEXT_AT)))
+        label.textAt = reader.point(object, KEY_TEXT_AT, where);
     label.scope = LabelScope(reader.choice(object, KEY_SCOPE, where, scopeNames()));
     label.rotation = reader.rightAngle(object, KEY_ROTATION, where);
     label.netClass = reader.string(object, KEY_NET_CLASS, where);
@@ -303,7 +308,8 @@ bool operator==(const Bus &a, const Bus &b)
 
 bool operator==(const Label &a, const Label &b)
 {
-    return a.id == b.id && a.at == b.at && a.text == b.text && a.scope == b.scope
+    return a.id == b.id && a.at == b.at && a.text == b.text && a.textAt == b.textAt
+           && a.scope == b.scope
            && a.rotation == b.rotation && a.netClass == b.netClass;
 }
 

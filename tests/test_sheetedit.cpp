@@ -265,35 +265,74 @@ private slots:
         Library library = resistorLibrary();
         Sheet sheet = fullSheet();
         // R1 at (50, 50): its designator at (50, 47), its value at (52, 53).
-        QCOMPARE(componentTextAt(sheet, library, QPointF(50, 47)).component, id(1));
-        QVERIFY(componentTextAt(sheet, library, QPointF(50, 47)).text == ComponentText::Designator);
+        QCOMPARE(textAt(sheet, library, QPointF(50, 47)).owner, id(1));
+        QVERIFY(textAt(sheet, library, QPointF(50, 47)).text == ComponentText::Designator);
         // No value: its mark is found where it stands.
-        QCOMPARE(componentTextAt(sheet, library, QPointF(52, 53)).component, id(1));
-        QVERIFY(componentTextAt(sheet, library, QPointF(52, 53)).text == ComponentText::Value);
+        QCOMPARE(textAt(sheet, library, QPointF(52, 53)).owner, id(1));
+        QVERIFY(textAt(sheet, library, QPointF(52, 53)).text == ComponentText::Value);
         // A part that needs no value shows no mark, and none is found.
         library.parts[QStringLiteral("resistor")].noValue = true;
-        QVERIFY(componentTextAt(sheet, library, QPointF(52, 53)).component.isNull());
+        QVERIFY(textAt(sheet, library, QPointF(52, 53)).owner.isNull());
         QVERIFY(componentTextShown(sheet.components.at(0), ComponentText::Value, library)
                     .isEmpty());
         library.parts[QStringLiteral("resistor")].noValue = false;
         // No designator: nothing is found.
         sheet.components[0].designator.clear();
-        QVERIFY(componentTextAt(sheet, library, QPointF(50, 47)).component.isNull());
+        QVERIFY(textAt(sheet, library, QPointF(50, 47)).owner.isNull());
         sheet = withComponentValue(sheet, {id(1)}, QStringLiteral(" 10k "));
         QCOMPARE(sheet.components.at(0).value, QStringLiteral("10k"));
         sheet.components[0].designator = QStringLiteral("R1");
-        QCOMPARE(componentTextAt(sheet, library, QPointF(52, 53)).component, id(1));
-        QVERIFY(componentTextAt(sheet, library, QPointF(52, 53)).text == ComponentText::Value);
-        QVERIFY(componentTextAt(sheet, library, QPointF(80, 80)).component.isNull());
+        QCOMPARE(textAt(sheet, library, QPointF(52, 53)).owner, id(1));
+        QVERIFY(textAt(sheet, library, QPointF(52, 53)).text == ComponentText::Value);
+        QVERIFY(textAt(sheet, library, QPointF(80, 80)).owner.isNull());
         // The component's own point, between its texts, is not a text.
-        QVERIFY(componentTextAt(sheet, library, QPointF(50, 50)).component.isNull());
+        QVERIFY(textAt(sheet, library, QPointF(50, 50)).owner.isNull());
 
         const Point delta{2 * MM, -1 * MM};
-        const Sheet moved = withComponentTextMoved(sheet, id(1), ComponentText::Value, delta);
+        const Sheet moved = withTextMoved(sheet, TextHit{id(1), ComponentText::Value}, delta);
         QCOMPARE(moved.components.at(0).valueAt, sheet.components.at(0).valueAt + delta);
         QCOMPARE(moved.components.at(0).refAt, sheet.components.at(0).refAt);
         QCOMPARE(moved.components.at(0).at, sheet.components.at(0).at);
         QVERIFY(moved.wires == sheet.wires);
+        QCOMPARE(textPoint(moved, TextHit{id(1), ComponentText::Value}),
+                 sheet.components.at(0).at + sheet.components.at(0).valueAt + delta);
+        QCOMPARE(textOwnerPoint(moved, TextHit{id(1), ComponentText::Value}),
+                 sheet.components.at(0).at);
+    }
+
+    // A label's text is chosen and moved alone the same way; its point
+    // stays, and the text goes round with the label when it turns.
+    void labelTextsAreFoundAndMovedAlone()
+    {
+        Sheet sheet;
+        Label label;
+        label.id = id(1);
+        label.at = Point{20 * MM, 20 * MM};
+        label.text = QStringLiteral("DATA");
+        sheet.labels = {label};
+        const TextHit hit = textAt(sheet, Library(), QPointF(21, 19));
+        QCOMPARE(hit.owner, id(1));
+        QVERIFY(hasText(sheet, hit));
+        QCOMPARE(textPoint(sheet, hit), label.at);
+        // Below the wire is no text.
+        QVERIFY(textAt(sheet, Library(), QPointF(21, 21)).owner.isNull());
+
+        const Point delta{0, -3 * MM};
+        const Sheet moved = withTextMoved(sheet, hit, delta);
+        QCOMPARE(moved.labels.at(0).at, label.at);
+        QCOMPARE(moved.labels.at(0).textAt, delta);
+        QCOMPARE(textPoint(moved, hit), label.at + delta);
+        QCOMPARE(textOwnerPoint(moved, hit), label.at);
+        QVERIFY(textRect(moved, Library(), hit).bottom() < 17.5);
+        // The old place no longer holds it; the new one does.
+        QVERIFY(textAt(moved, Library(), QPointF(21, 19)).owner.isNull());
+        QCOMPARE(textAt(moved, Library(), QPointF(21, 16)).owner, id(1));
+
+        // A quarter turn about its point takes the text round with it.
+        const Sheet turned = rotatedObjects(moved, {id(1)}, label.at);
+        QCOMPARE(turned.labels.at(0).at, label.at);
+        QCOMPARE(turned.labels.at(0).textAt, Point({3 * MM, 0}));
+        QVERIFY(!hasText(sheet, TextHit{id(9), ComponentText::Designator}));
     }
 
     void componentPropertiesAreSet()

@@ -55,8 +55,12 @@ enum class LabelScope { Global, Local };
 struct Label
 {
     ObjectId id;
+    // The point that joins it: on a wire or a pin.
     Point at;
     QString text;
+    // Where the text stands, relative to 'at': at the point itself, just
+    // above the wire, unless moved away from it.
+    Point textAt;
     LabelScope scope = LabelScope::Global;
     int rotation = 0;
     // Net class given to the net through this label; empty: not given here.
