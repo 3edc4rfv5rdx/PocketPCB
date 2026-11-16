@@ -5,7 +5,6 @@
 #include <QCoreApplication>
 #include <QFont>
 #include <QFontMetricsF>
-#include <QLineF>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPolygonF>
@@ -60,14 +59,6 @@ const double BUS_WIDTH = 0.5;
 const double JUNCTION_DIAMETER = 0.8;
 const double LABEL_TEXT_HEIGHT = 1.27;
 const double LABEL_GAP = 0.4;
-const double POWER_STEM = 2.54;
-const double POWER_BAR_HALF = 1.27;
-// The arrow's head: how far it reaches back and to each side.
-const double POWER_ARROW = 0.8;
-const int GROUND_BARS = 3;
-const double GROUND_BAR_STEP = 0.5;
-// How far each slanted stroke of the chassis reaches, back and to the side.
-const double CHASSIS_STROKE = 0.8;
 const double NO_CONNECT_HALF = 0.635;
 
 // The board.
@@ -569,66 +560,47 @@ void paintLabel(QPainter &painter, const Label &label)
     painter.restore();
 }
 
-// The lines of a power symbol, not turned: a stem up from the connection
-// point at the origin, and at its end what 'kind' draws.
-QList<QLineF> powerLines(PowerKind kind)
+// From the coordinates of a power symbol's drawing to those of the sheet:
+// turned clockwise about its pin, then moved.
+QTransform powerTransform(const PowerSymbol &power)
 {
-    const double s = POWER_STEM;
-    const double h = POWER_BAR_HALF;
-    QList<QLineF> lines = {QLineF(0, 0, 0, -s)};
-    switch (kind) {
-    case PowerKind::Bar:
-        lines.append(QLineF(-h, -s, h, -s));
-        break;
-    case PowerKind::Arrow:
-        lines.append(QLineF(-POWER_ARROW, -s + POWER_ARROW, 0, -s));
-        lines.append(QLineF(0, -s, POWER_ARROW, -s + POWER_ARROW));
-        break;
-    case PowerKind::Ground:
-        for (int i = 0; i < GROUND_BARS; ++i) {
-            const double half = h * (GROUND_BARS - i) / GROUND_BARS;
-            const double y = -s - i * GROUND_BAR_STEP;
-            lines.append(QLineF(-half, y, half, y));
-        }
-        break;
-    case PowerKind::Chassis:
-        lines.append(QLineF(-h, -s, h, -s));
-        for (const double x : {-h, 0.0, h})
-            lines.append(QLineF(x, -s, x - CHASSIS_STROKE, -s - CHASSIS_STROKE));
-        break;
-    }
-    return lines;
+    QTransform transform;
+    transform.translate(nmToMm(power.at.x), nmToMm(power.at.y));
+    transform.rotate(power.rotation);
+    return transform;
 }
 
-// The name a power symbol shows: none for a ground symbol of the usual ground.
-QString powerNameShown(const PowerSymbol &power)
+// The net name a power symbol shows: none when its symbol hides the name
+// it is placed with and the name is still that one.
+QString powerNameShown(const PowerSymbol &power, const Symbol &symbol)
 {
-    if (power.kind == PowerKind::Ground && power.name == QLatin1String(GROUND_NAME))
+    if (symbol.hidePowerName && power.name == symbol.power)
         return QString();
     return power.name;
 }
 
-// Where the name of a power symbol stands, not turned: beyond its lines.
-QPointF powerNameAt(PowerKind kind)
+// Where the net name stands on the sheet: the symbol's 'valueAt', turned
+// with it; the text itself stays level.
+QPointF powerNameAt(const PowerSymbol &power, const Symbol &symbol)
 {
-    double top = 0;
-    for (const QLineF &line : powerLines(kind))
-        top = std::min({top, line.y1(), line.y2()});
-    return QPointF(0, top - (LABEL_TEXT_HEIGHT / 2 + LABEL_GAP));
+    return powerTransform(power).map(toMm(symbol.valueAt));
 }
 
-// The lines of 'kind' and the name beyond them. Not turned, the stem points up.
-void paintPowerSymbol(QPainter &painter, const PowerSymbol &power)
+// The drawing of its symbol, turned, and the net name; a red square where
+// the project library lacks the symbol.
+void paintPowerSymbol(QPainter &painter, const Library &library, const PowerSymbol &power)
 {
+    const Symbol *symbol = library.findSymbol(power.symbol);
+    if (symbol == nullptr) {
+        paintMissing(painter, toMm(power.at), MISSING_SYMBOL_SIZE);
+        return;
+    }
     painter.save();
-    painter.translate(toMm(power.at));
-    painter.rotate(power.rotation);
-    painter.setPen(linePen(paintcolor::symbol(), WIRE_WIDTH));
-    for (const QLineF &line : powerLines(power.kind))
-        painter.drawLine(line);
-    drawText(painter, powerNameAt(power.kind), powerNameShown(power), LABEL_TEXT_HEIGHT,
-             TextAlign::Center, paintcolor::symbol(), true);
+    painter.setTransform(powerTransform(power), true);
+    paintSymbolBody(painter, *symbol, true, false);
     painter.restore();
+    drawText(painter, powerNameAt(power, *symbol), powerNameShown(power, *symbol),
+             LABEL_TEXT_HEIGHT, TextAlign::Center, paintcolor::symbol());
 }
 
 void paintNoConnect(QPainter &painter, const NoConnect &mark)
@@ -890,16 +862,6 @@ Point pinBodyEnd(const Pin &pin)
     return pin.at;
 }
 
-Point powerStemEnd(const PowerSymbol &power)
-{
-    // Not turned, the stem points up; a quarter turn clockwise on screen,
-    // where Y grows downwards, as QPainter::rotate() turns it.
-    Point stem{0, -mmToNm(POWER_STEM)};
-    for (int turn = 0; turn < power.rotation / 90; ++turn)
-        stem = Point{-stem.y, stem.x};
-    return power.at + stem;
-}
-
 QRectF symbolBounds(const Symbol &symbol)
 {
     Bounds bounds;
@@ -942,7 +904,13 @@ void paintSymbol(QPainter &painter, const Symbol &symbol)
     painter.setRenderHint(QPainter::Antialiasing, true);
     paintOriginMark(painter);
     paintSymbolBody(painter, symbol, false, true);
-    paintPlaceholders(painter, symbol.refAt, symbol.valueAt);
+    // A power symbol has no designator; its net name stands for the value.
+    if (symbol.isPower()) {
+        drawText(painter, toMm(symbol.valueAt), symbol.power, LABEL_TEXT_HEIGHT,
+                 TextAlign::Center, paintcolor::placeholder());
+    } else {
+        paintPlaceholders(painter, symbol.refAt, symbol.valueAt);
+    }
     painter.restore();
 }
 
@@ -1001,13 +969,30 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const Library &li
     for (const Component &component : sheet.components)
         paintComponent(painter, library, component);
     for (const PowerSymbol &power : sheet.powerSymbols)
-        paintPowerSymbol(painter, power);
+        paintPowerSymbol(painter, library, power);
     for (const Label &label : sheet.labels)
         paintLabel(painter, label);
     for (const NoConnect &mark : sheet.noConnects)
         paintNoConnect(painter, mark);
     painter.restore();
 }
+
+namespace {
+
+// The drawings and the pin lines of a symbol, without the room
+// symbolBounds() keeps for pin texts. A power symbol has a pin at least, so
+// its bounds are never empty.
+Bounds symbolDrawingBounds(const Symbol &symbol)
+{
+    Bounds body;
+    if (!symbol.graphics.isEmpty())
+        body.add(symbolBodyBounds(symbol));
+    for (const Pin &pin : symbol.pins)
+        body.add(QRectF(toMm(pin.at), toMm(pinBodyEnd(pin))).normalized());
+    return body;
+}
+
+} // namespace
 
 QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &library)
 {
@@ -1031,12 +1016,7 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
         if (symbol == nullptr) {
             bounds.add(missingRect(toMm(component.at), MISSING_SYMBOL_SIZE));
         } else {
-            // The drawing without the room symbolBounds() keeps for pin texts.
-            Bounds body;
-            if (!symbol->graphics.isEmpty())
-                body.add(symbolBodyBounds(*symbol));
-            for (const Pin &pin : symbol->pins)
-                body.add(QRectF(toMm(pin.at), toMm(pinBodyEnd(pin))).normalized());
+            const Bounds body = symbolDrawingBounds(*symbol);
             if (!body.isEmpty())
                 bounds.add(componentTransform(component).mapRect(body.rect()));
             else
@@ -1048,19 +1028,20 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
         addRect(component.id, bounds.rect());
     }
     for (const PowerSymbol &power : sheet.powerSymbols) {
-        // Drawn pointing up, then turned about its point.
+        const Symbol *symbol = library.findSymbol(power.symbol);
+        if (symbol == nullptr) {
+            addRect(power.id, missingRect(toMm(power.at), MISSING_SYMBOL_SIZE));
+            continue;
+        }
+        // The drawing, as for a component, then the level name.
         Bounds bounds;
-        for (const QLineF &line : powerLines(power.kind))
-            bounds.add(QRectF(line.p1(), line.p2()).normalized());
-        const QString name = powerNameShown(power);
+        bounds.add(powerTransform(power).mapRect(symbolDrawingBounds(*symbol).rect()));
+        const QString name = powerNameShown(power, *symbol);
         if (!name.isEmpty()) {
-            bounds.add(textBounds(powerNameAt(power.kind), name, LABEL_TEXT_HEIGHT,
+            bounds.add(textBounds(powerNameAt(power, *symbol), name, LABEL_TEXT_HEIGHT,
                                   TextAlign::Center));
         }
-        QTransform transform;
-        transform.translate(nmToMm(power.at.x), nmToMm(power.at.y));
-        transform.rotate(power.rotation);
-        addRect(power.id, transform.mapRect(bounds.rect()));
+        addRect(power.id, bounds.rect());
     }
     for (const Label &label : sheet.labels) {
         QTransform transform;

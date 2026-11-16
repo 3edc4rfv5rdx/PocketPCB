@@ -33,6 +33,7 @@ struct Library
     // is changed.
     const Part *findPart(const QString &name) const;
     const Footprint *findFootprint(const QString &name) const;
+    const Symbol *findSymbol(const QString &name) const;
     // The symbol of the part 'partName'; null when the library lacks either.
     const Symbol *findSymbolOfPart(const QString &partName) const;
 };

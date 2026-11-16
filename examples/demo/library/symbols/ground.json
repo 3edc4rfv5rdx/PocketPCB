@@ -1,0 +1,19 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "line", "from": [-1.27, 2.54], "to": [1.27, 2.54]},
+    {"kind": "line", "from": [-0.85, 3.04], "to": [0.85, 3.04]},
+    {"kind": "line", "from": [-0.42, 3.54], "to": [0.42, 3.54]}
+  ],
+  "pins": [
+    {"number": "1", "at": [0, 0], "side": "up", "length": 2.54}
+  ],
+  "refAt": [0, 4.81],
+  "valueAt": [0, 4.81],
+  "showPinNumbers": false,
+  "showPinNames": false,
+  "power": "GND",
+  "hidePowerName": true,
+  "name": {"en": "Ground", "uk": "Земля", "ru": "Земля"}
+}

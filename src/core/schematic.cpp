@@ -34,7 +34,7 @@ const char KEY_TEXT[] = "text";
 const char KEY_SCOPE[] = "scope";
 const char KEY_NET_CLASS[] = "netClass";
 const char KEY_NAME[] = "name";
-const char KEY_KIND[] = "kind";
+const char KEY_SYMBOL[] = "symbol";
 
 // A wire or a bus.
 const int MIN_CHAIN_POINTS = 2;
@@ -43,14 +43,6 @@ const int MIN_CHAIN_POINTS = 2;
 const QStringList &scopeNames()
 {
     static const QStringList names = {QStringLiteral("global"), QStringLiteral("local")};
-    return names;
-}
-
-// In the order of PowerKind.
-const QStringList &powerKindNames()
-{
-    static const QStringList names = {QStringLiteral("bar"), QStringLiteral("arrow"),
-                                      QStringLiteral("ground"), QStringLiteral("chassis")};
     return names;
 }
 
@@ -203,7 +195,7 @@ QJsonObject powerSymbolToJson(const PowerSymbol &power)
     object.insert(QLatin1String(KEY_AT), pointToJson(power.at));
     object.insert(QLatin1String(KEY_NAME), power.name);
     object.insert(QLatin1String(KEY_ROTATION), power.rotation);
-    object.insert(QLatin1String(KEY_KIND), powerKindNames().at(int(power.kind)));
+    object.insert(QLatin1String(KEY_SYMBOL), power.symbol);
     return object;
 }
 
@@ -216,9 +208,7 @@ PowerSymbol powerSymbolFromJson(const QJsonObject &object, const QString &where,
     power.at = reader.point(object, KEY_AT, where);
     power.name = reader.nonEmptyString(object, KEY_NAME, where);
     power.rotation = reader.rightAngle(object, KEY_ROTATION, where);
-    // Files written before there were kinds have bars.
-    if (object.contains(QLatin1String(KEY_KIND)))
-        power.kind = PowerKind(reader.choice(object, KEY_KIND, where, powerKindNames()));
+    power.symbol = reader.nonEmptyString(object, KEY_SYMBOL, where);
     return power;
 }
 
@@ -320,7 +310,7 @@ bool operator==(const Label &a, const Label &b)
 bool operator==(const PowerSymbol &a, const PowerSymbol &b)
 {
     return a.id == b.id && a.at == b.at && a.name == b.name && a.rotation == b.rotation
-           && a.kind == b.kind;
+           && a.symbol == b.symbol;
 }
 
 bool operator==(const NoConnect &a, const NoConnect &b)

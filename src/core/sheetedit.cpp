@@ -358,6 +358,14 @@ Library withPartFrom(const Library &project, const Library &source, const QStrin
     return result;
 }
 
+Library withSymbolFrom(const Library &project, const Library &source, const QString &symbolName)
+{
+    Library result = project;
+    if (!result.symbols.contains(symbolName) && source.symbols.contains(symbolName))
+        result.symbols.insert(symbolName, source.symbols.value(symbolName));
+    return result;
+}
+
 Sheet withoutObjects(const Sheet &sheet, const QSet<ObjectId> &ids)
 {
     Sheet result = sheet;

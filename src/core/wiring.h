@@ -12,12 +12,16 @@ namespace ppcb {
 // exactly on the pin's point or on the other wire; wires that only cross
 // are not connected.
 
-// Where 'point', given in the symbol's own coordinates, lies on the sheet
-// for 'component': mirrored first, then turned, then moved to its place.
+// Where 'point', given in a symbol's own coordinates, lies on the sheet for
+// a symbol placed at 'at': mirrored first, then turned 'rotation' degrees
+// clockwise, then moved there.
+Point placedPoint(const Point &at, int rotation, bool mirrored, const Point &point);
+// The same for the symbol of 'component'.
 Point componentPoint(const Component &component, const Point &point);
 
 // A point of 'sheet' that wires connect to: the end of a pin of a component
-// whose symbol the library has, or the point of a power symbol.
+// whose symbol the library has, or the point of a power symbol, whether
+// the library has its symbol or not.
 struct SheetPin
 {
     // The component or the power symbol it belongs to.

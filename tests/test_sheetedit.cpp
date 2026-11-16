@@ -150,6 +150,60 @@ private slots:
         QCOMPARE(objectAt(missing, QPointF(50, 50), 0.5), id(1));
     }
 
+    // A power symbol is found by the drawing of its symbol, and by its net
+    // name unless the symbol hides that name.
+    void powerSymbolsAreFoundByTheirDrawing()
+    {
+        Symbol ground;
+        Graphic bar;
+        bar.kind = GraphicKind::Line;
+        bar.a = Point{-1270000, 2540000};
+        bar.b = Point{1270000, 2540000};
+        ground.graphics = {bar};
+        Pin pin;
+        pin.number = QStringLiteral("1");
+        pin.side = PinSide::Up;
+        pin.length = 2540000;
+        ground.pins = {pin};
+        ground.valueAt = Point{0, 5 * MM};
+        ground.power = QStringLiteral("GND");
+        ground.hidePowerName = true;
+        Library library;
+        library.symbols.insert(QStringLiteral("ground"), ground);
+
+        Sheet sheet;
+        PowerSymbol power;
+        power.id = id(1);
+        power.at = Point{20 * MM, 20 * MM};
+        power.name = QStringLiteral("GND");
+        power.symbol = QStringLiteral("ground");
+        sheet.powerSymbols = {power};
+        const QRectF hidden = sheetObjectShapes(sheet, library).first().rect;
+        QCOMPARE(objectAt(sheetObjectShapes(sheet, library), QPointF(20, 22.54), 0.5), id(1));
+        // The drawing reaches down to the bar, and no further.
+        QVERIFY(hidden.bottom() < 23.5);
+
+        sheet.powerSymbols[0].name = QStringLiteral("AGND");
+        const QRectF shown = sheetObjectShapes(sheet, library).first().rect;
+        QVERIFY(shown.bottom() > 25);
+
+        // Turned over, the drawing goes up instead.
+        sheet.powerSymbols[0].rotation = 180;
+        QVERIFY(sheetObjectShapes(sheet, library).first().rect.top() < 15.5);
+
+        // Placed, its symbol is copied into the project, which keeps its own.
+        Library project;
+        QCOMPARE(withSymbolFrom(project, library, QStringLiteral("ground")).symbols.keys(),
+                 QStringList({QStringLiteral("ground")}));
+        Symbol own = ground;
+        own.power = QStringLiteral("0V");
+        project.symbols.insert(QStringLiteral("ground"), own);
+        QCOMPARE(withSymbolFrom(project, library, QStringLiteral("ground")).symbols.value(
+                     QStringLiteral("ground")).power,
+                 QStringLiteral("0V"));
+        QVERIFY(withSymbolFrom(Library(), library, QStringLiteral("absent")).symbols.isEmpty());
+    }
+
     void rectangleTakesWhatIsWhollyInside()
     {
         const QList<SheetObjectShape> shapes = sheetObjectShapes(fullSheet(), resistorLibrary());

@@ -534,6 +534,12 @@ QStringList missingLibraryItems(const Design &design)
                 files.append(fileOf(LIBRARY_FOOTPRINTS_FOLDER, component.footprint));
         }
     }
+    for (const Sheet &sheet : design.schematic.sheets) {
+        for (const PowerSymbol &power : sheet.powerSymbols) {
+            if (library.findSymbol(power.symbol) == nullptr)
+                files.append(fileOf(LIBRARY_SYMBOLS_FOLDER, power.symbol));
+        }
+    }
     for (const Placement &placement : design.board.placements) {
         if (library.findFootprint(placement.footprint) == nullptr)
             files.append(fileOf(LIBRARY_FOOTPRINTS_FOLDER, placement.footprint));

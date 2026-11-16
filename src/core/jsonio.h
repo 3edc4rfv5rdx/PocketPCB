@@ -29,6 +29,11 @@ extern const char FILE_TYPE_VIEW[];
 // "<place>: <message>", or the message alone when there is no place.
 QString withPlace(const QString &place, const QString &message);
 
+// The name in the first of 'languages' (interface language codes: "en",
+// "uk", "ru") that 'names' has; 'fallback' when it has none of them.
+QString localizedName(const QMap<QString, QString> &names, const QStringList &languages,
+                      const QString &fallback);
+
 // The "type" field of a file's root object; empty when it has none.
 QString fileTypeOf(const QJsonObject &root);
 

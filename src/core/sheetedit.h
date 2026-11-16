@@ -118,5 +118,7 @@ Component newComponent(const Library &library, const QString &partName,
 // 'source' where 'project' lacks them. What 'project' has stays as it is:
 // the project does not change because the library did.
 Library withPartFrom(const Library &project, const Library &source, const QString &partName);
+// The same for the symbol 'symbolName' of a power symbol.
+Library withSymbolFrom(const Library &project, const Library &source, const QString &symbolName);
 
 } // namespace ppcb

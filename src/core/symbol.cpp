@@ -12,6 +12,9 @@ const char KEY_REF_AT[] = "refAt";
 const char KEY_VALUE_AT[] = "valueAt";
 const char KEY_SHOW_PIN_NUMBERS[] = "showPinNumbers";
 const char KEY_SHOW_PIN_NAMES[] = "showPinNames";
+const char KEY_POWER[] = "power";
+const char KEY_HIDE_POWER_NAME[] = "hidePowerName";
+const char KEY_SYMBOL_NAME[] = "name";
 
 const char KEY_NUMBER[] = "number";
 const char KEY_NAME[] = "name";
@@ -70,7 +73,8 @@ bool operator==(const Symbol &a, const Symbol &b)
 {
     return a.graphics == b.graphics && a.pins == b.pins && a.refAt == b.refAt
            && a.valueAt == b.valueAt && a.showPinNumbers == b.showPinNumbers
-           && a.showPinNames == b.showPinNames;
+           && a.showPinNames == b.showPinNames && a.power == b.power
+           && a.hidePowerName == b.hidePowerName && a.name == b.name;
 }
 
 QJsonObject symbolToJson(const Symbol &symbol)
@@ -89,6 +93,15 @@ QJsonObject symbolToJson(const Symbol &symbol)
     object.insert(QLatin1String(KEY_VALUE_AT), pointToJson(symbol.valueAt));
     object.insert(QLatin1String(KEY_SHOW_PIN_NUMBERS), symbol.showPinNumbers);
     object.insert(QLatin1String(KEY_SHOW_PIN_NAMES), symbol.showPinNames);
+    // Only power symbols have these.
+    if (symbol.isPower()) {
+        object.insert(QLatin1String(KEY_POWER), symbol.power);
+        object.insert(QLatin1String(KEY_HIDE_POWER_NAME), symbol.hidePowerName);
+        QJsonObject names;
+        for (auto it = symbol.name.constBegin(); it != symbol.name.constEnd(); ++it)
+            names.insert(it.key(), it.value());
+        object.insert(QLatin1String(KEY_SYMBOL_NAME), names);
+    }
     return object;
 }
 
@@ -124,6 +137,18 @@ Symbol symbolFromJson(const QJsonObject &object, const QString &where, JsonReade
         symbol.showPinNumbers = reader.boolean(object, KEY_SHOW_PIN_NUMBERS, where);
     if (object.contains(QLatin1String(KEY_SHOW_PIN_NAMES)))
         symbol.showPinNames = reader.boolean(object, KEY_SHOW_PIN_NAMES, where);
+    // Optional: a symbol of a part when absent.
+    if (object.contains(QLatin1String(KEY_POWER))) {
+        symbol.power = reader.nonEmptyString(object, KEY_POWER, where);
+        if (object.contains(QLatin1String(KEY_HIDE_POWER_NAME)))
+            symbol.hidePowerName = reader.boolean(object, KEY_HIDE_POWER_NAME, where);
+        if (object.contains(QLatin1String(KEY_SYMBOL_NAME)))
+            symbol.name = reader.nameMap(object, KEY_SYMBOL_NAME, where);
+        if (reader.ok() && (symbol.pins.size() != 1 || symbol.pins.first().at != Point())) {
+            reader.fail(JsonReader::pathOf(where, KEY_PINS),
+                        JsonReader::tr("a power symbol has one pin, at its origin"));
+        }
+    }
     return symbol;
 }
 

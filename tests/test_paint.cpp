@@ -438,20 +438,31 @@ private slots:
         NoConnect mark;
         mark.at = Point{-8000000, -3000000};
         sheet.noConnects.append(mark);
+        // A power symbol whose pin's line goes up from its point.
+        Library library;
+        Symbol stem;
+        Pin pin;
+        pin.number = QStringLiteral("1");
+        pin.side = PinSide::Down;
+        pin.length = 2540000;
+        stem.pins = {pin};
+        stem.power = QStringLiteral("+5V");
+        library.symbols.insert(QStringLiteral("stem"), stem);
         PowerSymbol up;
         up.at = Point{-5000000, -2000000};
+        up.symbol = QStringLiteral("stem");
         sheet.powerSymbols.append(up);
-        PowerSymbol down;
+        PowerSymbol down = up;
         down.at = Point{-2000000, -4000000};
         down.rotation = 180;
         sheet.powerSymbols.append(down);
-        PowerSymbol ground;
-        ground.at = Point{-8000000, 2000000};
-        ground.name = QStringLiteral("GND");
-        ground.kind = PowerKind::Ground;
-        sheet.powerSymbols.append(ground);
+        // One the library lacks is a red square.
+        PowerSymbol lacking = up;
+        lacking.at = Point{-8000000, 3000000};
+        lacking.symbol = QStringLiteral("absent");
+        sheet.powerSymbols.append(lacking);
 
-        const QImage image = render(schematic);
+        const QImage image = render(schematic, library);
         QVERIFY(isColor(colorAt(image, -5, -8), paintcolor::wire()));
         QVERIFY(isColor(colorAt(image, -5, -6), paintcolor::bus()));
         // The bus is the thicker of the two.
@@ -463,10 +474,7 @@ private slots:
         QVERIFY(isColor(colorAt(image, -5, -0.7), paintcolor::background()));
         QVERIFY(isColor(colorAt(image, -2, -2.7), paintcolor::symbol()));
         QVERIFY(isColor(colorAt(image, -2, -5.3), paintcolor::background()));
-        // A ground symbol: three bars beyond the stem, the last 1 mm past
-        // its end, and no "GND" written beyond them.
-        QVERIFY(isColor(colorAt(image, -8, -1.54), paintcolor::symbol()));
-        QVERIFY(isColor(colorAt(image, -8, -2.2), paintcolor::background()));
+        QVERIFY(anyColor(image, -11, 0.5, -5, 5.5, paintcolor::missing()));
 
         // The frame: 5 mm inside the paper, whose corner is the origin.
         QVERIFY(isColor(colorAt(image, 5, 8), paintcolor::sheetFrame()));

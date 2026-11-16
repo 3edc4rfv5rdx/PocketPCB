@@ -106,7 +106,9 @@ private slots:
         // Its library has everything it uses, and nothing else.
         QVERIFY2(problems.isEmpty(), qPrintable(problems.join(QLatin1Char('\n'))));
         QCOMPARE(design.library.parts.keys(), QStringList({QStringLiteral("resistor")}));
-        QCOMPARE(design.library.symbols.keys(), QStringList({QStringLiteral("resistor")}));
+        QCOMPARE(design.library.symbols.keys(),
+                 QStringList({QStringLiteral("ground"), QStringLiteral("power-bar"),
+                              QStringLiteral("resistor")}));
         QCOMPARE(design.library.footprints.keys(),
                  QStringList({QStringLiteral("resistor-10.16"), QStringLiteral("resistor-vertical")}));
         QCOMPARE(design.schematic.sheets.size(), 1);

@@ -1,4 +1,3 @@
-#include "paint.h"
 #include "sheetedit.h"
 #include "wiring.h"
 
@@ -83,29 +82,46 @@ private slots:
     }
 
     // A power symbol is a pin of its own: wires end on its point, keep off
-    // its stem and follow it when it goes.
+    // its pin's line and follow it when it goes.
     void powerSymbolsArePins()
     {
-        const Library library = twoPinLibrary();
+        Library library = twoPinLibrary();
+        // A bar on a stem: the pin is wired from below, its line goes up.
+        Symbol bar;
+        Pin stem;
+        stem.number = QStringLiteral("1");
+        stem.side = PinSide::Down;
+        stem.length = 2540000;
+        bar.pins = {stem};
+        bar.power = QStringLiteral("+5V");
+        library.symbols.insert(QStringLiteral("bar"), bar);
+
         PowerSymbol power;
         power.id = newObjectId();
         power.at = mm(20, 0);
         power.name = QStringLiteral("+5V");
+        power.symbol = QStringLiteral("bar");
         Sheet sheet;
         sheet.components = {twoPin(mm(0, 0))};
         sheet.powerSymbols = {power};
         sheet.wires = {wire({mm(5, 0), mm(20, 0)})};
 
-        const Coord stem = 2540000;
-        const QList<SheetPin> pins = sheetPins(sheet, library);
+        QList<SheetPin> pins = sheetPins(sheet, library);
         QCOMPARE(pins.size(), 3);
         QCOMPARE(pins.last().owner, power.id);
         QCOMPARE(pins.last().at, mm(20, 0));
-        QCOMPARE(pins.last().bodyEnd, mm(20, 0) - Point({0, stem}));
-        power.rotation = 90;
-        QCOMPARE(powerStemEnd(power), mm(20, 0) + Point({stem, 0}));
-        power.rotation = 180;
-        QCOMPARE(powerStemEnd(power), mm(20, 0) + Point({0, stem}));
+        QCOMPARE(pins.last().bodyEnd, mm(20, 0) - Point({0, stem.length}));
+        // Turned, the line turns with it.
+        Sheet turned = sheet;
+        turned.powerSymbols[0].rotation = 90;
+        QCOMPARE(sheetPins(turned, library).last().bodyEnd, mm(20, 0) + Point({stem.length, 0}));
+        // Without its symbol it still holds wires, with no line to keep off.
+        Sheet lacking = sheet;
+        lacking.powerSymbols[0].symbol = QStringLiteral("absent");
+        pins = sheetPins(lacking, library);
+        QCOMPARE(pins.last().at, mm(20, 0));
+        QCOMPARE(pins.last().bodyEnd, mm(20, 0));
+
         QVERIFY(isConnectionPoint(sheet, library, mm(20, 0)));
         // A second wire on the symbol's point makes a dot with the first.
         Sheet joined = sheet;

@@ -41,6 +41,24 @@ struct Symbol
     // Off for parts like a resistor, where pin numbers and names say nothing.
     bool showPinNumbers = true;
     bool showPinNames = true;
+
+    // A power symbol (GND, +5V) when not empty: the net name it is placed
+    // with. It has one pin, at its origin, and no part: it is placed by
+    // itself and joins every power symbol of the same name into one net.
+    // The net name is drawn at 'valueAt'; 'refAt' is not used.
+    QString power;
+    // The net name is not drawn while it is 'power': the usual ground.
+    bool hidePowerName = false;
+    // Name of a power symbol in the library panel, by interface language
+    // code, as Part::name; may be empty.
+    QMap<QString, QString> name;
+
+    bool isPower() const { return !power.isEmpty(); }
+    // As Part::displayName().
+    QString displayName(const QStringList &languages, const QString &fallback) const
+    {
+        return localizedName(name, languages, fallback);
+    }
 };
 
 bool operator==(const Symbol &a, const Symbol &b);

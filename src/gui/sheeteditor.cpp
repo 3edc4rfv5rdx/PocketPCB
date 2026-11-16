@@ -767,6 +767,8 @@ void SheetEditor::updateFloating()
     m_placeLibrary = design.library;
     for (const Component &component : m_floating.components)
         m_placeLibrary = withPartFrom(m_placeLibrary, m_floatSource, component.part);
+    for (const PowerSymbol &power : m_floating.powerSymbols)
+        m_placeLibrary = withSymbolFrom(m_placeLibrary, m_floatSource, power.symbol);
     // Numbered as it would be if placed now: the project's own parts say
     // the prefixes.
     const Sheet numbered = numberedOn(m_floating, design.schematic, m_placeLibrary,

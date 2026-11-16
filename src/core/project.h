@@ -166,8 +166,8 @@ inline bool operator!=(const Design &a, const Design &b) { return !(a == b); }
 Design newDesign(const QString &baseName);
 
 // Messages for the user about what the schematic and the board use that
-// the project library does not have: a part, the symbol of a part, a
-// footprint. Each names the missing file, as "library/parts/diode.json".
+// the project library does not have: a part, the symbol of a part or of a
+// power symbol, a footprint. Each names the missing file, as "library/parts/diode.json".
 QStringList missingLibraryItems(const Design &design);
 
 // The three files and the library folder together. 'projectPath' is the

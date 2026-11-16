@@ -49,8 +49,6 @@ QPointF toMm(const Point &point);
 
 // The end of a pin's line that touches the symbol body.
 Point pinBodyEnd(const Pin &pin);
-// The end of a power symbol's stem, where its bar is, on the sheet.
-Point powerStemEnd(const PowerSymbol &power);
 
 // Rectangles that hold everything paintSymbol() / paintFootprint() draw.
 // Never empty, so a view can always be fitted to them.

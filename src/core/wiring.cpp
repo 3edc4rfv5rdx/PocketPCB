@@ -585,15 +585,20 @@ QList<Point> ledBack(const QList<Point> &points, const Point &to, const Obstacle
 
 } // namespace
 
-Point componentPoint(const Component &component, const Point &point)
+Point placedPoint(const Point &at, int rotation, bool mirrored, const Point &point)
 {
     Point p = point;
-    if (component.mirrored)
+    if (mirrored)
         p.x = -p.x;
     // A quarter turn clockwise on screen, where Y grows downwards.
-    for (int turn = 0; turn < component.rotation / 90; ++turn)
+    for (int turn = 0; turn < rotation / 90; ++turn)
         p = Point{-p.y, p.x};
-    return component.at + p;
+    return at + p;
+}
+
+Point componentPoint(const Component &component, const Point &point)
+{
+    return placedPoint(component.at, component.rotation, component.mirrored, point);
 }
 
 QList<SheetPin> sheetPins(const Sheet &sheet, const Library &library)
@@ -608,8 +613,15 @@ QList<SheetPin> sheetPins(const Sheet &sheet, const Library &library)
                                  componentPoint(component, pinBodyEnd(pin))});
         }
     }
-    for (const PowerSymbol &power : sheet.powerSymbols)
-        pins.append(SheetPin{power.id, power.at, powerStemEnd(power)});
+    for (const PowerSymbol &power : sheet.powerSymbols) {
+        // Its one pin is at the symbol's origin; without the symbol there
+        // is no line to keep off.
+        const Symbol *symbol = library.findSymbol(power.symbol);
+        const Point end = symbol == nullptr || symbol->pins.isEmpty()
+                              ? Point()
+                              : pinBodyEnd(symbol->pins.first());
+        pins.append(SheetPin{power.id, power.at, placedPoint(power.at, power.rotation, false, end)});
+    }
     return pins;
 }
 

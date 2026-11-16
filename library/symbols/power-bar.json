@@ -1,0 +1,16 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "line", "from": [-1.27, -2.54], "to": [1.27, -2.54]}
+  ],
+  "pins": [
+    {"number": "1", "at": [0, 0], "side": "down", "length": 2.54}
+  ],
+  "refAt": [0, -3.81],
+  "valueAt": [0, -3.81],
+  "showPinNumbers": false,
+  "showPinNames": false,
+  "power": "+5V",
+  "name": {"en": "Power, bar", "uk": "Живлення, риска", "ru": "Питание, черта"}
+}

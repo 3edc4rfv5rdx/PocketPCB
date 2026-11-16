@@ -63,30 +63,18 @@ struct Label
     QString netClass;
 };
 
-// What a power symbol is drawn as; it does not change its net.
-enum class PowerKind {
-    // A bar across the end of the stem.
-    Bar,
-    // An arrow at the end of the stem.
-    Arrow,
-    // Three bars, each shorter than the one before.
-    Ground,
-    // A bar with slanted strokes beyond it: the case, the chassis.
-    Chassis
-};
-
-// The name of the usual ground, which a ground symbol does not show.
-inline constexpr char GROUND_NAME[] = "GND";
-
 // A power or ground symbol (GND, +5V): all with one name are one net,
-// whatever they are drawn as.
+// whatever they are drawn as. Its drawing is a power symbol of the project
+// library (see Symbol::power), whose one pin is at 'at'.
 struct PowerSymbol
 {
     ObjectId id;
     Point at;
+    // The net name.
     QString name;
     int rotation = 0;
-    PowerKind kind = PowerKind::Bar;
+    // Library name of the symbol it is drawn with.
+    QString symbol;
 };
 
 // The cross on a pin that is left unconnected on purpose.

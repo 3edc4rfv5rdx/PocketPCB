@@ -39,6 +39,17 @@ QString withPlace(const QString &place, const QString &message)
     return place + QLatin1String(": ") + message;
 }
 
+QString localizedName(const QMap<QString, QString> &names, const QStringList &languages,
+                      const QString &fallback)
+{
+    for (const QString &language : languages) {
+        const QString text = names.value(language);
+        if (!text.isEmpty())
+            return text;
+    }
+    return fallback;
+}
+
 QString fileTypeOf(const QJsonObject &root)
 {
     return root.value(QLatin1String(KEY_TYPE)).toString();

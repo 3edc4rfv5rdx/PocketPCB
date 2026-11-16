@@ -24,12 +24,7 @@ bool operator==(const Part &a, const Part &b)
 
 QString Part::displayName(const QStringList &languages, const QString &fallback) const
 {
-    for (const QString &language : languages) {
-        const QString text = name.value(language);
-        if (!text.isEmpty())
-            return text;
-    }
-    return fallback;
+    return localizedName(name, languages, fallback);
 }
 
 QJsonObject partToJson(const Part &part)

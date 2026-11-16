@@ -124,13 +124,16 @@ const Footprint *Library::findFootprint(const QString &name) const
     return it == footprints.constEnd() ? nullptr : &*it;
 }
 
+const Symbol *Library::findSymbol(const QString &name) const
+{
+    const auto it = symbols.constFind(name);
+    return it == symbols.constEnd() ? nullptr : &*it;
+}
+
 const Symbol *Library::findSymbolOfPart(const QString &partName) const
 {
     const Part *part = findPart(partName);
-    if (part == nullptr)
-        return nullptr;
-    const auto it = symbols.constFind(part->symbol);
-    return it == symbols.constEnd() ? nullptr : &*it;
+    return part == nullptr ? nullptr : findSymbol(part->symbol);
 }
 
 namespace {

@@ -1,0 +1,19 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "line", "from": [-1.27, 2.54], "to": [1.27, 2.54]},
+    {"kind": "line", "from": [-1.27, 2.54], "to": [-2.0700000000000003, 3.34]},
+    {"kind": "line", "from": [0, 2.54], "to": [-0.8, 3.34]},
+    {"kind": "line", "from": [1.27, 2.54], "to": [0.47, 3.34]}
+  ],
+  "pins": [
+    {"number": "1", "at": [0, 0], "side": "up", "length": 2.54}
+  ],
+  "refAt": [0, 4.61],
+  "valueAt": [0, 4.61],
+  "showPinNumbers": false,
+  "showPinNames": false,
+  "power": "CHASSIS",
+  "name": {"en": "Chassis", "uk": "Корпус", "ru": "Корпус"}
+}

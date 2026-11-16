@@ -215,6 +215,56 @@ private slots:
         other = symbol; other.showPinNames = false;       QVERIFY(other != symbol);
     }
 
+    // A power symbol: one pin at the origin, its net name and its panel name.
+    void powerSymbolIsReadAndChecked()
+    {
+        const char groundJson[] = R"({
+            "graphics": [{"kind": "line", "from": [-1.27, 2.54], "to": [1.27, 2.54]}],
+            "pins": [{"number": "1", "at": [0, 0], "side": "up"}],
+            "refAt": [0, 4], "valueAt": [0, 4],
+            "power": "GND", "hidePowerName": true, "name": {"en": "Ground", "ru": "Земля"}
+        })";
+        JsonReader reader;
+        const Symbol ground = symbolFromJson(parse(groundJson), QString(), reader);
+        QVERIFY2(reader.ok(), qPrintable(reader.error()));
+        QVERIFY(ground.isPower());
+        QCOMPARE(ground.power, QStringLiteral("GND"));
+        QVERIFY(ground.hidePowerName);
+        QCOMPARE(ground.displayName({QStringLiteral("uk"), QStringLiteral("ru")},
+                                    QStringLiteral("ground")),
+                 QStringLiteral("Земля"));
+
+        const QByteArray text = QJsonDocument(symbolToJson(ground)).toJson();
+        const Symbol back = symbolFromJson(parse(text), QString(), reader);
+        QVERIFY2(reader.ok(), qPrintable(reader.error()));
+        QVERIFY(back == ground);
+        // A symbol of a part writes none of it.
+        QVERIFY(!symbolToJson(fullSymbol()).contains(QStringLiteral("power")));
+
+        Symbol other = ground;
+        other.power = QStringLiteral("AGND");   QVERIFY(other != ground);
+        other = ground; other.hidePowerName = false; QVERIFY(other != ground);
+        other = ground; other.name.clear();      QVERIFY(other != ground);
+
+        // One pin, at the origin.
+        for (const char *pins : {R"([{"number": "1", "at": [2.54, 0], "side": "up"}])",
+                                 R"([{"number": "1", "at": [0, 0], "side": "up"},
+                                     {"number": "2", "at": [2.54, 0], "side": "up"}])"}) {
+            QJsonObject object = parse(groundJson);
+            object.insert(QStringLiteral("pins"),
+                          QJsonDocument::fromJson(QByteArray(pins)).array());
+            JsonReader bad;
+            symbolFromJson(object, QStringLiteral("symbol"), bad);
+            QVERIFY2(bad.error().startsWith(QStringLiteral("symbol.pins: ")),
+                     qPrintable(bad.error()));
+        }
+        QJsonObject empty = parse(groundJson);
+        empty.insert(QStringLiteral("power"), QString());
+        JsonReader bad;
+        symbolFromJson(empty, QStringLiteral("symbol"), bad);
+        QVERIFY2(bad.error().startsWith(QStringLiteral("symbol.power: ")), qPrintable(bad.error()));
+    }
+
     void emptySymbolIsAllowed()
     {
         JsonReader reader;
