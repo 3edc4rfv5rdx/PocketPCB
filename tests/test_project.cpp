@@ -82,6 +82,10 @@ Project fullProject()
 
     project.classOfNet.insert(QStringLiteral("GND"), QStringLiteral("Силовые"));
     project.classOfNet.insert(QStringLiteral("N7"), QStringLiteral("Signal"));
+    project.classOfNet.insert(QStringLiteral("NN1"), QStringLiteral("Силовые"));
+    project.netsByPins = {NetByPins{QStringLiteral("NN1"),
+                                    {PinRef{ObjectId{0x0123456789ab}, QStringLiteral("2")},
+                                     PinRef{ObjectId{0x0000000000c4}, QStringLiteral("A1")}}}};
 
     project.rules.set = RuleSet::Lut;
     project.rules.trackWidths = {400000, 700000, 1200000};
@@ -229,6 +233,11 @@ private slots:
         CHANGED(other.powerClass = QStringLiteral("Signal"));
         CHANGED(other.classOfNet[QStringLiteral("GND")] = QStringLiteral("Signal"));
         CHANGED(other.classOfNet.remove(QStringLiteral("N7")));
+        CHANGED(other.netsByPins[0].name = QStringLiteral("NN2"));
+        CHANGED(other.netsByPins[0].pins[0].component = ObjectId{7});
+        CHANGED(other.netsByPins[0].pins[0].number = QStringLiteral("3"));
+        CHANGED(other.netsByPins[0].pins.removeLast());
+        CHANGED(other.netsByPins.clear());
 
         CHANGED(other.rules.set = RuleSet::Production);
         CHANGED(other.rules.trackWidths[0] += 1);
@@ -410,6 +419,43 @@ private slots:
 
         // No net was given a class by hand.
         QCOMPARE(errorOfRoot("nets", QJsonObject()), QString());
+    }
+
+    void netsByPinsRules()
+    {
+        // A file written before them has none.
+        QCOMPARE(errorOfRoot("netsByPins", REMOVED), QString());
+        QCOMPARE(errorOfRoot("netsByPins", QJsonArray()), QString());
+
+        const auto netByPins = [](const QJsonValue &name, const QJsonValue &component,
+                                  const QJsonValue &pin) {
+            QJsonObject pinObject;
+            pinObject.insert(QStringLiteral("component"), component);
+            pinObject.insert(QStringLiteral("pin"), pin);
+            QJsonObject net;
+            net.insert(QStringLiteral("name"), name);
+            net.insert(QStringLiteral("pins"), QJsonArray({pinObject}));
+            return net;
+        };
+        const QJsonObject good =
+            netByPins(QStringLiteral("NN1"), QStringLiteral("0123456789ab"), QStringLiteral("2"));
+        QCOMPARE(errorOfRoot("netsByPins", QJsonArray({good})), QString());
+
+        QString error = errorOfRoot("netsByPins", QJsonArray({good, good}));
+        QVERIFY2(error.startsWith(QStringLiteral("netsByPins[1].name: ")), qPrintable(error));
+        const QString id = QStringLiteral("0123456789ab");
+        error = errorOfRoot("netsByPins",
+                            QJsonArray({netByPins(QString(), id, QStringLiteral("2"))}));
+        QVERIFY2(error.startsWith(QStringLiteral("netsByPins[0].name: ")), qPrintable(error));
+        error = errorOfRoot("netsByPins", QJsonArray({netByPins(QStringLiteral("NN1"),
+                                                                QStringLiteral("R1"),
+                                                                QStringLiteral("2"))}));
+        QVERIFY2(error.startsWith(QStringLiteral("netsByPins[0].pins[0].component: ")),
+                 qPrintable(error));
+        error = errorOfRoot("netsByPins",
+                            QJsonArray({netByPins(QStringLiteral("NN1"), id, QString())}));
+        QVERIFY2(error.startsWith(QStringLiteral("netsByPins[0].pins[0].pin: ")),
+                 qPrintable(error));
     }
 
     void trackWidthRules()

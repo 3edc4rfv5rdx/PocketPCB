@@ -88,6 +88,33 @@ const Net *netNamed(const QList<Net> &all, const QString &name)
     return nullptr;
 }
 
+// R1 to R2 by one wire, R3 to R4 by another: two nets with no name.
+Schematic twoUnnamedNets()
+{
+    Schematic schematic;
+    Sheet sheet;
+    sheet.components = {part(QStringLiteral("R1"), mm(0, 0)),
+                        part(QStringLiteral("R2"), mm(20, 0)),
+                        part(QStringLiteral("R3"), mm(0, 20)),
+                        part(QStringLiteral("R4"), mm(20, 20))};
+    sheet.wires = {wire({mm(5, 0), mm(15, 0)}), wire({mm(5, 20), mm(15, 20)})};
+    schematic.sheets = {sheet};
+    return schematic;
+}
+
+// A new project with the table names 'byPins'.
+Project projectWith(const QList<NetByPins> &byPins)
+{
+    Project project = newDesign(QStringLiteral("t")).project;
+    project.netsByPins = byPins;
+    return project;
+}
+
+PinRef pinOf(const Sheet &sheet, int component, const char *number)
+{
+    return PinRef{sheet.components.at(component).id, QString::fromLatin1(number)};
+}
+
 } // namespace
 
 class TestNetlist : public QObject
@@ -296,6 +323,168 @@ private slots:
         QCOMPARE(netAt(all, schematic, library, 0, QPointF(4, 0), 0.5), 0);
         QCOMPARE(netAt(all, schematic, library, 0, QPointF(6, 0), 0.5), 0);
         QCOMPARE(netAt(all, schematic, library, 0, QPointF(14, 0), 0.5), -1);
+    }
+
+    void aTableNameGoesToTheNetHoldingMostOfItsPins()
+    {
+        Schematic schematic = twoUnnamedNets();
+        const Sheet &sheet = schematic.sheets.first();
+        // Its pins: R1.2 and R2.1 of the first net, R3.2 of the second.
+        const NetByPins byPins{QStringLiteral("NN1"),
+                               {pinOf(sheet, 0, "2"), pinOf(sheet, 1, "1"), pinOf(sheet, 2, "2")}};
+        QList<Net> all = nets(schematic, twoPinLibrary(), projectWith({byPins}));
+        QCOMPARE(int(all.size()), 2);
+        QCOMPARE(all.at(0).name, QStringLiteral("NN1"));
+        QVERIFY(all.at(0).named);
+        QCOMPARE(all.at(0).tableName, QStringLiteral("NN1"));
+        QCOMPARE(pinsOf(all.at(0)), QStringLiteral("R1.2, R2.1"));
+        // The other is numbered as if alone.
+        QCOMPARE(all.at(1).name, QStringLiteral("N1"));
+        QVERIFY(all.at(1).tableName.isEmpty());
+
+        // Renumbered parts keep it: the ids are the same.
+        schematic.sheets[0].components[0].designator = QStringLiteral("R9");
+        all = nets(schematic, twoPinLibrary(), projectWith({byPins}));
+        QCOMPARE(netNamed(all, QStringLiteral("NN1"))->pins.first().designator,
+                 QStringLiteral("R2"));
+
+        // Equal shares: the net whose first pin comes first, R1.2 before R3.2.
+        schematic = twoUnnamedNets();
+        const Sheet &fresh = schematic.sheets.first();
+        const NetByPins even{QStringLiteral("NN1"),
+                             {pinOf(fresh, 2, "2"), pinOf(fresh, 0, "2")}};
+        all = nets(schematic, twoPinLibrary(), projectWith({even}));
+        QCOMPARE(pinsOf(*netNamed(all, QStringLiteral("NN1"))), QStringLiteral("R1.2, R2.1"));
+
+        // Two on one net, with no class: the first by name names it.
+        const NetByPins second{QStringLiteral("NN2"), {pinOf(fresh, 0, "2")}};
+        const NetByPins first{QStringLiteral("NN1"), {pinOf(fresh, 1, "1")}};
+        all = nets(schematic, twoPinLibrary(), projectWith({second, first}));
+        QCOMPARE(pinsOf(*netNamed(all, QStringLiteral("NN1"))), QStringLiteral("R1.2, R2.1"));
+        QCOMPARE(netNamed(all, QStringLiteral("NN1"))->mergedTableNames,
+                 QStringList({QStringLiteral("NN2")}));
+        QVERIFY(netNamed(all, QStringLiteral("NN2")) == nullptr);
+
+        // None of its pins on a net any more: no net takes it.
+        const NetByPins gone{QStringLiteral("NN1"), {PinRef{newObjectId(), QStringLiteral("1")}}};
+        all = nets(schematic, twoPinLibrary(), projectWith({gone}));
+        QVERIFY(netNamed(all, QStringLiteral("NN1")) == nullptr);
+    }
+
+    // Two nets with classes joined by a wire: one net, of the stronger class
+    // and named by it; choosing its class again forgets the other name.
+    void joinedNetsTakeTheStrongerClass()
+    {
+        Schematic schematic = twoUnnamedNets();
+        const Sheet &sheet = schematic.sheets.first();
+        const Library library = twoPinLibrary();
+        Project project = projectWith({NetByPins{QStringLiteral("NN1"), {pinOf(sheet, 0, "2"),
+                                                                       pinOf(sheet, 1, "1")}},
+                                       NetByPins{QStringLiteral("NN2"), {pinOf(sheet, 2, "2"),
+                                                                       pinOf(sheet, 3, "1")}}});
+        project.classOfNet.insert(QStringLiteral("NN1"), project.defaultClass);
+        project.classOfNet.insert(QStringLiteral("NN2"), project.powerClass);
+        QVERIFY(strongerClass(project, project.powerClass, project.defaultClass));
+        QVERIFY(!strongerClass(project, QStringLiteral("Nowhere"), project.defaultClass));
+
+        // R2.1 to R3.2.
+        schematic.sheets[0].wires.append(wire({mm(15, 0), mm(15, 10), mm(5, 10), mm(5, 20)}));
+        QList<Net> all = nets(schematic, library, project);
+        QCOMPARE(int(all.size()), 1);
+        const Net joined = all.first();
+        QCOMPARE(joined.name, QStringLiteral("NN2"));
+        QCOMPARE(joined.mergedTableNames, QStringList({QStringLiteral("NN1")}));
+        QCOMPARE(netClassOf(joined, project, schematic), project.powerClass);
+
+        project = withNetClass(project, all, joined, project.powerClass);
+        QCOMPARE(int(project.netsByPins.size()), 1);
+        QCOMPARE(project.netsByPins.first().name, QStringLiteral("NN2"));
+        QCOMPARE(int(project.netsByPins.first().pins.size()), 4);
+        QVERIFY(!project.classOfNet.contains(QStringLiteral("NN1")));
+    }
+
+    void aLabelNamesANetBeforeItsTableName()
+    {
+        Schematic schematic = twoUnnamedNets();
+        schematic.sheets[0].labels = {label(QStringLiteral("DATA"), mm(10, 0))};
+        const Sheet &sheet = schematic.sheets.first();
+        const NetByPins byPins{QStringLiteral("NN1"), {pinOf(sheet, 0, "2")}};
+        const QList<Net> all = nets(schematic, twoPinLibrary(), projectWith({byPins}));
+        const Net *data = netNamed(all, QStringLiteral("DATA"));
+        QVERIFY(data != nullptr);
+        QCOMPARE(data->tableName, QStringLiteral("NN1"));
+        QVERIFY(data->otherNames.isEmpty());
+    }
+
+    void theClassOfANet()
+    {
+        Project project = newDesign(QStringLiteral("t")).project;
+        const QString signal = project.defaultClass;
+        const QString powerClass = project.powerClass;
+        QVERIFY(signal != powerClass);
+
+        Schematic schematic = twoUnnamedNets();
+        schematic.sheets[0].labels = {label(QStringLiteral("DATA"), mm(10, 0))};
+        schematic.sheets[0].powerSymbols = {power(QStringLiteral("GND"), mm(10, 20))};
+        const Library library = twoPinLibrary();
+        QList<Net> all = nets(schematic, library);
+        const Net data = *netNamed(all, QStringLiteral("DATA"));
+        const Net ground = *netNamed(all, QStringLiteral("GND"));
+        QCOMPARE(netClassOf(data, project, schematic), signal);
+        QCOMPARE(netClassOf(ground, project, schematic), powerClass);
+
+        // A label's class, unless it is not in the project.
+        schematic.sheets[0].labels[0].netClass = powerClass;
+        QCOMPARE(netClassOf(data, project, schematic), powerClass);
+        schematic.sheets[0].labels[0].netClass = QStringLiteral("Nowhere");
+        QCOMPARE(netClassOf(data, project, schematic), signal);
+        schematic.sheets[0].labels[0].netClass = powerClass;
+
+        // Chosen in the table, by name: before the label's.
+        project = withNetClass(project, all, data, signal);
+        QCOMPARE(project.classOfNet.value(QStringLiteral("DATA")), signal);
+        QVERIFY(project.netsByPins.isEmpty());
+        QCOMPARE(netClassOf(data, project, schematic), signal);
+    }
+
+    void aClassChosenForANetWithNoNameNamesItByItsPins()
+    {
+        const Schematic schematic = twoUnnamedNets();
+        const Library library = twoPinLibrary();
+        Project project = newDesign(QStringLiteral("t")).project;
+        const QString powerClass = project.powerClass;
+        // A name a net has already is skipped.
+        project.classOfNet.insert(QStringLiteral("NN1"), powerClass);
+
+        QList<Net> all = nets(schematic, library, project);
+        QCOMPARE(all.at(1).name, QStringLiteral("N2"));
+        // An old class by "N" and a number counts for nothing.
+        project.classOfNet.insert(QStringLiteral("N2"), powerClass);
+        QCOMPARE(netClassOf(all.at(1), project, schematic), project.defaultClass);
+
+        project = withNetClass(project, all, all.at(1), powerClass);
+        QCOMPARE(int(project.netsByPins.size()), 1);
+        QCOMPARE(project.netsByPins.first().name, QStringLiteral("NN2"));
+        QCOMPARE(int(project.netsByPins.first().pins.size()), 2);
+        QCOMPARE(project.classOfNet.value(QStringLiteral("NN2")), powerClass);
+
+        all = nets(schematic, library, project);
+        const Net *named = netNamed(all, QStringLiteral("NN2"));
+        QVERIFY(named != nullptr);
+        QCOMPARE(pinsOf(*named), QStringLiteral("R3.2, R4.1"));
+        QCOMPARE(netClassOf(*named, project, schematic), powerClass);
+
+        // Chosen again: the same name, the class changed.
+        project = withNetClass(project, all, *named, project.defaultClass);
+        QCOMPARE(int(project.netsByPins.size()), 1);
+        QCOMPARE(project.classOfNet.value(QStringLiteral("NN2")), project.defaultClass);
+
+        // A net of wires alone is left as it is.
+        Schematic bare;
+        bare.sheets = {Sheet()};
+        bare.sheets[0].wires = {wire({mm(0, 0), mm(10, 0)})};
+        const QList<Net> wires = nets(bare, library);
+        QVERIFY(withNetClass(project, wires, wires.first(), powerClass) == project);
     }
 };
 

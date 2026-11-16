@@ -942,7 +942,7 @@ void SheetEditor::hoverNet(const QPointF &at)
     }
     const Design &design = m_document->design();
     if (!m_netsBuilt) {
-        m_nets = nets(design.schematic, design.library);
+        m_nets = nets(design.schematic, design.library, design.project);
         m_netsBuilt = true;
     }
     const int net =

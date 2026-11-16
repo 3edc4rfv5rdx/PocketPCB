@@ -1,6 +1,7 @@
 #pragma once
 
 #include "library.h"
+#include "project.h"
 #include "schematic.h"
 
 #include <QMap>
@@ -31,11 +32,20 @@ bool operator==(const NetPin &a, const NetPin &b);
 struct Net
 {
     // The name of a power symbol on it, else the text of a label on it, the
-    // first in alphabetical order among them; else "N" and a number, given
-    // in the order of the nets' first pins.
+    // first in alphabetical order among them; else its 'tableName'; else
+    // "N" and a number, given in the order of the nets' first pins.
     QString name;
-    // True when the name is given by a power symbol or a label.
+    // True when the name is given by a power symbol, a label or the table
+    // of nets: it stays when the schematic is edited, where "N" and a
+    // number may not.
     bool named = false;
+    // The name given to it by its pins in the table of nets (see
+    // NetByPins); empty when none is.
+    QString tableName;
+    // The table names of nets joined into it that gave way to 'tableName',
+    // whose class is stronger: they are dropped from the project when a
+    // class is chosen for it again (see withNetClass()).
+    QStringList mergedTableNames;
     // The other names given to it, in alphabetical order: a net with two
     // names is a mistake (see ERC).
     QStringList otherNames;
@@ -49,7 +59,33 @@ struct Net
 // The nets of 'schematic', with the symbols of its components and power
 // symbols from 'library': first the named ones, then the others, each in
 // the order of their names. A wire joined to nothing is a net of its own.
-QList<Net> nets(const Schematic &schematic, const Library &library);
+// Each of the table names of 'project' (see NetByPins) goes to the net
+// holding the most of its pins, and the one whose first pin comes first
+// among equals. A net given several, nets with classes joined by a wire,
+// takes the one whose class is the strongest (see strongerClass()), the
+// first in alphabetical order among equals.
+QList<Net> nets(const Schematic &schematic, const Library &library,
+                const Project &project = Project());
+
+// True when the class 'a' of 'project' is stronger than 'b': its tracks are
+// wider. A class not in the project's list is the weakest.
+bool strongerClass(const Project &project, const QString &a, const QString &b);
+
+// The net class of 'net' in 'project': the strongest of those chosen for it
+// in the table of nets, by its names or by its table name; else the
+// strongest given by labels on it; else the power class when a power symbol
+// is on it; else the default class. A class not in the project's list
+// counts for nothing.
+QString netClassOf(const Net &net, const Project &project, const Schematic &schematic);
+
+// 'project' with 'netClass' chosen for 'net', one of 'all', in the table of
+// nets, its merged table names dropped: by its name when a power symbol or
+// a label gives it; else by its table name, a new one ("NN" and the first
+// number no net and no name in 'project' has) when it has none, the pins it
+// holds now remembered for it. A net with no name of its own and no pins is
+// left as it is.
+Project withNetClass(const Project &project, const QList<Net> &all, const Net &net,
+                     const QString &netClass);
 
 // True when the pin 'number' of the component 'component' is on 'net'.
 bool netHasPin(const Net &net, const ObjectId &component, const QString &number);

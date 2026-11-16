@@ -11,6 +11,9 @@ namespace ppcb {
 
 namespace {
 
+// What a net's table name starts with, a number after it.
+const char TABLE_NAME_PREFIX[] = "NN";
+
 // Sets of nodes joined one with another.
 class Joins
 {
@@ -150,7 +153,7 @@ bool naturalLess(const QString &a, const QString &b)
     return a.size() - i < b.size() - j;
 }
 
-QList<Net> nets(const Schematic &schematic, const Library &library)
+QList<Net> nets(const Schematic &schematic, const Library &library, const Project &project)
 {
     Joins joins;
     QList<Node> nodes;
@@ -263,8 +266,9 @@ QList<Net> nets(const Schematic &schematic, const Library &library)
         }
     }
 
-    QList<Net> named;
-    QList<Net> unnamed;
+    // The nets kept, and the names given to each.
+    QList<Net> kept;
+    QList<QStringList> givenNames;
     for (auto it = byRoot.begin(); it != byRoot.end(); ++it) {
         Net net = it.value();
         // A pin with nothing joined to it is no net.
@@ -277,10 +281,69 @@ QList<Net> nets(const Schematic &schematic, const Library &library)
         QStringList labels = labelNames.value(it.key());
         labels.removeDuplicates();
         std::sort(labels.begin(), labels.end(), naturalLess);
+        kept.append(net);
         // A power symbol's name first, then a label's.
-        const QStringList given = names + labels;
+        givenNames.append(names + labels);
+    }
+
+    // The table names go to the nets holding most of their pins.
+    QHash<ObjectId, QHash<QString, int>> netOfPin;
+    for (int i = 0; i < kept.size(); ++i) {
+        for (const NetPin &pin : kept.at(i).pins)
+            netOfPin[pin.component].insert(pin.number, i);
+    }
+    QList<NetByPins> tableNames = project.netsByPins;
+    std::sort(tableNames.begin(), tableNames.end(),
+              [](const NetByPins &a, const NetByPins &b) { return naturalLess(a.name, b.name); });
+    // The table names each net is given, in alphabetical order.
+    QMap<int, QStringList> givenTableNames;
+    for (const NetByPins &tableName : tableNames) {
+        QHash<int, int> held;
+        for (const PinRef &pin : tableName.pins) {
+            const int net = netOfPin.value(pin.component).value(pin.number, -1);
+            if (net >= 0)
+                ++held[net];
+        }
+        int best = -1;
+        for (auto it = held.cbegin(); it != held.cend(); ++it) {
+            if (best < 0 || it.value() > held.value(best)
+                || (it.value() == held.value(best)
+                    && pinLess(kept.at(it.key()).pins.first(), kept.at(best).pins.first()))) {
+                best = it.key();
+            }
+        }
+        if (best >= 0)
+            givenTableNames[best].append(tableName.name);
+    }
+    for (auto it = givenTableNames.cbegin(); it != givenTableNames.cend(); ++it) {
+        QString strongest = it.value().first();
+        for (const QString &name : it.value()) {
+            if (strongerClass(project, project.classOfNet.value(name),
+                              project.classOfNet.value(strongest))) {
+                strongest = name;
+            }
+        }
+        Net &net = kept[it.key()];
+        net.tableName = strongest;
+        for (const QString &name : it.value()) {
+            if (name != strongest)
+                net.mergedTableNames.append(name);
+        }
+    }
+
+    QList<Net> named;
+    QList<Net> unnamed;
+    for (int i = 0; i < kept.size(); ++i) {
+        Net net = kept.at(i);
+        const QStringList &given = givenNames.at(i);
         if (given.isEmpty()) {
-            unnamed.append(net);
+            if (net.tableName.isEmpty()) {
+                unnamed.append(net);
+            } else {
+                net.name = net.tableName;
+                net.named = true;
+                named.append(net);
+            }
             continue;
         }
         net.name = given.first();
@@ -306,6 +369,106 @@ QList<Net> nets(const Schematic &schematic, const Library &library)
     for (int i = 0; i < unnamed.size(); ++i)
         unnamed[i].name = QStringLiteral("N") + QString::number(i + 1);
     return named + unnamed;
+}
+
+bool strongerClass(const Project &project, const QString &a, const QString &b)
+{
+    // The track width of a class, -1 for one not in the list.
+    const auto width = [&project](const QString &name) {
+        for (const NetClass &netClass : project.netClasses) {
+            if (netClass.name == name)
+                return netClass.trackWidth;
+        }
+        return Coord(-1);
+    };
+    return width(a) > width(b);
+}
+
+QString netClassOf(const Net &net, const Project &project, const Schematic &schematic)
+{
+    // The strongest of 'classes' in the project's list; empty when none is.
+    const auto strongest = [&project](const QStringList &classes) {
+        QString result;
+        for (const QString &name : classes) {
+            if (strongerClass(project, name, result))
+                result = name;
+        }
+        return result;
+    };
+    // A name of "N" and a number belongs to no net for good.
+    QStringList keys{net.tableName};
+    if (net.named)
+        keys += QStringList{net.name} + net.otherNames;
+    QStringList chosen;
+    for (const QString &key : keys) {
+        if (!key.isEmpty() && project.classOfNet.contains(key))
+            chosen.append(project.classOfNet.value(key));
+    }
+    const QString fromTable = strongest(chosen);
+    if (!fromTable.isEmpty())
+        return fromTable;
+    QStringList fromLabels;
+    bool powered = false;
+    for (auto it = net.objects.cbegin(); it != net.objects.cend(); ++it) {
+        if (it.key() < 0 || it.key() >= schematic.sheets.size())
+            continue;
+        const Sheet &sheet = schematic.sheets.at(it.key());
+        for (const Label &label : sheet.labels) {
+            if (it.value().contains(label.id))
+                fromLabels.append(label.netClass);
+        }
+        for (const PowerSymbol &power : sheet.powerSymbols)
+            powered = powered || it.value().contains(power.id);
+    }
+    const QString fromLabel = strongest(fromLabels);
+    if (!fromLabel.isEmpty())
+        return fromLabel;
+    return powered ? project.powerClass : project.defaultClass;
+}
+
+Project withNetClass(const Project &project, const QList<Net> &all, const Net &net,
+                     const QString &netClass)
+{
+    Project result = project;
+    for (const QString &merged : net.mergedTableNames)
+        result.classOfNet.remove(merged);
+    result.netsByPins.removeIf([&net](const NetByPins &byPins) {
+        return net.mergedTableNames.contains(byPins.name);
+    });
+    // Named by a power symbol or a label.
+    if (net.named && net.name != net.tableName) {
+        result.classOfNet.insert(net.name, netClass);
+        return result;
+    }
+    QString name = net.tableName;
+    if (name.isEmpty()) {
+        if (net.pins.isEmpty())
+            return project;
+        QSet<QString> taken;
+        for (const Net &other : all) {
+            taken.insert(other.name);
+            for (const QString &otherName : other.otherNames)
+                taken.insert(otherName);
+        }
+        for (const NetByPins &byPins : project.netsByPins)
+            taken.insert(byPins.name);
+        for (auto it = project.classOfNet.cbegin(); it != project.classOfNet.cend(); ++it)
+            taken.insert(it.key());
+        int number = 1;
+        while (taken.contains(QLatin1String(TABLE_NAME_PREFIX) + QString::number(number)))
+            ++number;
+        name = QLatin1String(TABLE_NAME_PREFIX) + QString::number(number);
+        result.netsByPins.append(NetByPins{name, {}});
+    }
+    for (NetByPins &byPins : result.netsByPins) {
+        if (byPins.name != name)
+            continue;
+        byPins.pins.clear();
+        for (const NetPin &pin : net.pins)
+            byPins.pins.append(PinRef{pin.component, pin.number});
+    }
+    result.classOfNet.insert(name, netClass);
+    return result;
 }
 
 } // namespace ppcb

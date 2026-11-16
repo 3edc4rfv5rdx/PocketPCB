@@ -25,6 +25,7 @@ const char KEY_NET_CLASSES[] = "netClasses";
 const char KEY_DEFAULT_CLASS[] = "defaultClass";
 const char KEY_POWER_CLASS[] = "powerClass";
 const char KEY_NETS[] = "nets";
+const char KEY_NETS_BY_PINS[] = "netsByPins";
 const char KEY_RULES[] = "rules";
 const char KEY_GRID[] = "grid";
 
@@ -37,6 +38,9 @@ const char KEY_DATE[] = "date";
 const char KEY_NOTE[] = "note";
 
 const char KEY_NAME[] = "name";
+const char KEY_PINS[] = "pins";
+const char KEY_COMPONENT[] = "component";
+const char KEY_PIN[] = "pin";
 const char KEY_TRACK_WIDTH[] = "trackWidth";
 const char KEY_CLEARANCE[] = "clearance";
 const char KEY_VIA_DRILL[] = "viaDrill";
@@ -297,6 +301,57 @@ QMap<QString, QString> classOfNetFromJson(const QJsonObject &root, const QString
     return classOfNet;
 }
 
+QJsonObject netByPinsToJson(const NetByPins &net)
+{
+    QJsonArray pins;
+    for (const PinRef &pin : net.pins) {
+        QJsonObject object;
+        object.insert(QLatin1String(KEY_COMPONENT), idToString(pin.component));
+        object.insert(QLatin1String(KEY_PIN), pin.number);
+        pins.append(object);
+    }
+    QJsonObject object;
+    object.insert(QLatin1String(KEY_NAME), net.name);
+    object.insert(QLatin1String(KEY_PINS), pins);
+    return object;
+}
+
+NetByPins netByPinsFromJson(const QJsonObject &object, const QString &where, ReadContext &context)
+{
+    JsonReader &reader = context.reader;
+    NetByPins net;
+    net.name = reader.nonEmptyString(object, KEY_NAME, where);
+    const QList<QJsonObject> pins = reader.objectList(object, KEY_PINS, where);
+    const QString pinsWhere = JsonReader::pathOf(where, KEY_PINS);
+    for (int i = 0; i < pins.size() && reader.ok(); ++i) {
+        const QString pinWhere = JsonReader::pathOf(pinsWhere, i);
+        PinRef pin;
+        pin.component = reader.id(pins.at(i), KEY_COMPONENT, pinWhere);
+        pin.number = reader.nonEmptyString(pins.at(i), KEY_PIN, pinWhere);
+        net.pins.append(pin);
+    }
+    return net;
+}
+
+// The names given to nets by their pins; none in a file written before them.
+QList<NetByPins> netsByPinsFromJson(const QJsonObject &root, ReadContext &context)
+{
+    if (!root.contains(QLatin1String(KEY_NETS_BY_PINS)))
+        return {};
+    const QList<NetByPins> nets = listFromJson<NetByPins>(root, KEY_NETS_BY_PINS, QString(),
+                                                          context, netByPinsFromJson);
+    QStringList names;
+    for (int i = 0; i < nets.size() && context.reader.ok(); ++i) {
+        if (names.contains(nets.at(i).name)) {
+            const QString where = JsonReader::pathOf(QLatin1String(KEY_NETS_BY_PINS), i);
+            context.reader.fail(JsonReader::pathOf(where, KEY_NAME),
+                                JsonReader::tr("the name is used twice"));
+        }
+        names.append(nets.at(i).name);
+    }
+    return nets;
+}
+
 NetClass startingNetClass(const char *name, Coord trackWidth)
 {
     NetClass netClass;
@@ -372,12 +427,23 @@ bool operator==(const Rules &a, const Rules &b)
            && a.edgeClearanceLevel == b.edgeClearanceLevel;
 }
 
+bool operator==(const PinRef &a, const PinRef &b)
+{
+    return a.component == b.component && a.number == b.number;
+}
+
+bool operator==(const NetByPins &a, const NetByPins &b)
+{
+    return a.name == b.name && a.pins == b.pins;
+}
+
 bool operator==(const Project &a, const Project &b)
 {
     return a.schematicFile == b.schematicFile && a.boardFile == b.boardFile
            && a.titleBlock == b.titleBlock && a.designatorStyle == b.designatorStyle
            && a.netClasses == b.netClasses && a.defaultClass == b.defaultClass
-           && a.powerClass == b.powerClass && a.classOfNet == b.classOfNet && a.rules == b.rules
+           && a.powerClass == b.powerClass && a.classOfNet == b.classOfNet
+           && a.netsByPins == b.netsByPins && a.rules == b.rules
            && a.schematicGridStep == b.schematicGridStep && a.boardGridStep == b.boardGridStep;
 }
 
@@ -407,6 +473,7 @@ QJsonObject projectToJson(const Project &project)
     root.insert(QLatin1String(KEY_DEFAULT_CLASS), project.defaultClass);
     root.insert(QLatin1String(KEY_POWER_CLASS), project.powerClass);
     root.insert(QLatin1String(KEY_NETS), nets);
+    root.insert(QLatin1String(KEY_NETS_BY_PINS), listToJson(project.netsByPins, netByPinsToJson));
     root.insert(QLatin1String(KEY_RULES), rulesToJson(project.rules));
     root.insert(QLatin1String(KEY_GRID), grid);
     return root;
@@ -433,6 +500,7 @@ Project projectFromJson(const QJsonObject &root, JsonReader &reader)
     project.defaultClass = classNameFromJson(root, KEY_DEFAULT_CLASS, context.classNames, reader);
     project.powerClass = classNameFromJson(root, KEY_POWER_CLASS, context.classNames, reader);
     project.classOfNet = classOfNetFromJson(root, context.classNames, reader);
+    project.netsByPins = netsByPinsFromJson(root, context);
     project.rules = rulesFromJson(root, reader);
 
     const QJsonObject grid = reader.object(root, KEY_GRID, QString());

@@ -54,6 +54,27 @@ struct NetClass
     Coord viaSize = 0;
 };
 
+// A pin of a component of the schematic, by the component's id, which no
+// renumbering changes.
+struct PinRef
+{
+    ObjectId component;
+    QString number;
+};
+
+bool operator==(const PinRef &a, const PinRef &b);
+
+// A net with no name of its own that was given a class in the table of
+// nets: the name it got there ("NN1") and the pins it had then. The net
+// holding the most of these pins goes by that name (see nets()).
+struct NetByPins
+{
+    QString name;
+    QList<PinRef> pins;
+};
+
+bool operator==(const NetByPins &a, const NetByPins &b);
+
 // The set of values the rules were last filled from.
 enum class RuleSet { Production, Lut };
 
@@ -115,9 +136,13 @@ struct Project
     // the class of the nets of power and ground symbols. They may be the same.
     QString defaultClass;
     QString powerClass;
-    // Class of the nets it was chosen for in the table of nets, by net name.
-    // A net that is not here takes its class from a label or the default one.
+    // Class of the nets it was chosen for in the table of nets, by net name,
+    // or by the name given in 'netsByPins'. A net that is not here takes its
+    // class from a label or the default one (see netClassOf()).
     QMap<QString, QString> classOfNet;
+    // Names given in the table of nets to nets with no name of their own;
+    // the names do not repeat.
+    QList<NetByPins> netsByPins;
 
     Rules rules;
 
