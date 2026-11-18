@@ -101,6 +101,8 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    // The swatches of the paper's colours: the mouse over one previews it.
+    bool eventFilter(QObject *watched, QEvent *event) override;
     void showEvent(QShowEvent *event) override;
 
 private:
@@ -116,6 +118,11 @@ private:
     // The canvas takes the paper of the sheets when a sheet is shown, white
     // under the board and a library file.
     void updateCanvasBackground();
+    // The sheet shown, if one is, takes 'color' until the next
+    // updateCanvasBackground().
+    void previewSheetBackground(const QColor &color);
+    // A sheet of the project is on the canvas, not the board or a library file.
+    bool isSheetShown() const;
     void applyZoomCenterAndWarp(bool on);
 
     void autosaveProject();

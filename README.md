@@ -15,7 +15,7 @@ Early development. What works now:
 - Power symbols are library symbols with a net name: a bar, an arrow, a ground and a chassis are built in, and your own are added as files. Symbols with one name are one net, whatever they look like.
 - Sheets: tabs over the canvas, the board last. A sheet is added with "+" or from a tab's right-click menu, renamed with a double click on its tab, moved by dragging its tab; the menu also chooses A4 or A3 paper and deletes a sheet, asking first when something is on it.
 - Schematic sheet:
-  - the colour of the paper is chosen from a table of pale ones in View > Sheet background; it is kept with the program, not in the project;
+  - the colour of the paper is chosen from a table of pale ones in View > Sheet background, the sheet taking the colour under the mouse as a preview; it is kept with the program, not in the project;
   - choose with a click or a rectangle; a click on one of several chosen objects keeps it alone; what is chosen stays chosen after a change;
   - drag along the grid with the wires following (Shift tears them off), rotate and mirror with the wires following too, delete, copy, cut, paste and duplicate (pasted parts are numbered on);
   - draw wires (W; Space turns the corner, / slants it) with junction dots placed by themselves;

@@ -60,6 +60,8 @@ const int SWATCH_HEIGHT = 45;
 const int SWATCH_SPACING = 6;
 const int SWATCH_COLUMNS = 5;
 const int SWATCH_EDGE = 3;
+// The property of a swatch that holds its colour, for the preview.
+const char SWATCH_COLOR_PROPERTY[] = "paperColor";
 const char SWATCH_STYLE[] = "QToolButton { border: 1px solid #a0a0a0; padding: 2px; }"
                             "QToolButton:checked { border: 3px solid %1; padding: 0px; }";
 // The menu of the sheet stands out from the paper under it: a dark frame,
@@ -405,8 +407,10 @@ void MainWindow::createMenus()
             [this] { applyCursorStyle(CursorStyle::FullCross); });
 
     // A table of pale colours, each a piece of paper with a wire and a
-    // symbol on it; its code is its tip.
+    // symbol on it; its code is its tip. The sheet shown takes the colour
+    // under the mouse until the mouse leaves it or the menu closes.
     QMenu *backgroundMenu = viewMenu->addMenu(tr("Sheet background"));
+    connect(backgroundMenu, &QMenu::aboutToHide, this, &MainWindow::updateCanvasBackground);
     QWidget *table = new QWidget(backgroundMenu);
     table->setStyleSheet(QString::fromLatin1(SWATCH_STYLE).arg(paintcolor::selection().name()));
     QGridLayout *grid = new QGridLayout(table);
@@ -423,6 +427,8 @@ void MainWindow::createMenus()
         button->setIcon(QIcon(paperSwatch(color)));
         button->setIconSize(QSize(SWATCH_WIDTH, SWATCH_HEIGHT));
         button->setToolTip(color.name().toUpper());
+        button->setProperty(SWATCH_COLOR_PROPERTY, color);
+        button->installEventFilter(this);
         grid->addWidget(button, i / SWATCH_COLUMNS, i % SWATCH_COLUMNS);
         connect(button, &QToolButton::clicked, this, [this, color, viewMenu] {
             applySheetBackground(color);
@@ -551,12 +557,33 @@ void MainWindow::applySheetBackground(const QColor &color)
     updateCanvasBackground();
 }
 
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() == QEvent::Enter || event->type() == QEvent::Leave) {
+        const QVariant color = watched->property(SWATCH_COLOR_PROPERTY);
+        if (color.isValid() && event->type() == QEvent::Enter)
+            previewSheetBackground(color.value<QColor>());
+        else if (color.isValid())
+            updateCanvasBackground();
+    }
+    return QMainWindow::eventFilter(watched, event);
+}
+
+void MainWindow::previewSheetBackground(const QColor &color)
+{
+    if (isSheetShown())
+        m_canvas->setBackgroundColor(color);
+}
+
+bool MainWindow::isSheetShown() const
+{
+    return m_designItem->isVisible() && m_designItem->page() != m_designItem->boardPage();
+}
+
 void MainWindow::updateCanvasBackground()
 {
-    const bool sheet =
-        m_designItem->isVisible() && m_designItem->page() != m_designItem->boardPage();
-    m_canvas->setBackgroundColor(sheet ? AppSettings::sheetBackground()
-                                       : paintcolor::background());
+    m_canvas->setBackgroundColor(isSheetShown() ? AppSettings::sheetBackground()
+                                                : paintcolor::background());
 }
 
 void MainWindow::applyZoomCenterAndWarp(bool on)
