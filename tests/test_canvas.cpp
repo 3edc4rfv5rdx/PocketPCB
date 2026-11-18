@@ -66,6 +66,17 @@ private slots:
         QCOMPARE(view.pixelsPerMm(), CanvasView::INITIAL_PIXELS_PER_MM);
     }
 
+    void aNarrowerViewKeepsTheDrawingInPlace()
+    {
+        CanvasView view;
+        QVERIFY(showView(view));
+        const QPointF corner = view.mapToScene(QPoint(0, 0));
+        // As a dock opening on the right takes width from the canvas.
+        view.resize(500, 600);
+        QTRY_COMPARE(view.viewport()->width(), 500);
+        QCOMPARE(view.mapToScene(QPoint(0, 0)), corner);
+    }
+
     void zoomCenterAndWarpCentresThePoint()
     {
         CanvasView view;

@@ -46,9 +46,11 @@ CanvasView::CanvasView(QWidget *parent)
     scene()->setSceneRect(-SCENE_HALF_SIZE_MM, -SCENE_HALF_SIZE_MM,
                           2 * SCENE_HALF_SIZE_MM, 2 * SCENE_HALF_SIZE_MM);
 
-    // Zooming positions the view itself (see zoomAt).
+    // Zooming positions the view itself (see zoomAt). A resize keeps the
+    // top left corner: a dock opened or closed beside the canvas leaves
+    // the drawing where it is.
     setTransformationAnchor(QGraphicsView::NoAnchor);
-    setResizeAnchor(QGraphicsView::AnchorViewCenter);
+    setResizeAnchor(QGraphicsView::NoAnchor);
     // The grid cursor is drawn over the whole view, so partial updates
     // would leave traces of it.
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);

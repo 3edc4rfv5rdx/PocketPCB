@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The drawing stays in place when a panel is opened or closed beside the canvas, instead of shifting by half its width
 - F: An object chosen on the sheet chooses its problem in the ERC panel
 - N: ERC also finds wires closing a loop and two-pin parts with both pins on one net
 - N: An ERC panel lists the problems of the schematic after every change, each ringed in red on its sheet while the panel is open: empty values, repeated designators, free pins, misplaced no-connect marks, loose labels, loose wire ends, wires lying on wires, nets with two names and names of the table of nets lost or taken
