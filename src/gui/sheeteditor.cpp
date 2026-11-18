@@ -51,6 +51,7 @@ SheetEditor::SheetEditor(Document *document, CanvasView *canvas, QObject *parent
     // The nets are stale, and so is the index of the one lit.
     connect(m_document, &Document::designChanged, this, [this] {
         m_netsBuilt = false;
+        m_problemsFound = false;
         clearHoveredNet();
         emit netsChanged();
     });
@@ -1031,6 +1032,16 @@ const QList<Net> &SheetEditor::nets() const
         m_netsBuilt = true;
     }
     return m_nets;
+}
+
+const QList<ErcProblem> &SheetEditor::problems() const
+{
+    if (!m_problemsFound) {
+        const Design &design = m_document->design();
+        m_problems = checkSchematic(design.schematic, design.library, design.project, nets());
+        m_problemsFound = true;
+    }
+    return m_problems;
 }
 
 void SheetEditor::setChosenNet(const QString &name)

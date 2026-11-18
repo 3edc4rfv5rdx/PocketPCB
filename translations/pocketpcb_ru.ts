@@ -265,6 +265,65 @@
     </message>
 </context>
 <context>
+    <name>ppcb::ErcPanel</name>
+    <message>
+        <source>ERC</source>
+        <translation>ERC</translation>
+    </message>
+    <message>
+        <source>%1 has no value</source>
+        <translation>У %1 нет номинала</translation>
+    </message>
+    <message>
+        <source>Designator %1 repeats</source>
+        <translation>Обозначение %1 повторяется</translation>
+    </message>
+    <message>
+        <source>Pin %1 is not connected</source>
+        <translation>Вывод %1 ни к чему не подключён</translation>
+    </message>
+    <message>
+        <source>No-connect mark on no pin</source>
+        <translation>Крестик не на выводе</translation>
+    </message>
+    <message>
+        <source>No-connect mark on connected pin %1</source>
+        <translation>Крестик на подключённом выводе %1</translation>
+    </message>
+    <message>
+        <source>Label %1 joins nothing</source>
+        <translation>Метка %1 ни к чему не присоединена</translation>
+    </message>
+    <message>
+        <source>Wire end joins nothing</source>
+        <translation>Конец провода ни к чему не присоединён</translation>
+    </message>
+    <message>
+        <source>Wires lie on top of each other</source>
+        <translation>Провода лежат друг на друге</translation>
+    </message>
+    <message>
+        <source>Net has two names</source>
+        <translation>У цепи два имени</translation>
+    </message>
+    <message>
+        <source>Net name %1 has no pins left</source>
+        <translation>У имени цепи %1 не осталось выводов</translation>
+    </message>
+    <message>
+        <source>Name %1 belongs to another net</source>
+        <translation>Имя %1 занято другой цепью</translation>
+    </message>
+    <message>
+        <source>No problems found</source>
+        <translation>Ошибок не найдено</translation>
+    </message>
+    <message>
+        <source>Whole project</source>
+        <translation>Весь проект</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::LibraryPanel</name>
     <message>
         <source>Search</source>

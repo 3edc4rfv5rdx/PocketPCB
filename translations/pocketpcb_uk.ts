@@ -265,6 +265,65 @@
     </message>
 </context>
 <context>
+    <name>ppcb::ErcPanel</name>
+    <message>
+        <source>ERC</source>
+        <translation>ERC</translation>
+    </message>
+    <message>
+        <source>%1 has no value</source>
+        <translation>%1 не має номіналу</translation>
+    </message>
+    <message>
+        <source>Designator %1 repeats</source>
+        <translation>Позначення %1 повторюється</translation>
+    </message>
+    <message>
+        <source>Pin %1 is not connected</source>
+        <translation>Вивід %1 ні до чого не під&apos;єднаний</translation>
+    </message>
+    <message>
+        <source>No-connect mark on no pin</source>
+        <translation>Хрестик не на виводі</translation>
+    </message>
+    <message>
+        <source>No-connect mark on connected pin %1</source>
+        <translation>Хрестик на під&apos;єднаному виводі %1</translation>
+    </message>
+    <message>
+        <source>Label %1 joins nothing</source>
+        <translation>Мітка %1 ні до чого не приєднана</translation>
+    </message>
+    <message>
+        <source>Wire end joins nothing</source>
+        <translation>Кінець проводу ні до чого не приєднаний</translation>
+    </message>
+    <message>
+        <source>Wires lie on top of each other</source>
+        <translation>Проводи лежать один на одному</translation>
+    </message>
+    <message>
+        <source>Net has two names</source>
+        <translation>Коло має два імені</translation>
+    </message>
+    <message>
+        <source>Net name %1 has no pins left</source>
+        <translation>В імені кола %1 не залишилося виводів</translation>
+    </message>
+    <message>
+        <source>Name %1 belongs to another net</source>
+        <translation>Ім&apos;я %1 зайняте іншим колом</translation>
+    </message>
+    <message>
+        <source>No problems found</source>
+        <translation>Помилок не знайдено</translation>
+    </message>
+    <message>
+        <source>Whole project</source>
+        <translation>Увесь проєкт</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::LibraryPanel</name>
     <message>
         <source>Search</source>

@@ -2,6 +2,7 @@
 
 #include "canvasview.h"
 #include "designviewitem.h"
+#include "ercpanel.h"
 #include "document.h"
 #include "format.h"
 #include "grid.h"
@@ -178,6 +179,24 @@ MainWindow::MainWindow(QWidget *parent)
     m_netsDock->setObjectName(QStringLiteral("netsDock"));
     m_netsDock->setWidget(m_netsPanel);
     splitDockWidget(m_propertiesDock, m_netsDock, Qt::Vertical);
+    // The problems of the rules check, under the nets.
+    m_ercPanel = new ErcPanel(m_document, m_sheetEditor, this);
+    m_ercDock = new QDockWidget(ErcPanel::ercTitle(), this);
+    m_ercDock->setObjectName(QStringLiteral("ercDock"));
+    m_ercDock->setWidget(m_ercPanel);
+    splitDockWidget(m_netsDock, m_ercDock, Qt::Vertical);
+    // A problem chosen there is shown: its sheet, centred on it, with what
+    // it is about chosen; a missing value is typed in at once.
+    connect(m_ercPanel, &ErcPanel::problemChosen, this, [this](const ErcProblem &problem) {
+        showPage(problem.sheet);
+        m_canvas->setView(toMm(problem.at), m_canvas->pixelsPerMm());
+        m_sheetEditor->setSelection({problem.object});
+        if (problem.kind == ErcKind::EmptyValue)
+            m_sheetEditor->editInPlace(problem.object);
+    });
+    // The rings on the sheet go with the panel.
+    connect(m_ercDock->toggleViewAction(), &QAction::toggled, this,
+            [this](bool shown) { m_designItem->setErcMarksShown(shown); });
     // A net chosen there is shown: on the first sheet it is on, unless the
     // sheet shown has it.
     connect(m_netsPanel, &NetsPanel::netChosen, this, [this](const QString &name) {
@@ -227,6 +246,7 @@ MainWindow::MainWindow(QWidget *parent)
     // Both do nothing when given data that was never saved.
     restoreGeometry(AppSettings::windowGeometry());
     restoreState(AppSettings::windowState());
+    m_designItem->setErcMarksShown(!m_ercDock->isHidden());
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -450,6 +470,7 @@ void MainWindow::createMenus()
     viewMenu->addAction(m_libraryDock->toggleViewAction());
     viewMenu->addAction(m_propertiesDock->toggleViewAction());
     viewMenu->addAction(m_netsDock->toggleViewAction());
+    viewMenu->addAction(m_ercDock->toggleViewAction());
     viewMenu->addSeparator();
 
     QAction *warpAction = viewMenu->addAction(tr("Center and warp cursor on zoom"));

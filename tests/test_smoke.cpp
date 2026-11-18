@@ -29,6 +29,7 @@
 #include <QStatusBar>
 #include <QTabBar>
 #include <QTreeWidget>
+#include <QTreeWidgetItem>
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QToolButton>
@@ -350,6 +351,41 @@ private slots:
         QVERIFY(window.document()->projectPath().isEmpty());
         QCOMPARE(tabTexts(window).size(), 2);
         QCOMPARE(window.designItem()->page(), 0);
+    }
+
+    void problemsAreListedAndShown()
+    {
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        window.newProject();
+        QTreeWidget *tree = window.findChild<QTreeWidget *>(QStringLiteral("ercTree"));
+        QVERIFY(tree != nullptr);
+        QCOMPARE(tree->topLevelItemCount(), 1);
+        QCOMPARE(tree->topLevelItem(0)->childCount(), 0);
+
+        // A piece of wire on the second sheet: two loose ends.
+        Document *document = window.document();
+        Design design = document->design();
+        Sheet second;
+        second.id = newObjectId();
+        Wire wire;
+        wire.id = newObjectId();
+        wire.points = {Point{0, 0}, Point{10 * NM_PER_MM, 0}};
+        second.wires = {wire};
+        design.schematic.sheets.append(second);
+        document->change(QStringLiteral("piece"), design);
+        QCOMPARE(tree->topLevelItemCount(), 1);
+        QTreeWidgetItem *group = tree->topLevelItem(0);
+        QCOMPARE(group->text(0), QStringLiteral("Sheet 2"));
+        QCOMPARE(group->childCount(), 2);
+        QCOMPARE(group->child(0)->text(0), QStringLiteral("Wire end joins nothing"));
+
+        // Chosen, it is shown with the wire chosen.
+        window.showPage(0);
+        group->child(1)->setSelected(true);
+        QCOMPARE(window.designItem()->page(), 1);
+        QCOMPARE(window.sheetEditor()->selection(), QSet<ObjectId>({wire.id}));
     }
 
     void theSheetShownStaysShownWhenSheetsChange()

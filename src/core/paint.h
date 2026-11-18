@@ -1,5 +1,6 @@
 #pragma once
 
+#include "erc.h"
 #include "project.h"
 
 #include <QColor>
@@ -50,6 +51,8 @@ inline QColor missing() { return QColor(220, 0, 0); }
 inline QColor selection() { return QColor(0, 120, 215); }
 // The net lit: under the mouse, or chosen in the table of nets.
 inline QColor litNet() { return QColor(255, 140, 0); }
+// The ring around a problem the rules check found.
+inline QColor ercMark() { return QColor(220, 0, 0); }
 } // namespace paintcolor
 
 QPointF toMm(const Point &point);
@@ -78,6 +81,8 @@ QRectF paperRect(PaperSize paper);
 // from 'library'; one it lacks is drawn as a red square with a question mark.
 void paintSheet(QPainter &painter, const Schematic &schematic, const Library &library,
                 int index, const TitleBlock &titleBlock);
+// A red ring around each of 'problems' on sheet 'index'.
+void paintErcMarks(QPainter &painter, const QList<ErcProblem> &problems, int index);
 
 // Where an object of a sheet is for the mouse, in millimetres. What is a
 // line — a wire, a bus, a drawing that is not filled in — is found by its

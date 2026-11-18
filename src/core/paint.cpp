@@ -70,6 +70,9 @@ const double LOOSE_LABEL_MARGIN = 0.3;
 // Stands for the text of a label that has none yet, while it is placed.
 const char EMPTY_LABEL_MARK[] = "?";
 const double NO_CONNECT_HALF = 0.635;
+// The ring around a problem of the rules check: its radius and line.
+const double ERC_MARK_RADIUS = 1.5;
+const double ERC_MARK_LINE_WIDTH = 0.3;
 
 // The board.
 const double OUTLINE_WIDTH = 0.15;
@@ -1028,6 +1031,19 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const Library &li
     const QList<Point> partPins = partPinPoints(sheet, library);
     for (const NoConnect &mark : sheet.noConnects)
         paintNoConnect(painter, mark, partPins.contains(mark.at));
+    painter.restore();
+}
+
+void paintErcMarks(QPainter &painter, const QList<ErcProblem> &problems, int index)
+{
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(linePen(paintcolor::ercMark(), ERC_MARK_LINE_WIDTH));
+    painter.setBrush(Qt::NoBrush);
+    for (const ErcProblem &problem : problems) {
+        if (problem.sheet == index)
+            painter.drawEllipse(toMm(problem.at), ERC_MARK_RADIUS, ERC_MARK_RADIUS);
+    }
     painter.restore();
 }
 

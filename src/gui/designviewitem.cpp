@@ -67,6 +67,8 @@ void DesignViewItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *op
         paintSheet(*painter, design.schematic, design.library, m_page, design.project.titleBlock);
         paintLitNet(*painter, design.schematic.sheets.at(m_page));
         paintSelection(*painter, design.schematic.sheets.at(m_page));
+        if (editor != nullptr && m_ercMarksShown)
+            paintErcMarks(*painter, editor->problems(), m_page);
         return;
     }
     // A drag or a placing in progress: the sheet as it would be.
@@ -83,6 +85,14 @@ void DesignViewItem::setEditor(SheetEditor *editor)
     m_editor = editor;
     setAcceptedMouseButtons(editor == nullptr ? Qt::NoButton : Qt::LeftButton);
     setAcceptHoverEvents(editor != nullptr);
+}
+
+void DesignViewItem::setErcMarksShown(bool shown)
+{
+    if (shown == m_ercMarksShown)
+        return;
+    m_ercMarksShown = shown;
+    update();
 }
 
 SheetEditor *DesignViewItem::activeEditor() const

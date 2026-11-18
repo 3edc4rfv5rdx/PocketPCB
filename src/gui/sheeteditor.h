@@ -1,6 +1,7 @@
 #pragma once
 
 #include "document.h"
+#include "erc.h"
 #include "netlist.h"
 #include "paint.h"
 #include "sheetedit.h"
@@ -153,6 +154,9 @@ public:
     void clearHoveredNet();
     // The nets of the schematic, built again after a change of the design.
     const QList<Net> &nets() const;
+    // The problems the rules check finds in the schematic (see
+    // checkSchematic()), found again after a change of the design.
+    const QList<ErcProblem> &problems() const;
     // The net chosen in the table of nets, by name: lit whatever sheet is
     // shown; empty for none.
     QString chosenNet() const { return m_chosenNet; }
@@ -222,7 +226,8 @@ signals:
     void changed();
     // A component was double-clicked: its part and its footprint.
     void componentOpened(const QString &part, const QString &footprint);
-    // The design changed: nets() is built anew when next asked for.
+    // The design changed: nets() and problems() are made anew when next
+    // asked for.
     void netsChanged();
 
 protected:
@@ -393,6 +398,9 @@ private:
     // of the design (see nets()).
     mutable QList<Net> m_nets;
     mutable bool m_netsBuilt = false;
+    // The same for problems().
+    mutable QList<ErcProblem> m_problems;
+    mutable bool m_problemsFound = false;
     // The net chosen in the table of nets (see chosenNet()).
     QString m_chosenNet;
     // The net lit under the mouse: an index in 'm_nets', or -1.

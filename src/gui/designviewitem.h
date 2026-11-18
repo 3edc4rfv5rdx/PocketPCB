@@ -36,6 +36,9 @@ public:
     // selection, a drag, a rectangle, the net under the mouse).
     // The editor must outlive the item.
     void setEditor(SheetEditor *editor);
+    // Whether the problems of the rules check are ringed on the sheet: while
+    // their panel is open.
+    void setErcMarksShown(bool shown);
 
     QRectF boundingRect() const override { return m_area; }
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
@@ -62,6 +65,7 @@ private:
     SheetEditor *m_editor = nullptr;
     QRectF m_area;
     int m_page = 0;
+    bool m_ercMarksShown = false;
 };
 
 } // namespace ppcb

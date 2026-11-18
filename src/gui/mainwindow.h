@@ -21,6 +21,7 @@ namespace ppcb {
 
 class CanvasView;
 class DesignViewItem;
+class ErcPanel;
 class Document;
 class LibraryPanel;
 class NetsPanel;
@@ -224,6 +225,8 @@ private:
     QDockWidget *m_propertiesDock = nullptr;
     NetsPanel *m_netsPanel = nullptr;
     QDockWidget *m_netsDock = nullptr;
+    ErcPanel *m_ercPanel = nullptr;
+    QDockWidget *m_ercDock = nullptr;
 
     QFileSystemWatcher *m_libraryWatcher = nullptr;
     // Delays the reload a little: editors often save in several steps.
