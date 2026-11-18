@@ -58,6 +58,15 @@ private slots:
         QCOMPARE(shortText, QStringLiteral("5"));
     }
 
+    void languagesAreNamedInThemselves()
+    {
+        QCOMPARE(languageName(QStringLiteral("en")), QStringLiteral("English"));
+        QCOMPARE(languageName(QStringLiteral("uk")), QStringLiteral("Українська"));
+        QCOMPARE(languageName(QStringLiteral("ru")), QStringLiteral("Русский"));
+        for (const QString &code : supportedLanguages())
+            QVERIFY(languageName(code) != code);
+    }
+
     void languageFollowsTheSystem()
     {
         QCOMPARE(chooseLanguage(QString(), {"ru-RU", "en-US"}), QStringLiteral("ru"));

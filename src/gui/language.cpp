@@ -35,6 +35,17 @@ QStringList supportedLanguages()
     return {QStringLiteral("en"), QStringLiteral("uk"), QStringLiteral("ru")};
 }
 
+QString languageName(const QString &code)
+{
+    if (code == QLatin1String("en"))
+        return QStringLiteral("English");
+    if (code == QLatin1String("uk"))
+        return QStringLiteral("Українська");
+    if (code == QLatin1String("ru"))
+        return QStringLiteral("Русский");
+    return code;
+}
+
 QString chooseLanguage(const QString &preferred, const QStringList &systemLanguages)
 {
     const QStringList supported = supportedLanguages();

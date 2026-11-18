@@ -2,7 +2,7 @@
 
 A small, simple editor for schematics and double-sided printed circuit boards with manual routing. The aim is a board you can order from a factory (Gerber and drill files) or make at home by toner transfer (1:1 layer printing). It is not a KiCad competitor: few features, kept simple.
 
-Written in C++ with Qt 6. Linux first; the code is kept portable. The interface is in English, Ukrainian and Russian.
+Written in C++ with Qt 6. Linux first; the code is kept portable. The interface is in English, Ukrainian and Russian, following the system or chosen in Settings > Language (taken at the next start).
 
 ## Status
 

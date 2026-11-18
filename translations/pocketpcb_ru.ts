@@ -384,6 +384,22 @@
 <context>
     <name>ppcb::MainWindow</name>
     <message>
+        <source>&amp;Settings</source>
+        <translation>&amp;Настройки</translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation>Язык</translation>
+    </message>
+    <message>
+        <source>System language</source>
+        <translation>Как в системе</translation>
+    </message>
+    <message>
+        <source>The language changes after a restart</source>
+        <translation>Язык сменится после перезапуска программы</translation>
+    </message>
+    <message>
         <source>Sheet</source>
         <translation>Лист</translation>
     </message>

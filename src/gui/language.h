@@ -11,6 +11,10 @@ namespace ppcb {
 // strings in the code: it is the fallback and needs no translation file.
 QStringList supportedLanguages();
 
+// The name of the language 'code' in that language itself ("Українська"),
+// as a list of languages shows it; 'code' itself for one not supported.
+QString languageName(const QString &code);
+
 // Picks the interface language. 'preferred' is the user's setting (empty:
 // follow the system); 'systemLanguages' is the system's list, most wanted
 // first, in any of the forms "ru", "ru-RU", "ru_RU".

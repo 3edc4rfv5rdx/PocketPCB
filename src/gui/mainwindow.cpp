@@ -6,6 +6,7 @@
 #include "document.h"
 #include "format.h"
 #include "grid.h"
+#include "language.h"
 #include "librarypanel.h"
 #include "netlist.h"
 #include "paint.h"
@@ -477,6 +478,31 @@ void MainWindow::createMenus()
     warpAction->setCheckable(true);
     warpAction->setChecked(m_canvas->zoomCenterAndWarp());
     connect(warpAction, &QAction::toggled, this, &MainWindow::applyZoomCenterAndWarp);
+
+    // The language of the interface, each named in itself; it is taken at
+    // the next start.
+    QMenu *settingsMenu = menuBar()->addMenu(tr("&Settings"));
+    QMenu *languageMenu = settingsMenu->addMenu(tr("Language"));
+    QActionGroup *languageGroup = new QActionGroup(this);
+    const QString language = AppSettings::language();
+    QAction *systemAction =
+        addChoice(languageMenu, languageGroup, tr("System language"), language.isEmpty());
+    connect(systemAction, &QAction::triggered, this, [this] { setInterfaceLanguage(QString()); });
+    languageMenu->addSeparator();
+    for (const QString &code : supportedLanguages()) {
+        QAction *action =
+            addChoice(languageMenu, languageGroup, languageName(code), language == code);
+        connect(action, &QAction::triggered, this, [this, code] { setInterfaceLanguage(code); });
+    }
+}
+
+void MainWindow::setInterfaceLanguage(const QString &language)
+{
+    if (language == AppSettings::language())
+        return;
+    AppSettings::setLanguage(language);
+    QMessageBox::information(this, tr("Language"),
+                             tr("The language changes after a restart") + QLatin1Char('.'));
 }
 
 void MainWindow::createStatusBar()
