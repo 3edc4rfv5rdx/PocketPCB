@@ -11,6 +11,7 @@
 #include "netspanel.h"
 #include "propertiespanel.h"
 #include "sheeteditor.h"
+#include "sheettabs.h"
 #include "libraryviewitem.h"
 #include "saveprojectdialog.h"
 
@@ -35,9 +36,7 @@
 #include <QPixmap>
 #include <QPushButton>
 #include <QShowEvent>
-#include <QSignalBlocker>
 #include <QStatusBar>
-#include <QTabBar>
 #include <QTimer>
 #include <QToolButton>
 #include <QUndoStack>
@@ -112,18 +111,6 @@ MainWindow::MainWindow(QWidget *parent)
     m_canvas->setCursorStyle(AppSettings::cursorStyle());
     m_canvas->setZoomCenterAndWarp(AppSettings::zoomCenterAndWarp());
 
-    // The pages of the project as tabs over the canvas.
-    m_tabs = new QTabBar(this);
-    m_tabs->setExpanding(false);
-    m_tabs->setDrawBase(false);
-    QWidget *central = new QWidget(this);
-    QVBoxLayout *layout = new QVBoxLayout(central);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(0);
-    layout->addWidget(m_tabs);
-    layout->addWidget(m_canvas);
-    setCentralWidget(central);
-
     m_document = new Document(this);
     m_document->setBackupCount(AppSettings::backupCount());
     m_autosaveTimer = new QTimer(this);
@@ -133,6 +120,18 @@ MainWindow::MainWindow(QWidget *parent)
     m_designItem = new DesignViewItem(m_document, m_canvas->scene()->sceneRect());
     m_canvas->scene()->addItem(m_designItem);
     m_sheetEditor = new SheetEditor(m_document, m_canvas, this);
+
+    // The pages of the project as tabs over the canvas.
+    m_sheetTabs = new SheetTabs(m_document, m_sheetEditor, this);
+    QWidget *central = new QWidget(this);
+    QVBoxLayout *layout = new QVBoxLayout(central);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    layout->addWidget(m_sheetTabs);
+    layout->addWidget(m_canvas);
+    setCentralWidget(central);
+    connect(m_sheetTabs, &SheetTabs::pageChosen, this, [this](int page) { showPage(page); });
+
     m_designItem->setEditor(m_sheetEditor);
     connect(m_sheetEditor, &SheetEditor::changed, this, [this] { m_designItem->update(); });
     connect(m_document, &Document::stepApplied, this, &MainWindow::showStep);
@@ -150,16 +149,6 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(m_document, &Document::designChanged, this, &MainWindow::projectChanged);
     connect(m_document, &Document::modifiedChanged, this, &MainWindow::updateTitle);
-    // 'currentChanged' covers the keyboard; 'tabBarClicked' adds the click
-    // on the current tab, which brings the project back from a library file.
-    connect(m_tabs, &QTabBar::currentChanged, this, [this](int index) {
-        if (index >= 0)
-            showPage(index);
-    });
-    connect(m_tabs, &QTabBar::tabBarClicked, this, [this](int index) {
-        if (index >= 0)
-            showPage(index);
-    });
 
     m_libraryWatcher = new QFileSystemWatcher(this);
     m_reloadTimer = new QTimer(this);
@@ -764,11 +753,8 @@ void MainWindow::showPage(int page, bool fit)
     m_designItem->setPage(page);
     m_shownViewKey = pageViewKey(m_designItem->page());
     updateCanvasBackground();
-    {
-        // The tab follows the page, not the other way round.
-        const QSignalBlocker blocker(m_tabs);
-        m_tabs->setCurrentIndex(m_designItem->page());
-    }
+    // The tab follows the page, not the other way round.
+    m_sheetTabs->setCurrentPage(m_designItem->page());
     const int shown = m_designItem->page();
     m_sheetEditor->setSheet(shown == m_designItem->boardPage() ? -1 : shown);
     applyProjectGrid();
@@ -869,17 +855,11 @@ void MainWindow::showProject()
 
 void MainWindow::projectChanged()
 {
+    keepShownPage();
     m_designItem->contentChanged();
 
-    const Design &design = m_document->design();
-    const QSignalBlocker blocker(m_tabs);
-    while (m_tabs->count() > 0)
-        m_tabs->removeTab(0);
-    for (int i = 0; i < design.schematic.sheets.size(); ++i) {
-        m_tabs->addTab(SheetEditor::sheetName(design.schematic.sheets.at(i), i));
-    }
-    m_tabs->addTab(tr("Board"));
-    m_tabs->setCurrentIndex(m_designItem->page());
+    m_sheetTabs->updatePages();
+    m_sheetTabs->setCurrentPage(m_designItem->page());
     // The sheet edited may be gone, and so may what was chosen on it.
     const int shown = m_designItem->page();
     const int sheet = shown == m_designItem->boardPage() ? -1 : shown;
@@ -889,6 +869,26 @@ void MainWindow::projectChanged()
         m_sheetEditor->setSelection(m_sheetEditor->selection());
     applyProjectGrid();
     updateLibraryPanel();
+}
+
+void MainWindow::keepShownPage()
+{
+    // Nothing shown yet, or a project just started.
+    if (m_shownViewKey.isEmpty())
+        return;
+    for (int page = 0; page < m_designItem->pageCount(); ++page) {
+        if (pageViewKey(page) == m_shownViewKey) {
+            m_designItem->setPage(page);
+            return;
+        }
+    }
+    // The sheet shown is gone: the one now in its place, or the last one,
+    // never the board.
+    const int sheets = int(m_document->design().schematic.sheets.size());
+    m_designItem->setPage(qMin(m_designItem->page(), sheets - 1));
+    m_shownViewKey = pageViewKey(m_designItem->page());
+    if (m_designItem->isVisible())
+        showPageView();
 }
 
 void MainWindow::updateTitle()

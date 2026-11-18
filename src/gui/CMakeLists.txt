@@ -11,6 +11,7 @@ add_library(pocketpcb_gui STATIC
     netspanel.h netspanel.cpp
     propertiespanel.h propertiespanel.cpp
     sheeteditor.h sheeteditor.cpp
+    sheettabs.h sheettabs.cpp
     saveprojectdialog.h saveprojectdialog.cpp
 )
 target_include_directories(pocketpcb_gui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

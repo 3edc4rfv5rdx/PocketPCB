@@ -121,6 +121,11 @@ struct Schematic
     QList<Sheet> sheets;
 };
 
+// True when nothing is drawn on 'sheet'.
+bool isSheetEmpty(const Sheet &sheet);
+// "A4", "A3": as the files and the menus write it.
+QString paperSizeName(PaperSize paper);
+
 bool operator==(const Component &a, const Component &b);
 bool operator==(const Wire &a, const Wire &b);
 bool operator==(const Bus &a, const Bus &b);

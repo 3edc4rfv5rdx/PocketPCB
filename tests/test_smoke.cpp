@@ -10,6 +10,7 @@
 #include "mainwindow.h"
 #include "saveprojectdialog.h"
 #include "sheeteditor.h"
+#include "sheettabs.h"
 #include "wiring.h"
 
 #include <QAction>
@@ -30,6 +31,7 @@
 #include <QTreeWidget>
 #include <QTemporaryDir>
 #include <QTimer>
+#include <QToolButton>
 #include <QtTest>
 
 #include <algorithm>
@@ -348,6 +350,58 @@ private slots:
         QVERIFY(window.document()->projectPath().isEmpty());
         QCOMPARE(tabTexts(window).size(), 2);
         QCOMPARE(window.designItem()->page(), 0);
+    }
+
+    void theSheetShownStaysShownWhenSheetsChange()
+    {
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        window.newProject();
+        Document *document = window.document();
+        const QStringList oneSheet = {QStringLiteral("Sheet 1"), QStringLiteral("Board")};
+        const QStringList twoSheets = {QStringLiteral("Sheet 1"), QStringLiteral("Sheet 2"),
+                                       QStringLiteral("Board")};
+
+        // "+" adds a sheet at the end and shows it.
+        QToolButton *add = nullptr;
+        for (QToolButton *button : window.findChild<SheetTabs *>()->findChildren<QToolButton *>()) {
+            if (button->text() == QStringLiteral("+"))
+                add = button;
+        }
+        QVERIFY(add != nullptr);
+        add->click();
+        QCOMPARE(tabTexts(window), twoSheets);
+        QCOMPARE(window.designItem()->page(), 1);
+        QCOMPARE(window.findChild<QTabBar *>()->currentIndex(), 1);
+
+        // Undone while shown, the sheet goes and the last sheet is shown,
+        // not the board that takes its place.
+        document->undoStack()->undo();
+        QCOMPARE(tabTexts(window), oneSheet);
+        QCOMPARE(window.designItem()->page(), 0);
+        document->undoStack()->redo();
+        QCOMPARE(tabTexts(window), twoSheets);
+        QCOMPARE(window.designItem()->page(), 0);
+
+        // The sheet shown follows its sheet when the sheets swap.
+        window.showPage(1);
+        const ObjectId shown = document->design().schematic.sheets.at(1).id;
+        Design design = document->design();
+        design.schematic.sheets.swapItemsAt(0, 1);
+        document->change(QStringLiteral("swap"), design);
+        QCOMPARE(window.designItem()->page(), 0);
+        QVERIFY(document->design().schematic.sheets.at(0).id == shown);
+        QCOMPARE(window.findChild<QTabBar *>()->currentIndex(), 0);
+        QCOMPARE(window.sheetEditor()->sheet(), 0);
+
+        // Deleted while shown, the sheet that takes its place is shown.
+        design = document->design();
+        design.schematic.sheets.removeAt(0);
+        document->change(QStringLiteral("delete"), design);
+        QCOMPARE(tabTexts(window), oneSheet);
+        QCOMPARE(window.designItem()->page(), 0);
+        QVERIFY(document->design().schematic.sheets.at(0).id != shown);
     }
 
     void libraryProblemsAreShownOnOpening()

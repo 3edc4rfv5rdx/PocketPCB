@@ -16,7 +16,6 @@ class QDockWidget;
 class QLabel;
 class QPushButton;
 class QMenu;
-class QTabBar;
 
 namespace ppcb {
 
@@ -27,6 +26,7 @@ class LibraryPanel;
 class NetsPanel;
 class PropertiesPanel;
 class SheetEditor;
+class SheetTabs;
 class LibraryViewItem;
 
 class MainWindow : public QMainWindow
@@ -147,6 +147,9 @@ private:
     void storeViews();
     // Brings the tabs and the drawing in line with the project's content.
     void projectChanged();
+    // After a change of the content: the page shown stays shown when its
+    // sheet has moved; when the sheet is gone, the one in its place is.
+    void keepShownPage();
     void updateTitle();
     // The mark in the bottom left corner: saved, not saved, or new.
     void updateSavedMark();
@@ -180,7 +183,7 @@ private:
     void showGridStep(Coord step);
 
     CanvasView *m_canvas = nullptr;
-    QTabBar *m_tabs = nullptr;
+    SheetTabs *m_sheetTabs = nullptr;
     Document *m_document = nullptr;
     // Owned by the canvas scene.
     DesignViewItem *m_designItem = nullptr;

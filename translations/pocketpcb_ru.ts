@@ -437,10 +437,6 @@
         <translation>Проекты PocketPCB</translation>
     </message>
     <message>
-        <source>Board</source>
-        <translation>Плата</translation>
-    </message>
-    <message>
         <source>Not saved</source>
         <translation>Не сохранено</translation>
     </message>
@@ -610,6 +606,37 @@
     <message>
         <source>Bus</source>
         <translation>Шина</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::SheetTabs</name>
+    <message>
+        <source>Board</source>
+        <translation>Плата</translation>
+    </message>
+    <message>
+        <source>Add sheet</source>
+        <translation>Добавить лист</translation>
+    </message>
+    <message>
+        <source>Rename sheet</source>
+        <translation>Переименовать лист</translation>
+    </message>
+    <message>
+        <source>Paper</source>
+        <translation>Формат</translation>
+    </message>
+    <message>
+        <source>Delete sheet</source>
+        <translation>Удалить лист</translation>
+    </message>
+    <message>
+        <source>Delete %1 with everything on it</source>
+        <translation>Удалить %1 со всем, что на нём</translation>
+    </message>
+    <message>
+        <source>Move sheet</source>
+        <translation>Переместить лист</translation>
     </message>
 </context>
 <context>

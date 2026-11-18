@@ -251,6 +251,20 @@ private slots:
         QVERIFY(schematic == fullSchematic()); // untouched
     }
 
+    void aSheetIsEmptyWithNothingOnIt()
+    {
+        QVERIFY(isSheetEmpty(Sheet()));
+        const Schematic schematic = fullSchematic();
+        QVERIFY(!isSheetEmpty(schematic.sheets.at(0)));
+        Sheet sheet;
+        sheet.title = QStringLiteral("Title");
+        sheet.paper = PaperSize::A3;
+        QVERIFY(isSheetEmpty(sheet));
+        sheet.graphics.append(SheetGraphic());
+        QVERIFY(!isSheetEmpty(sheet));
+        QCOMPARE(paperSizeName(PaperSize::A3), QStringLiteral("A3"));
+    }
+
     void schematicNeedsASheet()
     {
         QJsonObject root = schematicToJson(fullSchematic());

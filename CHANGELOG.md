@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Sheets are added with "+" or a tab's menu, renamed with a double click on the tab, moved by dragging tabs, and given A4 or A3 paper or deleted from the tab's menu
 - F: The swatches of the sheet background table are larger and edged in black so that pale colours stand out
 ## v0.4.118 (2026-11-16)
 - F: The menu of the sheet has a dark frame so that it stands out from the paper

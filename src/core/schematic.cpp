@@ -294,6 +294,18 @@ Sheet sheetFromJson(const QJsonObject &object, const QString &where, ReadContext
 
 } // namespace
 
+bool isSheetEmpty(const Sheet &sheet)
+{
+    return sheet.components.isEmpty() && sheet.wires.isEmpty() && sheet.buses.isEmpty()
+           && sheet.labels.isEmpty() && sheet.powerSymbols.isEmpty()
+           && sheet.noConnects.isEmpty() && sheet.graphics.isEmpty();
+}
+
+QString paperSizeName(PaperSize paper)
+{
+    return paperNames().at(int(paper));
+}
+
 bool operator==(const Component &a, const Component &b)
 {
     return a.id == b.id && a.part == b.part && a.footprint == b.footprint
