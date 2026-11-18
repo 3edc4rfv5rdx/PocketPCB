@@ -20,7 +20,9 @@ namespace {
 const char APP_NAME[] = "PocketPCB";
 const char SETTINGS_FILE[] = "pocketpcb.ini";
 
-const char KEY_LANGUAGE[] = "general/language";
+// Not in a group "general": an INI file writes it as [%General] and reads
+// it back as "General", so the key would be lost after a restart.
+const char KEY_LANGUAGE[] = "interface/language";
 const char KEY_GRID_STYLE[] = "view/gridStyle";
 const char KEY_CURSOR_STYLE[] = "view/cursorStyle";
 const char KEY_ZOOM_WARP[] = "view/zoomCenterAndWarp";

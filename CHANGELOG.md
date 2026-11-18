@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: The language chosen in Settings > Language is kept across a restart instead of being lost
 - N: Settings > Language chooses the language of the interface, or the system's, taken at the next start
 - F: The drawing stays in place when a panel is opened or closed beside the canvas, instead of shifting by half its width
 - F: An object chosen on the sheet chooses its problem in the ERC panel
