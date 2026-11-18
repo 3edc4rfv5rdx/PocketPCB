@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: View > Sheet adds, renames, deletes the sheet shown or chooses its paper, like the menu of its tab
 - F: The sheet shown takes the colour of the swatch under the mouse in View > Sheet background, as a preview
 - N: Sheets are added with "+" or a tab's menu, renamed with a double click on the tab, moved by dragging tabs, and given A4 or A3 paper or deleted from the tab's menu
 - F: The swatches of the sheet background table are larger and edged in black so that pale colours stand out

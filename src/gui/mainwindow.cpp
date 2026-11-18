@@ -439,6 +439,12 @@ void MainWindow::createMenus()
     tableAction->setDefaultWidget(table);
     backgroundMenu->addAction(tableAction);
 
+    // What the menu of a sheet's tab does, for the sheet shown.
+    QMenu *sheetMenu = viewMenu->addMenu(tr("Sheet"));
+    connect(sheetMenu, &QMenu::aboutToShow, this, [this, sheetMenu] {
+        m_sheetTabs->fillMenu(sheetMenu, isSheetShown() ? m_designItem->page() : -1);
+    });
+
     viewMenu->addSeparator();
 
     viewMenu->addAction(m_libraryDock->toggleViewAction());

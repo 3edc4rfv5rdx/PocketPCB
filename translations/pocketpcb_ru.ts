@@ -317,6 +317,10 @@
 <context>
     <name>ppcb::MainWindow</name>
     <message>
+        <source>Sheet</source>
+        <translation>Лист</translation>
+    </message>
+    <message>
         <source>Sheet background</source>
         <translation>Фон схемы</translation>
     </message>

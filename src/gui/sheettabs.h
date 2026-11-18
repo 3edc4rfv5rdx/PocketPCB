@@ -6,6 +6,7 @@
 #include <QWidget>
 
 class QLineEdit;
+class QMenu;
 class QTabBar;
 
 namespace ppcb {
@@ -16,8 +17,9 @@ class SheetEditor;
 // The pages of the project as tabs over the canvas: the sheets, then the
 // board, which stays last. A sheet is added with the "+" button beside the
 // tabs or from the menu of a tab, renamed with a double click on its tab or
-// from that menu, where its paper is chosen and it is deleted too; dragging
-// its tab moves it. Each of these is one step of the history.
+// from that menu, where its paper is chosen and it is deleted too (the same
+// menu is View > Sheet for the sheet shown); dragging its tab moves it. Each
+// of these is one step of the history.
 //
 // A tab knows its page by the sheet's id, not by its place, so that a tab
 // dragged halfway still stands for its sheet.
@@ -27,6 +29,11 @@ class SheetTabs : public QWidget
 
 public:
     SheetTabs(Document *document, SheetEditor *editor, QWidget *parent = nullptr);
+
+    // Fills 'menu', emptied first, with what can be done to page 'page': a
+    // sheet is added after it, renamed, given its paper or deleted; for the
+    // board or no page, a sheet is added at the end.
+    void fillMenu(QMenu *menu, int page);
 
     // Brings the tabs in line with the sheets of the project.
     void updatePages();

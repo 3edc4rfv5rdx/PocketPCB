@@ -157,53 +157,49 @@ int SheetTabs::sheetIndex(const ObjectId &id) const
 
 void SheetTabs::showMenu(const QPoint &pos)
 {
-    const QList<Sheet> &sheets = m_document->design().schematic.sheets;
-    const int tab = m_bar->tabAt(pos);
-    const int page = pageOfTab(tab);
-    const bool onSheet = page >= 0 && page < sheets.size();
-    // Read before the menu runs: a step may change the sheets meanwhile.
-    const ObjectId id = onSheet ? sheets.at(page).id : ObjectId();
-    const PaperSize paper = onSheet ? sheets.at(page).paper : PaperSize::A4;
-    const bool lastSheet = sheets.size() <= 1;
-
     QMenu menu(this);
-    // A new sheet goes after the one clicked, else at the end.
-    QAction *addAction = menu.addAction(tr("Add sheet"));
-    QAction *renameAction = nullptr;
-    QAction *a4Action = nullptr;
-    QAction *a3Action = nullptr;
-    QAction *deleteAction = nullptr;
-    if (onSheet) {
-        renameAction = menu.addAction(tr("Rename sheet"));
-        QMenu *paperMenu = menu.addMenu(tr("Paper"));
-        QActionGroup *paperGroup = new QActionGroup(paperMenu);
-        a4Action = paperMenu->addAction(paperSizeName(PaperSize::A4));
-        a3Action = paperMenu->addAction(paperSizeName(PaperSize::A3));
-        for (QAction *action : {a4Action, a3Action}) {
-            action->setCheckable(true);
-            paperGroup->addAction(action);
-        }
-        (paper == PaperSize::A3 ? a3Action : a4Action)->setChecked(true);
-        menu.addSeparator();
-        deleteAction = menu.addAction(tr("Delete sheet"));
-        deleteAction->setEnabled(!lastSheet);
-    }
+    fillMenu(&menu, pageOfTab(m_bar->tabAt(pos)));
+    menu.exec(m_bar->mapToGlobal(pos));
+}
 
-    QAction *chosen = menu.exec(m_bar->mapToGlobal(pos));
-    if (chosen == nullptr)
+void SheetTabs::fillMenu(QMenu *menu, int page)
+{
+    // clear() leaves the submenus, children of the menu, behind.
+    menu->clear();
+    for (QMenu *submenu : menu->findChildren<QMenu *>(Qt::FindDirectChildrenOnly))
+        submenu->deleteLater();
+    const QList<Sheet> &sheets = m_document->design().schematic.sheets;
+    const bool onSheet = page >= 0 && page < sheets.size();
+    // Kept by id: a step may change the sheets before an item is chosen.
+    const ObjectId id = onSheet ? sheets.at(page).id : ObjectId();
+
+    // A new sheet goes after the sheet, else at the end.
+    QAction *addAction = menu->addAction(tr("Add sheet"));
+    connect(addAction, &QAction::triggered, this, [this, id] {
+        const int index = sheetIndex(id);
+        addSheet(index >= 0 ? index + 1 : int(m_document->design().schematic.sheets.size()));
+    });
+    if (!onSheet)
         return;
-    if (chosen == addAction) {
-        const int at = onSheet ? sheetIndex(id) + 1 : int(sheets.size());
-        addSheet(at > 0 ? at : int(m_document->design().schematic.sheets.size()));
-    } else if (chosen == renameAction) {
-        startRename(tabOfPage(sheetIndex(id)));
-    } else if (chosen == a4Action) {
-        setPaper(id, PaperSize::A4);
-    } else if (chosen == a3Action) {
-        setPaper(id, PaperSize::A3);
-    } else if (chosen == deleteAction) {
-        deleteSheet(id);
+
+    QAction *renameAction = menu->addAction(tr("Rename sheet"));
+    // Once the menu is gone, so that the line keeps the focus.
+    connect(renameAction, &QAction::triggered, this, [this, id] {
+        QTimer::singleShot(0, this, [this, id] { startRename(tabOfPage(sheetIndex(id))); });
+    });
+    QMenu *paperMenu = menu->addMenu(tr("Paper"));
+    QActionGroup *paperGroup = new QActionGroup(paperMenu);
+    for (const PaperSize paper : {PaperSize::A4, PaperSize::A3}) {
+        QAction *action = paperMenu->addAction(paperSizeName(paper));
+        action->setCheckable(true);
+        action->setChecked(sheets.at(page).paper == paper);
+        paperGroup->addAction(action);
+        connect(action, &QAction::triggered, this, [this, id, paper] { setPaper(id, paper); });
     }
+    menu->addSeparator();
+    QAction *deleteAction = menu->addAction(tr("Delete sheet"));
+    deleteAction->setEnabled(sheets.size() > 1);
+    connect(deleteAction, &QAction::triggered, this, [this, id] { deleteSheet(id); });
 }
 
 void SheetTabs::addSheet(int index)
