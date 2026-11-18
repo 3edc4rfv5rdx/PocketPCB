@@ -386,6 +386,14 @@ private slots:
         group->child(1)->setSelected(true);
         QCOMPARE(window.designItem()->page(), 1);
         QCOMPARE(window.sheetEditor()->selection(), QSet<ObjectId>({wire.id}));
+        QVERIFY(group->child(1)->isSelected());
+
+        // Chosen on the sheet, the wire chooses its first problem in the list;
+        // anything else clears it.
+        window.sheetEditor()->setSelection({});
+        QVERIFY(tree->selectedItems().isEmpty());
+        window.sheetEditor()->setSelection({wire.id});
+        QCOMPARE(tree->selectedItems(), QList<QTreeWidgetItem *>({group->child(0)}));
     }
 
     void theSheetShownStaysShownWhenSheetsChange()

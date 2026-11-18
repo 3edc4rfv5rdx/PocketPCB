@@ -35,6 +35,7 @@ ErcPanel::ErcPanel(Document *document, SheetEditor *editor, QWidget *parent)
     // A click on the problem chosen shows it again.
     connect(m_tree, &QTreeWidget::itemClicked, this, &ErcPanel::itemChosen);
     connect(m_editor, &SheetEditor::netsChanged, this, &ErcPanel::refresh);
+    connect(m_editor, &SheetEditor::changed, this, &ErcPanel::followSelection);
     refresh();
 }
 
@@ -116,8 +117,41 @@ void ErcPanel::itemChosen()
     if (!index.isValid())
         return;
     const ErcProblem &problem = m_problems.at(index.toInt());
-    if (problem.sheet >= 0)
-        emit problemChosen(problem);
+    if (problem.sheet < 0)
+        return;
+    m_showing = true;
+    emit problemChosen(problem);
+    m_showing = false;
+}
+
+void ErcPanel::followSelection()
+{
+    if (m_showing)
+        return;
+    const QSet<ObjectId> &selection = m_editor->selection();
+    const int sheet = m_editor->sheet();
+    const auto fits = [&](const QTreeWidgetItem *item) {
+        const QVariant index = item->data(0, PROBLEM_ROLE);
+        if (!index.isValid())
+            return false;
+        const ErcProblem &problem = m_problems.at(index.toInt());
+        return problem.sheet == sheet && selection.contains(problem.object);
+    };
+    const QList<QTreeWidgetItem *> chosen = m_tree->selectedItems();
+    if (!chosen.isEmpty() && fits(chosen.first()))
+        return;
+    const QSignalBlocker blocker(m_tree);
+    m_tree->clearSelection();
+    for (int g = 0; g < m_tree->topLevelItemCount(); ++g) {
+        QTreeWidgetItem *group = m_tree->topLevelItem(g);
+        for (int i = 0; i < group->childCount(); ++i) {
+            if (fits(group->child(i))) {
+                group->child(i)->setSelected(true);
+                m_tree->scrollToItem(group->child(i));
+                return;
+            }
+        }
+    }
 }
 
 } // namespace ppcb

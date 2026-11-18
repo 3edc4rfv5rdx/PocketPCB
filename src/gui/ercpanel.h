@@ -33,12 +33,19 @@ signals:
 private:
     void refresh();
     void itemChosen();
+    // What is chosen on the sheet chooses its problem in the list, the one
+    // chosen staying while it still fits; nothing that has one clears the
+    // list's choice.
+    void followSelection();
 
     Document *m_document;
     SheetEditor *m_editor;
     QTreeWidget *m_tree = nullptr;
     // The problems shown, by the index kept in each item.
     QList<ErcProblem> m_problems;
+    // While a problem chosen in the list is being shown: the sheet's
+    // selection passes through states that would choose another one.
+    bool m_showing = false;
 };
 
 } // namespace ppcb
