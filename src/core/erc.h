@@ -34,6 +34,13 @@ enum class ErcKind {
     // problem for each two segments, marked at the middle of the stretch
     // and about the wire that comes later.
     OverlappingWires,
+    // Wires closing a loop: a segment between two points the wires already
+    // lead between another way. Marked at the middle of the segment that
+    // closes it, about its wire. Wires lying on each other are left to
+    // OverlappingWires.
+    WireLoop,
+    // A component with two pins, both on one net: shorted.
+    ShortedComponent,
     // A net given two or more names by its labels and power symbols.
     TwoNames,
     // A name of the table of nets (see NetByPins) no net holds a pin of any

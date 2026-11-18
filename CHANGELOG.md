@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: ERC also finds wires closing a loop and two-pin parts with both pins on one net
 - N: An ERC panel lists the problems of the schematic after every change, each ringed in red on its sheet while the panel is open: empty values, repeated designators, free pins, misplaced no-connect marks, loose labels, loose wire ends, wires lying on wires, nets with two names and names of the table of nets lost or taken
 - N: View > Sheet adds, renames, deletes the sheet shown or chooses its paper, like the menu of its tab
 - F: The sheet shown takes the colour of the swatch under the mouse in View > Sheet background, as a preview

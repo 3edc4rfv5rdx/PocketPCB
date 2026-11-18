@@ -1,5 +1,6 @@
 #include "erc.h"
 
+#include "joins.h"
 #include "wiring.h"
 
 #include <QHash>
@@ -182,6 +183,87 @@ void checkOverlaps(const Sheet &sheet, int index, QList<ErcProblem> &problems)
     }
 }
 
+// True when 'point' lies on the segment a-b, ends included.
+bool onSegment(const Point &a, const Point &b, const Point &point)
+{
+    return cross(point - a, b - a) == 0 && point.x >= qMin(a.x, b.x) && point.x <= qMax(a.x, b.x)
+           && point.y >= qMin(a.y, b.y) && point.y <= qMax(a.y, b.y);
+}
+
+// The wires as a graph: its nodes are the corners and ends of the wires,
+// one lying on another's segment cutting it there; a segment cut this way
+// gives an edge for each piece. A crossing makes no node. An edge between
+// nodes already joined closes a loop; one met before (wires lying on each
+// other) is left out.
+void checkLoops(const Sheet &sheet, int index, QList<ErcProblem> &problems)
+{
+    QList<Point> nodes;
+    QHash<QPair<Coord, Coord>, int> nodeAt;
+    for (const Wire &wire : sheet.wires) {
+        for (const Point &point : wire.points) {
+            const QPair<Coord, Coord> key(point.x, point.y);
+            if (!nodeAt.contains(key)) {
+                nodeAt.insert(key, int(nodes.size()));
+                nodes.append(point);
+            }
+        }
+    }
+    Joins joins;
+    for (int i = 0; i < nodes.size(); ++i)
+        joins.add();
+    QSet<QPair<int, int>> edges;
+    for (const Wire &wire : sheet.wires) {
+        for (int s = 0; s + 1 < wire.points.size(); ++s) {
+            const Point a = wire.points.at(s);
+            const Point b = wire.points.at(s + 1);
+            if (a == b)
+                continue;
+            // The nodes on the segment, from 'a' on.
+            QList<int> on;
+            for (int n = 0; n < nodes.size(); ++n) {
+                if (onSegment(a, b, nodes.at(n)))
+                    on.append(n);
+            }
+            const auto distance = [&](int n) {
+                return qAbs(nodes.at(n).x - a.x) + qAbs(nodes.at(n).y - a.y);
+            };
+            std::sort(on.begin(), on.end(), [&](int l, int r) { return distance(l) < distance(r); });
+            for (int k = 0; k + 1 < on.size(); ++k) {
+                const QPair<int, int> edge(qMin(on.at(k), on.at(k + 1)),
+                                           qMax(on.at(k), on.at(k + 1)));
+                if (edges.contains(edge))
+                    continue;
+                edges.insert(edge);
+                if (joins.root(edge.first) == joins.root(edge.second)) {
+                    const Point from = nodes.at(edge.first);
+                    const Point to = nodes.at(edge.second);
+                    const Point middle{from.x + (to.x - from.x) / 2, from.y + (to.y - from.y) / 2};
+                    problems.append(problem(ErcKind::WireLoop, index, middle, wire.id, QString()));
+                } else {
+                    joins.join(edge.first, edge.second);
+                }
+            }
+        }
+    }
+}
+
+// Components with two pins, both on one net.
+void checkShorts(const Sheet &sheet, int index, const Library &library,
+                 const QHash<QString, int> &netOfPin, QList<ErcProblem> &problems)
+{
+    for (const Component &component : sheet.components) {
+        const Symbol *symbol = library.findSymbolOfPart(component.part);
+        if (symbol == nullptr || symbol->pins.size() != 2)
+            continue;
+        const int first = netOfPin.value(pinKey(component.id, symbol->pins.at(0).number), -1);
+        const int second = netOfPin.value(pinKey(component.id, symbol->pins.at(1).number), -1);
+        if (first >= 0 && first == second) {
+            problems.append(problem(ErcKind::ShortedComponent, index, component.at, component.id,
+                                    component.designator));
+        }
+    }
+}
+
 // Nets with two names, and names given that the table gives another net.
 void checkNames(const Schematic &schematic, const QList<Net> &all, QList<ErcProblem> &problems)
 {
@@ -285,6 +367,8 @@ QList<ErcProblem> checkSchematic(const Schematic &schematic, const Library &libr
         checkPins(sheet, s, library, all, netOfPin, givers, problems);
         checkLabelsAndWires(sheet, s, library, problems);
         checkOverlaps(sheet, s, problems);
+        checkLoops(sheet, s, problems);
+        checkShorts(sheet, s, library, netOfPin, problems);
     }
     checkNames(schematic, all, problems);
     checkTableNames(project, all, problems);

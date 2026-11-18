@@ -62,6 +62,10 @@ QString ErcPanel::problemText(const ErcProblem &problem)
         return tr("Wire end joins nothing");
     case ErcKind::OverlappingWires:
         return tr("Wires lie on top of each other");
+    case ErcKind::WireLoop:
+        return tr("Wires make a loop");
+    case ErcKind::ShortedComponent:
+        return tr("%1 is shorted").arg(problem.subject);
     case ErcKind::TwoNames:
         return tr("Net has two names") + QStringLiteral(": ") + problem.subject;
     case ErcKind::LostTableName:

@@ -303,6 +303,14 @@
         <translation>Проводи лежать один на одному</translation>
     </message>
     <message>
+        <source>Wires make a loop</source>
+        <translation>Проводи утворюють петлю</translation>
+    </message>
+    <message>
+        <source>%1 is shorted</source>
+        <translation>%1 закорочений</translation>
+    </message>
+    <message>
         <source>Net has two names</source>
         <translation>Коло має два імені</translation>
     </message>

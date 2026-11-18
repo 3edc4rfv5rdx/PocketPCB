@@ -1,5 +1,6 @@
 #include "netlist.h"
 
+#include "joins.h"
 #include "sheetedit.h"
 #include "wiring.h"
 
@@ -13,31 +14,6 @@ namespace {
 
 // What a net's table name starts with, a number after it.
 const char TABLE_NAME_PREFIX[] = "NN";
-
-// Sets of nodes joined one with another.
-class Joins
-{
-public:
-    int add()
-    {
-        m_parent.append(int(m_parent.size()));
-        return int(m_parent.size()) - 1;
-    }
-
-    int root(int node)
-    {
-        while (m_parent.at(node) != node) {
-            m_parent[node] = m_parent.at(m_parent.at(node));
-            node = m_parent.at(node);
-        }
-        return node;
-    }
-
-    void join(int a, int b) { m_parent[root(a)] = root(b); }
-
-private:
-    QList<int> m_parent;
-};
 
 // What a node of the nets stands for.
 struct Node

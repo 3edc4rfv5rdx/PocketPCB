@@ -86,7 +86,8 @@ QStringList describe(const QList<ErcProblem> &problems)
         QStringLiteral("EmptyValue"),       QStringLiteral("DuplicateDesignator"),
         QStringLiteral("UnconnectedPin"),   QStringLiteral("MisplacedNoConnect"),
         QStringLiteral("LooseLabel"),       QStringLiteral("LooseWireEnd"),
-        QStringLiteral("OverlappingWires"), QStringLiteral("TwoNames"),         QStringLiteral("LostTableName"),
+        QStringLiteral("OverlappingWires"), QStringLiteral("WireLoop"),
+        QStringLiteral("ShortedComponent"), QStringLiteral("TwoNames"),         QStringLiteral("LostTableName"),
         QStringLiteral("NameOfAnotherNet"),
     };
     QStringList lines;
@@ -191,9 +192,11 @@ private slots:
         QVERIFY(problems.first().object == piece.id);
 
         // One that only goes on from its end, or ends on its middle square
-        // on, does not lie on it.
-        schematic.sheets[0].wires[1] =
-            wire({mm(15, 0), mm(17, 0), mm(17, 10), mm(10, 10), mm(10, 0)});
+        // on, does not lie on it; labels of one name hold their far ends.
+        schematic.sheets[0].wires[1] = wire({mm(15, 0), mm(17, 0), mm(17, 10)});
+        schematic.sheets[0].wires.append(wire({mm(10, 0), mm(10, -10)}));
+        schematic.sheets[0].labels = {label(QStringLiteral("X"), mm(17, 10)),
+                                      label(QStringLiteral("X"), mm(10, -10))};
         QCOMPARE(describe(check(schematic)), QStringList());
 
         // A wire going back over itself, at 45 degrees.
@@ -206,6 +209,41 @@ private slots:
                                                   QStringLiteral("LooseWireEnd"),
                                                   QStringLiteral("OverlappingWires")}));
         QVERIFY(problems.last().at == mm(3, 3));
+    }
+
+    void wiresClosingALoop()
+    {
+        Schematic schematic;
+        Sheet sheet = cleanSheet();
+        // A second way from R1.2 to R2.1, under the first.
+        Wire around = wire({mm(5, 0), mm(5, 10), mm(15, 10), mm(15, 0)});
+        sheet.wires.append(around);
+        schematic.sheets = {sheet};
+        QList<ErcProblem> problems = check(schematic);
+        QCOMPARE(describe(problems), QStringList({QStringLiteral("WireLoop")}));
+        QVERIFY(problems.first().at == mm(15, 5));
+        QVERIFY(problems.first().object == around.id);
+
+        // Ending on the middle of the first wire closes one as well.
+        schematic.sheets[0].wires.last() = wire({mm(5, 0), mm(5, 10), mm(10, 10), mm(10, 0)});
+        QCOMPARE(describe(check(schematic)), QStringList({QStringLiteral("WireLoop")}));
+        // Crossing it does not.
+        schematic.sheets[0].wires.last() = wire({mm(10, 10), mm(10, -10)});
+        schematic.sheets[0].labels = {label(QStringLiteral("X"), mm(10, 10)),
+                                      label(QStringLiteral("X"), mm(10, -10))};
+        QCOMPARE(describe(check(schematic)), QStringList());
+    }
+
+    void aComponentWithBothPinsOnOneNet()
+    {
+        Schematic schematic;
+        Sheet sheet;
+        sheet.components = {part(QStringLiteral("R1"), mm(0, 0))};
+        sheet.wires = {wire({mm(-5, 0), mm(-5, 5), mm(5, 5), mm(5, 0)})};
+        schematic.sheets = {sheet};
+        const QList<ErcProblem> problems = check(schematic);
+        QCOMPARE(describe(problems), QStringList({QStringLiteral("ShortedComponent R1")}));
+        QVERIFY(problems.first().object == sheet.components.first().id);
     }
 
     void noConnectMarksBelongOnFreePins()

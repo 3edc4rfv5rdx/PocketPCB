@@ -7,6 +7,7 @@ add_library(pocketpcb_core STATIC
     footprint.h footprint.cpp
     graphic.h graphic.cpp
     grid.h grid.cpp
+    joins.h
     jsonio.h jsonio.cpp
     libraryfile.h libraryfile.cpp
     objectid.h objectid.cpp
