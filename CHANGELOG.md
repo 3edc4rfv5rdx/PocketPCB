@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The swatches of the sheet background table are larger and edged in black so that pale colours stand out
 ## v0.4.118 (2026-11-16)
 - F: The menu of the sheet has a dark frame so that it stands out from the paper
 - N: The paper of the sheets takes a pale colour chosen from a table in View > Sheet background, kept with the program

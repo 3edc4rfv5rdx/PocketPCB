@@ -56,10 +56,11 @@ const int RELOAD_DELAY_MS = 150;
 const int MS_PER_MINUTE = 60 * 1000;
 // The table of the colours of the paper: its swatches, in pixels, and how
 // many stand in a row. The one chosen has a frame in the selection colour.
-const int SWATCH_WIDTH = 48;
-const int SWATCH_HEIGHT = 30;
+const int SWATCH_WIDTH = 72;
+const int SWATCH_HEIGHT = 45;
 const int SWATCH_SPACING = 6;
 const int SWATCH_COLUMNS = 5;
+const int SWATCH_EDGE = 3;
 const char SWATCH_STYLE[] = "QToolButton { border: 1px solid #a0a0a0; padding: 2px; }"
                             "QToolButton:checked { border: 3px solid %1; padding: 0px; }";
 // The menu of the sheet stands out from the paper under it: a dark frame,
@@ -80,7 +81,8 @@ const char SAVED_COLOR[] = "#5f9462";
 const char NOT_SAVED_COLOR[] = "#c25450";
 const char NEW_COLOR[] = "#8c8c8c";
 
-// A piece of paper of 'color' with a wire and a symbol on it.
+// A piece of paper of 'color' with a wire and a symbol on it, edged in
+// black so that a pale one stands out from the menu.
 QPixmap paperSwatch(const QColor &color)
 {
     QPixmap pixmap(SWATCH_WIDTH, SWATCH_HEIGHT);
@@ -93,6 +95,10 @@ QPixmap paperSwatch(const QColor &color)
     painter.setPen(QPen(paintcolor::symbol(), 2));
     painter.drawRect(SWATCH_WIDTH / 2, middle - SWATCH_HEIGHT / 4, SWATCH_WIDTH / 3,
                      SWATCH_HEIGHT / 2);
+    painter.setPen(QPen(Qt::black, SWATCH_EDGE, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
+    painter.setBrush(Qt::NoBrush);
+    const qreal inset = SWATCH_EDGE / 2.0;
+    painter.drawRect(QRectF(inset, inset, SWATCH_WIDTH - SWATCH_EDGE, SWATCH_HEIGHT - SWATCH_EDGE));
     return pixmap;
 }
 
