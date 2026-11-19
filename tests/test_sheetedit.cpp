@@ -140,8 +140,9 @@ private slots:
 
         // A wire over a part's rectangle is found by its line first.
         const QList<SheetObjectShape> crossing = {
-            SheetObjectShape{id(11), QRectF(0, 5, 10, 0), QPolygonF({QPointF(0, 5), QPointF(10, 5)})},
-            SheetObjectShape{id(10), QRectF(0, 0, 10, 10), QPolygonF()}};
+            SheetObjectShape{id(11), QRectF(0, 5, 10, 0), QPolygonF({QPointF(0, 5), QPointF(10, 5)}),
+                             QRectF()},
+            SheetObjectShape{id(10), QRectF(0, 0, 10, 10), QPolygonF(), QRectF()}};
         QCOMPARE(objectAt(crossing, QPointF(5, 5.2), 0.5), id(11));
         QCOMPARE(objectAt(crossing, QPointF(5, 8), 0.5), id(10));
 
@@ -306,6 +307,8 @@ private slots:
         QVERIFY(objectsInside(shapes, QRectF(5, 5, 20, 20)).isEmpty());
         // A straight bus has no height, and is still inside.
         QCOMPARE(objectsInside(shapes, QRectF(5, 75, 30, 10)), QSet<ObjectId>({id(3)}));
+        // A component needs its drawing inside, not the texts beside it.
+        QCOMPARE(objectsInside(shapes, QRectF(44, 48.5, 12, 3)), QSet<ObjectId>({id(1)}));
         QVERIFY(selectionBounds(shapes, QSet<ObjectId>()).isEmpty());
         QCOMPARE(selectionBounds(shapes, {id(2), id(3)}), QRectF(10, 10, 30, 70));
     }

@@ -20,7 +20,8 @@ bool isNearPolyline(const QPolygonF &polyline, const QPointF &point, double tole
 // taken where it reaches a part; then the topmost. A null id when nothing is.
 ObjectId objectAt(const QList<SheetObjectShape> &shapes, const QPointF &point, double tolerance);
 
-// The objects that lie wholly inside 'rect' (millimetres).
+// The objects that lie wholly inside 'rect' (millimetres): a component or
+// a power symbol by its drawing alone (SheetObjectShape::body).
 QSet<ObjectId> objectsInside(const QList<SheetObjectShape> &shapes, const QRectF &rect);
 
 // The rectangle around the selected objects; empty when none is on the sheet.

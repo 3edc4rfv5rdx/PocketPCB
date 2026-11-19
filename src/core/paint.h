@@ -94,6 +94,9 @@ struct SheetObjectShape
     QRectF rect;
     // The line, for what is found by it; empty for the rest.
     QPolygonF polyline;
+    // What a rectangle must hold to choose it: the drawing of a component
+    // or a power symbol without its texts. Null for the whole 'rect'.
+    QRectF body;
 };
 
 // The shapes of everything placed on 'sheet', in the order it is drawn: the

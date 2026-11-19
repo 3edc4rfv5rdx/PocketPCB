@@ -144,7 +144,7 @@ QSet<ObjectId> objectsInside(const QList<SheetObjectShape> &shapes, const QRectF
     const QRectF area = rect.normalized();
     for (const SheetObjectShape &shape : shapes) {
         // contains() refuses a rectangle of no width, such as a straight wire.
-        const QRectF r = shape.rect;
+        const QRectF r = shape.body.isNull() ? shape.rect : shape.body;
         if (area.left() <= r.left() && r.right() <= area.right() && area.top() <= r.top()
             && r.bottom() <= area.bottom()) {
             ids.insert(shape.id);

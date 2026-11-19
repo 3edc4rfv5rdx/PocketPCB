@@ -16,7 +16,7 @@ Early development. What works now:
 - Sheets: tabs over the canvas, the board last. A sheet is added with "+" or from a tab's right-click menu, renamed with a double click on its tab, moved by dragging its tab; the menu also chooses A4 or A3 paper and deletes a sheet, asking first when something is on it; View > Sheet does the same for the sheet shown.
 - Schematic sheet:
   - the colour of the paper is chosen from a table of pale ones in View > Sheet background, the sheet taking the colour under the mouse as a preview; it is kept with the program, not in the project;
-  - choose with a click or a rectangle; a click on one of several chosen objects keeps it alone; what is chosen stays chosen after a change;
+  - choose with a click or a rectangle (a part needs only its drawing inside, not its texts); a click on one of several chosen objects keeps it alone; what is chosen stays chosen after a change;
   - drag along the grid with the wires following (Shift tears them off), rotate and mirror with the wires following too, delete, copy, cut, paste and duplicate (pasted parts are numbered on); the wires are laid again by the cheapest way round bodies, pins and other wires (Settings > Wire routing > Around obstacles, the default) or by trying a few ways with one or two bends (Simple); Settings > Keep a history of steps writes each step, with the schematic before and after it, into `history/` beside the program (the newest 100), to show what went wrong in one;
   - draw wires (W; Space turns the corner, / or . slants it) with junction dots placed by themselves;
   - place power symbols from the panel, or with P, which places the last one again (the ground at first); wires join them like pins, and a double click edits the net name in place;

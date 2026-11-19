@@ -1054,35 +1054,34 @@ Bounds symbolDrawingBounds(const Symbol &symbol)
 QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &library)
 {
     QList<SheetObjectShape> shapes;
-    const auto addRect = [&shapes](const ObjectId &id, const QRectF &rect) {
-        shapes.append(SheetObjectShape{id, rect, QPolygonF()});
+    const auto addRect = [&shapes](const ObjectId &id, const QRectF &rect,
+                                   const QRectF &body = QRectF()) {
+        shapes.append(SheetObjectShape{id, rect, QPolygonF(), body});
     };
     for (const SheetGraphic &item : sheet.graphics) {
         shapes.append(SheetObjectShape{item.id, graphicBounds(item.graphic),
-                                       graphicLine(item.graphic)});
+                                       graphicLine(item.graphic), QRectF()});
     }
     for (const Bus &bus : sheet.buses)
         shapes.append(SheetObjectShape{bus.id, toPolygon(bus.points).boundingRect(),
-                                       toPolygon(bus.points)});
+                                       toPolygon(bus.points), QRectF()});
     for (const Wire &wire : sheet.wires)
         shapes.append(SheetObjectShape{wire.id, toPolygon(wire.points).boundingRect(),
-                                       toPolygon(wire.points)});
+                                       toPolygon(wire.points), QRectF()});
     for (const Component &component : sheet.components) {
-        Bounds bounds;
+        QRectF drawing;
         const Symbol *symbol = library.findSymbolOfPart(component.part);
-        if (symbol == nullptr) {
-            bounds.add(missingRect(toMm(component.at), MISSING_SYMBOL_SIZE));
-        } else {
-            const Bounds body = symbolDrawingBounds(*symbol);
-            if (!body.isEmpty())
-                bounds.add(componentTransform(component).mapRect(body.rect()));
-            else
-                bounds.add(missingRect(toMm(component.at), MISSING_SYMBOL_SIZE));
-        }
+        const Bounds body = symbol != nullptr ? symbolDrawingBounds(*symbol) : Bounds();
+        if (!body.isEmpty())
+            drawing = componentTransform(component).mapRect(body.rect());
+        else
+            drawing = missingRect(toMm(component.at), MISSING_SYMBOL_SIZE);
+        Bounds bounds;
+        bounds.add(drawing);
         bounds.add(componentTextRect(component, ComponentText::Designator, library));
         if (!componentTextShown(component, ComponentText::Value, library).isEmpty())
             bounds.add(componentTextRect(component, ComponentText::Value, library));
-        addRect(component.id, bounds.rect());
+        addRect(component.id, bounds.rect(), drawing);
     }
     for (const PowerSymbol &power : sheet.powerSymbols) {
         const Symbol *symbol = library.findSymbol(power.symbol);
@@ -1091,14 +1090,16 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
             continue;
         }
         // The drawing, as for a component, then the level name.
+        const QRectF drawing =
+            powerTransform(power).mapRect(symbolDrawingBounds(*symbol).rect());
         Bounds bounds;
-        bounds.add(powerTransform(power).mapRect(symbolDrawingBounds(*symbol).rect()));
+        bounds.add(drawing);
         const QString name = powerNameShown(power, *symbol);
         if (!name.isEmpty()) {
             bounds.add(textBounds(powerNameAt(power, *symbol), name, LABEL_TEXT_HEIGHT,
                                   TextAlign::Center));
         }
-        addRect(power.id, bounds.rect());
+        addRect(power.id, bounds.rect(), drawing);
     }
     for (const Label &label : sheet.labels)
         addRect(label.id, labelTextRect(label).united(squareAround(toMm(label.at),
