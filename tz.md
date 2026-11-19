@@ -178,7 +178,7 @@ The "Manufacturing" values are conservative, not tied to a specific manufacturer
 
 - **Net classes (track types):** each class has a name, track width, clearance and via size. For example: "Signal" — 0.5 mm, "Power" — 1.5 mm, "HighCurrent" — 5 mm. Classes are created and edited in the project settings dialog.
     - Every net belongs to one class; the default is "Signal".
-    - The class is assigned in the net table (a list of all nets with a class drop-down) and in the net label properties on the schematic.
+    - The class is assigned in the net table (a list of all nets with a class drop-down) only; a net named by a label keeps its class by that name.
     - Nets of power and ground symbols (GND, +5V …) go to the "Power" class by default.
     - When routing, the track width is taken from its net class automatically; it can be changed by hand for an individual segment.
     - Clearance violation — error. A track narrower than its class — **warning** (sometimes a track is deliberately narrowed at a pin). A track narrower than the minimum width of the rule set — error.
