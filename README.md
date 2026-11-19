@@ -2,7 +2,7 @@
 
 A small, simple editor for schematics and double-sided printed circuit boards with manual routing. The aim is a board you can order from a factory (Gerber and drill files) or make at home by toner transfer (1:1 layer printing). It is not a KiCad competitor: few features, kept simple.
 
-Written in C++ with Qt 6. Linux first; the code is kept portable. The interface is in English, Ukrainian and Russian, following the system or chosen in Settings > Language (taken at the next start).
+Written in C++ with Qt 6. Linux first; the code is kept portable. Text is drawn in a built-in stroke font, Newstroke from KiCad, the same on any computer. The interface is in English, Ukrainian and Russian, following the system or chosen in Settings > Language (taken at the next start).
 
 ## Status
 
@@ -49,4 +49,4 @@ sudo apt install build-essential cmake ninja-build qt6-base-dev qt6-tools-dev qt
 
 ## License
 
-GPL-3.0-or-later, see [`LICENSE`](LICENSE).
+GPL-3.0-or-later, see [`LICENSE`](LICENSE). The Newstroke font (`src/core/strokefont_data.cpp`) is taken from KiCad, GPL-2.0-or-later, by Vladimir Uryvaev and the KiCad developers, after the Hershey fonts.

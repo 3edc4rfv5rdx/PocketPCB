@@ -1,10 +1,9 @@
 #include "paint.h"
 
+#include "strokefont.h"
 #include "wiring.h"
 
 #include <QCoreApplication>
-#include <QFont>
-#include <QFontMetricsF>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPolygonF>
@@ -29,10 +28,8 @@ const double PLACEHOLDER_TEXT_HEIGHT = 1.27;
 const double ORIGIN_MARK_SIZE = 0.8;
 // The pad number takes this share of the pad's smaller side.
 const double PAD_TEXT_SHARE = 0.45;
-// Text is drawn with a font this many pixels high and scaled to millimetres.
-const int FONT_PIXELS = 100;
-// Used when the font cannot tell the height of its capitals.
-const double FALLBACK_CAP_SHARE = 0.7;
+// The lines of the letters are this share of the height of capitals wide.
+const double STROKE_WIDTH_SHARE = 0.12;
 // Width of a letter as a share of the text height, for bounds only.
 const double LETTER_WIDTH_SHARE = 1.0;
 // A dashed line: the length of a dash and of the gap after it.
@@ -98,29 +95,23 @@ const double MISSING_TEXT_SHARE = 0.6;
 const char REF_PLACEHOLDER[] = "REF";
 const char VALUE_PLACEHOLDER[] = "VALUE";
 
-QFont drawingFont()
+QPen linePen(const QColor &color, double width)
 {
-    QFont font;
-    font.setPixelSize(FONT_PIXELS);
-    return font;
+    QPen pen(color, width);
+    pen.setCapStyle(Qt::RoundCap);
+    pen.setJoinStyle(Qt::RoundJoin);
+    return pen;
 }
 
-double capHeightOf(const QFontMetricsF &metrics)
-{
-    const double height = metrics.capHeight();
-    return height > 0 ? height : FONT_PIXELS * FALLBACK_CAP_SHARE;
-}
-
-// Text whose capitals are 'height' mm tall, vertically centred on 'at'.
-// 'upright' keeps it readable inside a turned or mirrored drawing: it runs
-// left to right or bottom to top and is never mirrored; the anchor stays.
+// Text in the stroke font whose capitals are 'height' mm tall, vertically
+// centred on 'at'. 'upright' keeps it readable inside a turned or mirrored
+// drawing: it runs left to right or bottom to top and is never mirrored;
+// the anchor stays.
 void drawText(QPainter &painter, const QPointF &at, const QString &text, double height,
               TextAlign align, const QColor &color, bool upright = false)
 {
-    const QFont font = drawingFont();
-    const QFontMetricsF metrics(font);
-    const double capHeight = capHeightOf(metrics);
-    const double width = metrics.horizontalAdvance(text);
+    const StrokeText laid = strokeText(text);
+    const double width = laid.width * height;
 
     painter.save();
     painter.translate(at);
@@ -148,10 +139,14 @@ void drawText(QPainter &painter, const QPointF &at, const QString &text, double 
     else if (align == TextAlign::Right)
         left = -width;
 
-    painter.scale(height / capHeight, height / capHeight);
-    painter.setFont(font);
-    painter.setPen(color);
-    painter.drawText(QPointF(left, capHeight / 2), text);
+    // The baseline half the height of capitals under the anchor.
+    QTransform place;
+    place.translate(left, height / 2);
+    place.scale(height, height);
+    painter.setPen(linePen(color, height * STROKE_WIDTH_SHARE));
+    painter.setBrush(Qt::NoBrush);
+    for (const QPolygonF &stroke : laid.strokes)
+        painter.drawPolyline(place.map(stroke));
     painter.restore();
 }
 
@@ -165,14 +160,6 @@ QRectF textBounds(const QPointF &at, const QString &text, double height, TextAli
     else if (align == TextAlign::Right)
         left -= width;
     return QRectF(left, at.y() - height, width, 2 * height);
-}
-
-QPen linePen(const QColor &color, double width)
-{
-    QPen pen(color, width);
-    pen.setCapStyle(Qt::RoundCap);
-    pen.setJoinStyle(Qt::RoundJoin);
-    return pen;
 }
 
 // Dashes of the same length whatever the line width. Their ends are cut

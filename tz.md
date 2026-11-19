@@ -27,7 +27,7 @@ A small, simple editor for schematic diagrams and double-sided printed circuit b
 - The user interface is multilingual: English, Ukrainian, Russian. The language is selected in settings; the default is the system language (if it is one of these three, otherwise English). Implemented with standard Qt tools (`tr()`, Qt Linguist, .ts/.qm files). All UI strings in the code are in English and wrapped in `tr()` (2026-11-12).
 - First-version parts are through-hole (THT) only; the list is in "Parts library". The data model allows SMD from the start: a pad may have no hole and exist on one layer only, and a part may be placed on the bottom side (mirrored) (2026-11-12).
 - Name: **PocketPCB**; executable and repository name: `pocketpcb` (2026-11-13).
-- Open source, license GPL-3.0-or-later. The code will be published on GitHub (when is up to the author; until then a local git repository). Dependency compatibility: Qt6 (LGPLv3) — yes, Clipper2 (Boost) — yes, Hershey font (public domain) — yes (2026-11-13).
+- Open source, license GPL-3.0-or-later. The code will be published on GitHub (when is up to the author; until then a local git repository). Dependency compatibility: Qt6 (LGPLv3) — yes, Clipper2 (Boost) — yes, Newstroke stroke font from KiCad (GPL-2.0-or-later, drawn after the Hershey fonts) — yes (2026-11-13, font changed 2026-11-19).
 - All files are JSON, read and written with Qt (`QJsonDocument`), in a consistent style (2026-11-12).
 - Connectivity from the first version: schematic → netlist → ratsnest on the board. The data model is built around nets from the start (2026-11-12).
 
@@ -155,7 +155,7 @@ Two copper layers (top and bottom), manual routing on the grid.
     - custom text (board name, version, date) and simple lines can be added;
     - on the bottom side it is mirrored (for bottom-side parts and text);
     - text supports Latin and Cyrillic;
-    - the font is a built-in stroke font (letters made of lines of a set width), identical on screen, in print and in Gerber, on any computer. The Hershey font (public domain) is chosen. Ukrainian letters are not a priority: if missing, they will be drawn later.
+    - the font is a built-in stroke font (letters made of lines of a set width), identical on screen, in print and in Gerber, on any computer. The Newstroke font from KiCad is chosen (2026-11-19, instead of Hershey): it is drawn after Hershey and has Latin, Cyrillic with the Ukrainian letters, Greek and the signs ± ° µ Ω in one style.
 
 ## Design rules and DRC
 

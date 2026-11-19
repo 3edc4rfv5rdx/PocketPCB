@@ -23,6 +23,7 @@ add_library(pocketpcb_core STATIC
     schematic.h schematic.cpp
     sheetedit.h sheetedit.cpp
     stephistory.h stephistory.cpp
+    strokefont.h strokefont.cpp strokefont_data.cpp
     symbol.h symbol.cpp
     wiring.h wiring.cpp
 )
