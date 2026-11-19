@@ -879,7 +879,8 @@ void SheetEditor::removeSelection(Action action)
 {
     const Sheet *sheet = currentSheet();
     // A place of a bus's name chosen alone goes, unless it is the last.
-    if (action == Action::Delete && hasText() && isBusNameRemovable(*sheet, m_chosenText)) {
+    if (action == Action::Delete && sheet != nullptr && hasText()
+        && isBusNameRemovable(*sheet, m_chosenText)) {
         const QString name = stepName(actionName(action));
         Design design = m_document->design();
         design.schematic.sheets[m_sheet] = withoutBusName(*sheet, m_chosenText);
@@ -902,8 +903,11 @@ void SheetEditor::removeSelection(Action action)
     // Named before the objects are gone.
     const QString name = stepName(actionName(action));
     Design design = m_document->design();
-    design.schematic.sheets[m_sheet] = withoutObjects(*sheet, m_selection);
-    const QSet<ObjectId> deleted = m_selection;
+    // The no-connect marks on the pins of the parts go with them.
+    const QSet<ObjectId> deleted =
+        QSet<ObjectId>(m_selection)
+            .unite(marksOnPinsOf(*sheet, m_selection, m_document->design().library));
+    design.schematic.sheets[m_sheet] = withoutObjects(*sheet, deleted);
     m_selection.clear();
     dropSegment();
     m_document->change(name, design, m_sheet, deleted);

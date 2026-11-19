@@ -117,6 +117,10 @@ Sheet rotatedObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point 
 Sheet mirroredObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point &center);
 // The sheet without the selected objects.
 Sheet withoutObjects(const Sheet &sheet, const QSet<ObjectId> &ids);
+// The no-connect marks on the pins of the components 'ids' of 'sheet' that
+// no pin of another component shares: they go when those components go.
+QSet<ObjectId> marksOnPinsOf(const Sheet &sheet, const QSet<ObjectId> &ids,
+                             const Library &library);
 
 // Segments of lines, wires and buses alike: segment 'index' runs from point
 // 'index' to the next. The segment of the line 'points' nearest to 'point'

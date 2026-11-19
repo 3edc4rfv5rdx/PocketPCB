@@ -572,6 +572,23 @@ Sheet withoutObjects(const Sheet &sheet, const QSet<ObjectId> &ids)
     return result;
 }
 
+QSet<ObjectId> marksOnPinsOf(const Sheet &sheet, const QSet<ObjectId> &ids,
+                             const Library &library)
+{
+    Sheet going;
+    Sheet staying;
+    for (const Component &component : sheet.components)
+        (ids.contains(component.id) ? going : staying).components.append(component);
+    const QList<Point> pins = partPinPoints(going, library);
+    const QList<Point> kept = partPinPoints(staying, library);
+    QSet<ObjectId> marks;
+    for (const NoConnect &mark : sheet.noConnects) {
+        if (pins.contains(mark.at) && !kept.contains(mark.at))
+            marks.insert(mark.id);
+    }
+    return marks;
+}
+
 Point dragAnchor(const Sheet &sheet, const ObjectId &id, const QPointF &near)
 {
     for (const Component &component : sheet.components) {

@@ -528,6 +528,21 @@ private slots:
         QCOMPARE(rest.graphics.size(), 1);
         QCOMPARE(rest.components.size(), 1);
         QVERIFY(withoutObjects(sheet, allIds()) == Sheet());
+        // The no-connect mark on a pin of a part goes with the part, unless
+        // a pin of another part is there too.
+        const Library library = resistorLibrary();
+        Sheet marked = sheet;
+        NoConnect onPin;
+        onPin.id = id(40);
+        onPin.at = Point{50 * MM - 5080000, 50 * MM};
+        marked.noConnects.append(onPin);
+        QCOMPARE(marksOnPinsOf(marked, {id(1)}, library), QSet<ObjectId>({id(40)}));
+        QVERIFY(marksOnPinsOf(marked, {id(2)}, library).isEmpty());
+        Component other = marked.components.at(0);
+        other.id = id(41);
+        other.at = Point{50 * MM - 2 * 5080000, 50 * MM};
+        marked.components.append(other);
+        QVERIFY(marksOnPinsOf(marked, {id(1)}, library).isEmpty());
     }
 
     void piecesAreCopiedAndPasted()
