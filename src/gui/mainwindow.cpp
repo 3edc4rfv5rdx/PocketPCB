@@ -16,12 +16,15 @@
 #include "propertiespanel.h"
 #include "sheeteditor.h"
 #include "sheettabs.h"
+#include "toolicons.h"
 #include "updatepartsdialog.h"
 #include "stephistory.h"
 #include "libraryviewitem.h"
 #include "saveprojectdialog.h"
 
 #include <QAction>
+#include <QScreen>
+#include <QToolBar>
 #include <QActionGroup>
 #include <QCloseEvent>
 #include <QComboBox>
@@ -256,6 +259,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     createMenus();
+    createToolBar();
     createStatusBar();
     loadLibrary();
     projectChanged();
@@ -499,14 +503,13 @@ void MainWindow::createMenus()
         m_sheetTabs->fillMenu(sheetMenu, isSheetShown() ? m_designItem->page() : -1);
     });
 
-    QAction *bomAction = viewMenu->addAction(BomPanel::bomTitle());
-    bomAction->setObjectName(QStringLiteral("actionBomTab"));
-    bomAction->setCheckable(true);
-    bomAction->setChecked(AppSettings::bomTabShown());
-    connect(bomAction, &QAction::toggled, this, &MainWindow::setBomTabShown);
-    connect(m_sheetTabs, &SheetTabs::bomClosed, bomAction, [bomAction] {
-        bomAction->setChecked(false);
-    });
+    m_bomAction = viewMenu->addAction(BomPanel::bomTitle());
+    m_bomAction->setObjectName(QStringLiteral("actionBomTab"));
+    m_bomAction->setCheckable(true);
+    m_bomAction->setChecked(AppSettings::bomTabShown());
+    connect(m_bomAction, &QAction::toggled, this, &MainWindow::setBomTabShown);
+    connect(m_sheetTabs, &SheetTabs::bomClosed, m_bomAction,
+            [this] { m_bomAction->setChecked(false); });
 
     viewMenu->addSeparator();
 
@@ -514,6 +517,28 @@ void MainWindow::createMenus()
     viewMenu->addAction(m_propertiesDock->toggleViewAction());
     viewMenu->addAction(m_netsDock->toggleViewAction());
     viewMenu->addAction(m_ercDock->toggleViewAction());
+    viewMenu->addSeparator();
+
+    QAction *zoomInAction = viewMenu->addAction(tr("Zoom in"));
+    zoomInAction->setObjectName(QStringLiteral("actionZoomIn"));
+    zoomInAction->setShortcut(QKeySequence::ZoomIn);
+    connect(zoomInAction, &QAction::triggered, this, [this] {
+        m_canvas->setView(m_canvas->viewCenter(), m_canvas->pixelsPerMm() * CanvasView::ZOOM_STEP);
+    });
+    QAction *zoomOutAction = viewMenu->addAction(tr("Zoom out"));
+    zoomOutAction->setObjectName(QStringLiteral("actionZoomOut"));
+    zoomOutAction->setShortcut(QKeySequence::ZoomOut);
+    connect(zoomOutAction, &QAction::triggered, this, [this] {
+        m_canvas->setView(m_canvas->viewCenter(), m_canvas->pixelsPerMm() / CanvasView::ZOOM_STEP);
+    });
+    QAction *fitAction = viewMenu->addAction(tr("Fit the page"));
+    fitAction->setObjectName(QStringLiteral("actionZoomFit"));
+    fitAction->setShortcut(QKeySequence(Qt::Key_Home));
+    connect(fitAction, &QAction::triggered, this, &MainWindow::fitView);
+    QAction *actualSizeAction = viewMenu->addAction(tr("Actual size"));
+    actualSizeAction->setObjectName(QStringLiteral("actionActualSize"));
+    actualSizeAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_0));
+    connect(actualSizeAction, &QAction::triggered, this, &MainWindow::showActualSize);
     viewMenu->addSeparator();
 
     QAction *warpAction = viewMenu->addAction(tr("Center and warp cursor on zoom"));
@@ -1024,6 +1049,112 @@ void MainWindow::rememberView()
         m_views.insert(m_shownViewKey,
                        PageView{m_canvas->viewCenter(), m_canvas->pixelsPerMm()});
     }
+}
+
+void MainWindow::createToolBar()
+{
+    QToolBar *bar = new QToolBar(tr("Tools"), this);
+    bar->setObjectName(QStringLiteral("toolsBar"));
+    bar->setMovable(false);
+    bar->setIconSize(QSize(TOOL_ICON_SIZE, TOOL_ICON_SIZE));
+    bar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    addToolBar(Qt::LeftToolBarArea, bar);
+    const QColor color = bar->palette().color(QPalette::WindowText);
+
+    // An action of the menus, with its picture and its key in its tip.
+    const auto put = [this, bar, &color](const char *name, ToolIcon icon) {
+        QAction *action = findChild<QAction *>(QLatin1String(name));
+        Q_ASSERT(action != nullptr);
+        action->setIcon(toolIcon(icon, color));
+        QString tip = action->text();
+        tip.remove(QLatin1Char('&'));
+        if (!action->shortcut().isEmpty())
+            tip += QStringLiteral(" (") + action->shortcut().toString(QKeySequence::NativeText)
+                   + QLatin1Char(')');
+        action->setToolTip(tip);
+        bar->addAction(action);
+        return action;
+    };
+    // The modes, one pressed: the one the sheet editor is in.
+    QAction *select = new QAction(tr("Select"), this);
+    select->setObjectName(QStringLiteral("actionSelectTool"));
+    connect(select, &QAction::triggered, m_sheetEditor, &SheetEditor::chooseSelectTool);
+    const QList<QPair<SheetEditor::Tool, QAction *>> modes = {
+        {SheetEditor::Tool::Select, put("actionSelectTool", ToolIcon::Select)},
+        {SheetEditor::Tool::Wire, put("actionWire", ToolIcon::Wire)},
+        {SheetEditor::Tool::Bus, put("actionBus", ToolIcon::Bus)},
+        {SheetEditor::Tool::Label, put("actionPlaceLabel", ToolIcon::Label)},
+        {SheetEditor::Tool::Power, put("actionPlacePower", ToolIcon::Power)},
+        {SheetEditor::Tool::NoConnect, put("actionPlaceNoConnect", ToolIcon::NoConnect)}};
+    select->setToolTip(select->text() + QStringLiteral(" (")
+                       + QKeySequence(Qt::Key_Escape).toString(QKeySequence::NativeText)
+                       + QLatin1Char(')'));
+    for (const auto &[tool, action] : modes) {
+        action->setCheckable(true);
+        m_toolActions.insert(int(tool), action);
+        m_sheetActions.append(action);
+        // After the action's own work: a click on a pressed button leaves it
+        // pressed while the mode goes on.
+        connect(action, &QAction::triggered, this, &MainWindow::updateTools);
+    }
+    bar->addSeparator();
+    m_sheetActions.append(put("actionRotate", ToolIcon::Rotate));
+    m_sheetActions.append(put("actionMirror", ToolIcon::Mirror));
+    m_sheetActions.append(put("actionDelete", ToolIcon::Delete));
+    bar->addSeparator();
+    put("actionZoomIn", ToolIcon::ZoomIn);
+    put("actionZoomOut", ToolIcon::ZoomOut);
+    put("actionZoomFit", ToolIcon::ZoomFit);
+    put("actionActualSize", ToolIcon::ActualSize);
+
+    // The switches of the panels, at the bottom.
+    QWidget *spacer = new QWidget(bar);
+    spacer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    bar->addWidget(spacer);
+    const QList<QPair<QAction *, ToolIcon>> panels = {
+        {m_libraryDock->toggleViewAction(), ToolIcon::Library},
+        {m_propertiesDock->toggleViewAction(), ToolIcon::Properties},
+        {m_netsDock->toggleViewAction(), ToolIcon::Nets},
+        {m_ercDock->toggleViewAction(), ToolIcon::Erc},
+        {m_bomAction, ToolIcon::Bom}};
+    for (const auto &[action, icon] : panels) {
+        action->setIcon(toolIcon(icon, color));
+        bar->addAction(action);
+    }
+
+    connect(m_sheetEditor, &SheetEditor::changed, this, &MainWindow::updateTools);
+    updateTools();
+}
+
+void MainWindow::updateTools()
+{
+    const bool sheet = m_sheetEditor->sheet() >= 0;
+    for (QAction *action : std::as_const(m_sheetActions))
+        action->setEnabled(sheet);
+    const int tool = int(m_sheetEditor->tool());
+    for (auto it = m_toolActions.cbegin(); it != m_toolActions.cend(); ++it)
+        it.value()->setChecked(sheet && it.key() == tool);
+}
+
+void MainWindow::fitView()
+{
+    if (m_bomShown)
+        return;
+    if (m_libraryItem != nullptr && m_libraryItem->isVisible())
+        m_canvas->fitRect(m_libraryItem->boundingRect());
+    else
+        m_canvas->fitRect(m_designItem->pageBounds());
+}
+
+void MainWindow::showActualSize()
+{
+    const QScreen *screen = m_canvas->screen();
+    if (screen == nullptr || m_bomShown)
+        return;
+    // The screen's dots, as many as a pixel of the program covers.
+    const double mmPerInch = 25.4;
+    const double pixelsPerMm = screen->physicalDotsPerInch() / screen->devicePixelRatio() / mmPerInch;
+    m_canvas->setView(m_canvas->viewCenter(), pixelsPerMm);
 }
 
 void MainWindow::showPageView()

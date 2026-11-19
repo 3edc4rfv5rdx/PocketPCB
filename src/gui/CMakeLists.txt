@@ -15,6 +15,7 @@ add_library(pocketpcb_gui STATIC
     propertiespanel.h propertiespanel.cpp
     sheeteditor.h sheeteditor.cpp
     sheettabs.h sheettabs.cpp
+    toolicons.h toolicons.cpp
     updatepartsdialog.h updatepartsdialog.cpp
     saveprojectdialog.h saveprojectdialog.cpp
 )

@@ -513,6 +513,30 @@
 <context>
     <name>ppcb::MainWindow</name>
     <message>
+        <source>Tools</source>
+        <translation>Инструменты</translation>
+    </message>
+    <message>
+        <source>Select</source>
+        <translation>Выбор</translation>
+    </message>
+    <message>
+        <source>Zoom in</source>
+        <translation>Увеличить</translation>
+    </message>
+    <message>
+        <source>Zoom out</source>
+        <translation>Уменьшить</translation>
+    </message>
+    <message>
+        <source>Fit the page</source>
+        <translation>Вписать лист</translation>
+    </message>
+    <message>
+        <source>Actual size</source>
+        <translation>Реальный размер</translation>
+    </message>
+    <message>
         <source>&amp;Settings</source>
         <translation>&amp;Настройки</translation>
     </message>

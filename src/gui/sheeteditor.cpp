@@ -1065,6 +1065,33 @@ void SheetEditor::startFloating(const Sheet &piece, const Library &source, Actio
     updateFloating();
 }
 
+SheetEditor::Tool SheetEditor::tool() const
+{
+    if (m_wiring)
+        return m_drawingBus ? Tool::Bus : Tool::Wire;
+    if (!m_placing)
+        return Tool::Select;
+    if (m_askLabelText)
+        return Tool::Label;
+    const Sheet &f = m_floating;
+    const bool nothingElse = f.components.isEmpty() && f.wires.isEmpty() && f.buses.isEmpty()
+                             && f.labels.isEmpty() && f.graphics.isEmpty();
+    if (nothingElse && f.powerSymbols.isEmpty() && !f.noConnects.isEmpty())
+        return Tool::NoConnect;
+    if (nothingElse && f.noConnects.isEmpty() && !f.powerSymbols.isEmpty())
+        return Tool::Power;
+    return Tool::Other;
+}
+
+void SheetEditor::chooseSelectTool()
+{
+    finishTextEdit(false);
+    m_placing = false;
+    m_wiring = false;
+    m_wirePoints.clear();
+    emit changed();
+}
+
 void SheetEditor::stopPlacing()
 {
     m_placing = false;

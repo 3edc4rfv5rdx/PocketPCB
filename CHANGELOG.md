@@ -3,6 +3,8 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: A strip of tools left of the canvas: the modes of the sheet, which one is on shown pressed, rotate, mirror and delete, the scale, and switches of the panels at the bottom
+- N: View > Zoom in, Zoom out, Fit the page (Home) and Actual size (Ctrl+0)
 - E: Two wires that meet end to end on a pin are made one wire too, as a wire passing a pin is
 - R: A double click chooses one wire again, as wires going on from each other are one wire now
 - F: Wires that go on from each other end to end, with no fork, pin or bus there, are made one wire after every change

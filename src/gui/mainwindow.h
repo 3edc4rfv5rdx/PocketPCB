@@ -6,6 +6,7 @@
 #include "projectview.h"
 #include "units.h"
 
+#include <QHash>
 #include <QMainWindow>
 
 class QActionGroup;
@@ -111,6 +112,18 @@ protected:
 
 private:
     void createMenus();
+    // The strip of tools left of the canvas (see updateTools()): the modes
+    // of the sheet, the actions on what is chosen, the scale, and at the
+    // bottom the switches of the panels.
+    void createToolBar();
+    // The mode buttons show what the sheet editor does now; the tools of
+    // the sheet work only while a sheet is edited.
+    void updateTools();
+    // The whole page, or the library file, fills the canvas.
+    void fitView();
+    // The canvas shows millimetres as millimetres on the screen, as far as
+    // the screen tells its size.
+    void showActualSize();
     void createStatusBar();
     // Adds a checkable, mutually exclusive item to a menu.
     QAction *addChoice(QMenu *menu, QActionGroup *group, const QString &text, bool checked);
@@ -257,6 +270,12 @@ private:
     QDockWidget *m_netsDock = nullptr;
     ErcPanel *m_ercPanel = nullptr;
     QDockWidget *m_ercDock = nullptr;
+    // View > BOM.
+    QAction *m_bomAction = nullptr;
+    // The mode buttons of the strip of tools, by the tool each stands for.
+    QHash<int, QAction *> m_toolActions;
+    // The actions that work only while a sheet is edited.
+    QList<QAction *> m_sheetActions;
 
     QFileSystemWatcher *m_libraryWatcher = nullptr;
     // Delays the reload a little: editors often save in several steps.

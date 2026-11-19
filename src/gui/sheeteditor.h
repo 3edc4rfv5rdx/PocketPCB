@@ -148,6 +148,14 @@ public:
     // nextBusName(); a double click on the name renames it.
     void startDrawingBus();
     bool isWiring() const { return m_wiring; }
+    // What the mouse does now, as the strip of tools shows it: choosing, or
+    // drawing wires or buses, or placing labels, power symbols or no-connect
+    // marks; Other for placing parts or what is pasted.
+    enum class Tool { Select, Wire, Bus, Label, Power, NoConnect, Other };
+    Tool tool() const;
+    // Back to choosing: what is placed or drawn, a wire begun or a text
+    // being typed for a label put down, is dropped.
+    void chooseSelectTool();
     // The corner of the wire that follows the cursor: the other way round,
     // and slanted at 45 degrees or square.
     void swapWireCorner();

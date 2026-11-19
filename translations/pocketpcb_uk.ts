@@ -513,6 +513,30 @@
 <context>
     <name>ppcb::MainWindow</name>
     <message>
+        <source>Tools</source>
+        <translation>Інструменти</translation>
+    </message>
+    <message>
+        <source>Select</source>
+        <translation>Вибір</translation>
+    </message>
+    <message>
+        <source>Zoom in</source>
+        <translation>Збільшити</translation>
+    </message>
+    <message>
+        <source>Zoom out</source>
+        <translation>Зменшити</translation>
+    </message>
+    <message>
+        <source>Fit the page</source>
+        <translation>Вписати аркуш</translation>
+    </message>
+    <message>
+        <source>Actual size</source>
+        <translation>Справжній розмір</translation>
+    </message>
+    <message>
         <source>&amp;Settings</source>
         <translation>&amp;Налаштування</translation>
     </message>
