@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A pin moved off the line of its two wires onto a wire of its own net is joined there instead of getting a wire round to it
 - E: A pin between two wires in one line keeps the line whole when moved: it slides along it, or is joined to it by a new wire, instead of one wire going round the other
 - N: Settings > Keep a history of steps writes each step with the schematic before and after it into history/ beside the program, the newest 100
 - F: A whole wire dragged slides its ends along the wires they lie on, as a dragged segment does, instead of leaving bends back to them

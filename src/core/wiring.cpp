@@ -1718,12 +1718,29 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
     Sheet laid = after;
     laid.wires = wires;
     const Obstacles now = obstaclesOf(laid, library, routing);
+    // True when a pin gone from 'from' to 'to' lands on a wire joined to
+    // one on 'from', one wire through another: it is cut there below, and
+    // that joins them, so the pin needs no wire of its own.
+    const auto netReaches = [&wires](const Point &from, const Point &to) {
+        Sheet joinedBy;
+        joinedBy.wires = wires;
+        QSet<ObjectId> reached;
+        for (const Wire &other : wires) {
+            if (isOnWire(other, from))
+                reached.unite(joinedWires(joinedBy, other.id));
+        }
+        return std::any_of(wires.cbegin(), wires.cend(), [&](const Wire &other) {
+            return reached.contains(other.id) && isOnWire(other, to);
+        });
+    };
     // A pin gone off the line of its two wires: a new wire from the line,
     // from where the pin was or straight across from where it is.
     for (const PointFollower::MovedPin &pin : offLine) {
+        if (netReaches(pin.from, pin.to))
+            continue;
         Wire wire;
         wire.id = newObjectId();
-        wire.points = laidToJoint(pin.from, pin.to, laid.wires, now);
+        wire.points = laidToJoint(pin.from, pin.to, wires, now);
         if (wire.points.size() >= 2)
             wires.append(wire);
     }
@@ -1734,18 +1751,8 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
         if (joined.contains(pair))
             continue;
         joined.insert(pair);
-        // Onto a wire joined to the pin it left: it is cut there below, and
-        // that joins them. Onto any other wire it still needs its own.
-        Sheet joinedBy;
-        joinedBy.wires = wires;
-        QSet<ObjectId> reached;
-        for (const Wire &other : wires) {
-            if (isOnWire(other, pin.from))
-                reached.unite(joinedWires(joinedBy, other.id));
-        }
-        if (std::any_of(wires.cbegin(), wires.cend(), [&](const Wire &other) {
-                return reached.contains(other.id) && isOnWire(other, pin.to);
-            }))
+        // Onto any wire not joined to the pin it left it needs its own.
+        if (netReaches(pin.from, pin.to))
             continue;
         Wire wire;
         wire.id = newObjectId();

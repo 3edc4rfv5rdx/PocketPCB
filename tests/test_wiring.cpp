@@ -1064,6 +1064,22 @@ private slots:
             QCOMPARE(wires.at(2).points, sheet.wires.at(2).points);
             QCOMPARE(wires.at(3).points, QList<Point>({mm(6, 5), mm(6, 2)}));
         }
+        // Moved along past the end of the right wire onto a wire going on
+        // from it: it lands on its net, and that wire is cut at it, with no
+        // new wire round to it.
+        Sheet longer = sheet;
+        longer.wires[2] = wire({mm(20, 5), mm(40, 5)});
+        for (const WireRouting routing : {WireRouting::Hand, WireRouting::Grid}) {
+            const QList<Wire> wires =
+                withWiresFollowing(longer, movedObjects(longer, part, mm(26, 0)), part, library,
+                                   routing)
+                    .wires;
+            QCOMPARE(wires.size(), 4);
+            QCOMPARE(wires.at(0).points, longer.wires.at(0).points);
+            QCOMPARE(wires.at(1).points, longer.wires.at(1).points);
+            QCOMPARE(wires.at(2).points, QList<Point>({mm(20, 5), mm(26, 5)}));
+            QCOMPARE(wires.at(3).points, QList<Point>({mm(26, 5), mm(40, 5)}));
+        }
     }
 
     // An upright wire between two level rails, moved whole: its ends slide

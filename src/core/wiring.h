@@ -131,8 +131,9 @@ enum class WireRouting { Hand, Grid };
 // else lies on the line stays on it: going along the line onto one of them,
 // short of its next point, it slides along the line, one wire growing as
 // the other shrinks; going anywhere else, it gets a new wire from the line,
-// laid the way a pin that touched a pin left in place gets one. The far ends
-// of the two wires must stay for this.
+// laid the way a pin that touched a pin left in place gets one, unless it
+// lands on a wire joined to the line. The far ends of the two wires must
+// stay for this.
 // A wire that entered a bus at 45 degrees and still ends on one enters it
 // at 45 degrees again where it comes to it (see withBusEntry()).
 // A label or a no-connect mark not among 'moved' that lay on a pin goes with
