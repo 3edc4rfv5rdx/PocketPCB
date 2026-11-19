@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Wires that go on from each other end to end, with no fork, pin or bus there, are made one wire after every change
 - F: A double click on a wire chooses it with the wires going on from it end to end, up to a fork, a pin or a bus
 - N: An empty date in the title block shows the day of the last save
 - F: The BOM written as TXT marks its group headings with "=== "

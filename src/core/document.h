@@ -57,7 +57,9 @@ public:
     QUndoStack *undoStack() { return &m_undoStack; }
 
     // Replaces the content as one step of the history, named 'text' for the
-    // menu ("Undo <text>"). Does nothing when 'changed' brings no change.
+    // menu ("Undo <text>"), its wires that just go on from each other made
+    // one first (withWiresMerged()). Does nothing when 'changed' brings no
+    // change.
     // 'page' (the sheets, then the board, as on the tabs; -1 for none) and
     // 'ids' tell where the step was made and what it touched: undoing and
     // redoing it reports them through stepApplied().

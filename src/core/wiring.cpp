@@ -1419,6 +1419,58 @@ QSet<ObjectId> joinedWires(const Sheet &sheet, const ObjectId &wire)
     return found;
 }
 
+Sheet withWiresMerged(const Sheet &sheet, const Library &library)
+{
+    Sheet result = sheet;
+    QList<Wire> &wires = result.wires;
+    const QList<Point> pins = pinPoints(sheet, library);
+    // Whether wire 'i' may be joined at its end 'at' (its first point when
+    // not 'last') to another one: the index of that one, or -1.
+    const auto partnerAt = [&](int i, const Point &at) {
+        if (pins.contains(at) || isOnBus(result, at))
+            return -1;
+        int partner = -1;
+        for (int j = 0; j < wires.size(); ++j) {
+            if (j == i || wires.at(j).points.isEmpty() || !isOnWire(wires.at(j), at))
+                continue;
+            const QList<Point> &points = wires.at(j).points;
+            // One end of it there, not the other, nor a pass through.
+            if (partner >= 0 || (points.first() == at) == (points.last() == at))
+                return -1;
+            partner = j;
+        }
+        return partner;
+    };
+    bool merged = true;
+    while (merged) {
+        merged = false;
+        for (int i = 0; i < wires.size() && !merged; ++i) {
+            const QList<Point> &points = wires.at(i).points;
+            if (points.size() < 2 || points.first() == points.last())
+                continue;
+            for (const bool last : {true, false}) {
+                const Point at = last ? points.last() : points.first();
+                const int j = partnerAt(i, at);
+                if (j < 0)
+                    continue;
+                // 'i' leads into the point, 'j' leads on from it.
+                QList<Point> into = wires.at(i).points;
+                if (!last)
+                    std::reverse(into.begin(), into.end());
+                QList<Point> on = wires.at(j).points;
+                if (on.first() != at)
+                    std::reverse(on.begin(), on.end());
+                const int kept = qMin(i, j);
+                wires[kept].points = simplifiedWire(into + on.mid(1));
+                wires.removeAt(qMax(i, j));
+                merged = true;
+                break;
+            }
+        }
+    }
+    return result;
+}
+
 QSet<ObjectId> chainedWires(const Sheet &sheet, const Library &library, const ObjectId &wire)
 {
     const auto first = std::find_if(sheet.wires.cbegin(), sheet.wires.cend(),

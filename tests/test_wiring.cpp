@@ -949,6 +949,43 @@ private slots:
         QVERIFY(joinedWires(sheet, newObjectId()).isEmpty());
     }
 
+    // Two wires where just their ends meet become one, the first keeping
+    // its id; at a fork, a pin or a bus, and where a wire passes, they stay.
+    void wiresGoingOnFromEachOtherAreMerged()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        // A and B meet end to end, B drawn backwards and going on straight;
+        // C, D, E meet at one point; F and G meet where H passes; I and J
+        // meet on a pin; K and L on a bus.
+        sheet.wires = {wire({mm(0, 0), mm(10, 0)}), wire({mm(10, 10), mm(10, 5), mm(10, 0)}),
+                       wire({mm(0, 20), mm(10, 20)}), wire({mm(10, 20), mm(20, 20)}),
+                       wire({mm(10, 20), mm(10, 30)}), wire({mm(0, 40), mm(10, 40)}),
+                       wire({mm(10, 40), mm(20, 40)}), wire({mm(10, 35), mm(10, 45)}),
+                       wire({mm(50, 0), mm(55, 0)}), wire({mm(55, 0), mm(55, 10)}),
+                       wire({mm(70, 0), mm(75, 0)}), wire({mm(75, 0), mm(80, 0)})};
+        sheet.components = {twoPin(mm(60, 0))};
+        Bus bus;
+        bus.id = newObjectId();
+        bus.points = {mm(75, -10), mm(75, 10)};
+        sheet.buses = {bus};
+        const ObjectId a = sheet.wires.at(0).id;
+
+        const Sheet merged = withWiresMerged(sheet, library);
+        QCOMPARE(int(merged.wires.size()), int(sheet.wires.size()) - 1);
+        QVERIFY(merged.wires.at(0).id == a);
+        QCOMPARE(merged.wires.at(0).points, QList<Point>({mm(0, 0), mm(10, 0), mm(10, 10)}));
+        for (int i = 2; i < sheet.wires.size(); ++i)
+            QVERIFY(merged.wires.at(i - 1) == sheet.wires.at(i));
+        // A chain of three is one wire, the straight joints gone.
+        Sheet line;
+        line.wires = {wire({mm(0, 0), mm(5, 0)}), wire({mm(10, 0), mm(15, 0)}),
+                      wire({mm(5, 0), mm(10, 0)})};
+        const Sheet one = withWiresMerged(line, library);
+        QCOMPARE(int(one.wires.size()), 1);
+        QCOMPARE(one.wires.at(0).points, QList<Point>({mm(0, 0), mm(15, 0)}));
+    }
+
     // A chain goes on through points where just two wire ends meet, and
     // stops at a fork, at a wire passing, at a pin and at a bus.
     void chainedWiresStopAtForks()
