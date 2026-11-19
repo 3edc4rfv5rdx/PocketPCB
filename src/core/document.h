@@ -2,6 +2,7 @@
 
 #include "project.h"
 
+#include <QDate>
 #include <QObject>
 #include <QUndoStack>
 
@@ -37,6 +38,13 @@ public:
     // The content differs from what the files hold. A new project is not
     // modified until it is changed.
     bool isModified() const;
+    // The day a save last wrote a file of the project: when it was opened,
+    // the newest of its project, schematic and board files; null for a
+    // project never saved.
+    QDate savedDate() const { return m_savedDate; }
+    // The title block as printed: an empty date is savedDate(), as
+    // "2026-11-19".
+    TitleBlock titleBlockShown() const;
 
     // Before a save replaces the project, schematic or board file, the file
     // as it was is kept in the backup folder (DesignFiles::backupPath()) as
@@ -116,6 +124,8 @@ signals:
     // A new step was made by change(), not undone or redone: its name, its
     // page and the content before it; the content after it is design().
     void stepMade(const QString &text, int page, const Design &before);
+    // savedDate() changed.
+    void savedDateChanged();
 
 private:
     friend class DesignCommand;
@@ -138,6 +148,7 @@ private:
     int m_backupCount = DEFAULT_BACKUP_COUNT;
     // The content of the autosaved copy; empty when there is none.
     Design m_autosaved;
+    QDate m_savedDate;
 };
 
 } // namespace ppcb

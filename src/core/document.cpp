@@ -125,6 +125,14 @@ void Document::startNew(const QString &baseName)
     reset(newDesign(baseName), QString());
 }
 
+TitleBlock Document::titleBlockShown() const
+{
+    TitleBlock block = m_design.project.titleBlock;
+    if (block.date.isEmpty() && m_savedDate.isValid())
+        block.date = m_savedDate.toString(Qt::ISODate);
+    return block;
+}
+
 bool Document::open(const QString &projectPath, QString &error, QStringList *problems)
 {
     Design design;
@@ -155,6 +163,7 @@ bool Document::saveAs(const QString &projectPath, QString &error)
         return false;
     }
     const Design oldSaved = m_saved;
+    const QDate oldSavedDate = m_savedDate;
     const QString oldSchematicFile = m_design.project.schematicFile;
     const QString oldBoardFile = m_design.project.boardFile;
     m_design.project.schematicFile = baseName + QLatin1String(FILE_EXT_SCHEMATIC);
@@ -166,6 +175,10 @@ bool Document::saveAs(const QString &projectPath, QString &error)
         m_saved = oldSaved;
         m_design.project.schematicFile = oldSchematicFile;
         m_design.project.boardFile = oldBoardFile;
+        if (m_savedDate != oldSavedDate) {
+            m_savedDate = oldSavedDate;
+            emit savedDateChanged();
+        }
         noteModified();
         return false;
     }
@@ -298,7 +311,17 @@ void Document::reset(const Design &design, const QString &projectPath)
     m_saved = design;
     m_projectPath = projectPath;
     m_autosaved = Design();
+    m_savedDate = QDate();
+    if (!projectPath.isEmpty()) {
+        for (const QString &path : {projectPath, DesignFiles::schematicPath(projectPath, design.project),
+                                    DesignFiles::boardPath(projectPath, design.project)}) {
+            const QDate date = QFileInfo(path).lastModified().date();
+            if (date.isValid() && (!m_savedDate.isValid() || date > m_savedDate))
+                m_savedDate = date;
+        }
+    }
     emit designChanged();
+    emit savedDateChanged();
     noteModified();
 }
 
@@ -311,6 +334,8 @@ bool Document::write(const QString &projectPath, bool everything, QString &error
     // The library goes first and the project last, so that no file names
     // one that is not there. Each file counts as saved as soon as it is
     // written, so after a failure the next save writes only the rest.
+    // Whether one of the three files got written.
+    bool wrote = false;
     bool ok = LibraryFolder::write(DesignFiles::libraryPath(projectPath), m_design.library,
                                          m_saved.library, everything, error);
     // Items dropped from the library stay on disk, unused: files are never
@@ -323,12 +348,14 @@ bool Document::write(const QString &projectPath, bool everything, QString &error
              && SchematicFile::write(schematicPath, m_design.schematic, error);
         if (ok)
             m_saved.schematic = m_design.schematic;
+        wrote = wrote || ok;
     }
     if (ok && (everything || m_design.board != m_saved.board || !QFileInfo::exists(boardPath))) {
         ok = backUp(boardPath, backupFolder, m_backupCount, error)
              && BoardFile::write(boardPath, m_design.board, error);
         if (ok)
             m_saved.board = m_design.board;
+        wrote = wrote || ok;
     }
     if (ok && (everything || m_design.project != m_saved.project
                || !QFileInfo::exists(projectPath))) {
@@ -336,6 +363,11 @@ bool Document::write(const QString &projectPath, bool everything, QString &error
              && ProjectFile::write(projectPath, m_design.project, error);
         if (ok)
             m_saved.project = m_design.project;
+        wrote = wrote || ok;
+    }
+    if (wrote && m_savedDate != QDate::currentDate()) {
+        m_savedDate = QDate::currentDate();
+        emit savedDateChanged();
     }
     noteModified();
     return ok;

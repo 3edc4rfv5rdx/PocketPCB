@@ -921,6 +921,10 @@
 <context>
     <name>ppcb::ProjectPropertiesDialog</name>
     <message>
+        <source>Date of the last save</source>
+        <translation>Дата последнего сохранения</translation>
+    </message>
+    <message>
         <source>Net classes</source>
         <translation>Классы цепей</translation>
     </message>

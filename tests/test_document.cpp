@@ -233,6 +233,36 @@ private slots:
         QCOMPARE(document.design().project.schematicFile, QStringLiteral("amp.v2.ppsch"));
     }
 
+    // An empty date of the title block is the day of the last save; a new
+    // project has none, a project opened has that of its newest file.
+    void titleBlockShowsTheDateOfTheLastSave()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("amp.ppcb"));
+        const QString today = QDate::currentDate().toString(Qt::ISODate);
+
+        Document document;
+        QVERIFY(!document.savedDate().isValid());
+        QVERIFY(document.titleBlockShown().date.isEmpty());
+        QSignalSpy dated(&document, &Document::savedDateChanged);
+        QString error;
+        QVERIFY2(document.saveAs(path, error), qPrintable(error));
+        QCOMPARE(document.savedDate(), QDate::currentDate());
+        QCOMPARE(dated.count(), 1);
+        QCOMPARE(document.titleBlockShown().date, today);
+
+        Design design = document.design();
+        design.project.titleBlock.date = QStringLiteral("1 May");
+        document.change(QStringLiteral("date"), design);
+        QCOMPARE(document.titleBlockShown().date, QStringLiteral("1 May"));
+
+        Document opened;
+        QVERIFY2(opened.open(path, error), qPrintable(error));
+        QCOMPARE(opened.savedDate(), QDate::currentDate());
+        QCOMPARE(opened.titleBlockShown().date, today);
+    }
+
     void saveWritesOnlyWhatChanged()
     {
         QTemporaryDir dir;

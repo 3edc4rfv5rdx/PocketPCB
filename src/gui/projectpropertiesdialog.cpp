@@ -106,6 +106,7 @@ QWidget *ProjectPropertiesDialog::makeGeneralTab()
     m_contactsEdit = lineEdit(block.contacts, "projectContactsEdit");
     m_revisionEdit = lineEdit(block.revision, "projectRevisionEdit");
     m_dateEdit = lineEdit(block.date, "projectDateEdit");
+    m_dateEdit->setPlaceholderText(tr("Date of the last save"));
     m_noteEdit = lineEdit(block.note, "projectNoteEdit");
 
     const QString colon = QStringLiteral(":");

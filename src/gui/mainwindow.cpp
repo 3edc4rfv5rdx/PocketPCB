@@ -169,6 +169,8 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(m_document, &Document::designChanged, this, &MainWindow::projectChanged);
     connect(m_document, &Document::modifiedChanged, this, &MainWindow::updateTitle);
+    // The title block shows the date of the last save.
+    connect(m_document, &Document::savedDateChanged, this, [this] { m_designItem->update(); });
 
     m_libraryWatcher = new QFileSystemWatcher(this);
     m_reloadTimer = new QTimer(this);

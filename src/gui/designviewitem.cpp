@@ -64,7 +64,7 @@ void DesignViewItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *op
     const SheetEditor *editor = activeEditor();
     const Sheet *preview = editor == nullptr ? nullptr : editor->preview();
     if (preview == nullptr) {
-        paintSheet(*painter, design.schematic, design.library, m_page, design.project.titleBlock,
+        paintSheet(*painter, design.schematic, design.library, m_page, m_document->titleBlockShown(),
                    powerShown(design.project, design.schematic));
         paintLitNet(*painter, design.schematic.sheets.at(m_page));
         paintSelection(*painter, design.schematic.sheets.at(m_page));
@@ -77,7 +77,7 @@ void DesignViewItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *op
     schematic.sheets[m_page] = *preview;
     const Library *library = editor->previewLibrary();
     paintSheet(*painter, schematic, library != nullptr ? *library : design.library, m_page,
-               design.project.titleBlock, powerShown(design.project, schematic));
+               m_document->titleBlockShown(), powerShown(design.project, schematic));
     paintSelection(*painter, *preview);
 }
 
