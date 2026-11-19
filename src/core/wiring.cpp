@@ -407,9 +407,11 @@ int keptCost(const QList<Point> &points)
 // or bus; to cross
 // one costs a little. Empty when there is no such way, when no start is on that grid or
 // when the grid would be too large: then it is laid by hand. 'branched',
-// when given, tells whether the start taken is a branch.
+// when given, tells whether the start taken is a branch. The way may end on
+// a point of 'alsoTo' instead of 'to', those on the grid through 'to'.
 QList<Point> gridLaid(const Obstacles &obstacles, const QList<Point> &own,
-                      const QList<GridStart> &starts, const Point &to, bool *branched = nullptr)
+                      const QList<GridStart> &starts, const Point &to, bool *branched = nullptr,
+                      const QList<Point> &alsoTo = {})
 {
     const Coord step = BEND_GRID;
     // The nodes of the grid cover everything with a margin round it.
@@ -534,6 +536,19 @@ QList<Point> gridLaid(const Obstacles &obstacles, const QList<Point> &own,
         blockNodesOn(own.at(i), own.at(i + 1 < own.size() ? i + 1 : i), ownNodes);
 
     const GridNode goal = nodeOf(to);
+    QList<GridNode> goals = {goal};
+    QSet<qint64> goalIndexes = {indexOf(goal.column, goal.row)};
+    for (const Point &point : alsoTo) {
+        if (!isGridNode(point, to) || point.x < left || point.y < top)
+            continue;
+        const GridNode node = nodeOf(point);
+        if (node.column >= columns || node.row >= rows)
+            continue;
+        if (!goalIndexes.contains(indexOf(node.column, node.row))) {
+            goals.append(node);
+            goalIndexes.insert(indexOf(node.column, node.row));
+        }
+    }
     QHash<qint64, GridStart> startAt;
     QList<GridNode> startNodes;
     for (const GridStart &start : starts) {
@@ -564,7 +579,7 @@ QList<Point> gridLaid(const Obstacles &obstacles, const QList<Point> &own,
         if (blockedSteps.contains(stepIndex(from, next)))
             return -1;
         const qint64 index = indexOf(next.column, next.row);
-        if (next != goal && (blocked.contains(index) || ownNodes.contains(index)))
+        if (!goalIndexes.contains(index) && (blocked.contains(index) || ownNodes.contains(index)))
             return -1;
         int cost = crossed.contains(index) ? GRID_CROSSING_COST : 0;
         const auto start = startAt.constFind(indexOf(from.column, from.row));
@@ -577,7 +592,7 @@ QList<Point> gridLaid(const Obstacles &obstacles, const QList<Point> &own,
         }
         return cost;
     };
-    const QList<GridNode> path = gridRoute(rules, startNodes, {goal});
+    const QList<GridNode> path = gridRoute(rules, startNodes, goals);
     if (path.isEmpty())
         return {};
     const GridStart &start = startAt[indexOf(path.first().column, path.first().row)];
@@ -720,8 +735,9 @@ QList<Point> joinedWireAt(const QList<Point> &points, const Point &point,
 // instead. With 'branch', a wire with a point of 'kept' on it may instead
 // end at the last of them, and a new wire, put into 'branch', go to 'to'
 // from any point of what it keeps or of the wires joined to that: when
-// going on from its end means a way round. Empty when gridLaid() finds no
-// way.
+// going on from its end means a way round. The wire may end on any point
+// of the wires already reaching 'to', or joined to them, instead of at 'to'
+// itself. Empty when gridLaid() finds no way.
 QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QList<Point> &kept,
                        bool rejoin, const Obstacles &obstacles, QList<Point> *branch)
 {
@@ -805,10 +821,28 @@ QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QL
     // Only the part every start keeps is in the way: the rest of the old
     // wire goes, and a way back through what a start keeps costs at least
     // three bends more than starting there, so it is never the cheapest.
+    // The wires already reaching 'to', and those joined to them: the wire
+    // may end on any of their points instead, joining the net there.
+    QList<Point> alsoTo;
+    {
+        const WireGroups groups = wireGroupsOf(obstacles);
+        QSet<int> nets;
+        for (int i = 0; i < groups.wires.size(); ++i) {
+            if (liesOn(groups.wires.at(i), to))
+                nets.insert(groups.group.at(i));
+        }
+        for (int i = 0; i < groups.wires.size(); ++i) {
+            if (!nets.contains(groups.group.at(i)))
+                continue;
+            const QList<Point> &wire = groups.wires.at(i);
+            for (int j = 1; j < wire.size(); ++j)
+                alsoTo += gridNodesOn(wire.at(j - 1), wire.at(j), to);
+        }
+    }
     // Where the wire may go on from a point, it does: those starts come
     // first, and the first start at a point is the one kept.
     bool branched = false;
-    const QList<Point> laid = gridLaid(obstacles, keptPart, starts, to, &branched);
+    const QList<Point> laid = gridLaid(obstacles, keptPart, starts, to, &branched, alsoTo);
     if (branched) {
         *branch = laid;
         return keptPart;

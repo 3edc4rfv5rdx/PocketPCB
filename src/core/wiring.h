@@ -146,7 +146,8 @@ enum class WireRouting { Hand, Grid };
 // or led back takes the cheapest way there. A wire with one end going and
 // another wire joined to it may instead end at the last such joint, the
 // end being reached by a new wire from the nearest point of the net, when
-// that is cheaper than going on round.
+// that is cheaper than going on round. An end going where other wires
+// already lead may end on the nearest point of them instead.
 Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
                          const Library &library, WireRouting routing = WireRouting::Hand);
 
