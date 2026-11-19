@@ -111,7 +111,7 @@ void Document::change(const QString &text, const Design &changed, int page,
     after.project.schematicFile = m_design.project.schematicFile;
     after.project.boardFile = m_design.project.boardFile;
     for (Sheet &sheet : after.schematic.sheets)
-        sheet = withWiresMerged(sheet, after.library);
+        sheet = withWiresMerged(sheet);
     if (after == m_design)
         return;
     const Design before = m_design;

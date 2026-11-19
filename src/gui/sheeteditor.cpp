@@ -349,8 +349,7 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
             return;
         }
     }
-    // A wire is chosen whole with the wires that go on from it end to end
-    // up to a fork; a bus is chosen whole.
+    // A wire or a bus is chosen whole.
     if (!adding) {
         const bool wire = std::any_of(sheet->wires.cbegin(), sheet->wires.cend(),
                                       [&hit](const Wire &w) { return w.id == hit; });
@@ -359,8 +358,7 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
         if (wire || bus) {
             dropSegment();
             m_endLine = ObjectId();
-            m_selection = wire ? chainedWires(*sheet, m_document->design().library, hit)
-                               : QSet<ObjectId>{hit};
+            m_selection = {hit};
             emit changed();
         }
     }

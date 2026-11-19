@@ -3,6 +3,8 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: Two wires that meet end to end on a pin are made one wire too, as a wire passing a pin is
+- R: A double click chooses one wire again, as wires going on from each other are one wire now
 - F: Wires that go on from each other end to end, with no fork, pin or bus there, are made one wire after every change
 - F: A double click on a wire chooses it with the wires going on from it end to end, up to a fork, a pin or a bus
 - N: An empty date in the title block shows the day of the last save

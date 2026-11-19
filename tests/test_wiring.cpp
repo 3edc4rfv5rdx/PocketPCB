@@ -950,20 +950,20 @@ private slots:
     }
 
     // Two wires where just their ends meet become one, the first keeping
-    // its id; at a fork, a pin or a bus, and where a wire passes, they stay.
+    // its id, also on a pin; at a fork or a bus, and where a wire passes,
+    // they stay.
     void wiresGoingOnFromEachOtherAreMerged()
     {
-        const Library library = twoPinLibrary();
         Sheet sheet;
         // A and B meet end to end, B drawn backwards and going on straight;
-        // C, D, E meet at one point; F and G meet where H passes; I and J
-        // meet on a pin; K and L on a bus.
+        // C, D, E meet at one point; F and G meet where H passes; K and L
+        // meet on a bus; I and J meet on a pin.
         sheet.wires = {wire({mm(0, 0), mm(10, 0)}), wire({mm(10, 10), mm(10, 5), mm(10, 0)}),
                        wire({mm(0, 20), mm(10, 20)}), wire({mm(10, 20), mm(20, 20)}),
                        wire({mm(10, 20), mm(10, 30)}), wire({mm(0, 40), mm(10, 40)}),
                        wire({mm(10, 40), mm(20, 40)}), wire({mm(10, 35), mm(10, 45)}),
-                       wire({mm(50, 0), mm(55, 0)}), wire({mm(55, 0), mm(55, 10)}),
-                       wire({mm(70, 0), mm(75, 0)}), wire({mm(75, 0), mm(80, 0)})};
+                       wire({mm(70, 0), mm(75, 0)}), wire({mm(75, 0), mm(80, 0)}),
+                       wire({mm(50, 0), mm(55, 0)}), wire({mm(55, 0), mm(55, 10)})};
         sheet.components = {twoPin(mm(60, 0))};
         Bus bus;
         bus.id = newObjectId();
@@ -971,49 +971,22 @@ private slots:
         sheet.buses = {bus};
         const ObjectId a = sheet.wires.at(0).id;
 
-        const Sheet merged = withWiresMerged(sheet, library);
-        QCOMPARE(int(merged.wires.size()), int(sheet.wires.size()) - 1);
+        const Sheet merged = withWiresMerged(sheet);
+        QCOMPARE(int(merged.wires.size()), int(sheet.wires.size()) - 2);
         QVERIFY(merged.wires.at(0).id == a);
         QCOMPARE(merged.wires.at(0).points, QList<Point>({mm(0, 0), mm(10, 0), mm(10, 10)}));
-        for (int i = 2; i < sheet.wires.size(); ++i)
+        for (int i = 2; i < 10; ++i)
             QVERIFY(merged.wires.at(i - 1) == sheet.wires.at(i));
+        // (55, 0) is the left pin of the part at (60, 0).
+        QVERIFY(merged.wires.last().id == sheet.wires.at(10).id);
+        QCOMPARE(merged.wires.last().points, QList<Point>({mm(50, 0), mm(55, 0), mm(55, 10)}));
         // A chain of three is one wire, the straight joints gone.
         Sheet line;
         line.wires = {wire({mm(0, 0), mm(5, 0)}), wire({mm(10, 0), mm(15, 0)}),
                       wire({mm(5, 0), mm(10, 0)})};
-        const Sheet one = withWiresMerged(line, library);
+        const Sheet one = withWiresMerged(line);
         QCOMPARE(int(one.wires.size()), 1);
         QCOMPARE(one.wires.at(0).points, QList<Point>({mm(0, 0), mm(15, 0)}));
-    }
-
-    // A chain goes on through points where just two wire ends meet, and
-    // stops at a fork, at a wire passing, at a pin and at a bus.
-    void chainedWiresStopAtForks()
-    {
-        const Library library = twoPinLibrary();
-        Sheet sheet;
-        // A, B, C end to end; D and E both go on from C's end: a fork. F
-        // ends on B's middle. G and H meet on a pin; I and J on a bus.
-        sheet.wires = {wire({mm(0, 0), mm(10, 0)}), wire({mm(10, 0), mm(20, 0), mm(20, 10)}),
-                       wire({mm(20, 10), mm(30, 10)}), wire({mm(30, 10), mm(40, 10)}),
-                       wire({mm(30, 10), mm(30, 20)}), wire({mm(15, 0), mm(15, -10)}),
-                       wire({mm(50, 0), mm(55, 0)}), wire({mm(55, 0), mm(60, 0)}),
-                       wire({mm(70, 0), mm(75, 0)}), wire({mm(75, 0), mm(80, 0)})};
-        sheet.components = {twoPin(mm(60, 0))};
-        Bus bus;
-        bus.id = newObjectId();
-        bus.points = {mm(75, -10), mm(75, 10)};
-        sheet.buses = {bus};
-        const QList<Wire> &w = sheet.wires;
-        const QSet<ObjectId> abc = {w.at(0).id, w.at(1).id, w.at(2).id};
-        QCOMPARE(chainedWires(sheet, library, w.at(0).id), abc);
-        QCOMPARE(chainedWires(sheet, library, w.at(2).id), abc);
-        QCOMPARE(chainedWires(sheet, library, w.at(3).id), QSet<ObjectId>({w.at(3).id}));
-        QCOMPARE(chainedWires(sheet, library, w.at(5).id), QSet<ObjectId>({w.at(5).id}));
-        // (55, 0) is the left pin of the part at (60, 0).
-        QCOMPARE(chainedWires(sheet, library, w.at(6).id), QSet<ObjectId>({w.at(6).id}));
-        QCOMPARE(chainedWires(sheet, library, w.at(8).id), QSet<ObjectId>({w.at(8).id}));
-        QVERIFY(chainedWires(sheet, library, newObjectId()).isEmpty());
     }
 
     void aWireEndIsDraggedAlone()

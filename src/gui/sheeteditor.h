@@ -29,8 +29,8 @@ class CanvasView;
 // too, and deleting it. A click on a
 // wire chooses the segment under it: a drag moves it, or one end of the
 // wire when taken near it, unless that end is on a pin; Delete removes it. A double click chooses the
-// whole wire with the wires going on from it end to end up to a fork
-// (chainedWires()), Shift and a click every wire joined to it. A component's
+// whole wire, a line between forks and buses (withWiresMerged()),
+// Shift and a click every wire joined to it. A component's
 // designator or value is chosen alone by a click and dragged alone, its
 // component staying; a double click on the value edits it in place.
 // Positions come in scene millimetres.

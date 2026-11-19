@@ -75,17 +75,12 @@ bool isConnectionPoint(const Sheet &sheet, const Library &library, const Point &
 QSet<ObjectId> joinedWires(const Sheet &sheet, const ObjectId &wire);
 
 // 'sheet' with every two wires that end where the other begins made one,
-// where just their two ends meet: no other wire on the point, no pin of
-// 'library' and no bus. The wire first in the list keeps its id and place;
-// corners going on straight are dropped (simplifiedWire()). So a line
-// between forks, pins and buses is one wire however it was drawn.
-Sheet withWiresMerged(const Sheet &sheet, const Library &library);
-
-// The ids of the wires that go on from the wire 'wire' of 'sheet' one
-// after another, end to end, the wire itself among them: through a point
-// where just two wire ends meet, with no other wire on it, no pin of
-// 'library' and no bus. Empty when the sheet has no such wire.
-QSet<ObjectId> chainedWires(const Sheet &sheet, const Library &library, const ObjectId &wire);
+// where just their two ends meet: no other wire on the point and no bus; a
+// pin there stays on the wire, as on any wire passing it. The wire first in
+// the list keeps its id and place; corners going on straight are dropped
+// (simplifiedWire()). So a line between forks and buses is one wire however
+// it was drawn.
+Sheet withWiresMerged(const Sheet &sheet);
 
 // Buses joined to each other as wires are: where an end of one lies on
 // another. A bus drawn on to another is a branch of it, with its name.
