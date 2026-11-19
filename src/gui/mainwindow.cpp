@@ -14,6 +14,7 @@
 #include "propertiespanel.h"
 #include "sheeteditor.h"
 #include "sheettabs.h"
+#include "stephistory.h"
 #include "libraryviewitem.h"
 #include "saveprojectdialog.h"
 
@@ -140,6 +141,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_designItem->setEditor(m_sheetEditor);
     connect(m_sheetEditor, &SheetEditor::changed, this, [this] { m_designItem->update(); });
     connect(m_document, &Document::stepApplied, this, &MainWindow::showStep);
+    connect(m_document, &Document::stepMade, this, &MainWindow::recordStep);
     // The part being placed follows the cursor.
     connect(m_canvas, &CanvasView::cursorMoved, m_sheetEditor,
             [this](Coord x, Coord y) { m_sheetEditor->hover(Point{x, y}); });
@@ -514,6 +516,11 @@ void MainWindow::createMenus()
                                     routing == WireRouting::Grid);
     connect(gridAction, &QAction::triggered, this,
             [this] { applyWireRouting(WireRouting::Grid); });
+
+    QAction *historyAction = settingsMenu->addAction(tr("Keep a history of steps"));
+    historyAction->setCheckable(true);
+    historyAction->setChecked(AppSettings::keepStepHistory());
+    connect(historyAction, &QAction::toggled, this, &AppSettings::setKeepStepHistory);
 }
 
 void MainWindow::setInterfaceLanguage(const QString &language)
@@ -912,6 +919,17 @@ void MainWindow::storeViews()
     // A view not written is not worth a word: the page is fitted next time.
     QString error;
     writeProjectView(path, m_views, error);
+}
+
+void MainWindow::recordStep(const QString &text, int page, const Design &before)
+{
+    if (!AppSettings::keepStepHistory())
+        return;
+    const QString folder = AppSettings::stepHistoryFolder();
+    if (!writeStep(folder, text, page, m_document->projectPath(), AppSettings::wireRouting(),
+                   before.schematic, m_document->design().schematic))
+        showStatus(tr("Cannot write the history of steps into") + QLatin1Char(' ')
+                   + QDir::toNativeSeparators(folder));
 }
 
 void MainWindow::showStep(int page, const QSet<ObjectId> &ids)

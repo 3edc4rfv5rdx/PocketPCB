@@ -22,6 +22,7 @@ add_library(pocketpcb_core STATIC
     netlist.h netlist.cpp
     schematic.h schematic.cpp
     sheetedit.h sheetedit.cpp
+    stephistory.h stephistory.cpp
     symbol.h symbol.cpp
     wiring.h wiring.cpp
 )

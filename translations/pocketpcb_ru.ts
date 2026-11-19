@@ -404,6 +404,14 @@
         <translation>С обходом препятствий</translation>
     </message>
     <message>
+        <source>Keep a history of steps</source>
+        <translation>Записывать историю шагов</translation>
+    </message>
+    <message>
+        <source>Cannot write the history of steps into</source>
+        <translation>Не удаётся записать историю шагов в</translation>
+    </message>
+    <message>
         <source>System language</source>
         <translation>Как в системе</translation>
     </message>

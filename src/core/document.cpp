@@ -110,7 +110,9 @@ void Document::change(const QString &text, const Design &changed, int page,
     after.project.boardFile = m_design.project.boardFile;
     if (after == m_design)
         return;
+    const Design before = m_design;
     m_undoStack.push(new DesignCommand(this, text, m_design, after, page, ids));
+    emit stepMade(text, page, before);
 }
 
 void Document::startNew()

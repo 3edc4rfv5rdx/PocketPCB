@@ -113,6 +113,9 @@ signals:
     // A step was undone or redone: where it was made and what it touched,
     // so the window can show it.
     void stepApplied(int page, const QSet<ObjectId> &ids);
+    // A new step was made by change(), not undone or redone: its name, its
+    // page and the content before it; the content after it is design().
+    void stepMade(const QString &text, int page, const Design &before);
 
 private:
     friend class DesignCommand;

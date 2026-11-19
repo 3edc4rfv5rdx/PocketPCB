@@ -50,6 +50,13 @@ public:
     static bool zoomCenterAndWarp();
     static void setZoomCenterAndWarp(bool on);
 
+    // Whether every step made is written into stepHistoryFolder(), for
+    // finding out what went wrong in one (see writeStep()); off by default.
+    static bool keepStepHistory();
+    static void setKeepStepHistory(bool on);
+    // "history" beside the program.
+    static QString stepHistoryFolder();
+
     // The user's library: a folder with symbols/, footprints/ and parts/.
     // By default "library" in the user's data folder; set in the file by
     // hand for now, and the first read writes the default there.

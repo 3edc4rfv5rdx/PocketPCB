@@ -23,6 +23,7 @@ class CanvasView;
 class DesignViewItem;
 class ErcPanel;
 class Document;
+struct Design;
 class LibraryPanel;
 class NetsPanel;
 class PropertiesPanel;
@@ -184,6 +185,8 @@ private:
 
     // Undo or Redo of a step: its page is shown and what it touched chosen.
     void showStep(int page, const QSet<ObjectId> &ids);
+    // A new step: written into the history of steps when it is kept.
+    void recordStep(const QString &text, int page, const Design &before);
     // The canvas takes the grid step the project keeps for the page shown,
     // and a step chosen by the user goes into the project.
     void applyProjectGrid();

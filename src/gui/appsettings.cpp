@@ -27,6 +27,7 @@ const char KEY_GRID_STYLE[] = "view/gridStyle";
 const char KEY_CURSOR_STYLE[] = "view/cursorStyle";
 const char KEY_ZOOM_WARP[] = "view/zoomCenterAndWarp";
 const char KEY_WIRE_ROUTING[] = "schematic/wireRouting";
+const char KEY_STEP_HISTORY[] = "debug/keepStepHistory";
 const char KEY_SHEET_BACKGROUND[] = "view/sheetBackground";
 const char KEY_LAST_LIBRARY_FOLDER[] = "library/lastFolder";
 const char KEY_USER_LIBRARY_FOLDER[] = "library/folder";
@@ -39,6 +40,8 @@ const int DEFAULT_AUTOSAVE_MINUTES = 5;
 
 // Inside the user's data folder.
 const char USER_LIBRARY_FOLDER[] = "library";
+// Beside the program.
+const char STEP_HISTORY_FOLDER[] = "history";
 // Where an AppImage keeps the built-in library, from the program's folder.
 const char INSTALLED_LIBRARY_FOLDER[] = "../share/pocketpcb/library";
 const char KEY_WINDOW_GEOMETRY[] = "window/geometry";
@@ -182,6 +185,22 @@ bool AppSettings::zoomCenterAndWarp()
 void AppSettings::setZoomCenterAndWarp(bool on)
 {
     writeValue(KEY_ZOOM_WARP, on);
+}
+
+bool AppSettings::keepStepHistory()
+{
+    return readValue(KEY_STEP_HISTORY, false).toBool();
+}
+
+void AppSettings::setKeepStepHistory(bool on)
+{
+    writeValue(KEY_STEP_HISTORY, on);
+}
+
+QString AppSettings::stepHistoryFolder()
+{
+    return QDir(QCoreApplication::applicationDirPath())
+        .filePath(QLatin1String(STEP_HISTORY_FOLDER));
 }
 
 QString AppSettings::lastLibraryFolder()
