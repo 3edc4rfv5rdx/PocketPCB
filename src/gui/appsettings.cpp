@@ -26,6 +26,7 @@ const char KEY_LANGUAGE[] = "interface/language";
 const char KEY_GRID_STYLE[] = "view/gridStyle";
 const char KEY_CURSOR_STYLE[] = "view/cursorStyle";
 const char KEY_ZOOM_WARP[] = "view/zoomCenterAndWarp";
+const char KEY_BOM_TAB[] = "view/bomTab";
 const char KEY_WIRE_ROUTING[] = "schematic/wireRouting";
 const char KEY_STEP_HISTORY[] = "debug/keepStepHistory";
 const char KEY_SHEET_BACKGROUND[] = "view/sheetBackground";
@@ -199,6 +200,16 @@ bool AppSettings::zoomCenterAndWarp()
 void AppSettings::setZoomCenterAndWarp(bool on)
 {
     writeValue(KEY_ZOOM_WARP, on);
+}
+
+bool AppSettings::bomTabShown()
+{
+    return readValue(KEY_BOM_TAB, false).toBool();
+}
+
+void AppSettings::setBomTabShown(bool on)
+{
+    writeValue(KEY_BOM_TAB, on);
 }
 
 bool AppSettings::keepStepHistory()

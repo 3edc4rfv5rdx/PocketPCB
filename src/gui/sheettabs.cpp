@@ -13,6 +13,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QSignalBlocker>
+#include <QStyle>
 #include <QTabBar>
 #include <QTimer>
 #include <QToolButton>
@@ -56,6 +57,14 @@ SheetTabs::SheetTabs(Document *document, SheetEditor *editor, QWidget *parent)
     layout->addWidget(addButton);
     layout->addStretch();
 
+    m_bomClose = new QToolButton(m_bar);
+    m_bomClose->setObjectName(QStringLiteral("bomTabClose"));
+    m_bomClose->setIcon(style()->standardIcon(QStyle::SP_TitleBarCloseButton));
+    m_bomClose->setToolTip(tr("Close"));
+    m_bomClose->setAutoRaise(true);
+    m_bomClose->hide();
+    connect(m_bomClose, &QToolButton::clicked, this, &SheetTabs::bomClosed);
+
     connect(addButton, &QToolButton::clicked, this,
             [this] { addSheet(int(m_document->design().schematic.sheets.size())); });
     // 'currentChanged' covers the keyboard and a tab passing its place while
@@ -85,10 +94,14 @@ SheetTabs::SheetTabs(Document *document, SheetEditor *editor, QWidget *parent)
 void SheetTabs::updatePages()
 {
     const QList<Sheet> &sheets = m_document->design().schematic.sheets;
-    const int count = int(sheets.size()) + 2;
+    const int count = int(sheets.size()) + (m_bomTab ? 2 : 1);
     // The tabs are relabelled in place, not made anew, so that a drag just
     // let go is not cut short.
     const QSignalBlocker blocker(m_bar);
+    for (int tab = 0; tab < m_bar->count(); ++tab) {
+        if (m_bar->tabButton(tab, QTabBar::RightSide) == m_bomClose)
+            m_bar->setTabButton(tab, QTabBar::RightSide, nullptr);
+    }
     while (m_bar->count() > count)
         m_bar->removeTab(m_bar->count() - 1);
     while (m_bar->count() < count)
@@ -97,14 +110,27 @@ void SheetTabs::updatePages()
         m_bar->setTabText(i, SheetEditor::sheetName(sheets.at(i), i));
         m_bar->setTabData(i, QVariant::fromValue(sheets.at(i).id.value));
     }
-    m_bar->setTabText(count - 2, tr("Board"));
-    m_bar->setTabData(count - 2, QVariant::fromValue(ObjectId().value));
-    m_bar->setTabText(count - 1, BomPanel::bomTitle());
-    m_bar->setTabData(count - 1, QLatin1String(BOM_TAB_MARK));
+    const int board = int(sheets.size());
+    m_bar->setTabText(board, tr("Board"));
+    m_bar->setTabData(board, QVariant::fromValue(ObjectId().value));
+    if (m_bomTab) {
+        m_bar->setTabText(board + 1, BomPanel::bomTitle());
+        m_bar->setTabData(board + 1, QLatin1String(BOM_TAB_MARK));
+        m_bar->setTabButton(board + 1, QTabBar::RightSide, m_bomClose);
+        m_bomClose->show();
+    }
+}
+
+void SheetTabs::setBomTabShown(bool shown)
+{
+    m_bomTab = shown;
+    updatePages();
 }
 
 void SheetTabs::setBomCurrent()
 {
+    if (!m_bomTab)
+        return;
     const QSignalBlocker blocker(m_bar);
     m_bar->setCurrentIndex(m_bar->count() - 1);
 }

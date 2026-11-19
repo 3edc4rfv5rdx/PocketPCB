@@ -192,6 +192,9 @@ private:
     void showBom();
     // The canvas comes back in its place.
     void showCanvas();
+    // View > BOM: the tab of the BOM is added and shown, or removed, the
+    // page under it shown again; the choice is kept in the settings.
+    void setBomTabShown(bool shown);
     // Shows the sheet of the first of 'ids' with those of them on it chosen.
     void showComponents(const QSet<ObjectId> &ids);
     // Undo or Redo of a step: its page is shown and what it touched chosen.

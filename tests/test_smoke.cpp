@@ -254,8 +254,24 @@ private slots:
         QVERIFY(window.document()->projectPath().isEmpty());
         QVERIFY(window.designItem()->isVisible());
         QCOMPARE(visibleItems(window), 1);
+        QCOMPARE(tabTexts(window), QStringList({QStringLiteral("Sheet 1"), QStringLiteral("Board")}));
+
+        // View > BOM adds its tab and shows it; the button on the tab
+        // takes it away, the page under it shown again.
+        QAction *bom = window.findChild<QAction *>(QStringLiteral("actionBomTab"));
+        QVERIFY(bom != nullptr && !bom->isChecked());
+        bom->setChecked(true);
         QCOMPARE(tabTexts(window), QStringList({QStringLiteral("Sheet 1"), QStringLiteral("Board"),
                                                 QStringLiteral("BOM")}));
+        QCOMPARE(window.findChild<QTabBar *>()->currentIndex(), 2);
+        QVERIFY(AppSettings::bomTabShown());
+        QToolButton *close = window.findChild<QToolButton *>(QStringLiteral("bomTabClose"));
+        QVERIFY(close != nullptr && !close->isHidden());
+        close->click();
+        QVERIFY(!bom->isChecked());
+        QCOMPARE(tabTexts(window), QStringList({QStringLiteral("Sheet 1"), QStringLiteral("Board")}));
+        QCOMPARE(window.findChild<QTabBar *>()->currentIndex(), 0);
+        QVERIFY(!AppSettings::bomTabShown());
         QVERIFY2(window.windowTitle().startsWith(QStringLiteral("untitled")),
                  qPrintable(window.windowTitle()));
         QVERIFY(!window.isWindowModified());
@@ -310,7 +326,7 @@ private slots:
         QVERIFY(window.openProject(path));
         QCOMPARE(window.document()->projectPath(), path);
         QCOMPARE(tabTexts(window), QStringList({QStringLiteral("Sheet 1"), QStringLiteral("Питание"),
-                                                QStringLiteral("Board"), QStringLiteral("BOM")}));
+                                                QStringLiteral("Board")}));
         QVERIFY2(window.windowTitle().startsWith(QStringLiteral("amp.ppcb")),
                  qPrintable(window.windowTitle()));
         QCOMPARE(window.designItem()->page(), 0);
@@ -337,7 +353,7 @@ private slots:
         // A file that cannot be read changes nothing.
         QVERIFY(!window.openProject(dir.filePath(QStringLiteral("absent.ppcb"))));
         QCOMPARE(window.document()->projectPath(), path);
-        QCOMPARE(tabTexts(window).size(), 4);
+        QCOMPARE(tabTexts(window).size(), 3);
         QVERIFY(!window.statusText().isEmpty());
         // Nor does it go into the recent ones.
         QVERIFY(!AppSettings::recentProjects().contains(
@@ -350,7 +366,7 @@ private slots:
         // A new project drops the file and the second sheet.
         window.newProject();
         QVERIFY(window.document()->projectPath().isEmpty());
-        QCOMPARE(tabTexts(window).size(), 3);
+        QCOMPARE(tabTexts(window).size(), 2);
         QCOMPARE(window.designItem()->page(), 0);
     }
 
@@ -404,10 +420,9 @@ private slots:
         QVERIFY(QTest::qWaitForWindowExposed(&window));
         window.newProject();
         Document *document = window.document();
-        const QStringList oneSheet = {QStringLiteral("Sheet 1"), QStringLiteral("Board"),
-                                      QStringLiteral("BOM")};
+        const QStringList oneSheet = {QStringLiteral("Sheet 1"), QStringLiteral("Board")};
         const QStringList twoSheets = {QStringLiteral("Sheet 1"), QStringLiteral("Sheet 2"),
-                                       QStringLiteral("Board"), QStringLiteral("BOM")};
+                                       QStringLiteral("Board")};
 
         // "+" adds a sheet at the end and shows it.
         QToolButton *add = nullptr;

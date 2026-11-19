@@ -50,6 +50,10 @@ public:
     static bool zoomCenterAndWarp();
     static void setZoomCenterAndWarp(bool on);
 
+    // Whether the BOM has its tab beside the board's; off by default.
+    static bool bomTabShown();
+    static void setBomTabShown(bool on);
+
     // Whether every step made is written into stepHistoryFolder(), for
     // finding out what went wrong in one (see writeStep()); off by default.
     static bool keepStepHistory();

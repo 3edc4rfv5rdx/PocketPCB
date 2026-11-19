@@ -146,6 +146,7 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(central);
     connect(m_sheetTabs, &SheetTabs::pageChosen, this, [this](int page) { showPage(page); });
     connect(m_sheetTabs, &SheetTabs::bomChosen, this, &MainWindow::showBom);
+    m_sheetTabs->setBomTabShown(AppSettings::bomTabShown());
     connect(m_bomPanel, &BomPanel::componentsChosen, this, &MainWindow::showComponents);
 
     m_designItem->setEditor(m_sheetEditor);
@@ -482,6 +483,15 @@ void MainWindow::createMenus()
     QMenu *sheetMenu = viewMenu->addMenu(tr("Sheet"));
     connect(sheetMenu, &QMenu::aboutToShow, this, [this, sheetMenu] {
         m_sheetTabs->fillMenu(sheetMenu, isSheetShown() ? m_designItem->page() : -1);
+    });
+
+    QAction *bomAction = viewMenu->addAction(BomPanel::bomTitle());
+    bomAction->setObjectName(QStringLiteral("actionBomTab"));
+    bomAction->setCheckable(true);
+    bomAction->setChecked(AppSettings::bomTabShown());
+    connect(bomAction, &QAction::toggled, this, &MainWindow::setBomTabShown);
+    connect(m_sheetTabs, &SheetTabs::bomClosed, bomAction, [bomAction] {
+        bomAction->setChecked(false);
     });
 
     viewMenu->addSeparator();
@@ -918,6 +928,16 @@ void MainWindow::showCanvas()
 {
     m_bomShown = false;
     m_pages->setCurrentWidget(m_canvas);
+}
+
+void MainWindow::setBomTabShown(bool shown)
+{
+    AppSettings::setBomTabShown(shown);
+    m_sheetTabs->setBomTabShown(shown);
+    if (shown)
+        showBom();
+    else if (m_bomShown)
+        showPage(m_designItem->page());
 }
 
 void MainWindow::showComponents(const QSet<ObjectId> &ids)

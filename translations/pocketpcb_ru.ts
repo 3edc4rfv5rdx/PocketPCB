@@ -855,6 +855,10 @@
 <context>
     <name>ppcb::SheetTabs</name>
     <message>
+        <source>Close</source>
+        <translation>Закрыть</translation>
+    </message>
+    <message>
         <source>Board</source>
         <translation>Плата</translation>
     </message>

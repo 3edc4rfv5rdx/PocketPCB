@@ -8,6 +8,7 @@
 class QLineEdit;
 class QMenu;
 class QTabBar;
+class QToolButton;
 
 namespace ppcb {
 
@@ -15,8 +16,8 @@ class Document;
 class SheetEditor;
 
 // The pages of the project as tabs over the canvas: the sheets, then the
-// board, then the BOM, which is no page of the canvas; the board and the BOM
-// stay last. A sheet is added with the "+" button beside the
+// board, then, while it is asked for, the BOM, which is no page of the
+// canvas and has a button closing it; the board and the BOM stay last. A sheet is added with the "+" button beside the
 // tabs or from the menu of a tab, renamed with a double click on its tab or
 // from that menu, where its paper is chosen and it is deleted too (the same
 // menu is View > Sheet for the sheet shown); dragging its tab moves it. Each
@@ -43,12 +44,17 @@ public:
     void setCurrentPage(int page);
     // Makes the tab of the BOM the current one, without bomChosen().
     void setBomCurrent();
+    // Adds or removes the tab of the BOM, without bomChosen() or
+    // pageChosen().
+    void setBomTabShown(bool shown);
 
 signals:
     // A tab was chosen or clicked, or a sheet added: 'page' is to be shown.
     void pageChosen(int page);
     // The tab of the BOM was chosen or clicked.
     void bomChosen();
+    // The button on the tab of the BOM was clicked.
+    void bomClosed();
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -83,6 +89,10 @@ private:
     Document *m_document;
     SheetEditor *m_editor;
     QTabBar *m_bar;
+    bool m_bomTab = false;
+    // On the tab of the BOM while it is there; taken off before tabs are
+    // removed, which deletes their buttons.
+    QToolButton *m_bomClose = nullptr;
     // The line of a sheet being renamed, and the sheet; null when none is.
     QLineEdit *m_renameEdit = nullptr;
     ObjectId m_renamedSheet;
