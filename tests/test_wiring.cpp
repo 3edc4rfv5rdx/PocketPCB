@@ -1158,6 +1158,108 @@ private slots:
         QCOMPARE(byHand.wires.at(2).points.first(), h(0, 0));
     }
 
+    // Where the old wire ran is free for the new one: a pin moved onto its
+    // line is reached straight from the corner of the net beside it, not
+    // round the old wire's steps.
+    void gridWiresTakeTheLineOfTheOldOne()
+    {
+        const Library library = gridLibrary();
+        Sheet sheet;
+        // The pin on the left holds the junction once the wire leaves it.
+        sheet.components = {gridPart(h(14, 0)), gridPart(h(-4, 0))};
+        sheet.wires = {wire({h(0, 0), h(2, 0), h(2, -10)}),
+                       wire({h(0, 0), h(0, 2), h(6, 2), h(6, 0), h(10, 0)})};
+        const QSet<ObjectId> part = {sheet.components.first().id};
+        const Sheet moved = withWiresFollowing(sheet, movedObjects(sheet, part, h(2, 0)), part,
+                                               library, WireRouting::Grid);
+        QCOMPARE(moved.wires.size(), 2);
+        QCOMPARE(moved.wires.at(0).points, sheet.wires.at(0).points);
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({h(2, 0), h(12, 0)}));
+    }
+
+    // A wire held only by the end of another one keeps that end: leaving it
+    // for a nearer point of the net would leave the other wire hanging.
+    void gridWiresLeaveNoWireHanging()
+    {
+        const Library library = gridLibrary();
+        Sheet sheet;
+        sheet.components = {gridPart(h(14, 0))};
+        sheet.wires = {wire({h(-10, 10), h(20, 10)}), wire({h(0, 10), h(0, 2)}),
+                       wire({h(0, 2), h(0, 0), h(10, 0)})};
+        const QSet<ObjectId> part = {sheet.components.first().id};
+        const Sheet moved = withWiresFollowing(sheet, movedObjects(sheet, part, h(0, 4)), part,
+                                               library, WireRouting::Grid);
+        QCOMPARE(moved.wires.size(), 3);
+        QCOMPARE(moved.wires.at(1).points, sheet.wires.at(1).points);
+        QCOMPARE(moved.wires.at(2).points.first(), h(0, 2));
+        QCOMPARE(moved.wires.at(2).points.last(), h(10, 4));
+    }
+
+    // A pin moved back past a wire joined to its wire lands on that wire:
+    // the wire keeps going as far as the joint, cut at the pin, with no
+    // hook back to it.
+    void gridWiresPassThroughAPinComeOntoThem()
+    {
+        const Library library = gridLibrary();
+        Sheet sheet;
+        // Upright: a pin's end at (10, 0), its line going down.
+        Component upright = gridPart(h(10, 4));
+        upright.rotation = 90;
+        sheet.components = {upright};
+        sheet.wires = {wire({h(-10, 0), h(10, 0)}), wire({h(6, 0), h(6, -6), h(16, -6)})};
+        const QSet<ObjectId> part = {upright.id};
+        const Sheet moved = withWiresFollowing(sheet, movedObjects(sheet, part, h(-6, 0)), part,
+                                               library, WireRouting::Grid);
+        // Cut at the pin, as a pin on the middle of a wire always is.
+        QCOMPARE(moved.wires.size(), 3);
+        QCOMPARE(moved.wires.at(0).points, QList<Point>({h(-10, 0), h(4, 0)}));
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({h(4, 0), h(6, 0)}));
+        QCOMPARE(moved.wires.at(2).points, sheet.wires.at(1).points);
+    }
+
+    // The same when the pin lands on another wire joined at the joint: the
+    // wire to the pin ends at the joint and the pin cuts the other one,
+    // instead of the wire going round to the pin.
+    void gridWiresStopWhereAPinLandsOnTheirNet()
+    {
+        const Library library = gridLibrary();
+        Sheet sheet;
+        Component upright = gridPart(h(10, 4));
+        upright.rotation = 90;
+        sheet.components = {upright};
+        sheet.wires = {wire({h(-10, 0), h(6, 0)}),
+                       wire({h(16, -6), h(6, -6), h(6, 0), h(10, 0)})};
+        const QSet<ObjectId> part = {upright.id};
+        const Sheet moved = withWiresFollowing(sheet, movedObjects(sheet, part, h(-6, 0)), part,
+                                               library, WireRouting::Grid);
+        QCOMPARE(moved.wires.size(), 3);
+        QCOMPARE(moved.wires.at(0).points, QList<Point>({h(-10, 0), h(4, 0)}));
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({h(4, 0), h(6, 0)}));
+        QCOMPARE(moved.wires.at(2).points, QList<Point>({h(16, -6), h(6, -6), h(6, 0)}));
+    }
+
+    // A pin left in place on the middle of a wire is joined to it: the wire
+    // keeps it when its end goes back past it.
+    void gridWiresKeepThePinsOnTheirMiddle()
+    {
+        const Library library = gridLibrary();
+        Sheet sheet;
+        Component moving = gridPart(h(10, 4));
+        moving.rotation = 90;
+        // Its upper pin's end on the middle of the wire, at (6, 8).
+        Component still = gridPart(h(6, 12));
+        still.rotation = 90;
+        sheet.components = {moving, still};
+        sheet.wires = {wire({h(-10, 8), h(10, 8)})};
+        const QSet<ObjectId> part = {moving.id};
+        const Sheet moved = withWiresFollowing(sheet, movedObjects(sheet, part, h(-6, 0)), part,
+                                               library, WireRouting::Grid);
+        QVERIFY(std::any_of(moved.wires.cbegin(), moved.wires.cend(),
+                            [](const Wire &w) { return liesOnWire(w.points, h(6, 8)); }));
+        QVERIFY(std::any_of(moved.wires.cbegin(), moved.wires.cend(),
+                            [](const Wire &w) { return liesOnWire(w.points, h(4, 8)); }));
+    }
+
     // Off the grid the wire is laid by hand.
     void gridWiresOffTheGridAreLaidByHand()
     {

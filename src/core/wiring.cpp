@@ -398,7 +398,8 @@ int keptCost(const QList<Point> &points)
 // through 'to', as the points of the whole wire: the 'before' of the start
 // it takes, that start and the corners after it. It goes through no body of
 // a part, no pin's line, no point of another wire or a bus and no point of
-// 'own' (the wire it goes on from), and along no other wire or bus; to cross
+// 'own' (what it keeps of the wire it goes on from), and along no other wire
+// or bus; to cross
 // one costs a little. Empty when there is no such way, when no start is on that grid or
 // when the grid would be too large: then it is laid by hand.
 QList<Point> gridLaid(const Obstacles &obstacles, const QList<Point> &own,
@@ -582,15 +583,18 @@ QList<Point> gridLaid(const Obstacles &obstacles, const QList<Point> &own,
     return straightened(points);
 }
 
-// The wires of 'obstacles' joined to the point 'at' and those joined to
-// them, one through another, when they hold together without a wire ending
-// at 'at': where a wire that ends there alone could be joined instead. Two
-// wires are joined where an end of one lies on the other or both end on
-// the end of one pin. None when the wires on 'at' are not joined to each
-// other but through that point.
-QList<QList<Point>> netWiresAt(const Point &at, const Obstacles &obstacles)
+// The wires of 'obstacles', from their segments in the order they were
+// added, and for each the group of the wires it is joined to, one through
+// another: two are joined where an end of one lies on the other or both end
+// on the end of one pin.
+struct WireGroups
 {
-    // The wires, from their segments in the order they were added.
+    QList<QList<Point>> wires;
+    QList<int> group;
+};
+
+WireGroups wireGroupsOf(const Obstacles &obstacles)
+{
     QList<QList<Point>> wires;
     ObjectId last;
     for (const auto &[owner, segment] : obstacles.wires) {
@@ -632,20 +636,70 @@ QList<QList<Point>> netWiresAt(const Point &at, const Obstacles &obstacles)
                 join(a, b);
         }
     }
+    for (int i = 0; i < wires.size(); ++i)
+        group[i] = root(i);
+    return WireGroups{wires, group};
+}
+
+// The wires of 'obstacles' joined to the point 'at' and those joined to
+// them, one through another (wireGroupsOf()), when they hold together
+// without a wire ending at 'at': where a wire that ends there alone could
+// be joined instead. None when the wires on 'at' are not joined to each
+// other but through that point, or when leaving it would leave the end of
+// another wire hanging there.
+QList<QList<Point>> netWiresAt(const Point &at, const Obstacles &obstacles)
+{
+    const WireGroups groups = wireGroupsOf(obstacles);
+    const QList<QList<Point>> &wires = groups.wires;
+    // What stays joined at 'at' once the wire leaves it: a pin, an end of a
+    // wire, two for a wire passing through. One alone would be left hanging
+    // there, the end of a wire that went on in the one that leaves.
+    const bool onTip = std::any_of(obstacles.pins.cbegin(), obstacles.pins.cend(),
+                                   [&at](const auto &pin) { return pin.first == at; });
+    int stay = onTip ? 1 : 0;
+    for (const QList<Point> &wire : wires) {
+        if (wire.first() == at || wire.last() == at)
+            stay += (wire.first() == at) + (wire.last() == at);
+        else if (liesOn(wire, at))
+            stay += 2;
+    }
+    if (stay < 2)
+        return {};
     int net = -1;
     for (int i = 0; i < wires.size(); ++i) {
         if (!liesOn(wires.at(i), at))
             continue;
-        if (net >= 0 && root(i) != net)
+        if (net >= 0 && groups.group.at(i) != net)
             return {};
-        net = root(i);
+        net = groups.group.at(i);
     }
     QList<QList<Point>> result;
     for (int i = 0; i < wires.size(); ++i) {
-        if (net >= 0 && root(i) == net)
+        if (net >= 0 && groups.group.at(i) == net)
             result.append(wires.at(i));
     }
     return result;
+}
+
+// The wire of 'obstacles' that 'point' lies on, joined to the wire 'points'
+// (an end of one lying on the other) or to a wire joined to it, one through
+// another. Empty when there is none.
+QList<Point> joinedWireAt(const QList<Point> &points, const Point &point,
+                          const Obstacles &obstacles)
+{
+    const WireGroups groups = wireGroupsOf(obstacles);
+    QSet<int> nets;
+    for (int i = 0; i < groups.wires.size(); ++i) {
+        const QList<Point> &wire = groups.wires.at(i);
+        if (liesOn(points, wire.first()) || liesOn(points, wire.last())
+            || liesOn(wire, points.first()) || liesOn(wire, points.last()))
+            nets.insert(groups.group.at(i));
+    }
+    for (int i = 0; i < groups.wires.size(); ++i) {
+        if (nets.contains(groups.group.at(i)) && liesOn(groups.wires.at(i), point))
+            return groups.wires.at(i);
+    }
+    return {};
 }
 
 // ledTo() on the grid: the cheapest wire that keeps the wire up to the last
@@ -653,8 +707,9 @@ QList<QList<Point>> netWiresAt(const Point &at, const Obstacles &obstacles)
 // from there or from a point after it, keeping it up to that point; of
 // wires as cheap, the one that keeps more. With 'rejoin', a wire held only
 // by its first point, which stays, may instead be laid from any point of
-// the wires joined to it there (netWiresAt()), leaving that point. Empty
-// when gridLaid() finds no way.
+// the wires joined to it there (netWiresAt()), leaving that point. A pin
+// 'to' on the part it keeps, or on a wire joined to it, is joined there
+// instead. Empty when gridLaid() finds no way.
 QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QList<Point> &kept,
                        bool rejoin, const Obstacles &obstacles)
 {
@@ -664,6 +719,25 @@ QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QL
         if (kept.contains(points.at(i))) {
             from = i;
             break;
+        }
+    }
+    // A pin come onto the part the wire keeps, or onto a wire joined to
+    // it, is joined there: the wire ends at its last joint, and the pin cuts
+    // the wire it lies on, unless the pin's line runs along that wire.
+    const QList<Point> keptPart = points.mid(0, from + 1);
+    if (from > 0) {
+        for (const auto &[tip, end] : obstacles.pins) {
+            if (tip != to)
+                continue;
+            const QList<Point> under =
+                liesOn(keptPart, to) ? keptPart : joinedWireAt(keptPart, to, obstacles);
+            if (under.isEmpty())
+                continue;
+            bool along = false;
+            for (int i = 1; i < under.size(); ++i)
+                along = along || overlap(tip, end, under.at(i - 1), under.at(i));
+            if (!along)
+                return keptPart;
         }
     }
     // From the far end back: of starts as cheap, the one that keeps more.
@@ -692,7 +766,10 @@ QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QL
             }
         }
     }
-    return gridLaid(obstacles, points, starts, to);
+    // Only the part every start keeps is in the way: the rest of the old
+    // wire goes, and a way back through what a start keeps costs at least
+    // three bends more than starting there, so it is never the cheapest.
+    return gridLaid(obstacles, keptPart, starts, to);
 }
 
 // The wire 'points' (two or more) with its last point gone to 'to'.
@@ -931,6 +1008,9 @@ public:
 
     // True when the end of a pin of a component left in place is at 'point'.
     bool isStillPin(const Point &point) const { return m_stillPins.contains(point); }
+
+    // The ends of the pins of the components left in place.
+    const QList<Point> &stillPins() const { return m_stillPins; }
 
     std::optional<Point> follow(const Point &point) const
     {
@@ -1444,13 +1524,18 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
                 point = point + shift;
         } else if (newFirst || newLast) {
             // The ends of other wires joined to this one, apart from those
-            // at the ends that go: they must stay on it.
+            // at the ends that go, and the pins left in place on its middle,
+            // joined to it there: they must stay on it.
             QList<Point> kept;
             for (const auto &[end, owner] : ends) {
                 if (owner == wire.id || (newFirst && end == first) || (newLast && end == last))
                     continue;
                 if (isOnWire(wire, end) && !kept.contains(end))
                     kept.append(end);
+            }
+            for (const Point &pin : follower.stillPins()) {
+                if (pin != first && pin != last && isOnWire(wire, pin) && !kept.contains(pin))
+                    kept.append(pin);
             }
             QList<Point> points = wire.points;
             if (newFirst && newLast && points.size() <= 3 && kept.isEmpty()) {

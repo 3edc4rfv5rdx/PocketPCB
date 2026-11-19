@@ -3,6 +3,10 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A wire whose end follows a moved part keeps the pins left in place on its middle, such as a ground, instead of leaving them unjoined
+- E: A pin moved back past a wire joined to its wire lands on that wire, or on another wire joined there, instead of being reached by a hook or a loop round the joint
+- E: A wire laid round obstacles no longer leaves the end of another wire hanging where it was joined to it
+- E: A wire laid round obstacles takes the straight way over where it ran before, instead of stepping round its old place
 - N: Wires following a moved part, wire or segment take the cheapest way round bodies, pins and other wires, joining their net where it is nearest; Settings > Wire routing > Simple brings back the old way
 - I: A generic grid search (A*) that the schematic wires and later the board tracks are to be laid with
 ## v0.5.128 (2026-11-18)
