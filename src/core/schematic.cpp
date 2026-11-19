@@ -28,6 +28,7 @@ const char KEY_DESIGNATOR[] = "designator";
 const char KEY_VALUE[] = "value";
 const char KEY_OFF_BOARD[] = "offBoard";
 const char KEY_POWER_MW[] = "powerMw";
+const char KEY_COMMENT[] = "comment";
 const char KEY_MIRRORED[] = "mirrored";
 const char KEY_REF_AT[] = "refAt";
 const char KEY_VALUE_AT[] = "valueAt";
@@ -78,6 +79,8 @@ QJsonObject componentToJson(const Component &component)
     object.insert(QLatin1String(KEY_OFF_BOARD), component.offBoard);
     if (component.powerMw > 0)
         object.insert(QLatin1String(KEY_POWER_MW), component.powerMw);
+    if (!component.comment.isEmpty())
+        object.insert(QLatin1String(KEY_COMMENT), component.comment);
     object.insert(QLatin1String(KEY_AT), pointToJson(component.at));
     object.insert(QLatin1String(KEY_ROTATION), component.rotation);
     object.insert(QLatin1String(KEY_MIRRORED), component.mirrored);
@@ -99,6 +102,9 @@ Component componentFromJson(const QJsonObject &object, const QString &where, Rea
     // Optional: no rated power when absent.
     if (object.contains(QLatin1String(KEY_POWER_MW)))
         component.powerMw = reader.integer(object, KEY_POWER_MW, where, 0, MAX_POWER_MW);
+    // Optional: no comment when absent.
+    if (object.contains(QLatin1String(KEY_COMMENT)))
+        component.comment = reader.string(object, KEY_COMMENT, where);
     component.at = reader.point(object, KEY_AT, where);
     component.rotation = reader.rightAngle(object, KEY_ROTATION, where);
     component.mirrored = reader.boolean(object, KEY_MIRRORED, where);
@@ -322,7 +328,7 @@ QString paperSizeName(PaperSize paper)
 bool operator==(const Component &a, const Component &b)
 {
     return a.id == b.id && a.part == b.part && a.footprint == b.footprint
-           && a.designator == b.designator && a.value == b.value && a.offBoard == b.offBoard && a.powerMw == b.powerMw && a.at == b.at && a.rotation == b.rotation
+           && a.designator == b.designator && a.value == b.value && a.offBoard == b.offBoard && a.powerMw == b.powerMw && a.comment == b.comment && a.at == b.at && a.rotation == b.rotation
            && a.mirrored == b.mirrored && a.refAt == b.refAt && a.valueAt == b.valueAt;
 }
 

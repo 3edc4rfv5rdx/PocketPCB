@@ -541,6 +541,8 @@ private slots:
         QCOMPARE(rest.graphics.size(), 1);
         QCOMPARE(rest.components.size(), 1);
         QVERIFY(withoutObjects(sheet, allIds()) == Sheet());
+        QCOMPARE(withComponentComment(sheet, {id(1)}, QStringLiteral(" 1% ")).components.at(0).comment,
+                 QStringLiteral("1%"));
         // A rated power goes to a part that has one only.
         Library powered = resistorLibrary();
         powered.parts[QStringLiteral("resistor")].powerMw = 125;

@@ -24,6 +24,8 @@ struct Component
     // Rated power in milliwatts, of a part that has one (Part::powerMw);
     // 0 for none. A resistor shows it as a mark inside its body.
     int powerMw = 0;
+    // A note of the user's: not drawn on the sheet; for the list of parts.
+    QString comment;
 
     // Position of the symbol's origin; rotation is 0, 90, 180 or 270 degrees
     // clockwise on screen; mirroring flips the symbol left to right first.

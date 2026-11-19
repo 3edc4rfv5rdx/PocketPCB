@@ -43,6 +43,8 @@ PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidge
     m_offBoard->setObjectName(QStringLiteral("propertiesOffBoard"));
     m_power = new QComboBox(this);
     m_power->setObjectName(QStringLiteral("propertiesPower"));
+    m_comment = new QLineEdit(this);
+    m_comment->setObjectName(QStringLiteral("propertiesComment"));
 
     QFormLayout *form = new QFormLayout;
     form->addRow(tr("Designator"), m_designator);
@@ -50,6 +52,7 @@ PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidge
     form->addRow(footprintTitle(), m_footprint);
     form->addRow(tr("Off board"), m_offBoard);
     form->addRow(powerTitle(), m_power);
+    form->addRow(tr("Comment"), m_comment);
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(m_heading);
     layout->addLayout(form);
@@ -57,6 +60,7 @@ PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidge
 
     m_designator->installEventFilter(this);
     m_value->installEventFilter(this);
+    m_comment->installEventFilter(this);
     // Only what the user does: filling the fields in refresh() sends none of these.
     connect(m_designator, &QLineEdit::editingFinished, this, &PropertiesPanel::commitDesignator);
     connect(m_designator, &QLineEdit::textEdited, this, &PropertiesPanel::markDesignator);
@@ -64,6 +68,7 @@ PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidge
     connect(m_footprint, &QComboBox::activated, this, &PropertiesPanel::commitFootprint);
     connect(m_offBoard, &QCheckBox::clicked, this, &PropertiesPanel::commitOffBoard);
     connect(m_power, &QComboBox::activated, this, &PropertiesPanel::commitPower);
+    connect(m_comment, &QLineEdit::editingFinished, this, &PropertiesPanel::commitComment);
     connect(m_editor, &SheetEditor::changed, this, [this] { refresh(); });
     connect(m_document, &Document::designChanged, this, [this] { refresh(); });
     refresh(true);
@@ -103,7 +108,7 @@ bool PropertiesPanel::havePower(const QList<Component> &components, const Librar
 
 bool PropertiesPanel::eventFilter(QObject *watched, QEvent *event)
 {
-    if (watched != m_designator && watched != m_value)
+    if (watched != m_designator && watched != m_value && watched != m_comment)
         return QWidget::eventFilter(watched, event);
     const bool escape = (event->type() == QEvent::ShortcutOverride
                          || event->type() == QEvent::KeyPress)
@@ -213,6 +218,16 @@ void PropertiesPanel::refresh(bool force)
     } else {
         m_power->setPlaceholderText(QString());
     }
+
+    // The comment: the one they all have, or none.
+    m_commentsDiffer = false;
+    for (const Component &component : chosen)
+        m_commentsDiffer = m_commentsDiffer || component.comment != chosen.first().comment;
+    m_comment->setEnabled(!chosen.isEmpty());
+    m_comment->setPlaceholderText(m_commentsDiffer ? different : QString());
+    if (!isTyping(m_comment, force))
+        m_comment->setText(chosen.isEmpty() || m_commentsDiffer ? QString()
+                                                                : chosen.first().comment);
 }
 
 void PropertiesPanel::commitDesignator()
@@ -245,6 +260,15 @@ void PropertiesPanel::commitOffBoard()
     if (m_ids.isEmpty())
         return;
     m_editor->setComponentOffBoard(m_ids, m_offBoard->checkState() == Qt::Checked);
+    refresh(true);
+}
+
+void PropertiesPanel::commitComment()
+{
+    // Left empty over comments that differ: they stay as they are.
+    if (m_ids.isEmpty() || (m_commentsDiffer && m_comment->text().isEmpty()))
+        return;
+    m_editor->setComponentComment(m_ids, m_comment->text());
     refresh(true);
 }
 

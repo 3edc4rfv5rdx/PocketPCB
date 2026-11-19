@@ -621,6 +621,12 @@ void SheetEditor::setComponentOffBoard(const QSet<ObjectId> &ids, bool offBoard)
                           withComponentOffBoard(*sheet, ids, offBoard));
 }
 
+void SheetEditor::setComponentComment(const QSet<ObjectId> &ids, const QString &comment)
+{
+    if (const Sheet *sheet = currentSheet())
+        applyToComponents(Action::Comment, ids, withComponentComment(*sheet, ids, comment));
+}
+
 void SheetEditor::setComponentPower(const QSet<ObjectId> &ids, int powerMw)
 {
     if (const Sheet *sheet = currentSheet())
@@ -1447,6 +1453,8 @@ QString SheetEditor::actionName(Action action)
         return tr("Add name");
     case Action::Power:
         return tr("Change power");
+    case Action::Comment:
+        return tr("Change comment");
     }
     return QString();
 }

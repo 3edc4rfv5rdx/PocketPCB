@@ -105,6 +105,8 @@ Sheet withComponentDesignator(const Sheet &sheet, const QSet<ObjectId> &ids,
 Sheet withComponentFootprint(const Sheet &sheet, const QSet<ObjectId> &ids,
                              const QString &footprint);
 Sheet withComponentOffBoard(const Sheet &sheet, const QSet<ObjectId> &ids, bool offBoard);
+// The comment, without the spaces round it.
+Sheet withComponentComment(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &comment);
 // Rated power in milliwatts, 0 for none; only components of parts that
 // have one (Part::powerMw) take it.
 Sheet withComponentPower(const Sheet &sheet, const QSet<ObjectId> &ids, int powerMw,

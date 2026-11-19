@@ -730,6 +730,10 @@
         <translation>Змінити потужність</translation>
     </message>
     <message>
+        <source>Change comment</source>
+        <translation>Змінити коментар</translation>
+    </message>
+    <message>
         <source>Bus</source>
         <translation>Шина</translation>
     </message>
@@ -813,6 +817,10 @@
     <message>
         <source>none</source>
         <translation>немає</translation>
+    </message>
+    <message>
+        <source>Comment</source>
+        <translation>Коментар</translation>
     </message>
     <message>
         <source>Designator</source>

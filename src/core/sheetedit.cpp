@@ -423,6 +423,12 @@ Sheet withComponentOffBoard(const Sheet &sheet, const QSet<ObjectId> &ids, bool 
     return withComponentsChanged(sheet, ids, [offBoard](Component &c) { c.offBoard = offBoard; });
 }
 
+Sheet withComponentComment(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &comment)
+{
+    const QString trimmed = comment.trimmed();
+    return withComponentsChanged(sheet, ids, [&trimmed](Component &c) { c.comment = trimmed; });
+}
+
 Sheet withComponentPower(const Sheet &sheet, const QSet<ObjectId> &ids, int powerMw,
                          const Library &library)
 {
