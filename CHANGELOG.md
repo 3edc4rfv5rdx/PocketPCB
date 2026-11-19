@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The history of steps goes to the user's cache folder, ~/.cache/PocketPCB/history, which can be written from an AppImage too
 - N: A PocketPCB-Projects folder, made beside the program when it starts, holds the project folders: saving and opening projects start there until another place is used, and Settings > Projects folder chooses another
 - N: Every part has a comment, written in the properties panel, not drawn on the sheet
 - E: A click near a part's designator or value takes it only on its letters, so that a text beside another part no longer takes the click meant for it

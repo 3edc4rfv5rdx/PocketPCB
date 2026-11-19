@@ -54,7 +54,7 @@ public:
     // finding out what went wrong in one (see writeStep()); off by default.
     static bool keepStepHistory();
     static void setKeepStepHistory(bool on);
-    // "history" beside the program.
+    // "history" in the user's cache folder: ~/.cache/PocketPCB/history.
     static QString stepHistoryFolder();
 
     // The user's library: a folder with symbols/, footprints/ and parts/.

@@ -41,10 +41,11 @@ const int DEFAULT_AUTOSAVE_MINUTES = 5;
 
 // Inside the user's data folder.
 const char USER_LIBRARY_FOLDER[] = "library";
-// Beside the program.
+// In the user's cache folder.
 const char STEP_HISTORY_FOLDER[] = "history";
-// Beside the program, or beside the AppImage file named by this variable.
+// Beside the program (programFolder()).
 const char PROJECTS_FOLDER[] = "PocketPCB-Projects";
+// Names the AppImage file the program runs from.
 const char APPIMAGE_VARIABLE[] = "APPIMAGE";
 // Where an AppImage keeps the built-in library, from the program's folder.
 const char INSTALLED_LIBRARY_FOLDER[] = "../share/pocketpcb/library";
@@ -75,6 +76,15 @@ QVariant readValueOrWriteDefault(const char *key, const QVariant &defaultValue)
     if (!settings.contains(QLatin1String(key)))
         settings.setValue(QLatin1String(key), defaultValue);
     return settings.value(QLatin1String(key), defaultValue);
+}
+
+// The folder the program is in, or the AppImage file it runs from: an
+// AppImage's own folder cannot be written.
+QString programFolder()
+{
+    const QString appImage = qEnvironmentVariable(APPIMAGE_VARIABLE);
+    return appImage.isEmpty() ? QCoreApplication::applicationDirPath()
+                              : QFileInfo(appImage).absolutePath();
 }
 
 void writeValue(const char *key, const QVariant &value)
@@ -203,8 +213,8 @@ void AppSettings::setKeepStepHistory(bool on)
 
 QString AppSettings::stepHistoryFolder()
 {
-    return QDir(QCoreApplication::applicationDirPath())
-        .filePath(QLatin1String(STEP_HISTORY_FOLDER));
+    const QString cache = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    return QDir(cache).filePath(QLatin1String(STEP_HISTORY_FOLDER));
 }
 
 QString AppSettings::lastLibraryFolder()
@@ -257,10 +267,7 @@ void AppSettings::setLastProjectFolder(const QString &folder)
 
 QString AppSettings::projectsFolder()
 {
-    const QString appImage = qEnvironmentVariable(APPIMAGE_VARIABLE);
-    const QString programFolder = appImage.isEmpty() ? QCoreApplication::applicationDirPath()
-                                                     : QFileInfo(appImage).absolutePath();
-    const QString byDefault = QDir(programFolder).filePath(QLatin1String(PROJECTS_FOLDER));
+    const QString byDefault = QDir(programFolder()).filePath(QLatin1String(PROJECTS_FOLDER));
     const QString folder = readValueOrWriteDefault(KEY_PROJECTS_FOLDER, byDefault).toString();
     return folder.isEmpty() ? byDefault : folder;
 }
