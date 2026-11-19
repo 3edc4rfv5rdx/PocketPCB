@@ -36,6 +36,9 @@ public:
     // The panel's title, and the name of a footprint as a field and in messages.
     static QString propertiesTitle();
     static QString footprintTitle();
+    // The value and the comment as fields and as columns of the BOM.
+    static QString valueTitle();
+    static QString commentTitle();
     // The rated power as a field and a menu, and what it offers: none, then
     // the standard powers (standardPowersMw()), each with its milliwatts.
     static QString powerTitle();

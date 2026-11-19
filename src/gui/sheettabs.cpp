@@ -1,5 +1,6 @@
 #include "sheettabs.h"
 
+#include "bompanel.h"
 #include "document.h"
 #include "sheeteditor.h"
 
@@ -20,11 +21,14 @@ namespace ppcb {
 
 namespace {
 
-// The id a tab keeps; the board's tab keeps the null id.
+// The id a tab keeps; the tabs of the board and of the BOM keep the null id.
 ObjectId tabId(const QTabBar *bar, int tab)
 {
     return ObjectId{bar->tabData(tab).toULongLong()};
 }
+
+// What the tab of the BOM keeps besides its null id.
+const char BOM_TAB_MARK[] = "bom";
 
 } // namespace
 
@@ -58,6 +62,10 @@ SheetTabs::SheetTabs(Document *document, SheetEditor *editor, QWidget *parent)
     // dragged; 'tabBarClicked' adds the click on the current tab, which
     // brings the project back from a library file.
     const auto choose = [this](int tab) {
+        if (isBomTab(tab)) {
+            emit bomChosen();
+            return;
+        }
         const int page = tab >= 0 ? pageOfTab(tab) : -1;
         if (page >= 0)
             emit pageChosen(page);
@@ -77,7 +85,7 @@ SheetTabs::SheetTabs(Document *document, SheetEditor *editor, QWidget *parent)
 void SheetTabs::updatePages()
 {
     const QList<Sheet> &sheets = m_document->design().schematic.sheets;
-    const int count = int(sheets.size()) + 1;
+    const int count = int(sheets.size()) + 2;
     // The tabs are relabelled in place, not made anew, so that a drag just
     // let go is not cut short.
     const QSignalBlocker blocker(m_bar);
@@ -89,8 +97,22 @@ void SheetTabs::updatePages()
         m_bar->setTabText(i, SheetEditor::sheetName(sheets.at(i), i));
         m_bar->setTabData(i, QVariant::fromValue(sheets.at(i).id.value));
     }
-    m_bar->setTabText(count - 1, tr("Board"));
-    m_bar->setTabData(count - 1, QVariant::fromValue(ObjectId().value));
+    m_bar->setTabText(count - 2, tr("Board"));
+    m_bar->setTabData(count - 2, QVariant::fromValue(ObjectId().value));
+    m_bar->setTabText(count - 1, BomPanel::bomTitle());
+    m_bar->setTabData(count - 1, QLatin1String(BOM_TAB_MARK));
+}
+
+void SheetTabs::setBomCurrent()
+{
+    const QSignalBlocker blocker(m_bar);
+    m_bar->setCurrentIndex(m_bar->count() - 1);
+}
+
+bool SheetTabs::isBomTab(int tab) const
+{
+    return tab >= 0 && tab < m_bar->count()
+           && m_bar->tabData(tab).toString() == QLatin1String(BOM_TAB_MARK);
 }
 
 void SheetTabs::setCurrentPage(int page)
@@ -124,7 +146,7 @@ bool SheetTabs::eventFilter(QObject *watched, QEvent *event)
 
 int SheetTabs::pageOfTab(int tab) const
 {
-    if (tab < 0 || tab >= m_bar->count())
+    if (tab < 0 || tab >= m_bar->count() || isBomTab(tab))
         return -1;
     const ObjectId id = tabId(m_bar, tab);
     if (id.isNull())
@@ -139,7 +161,7 @@ int SheetTabs::tabOfPage(int page) const
         return -1;
     const ObjectId id = page < sheets.size() ? sheets.at(page).id : ObjectId();
     for (int tab = 0; tab < m_bar->count(); ++tab) {
-        if (tabId(m_bar, tab) == id)
+        if (!isBomTab(tab) && tabId(m_bar, tab) == id)
             return tab;
     }
     return -1;
@@ -314,10 +336,15 @@ void SheetTabs::applyTabOrder()
     for (int i = 0; i < order.size() && i < sheets.size(); ++i)
         moved = moved || order.at(i) != sheets.at(i).id;
     if (!moved || order.size() != sheets.size()) {
-        // Only the board's tab moved, or nothing did: it goes back to the end.
+        // Only the tab of the board or of the BOM moved, or nothing did: it
+        // goes back to the end.
+        const bool bom = isBomTab(m_bar->currentIndex());
         const int page = pageOfTab(m_bar->currentIndex());
         updatePages();
-        setCurrentPage(page);
+        if (bom)
+            setBomCurrent();
+        else
+            setCurrentPage(page);
         return;
     }
 

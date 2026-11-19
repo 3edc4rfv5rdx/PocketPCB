@@ -1,6 +1,7 @@
 # GUI library: a thin layer over pocketpcb_core. Tests link it too.
 add_library(pocketpcb_gui STATIC
     appsettings.h appsettings.cpp
+    bompanel.h bompanel.cpp
     canvasview.h canvasview.cpp
     designviewitem.h designviewitem.cpp
     ercpanel.h ercpanel.cpp

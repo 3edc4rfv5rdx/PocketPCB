@@ -21,6 +21,8 @@ extern const char PROJECT_LIBRARY_FOLDER[];
 extern const char PROJECT_BACKUP_FOLDER[];
 // The folder of the autosaved copy of the project, beside it too.
 extern const char PROJECT_AUTOSAVE_FOLDER[];
+// The folder of the files made from the project, beside it too.
+extern const char PROJECT_OUTPUT_FOLDER[];
 
 // Names of the two net classes a new project starts with, which are also its
 // default class and its power class (see Project).
@@ -208,6 +210,8 @@ public:
     static QString boardPath(const QString &projectPath, const Project &project);
     static QString libraryPath(const QString &projectPath);
     static QString backupPath(const QString &projectPath);
+    // Where the files made from the project go: the BOM, later Gerber.
+    static QString outputPath(const QString &projectPath);
     // The project file of the autosaved copy: the project's own name inside
     // the autosave folder. The copy is a whole project of its own there.
     static QString autosaveProjectPath(const QString &projectPath);

@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 
+#include "bompanel.h"
 #include "canvasview.h"
 #include "designviewitem.h"
 #include "ercpanel.h"
@@ -39,6 +40,7 @@
 #include <QPixmap>
 #include <QPushButton>
 #include <QShowEvent>
+#include <QStackedWidget>
 #include <QStatusBar>
 #include <QTimer>
 #include <QToolButton>
@@ -135,10 +137,16 @@ MainWindow::MainWindow(QWidget *parent)
     QVBoxLayout *layout = new QVBoxLayout(central);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
+    m_bomPanel = new BomPanel(m_document, this);
+    m_pages = new QStackedWidget(central);
+    m_pages->addWidget(m_canvas);
+    m_pages->addWidget(m_bomPanel);
     layout->addWidget(m_sheetTabs);
-    layout->addWidget(m_canvas);
+    layout->addWidget(m_pages);
     setCentralWidget(central);
     connect(m_sheetTabs, &SheetTabs::pageChosen, this, [this](int page) { showPage(page); });
+    connect(m_sheetTabs, &SheetTabs::bomChosen, this, &MainWindow::showBom);
+    connect(m_bomPanel, &BomPanel::componentsChosen, this, &MainWindow::showComponents);
 
     m_designItem->setEditor(m_sheetEditor);
     connect(m_sheetEditor, &SheetEditor::changed, this, [this] { m_designItem->update(); });
@@ -898,9 +906,38 @@ bool MainWindow::chooseProjectToSaveAs()
     return saveProjectAs(dialog.parentFolder(), dialog.name());
 }
 
+void MainWindow::showBom()
+{
+    m_bomShown = true;
+    m_pages->setCurrentWidget(m_bomPanel);
+    m_sheetEditor->setSheet(-1);
+    m_sheetTabs->setBomCurrent();
+}
+
+void MainWindow::showCanvas()
+{
+    m_bomShown = false;
+    m_pages->setCurrentWidget(m_canvas);
+}
+
+void MainWindow::showComponents(const QSet<ObjectId> &ids)
+{
+    const QList<Sheet> &sheets = m_document->design().schematic.sheets;
+    for (int page = 0; page < sheets.size(); ++page) {
+        for (const Component &component : sheets.at(page).components) {
+            if (ids.contains(component.id)) {
+                showPage(page);
+                m_sheetEditor->setSelection(ids);
+                return;
+            }
+        }
+    }
+}
+
 void MainWindow::showPage(int page, bool fit)
 {
     rememberView();
+    showCanvas();
     showProject();
     m_designItem->setPage(page);
     m_shownViewKey = pageViewKey(m_designItem->page());
@@ -1022,6 +1059,13 @@ void MainWindow::projectChanged()
     m_designItem->contentChanged();
 
     m_sheetTabs->updatePages();
+    if (m_bomShown) {
+        // The BOM stays in front, the sheet editor resting.
+        m_sheetTabs->setBomCurrent();
+        applyProjectGrid();
+        updateLibraryPanel();
+        return;
+    }
     m_sheetTabs->setCurrentPage(m_designItem->page());
     // The sheet edited may be gone, and so may what was chosen on it.
     const int shown = m_designItem->page();
@@ -1224,6 +1268,12 @@ bool MainWindow::showLibraryFile(const QString &path)
     }
     // The library file takes the place of the project on the canvas.
     rememberView();
+    if (m_bomShown) {
+        showCanvas();
+        m_sheetEditor->setSheet(m_designItem->page() == m_designItem->boardPage()
+                                    ? -1
+                                    : m_designItem->page());
+    }
     m_libraryItem->setVisible(true);
     m_designItem->setVisible(false);
     updateCanvasBackground();

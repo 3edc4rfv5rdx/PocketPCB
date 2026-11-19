@@ -16,9 +16,11 @@ class QDockWidget;
 class QLabel;
 class QPushButton;
 class QMenu;
+class QStackedWidget;
 
 namespace ppcb {
 
+class BomPanel;
 class CanvasView;
 class DesignViewItem;
 class ErcPanel;
@@ -185,6 +187,13 @@ private:
     bool showLibraryFile(const QString &path);
     void watchLibraryFile();
 
+    // The BOM takes the place of the canvas; the sheet editor rests, so that
+    // its keys do nothing to a sheet not shown.
+    void showBom();
+    // The canvas comes back in its place.
+    void showCanvas();
+    // Shows the sheet of the first of 'ids' with those of them on it chosen.
+    void showComponents(const QSet<ObjectId> &ids);
     // Undo or Redo of a step: its page is shown and what it touched chosen.
     void showStep(int page, const QSet<ObjectId> &ids);
     // A new step: written into the history of steps when it is kept.
@@ -201,6 +210,10 @@ private:
 
     CanvasView *m_canvas = nullptr;
     SheetTabs *m_sheetTabs = nullptr;
+    // Under the tabs: the canvas, or the BOM while its tab is chosen.
+    QStackedWidget *m_pages = nullptr;
+    BomPanel *m_bomPanel = nullptr;
+    bool m_bomShown = false;
     Document *m_document = nullptr;
     // Owned by the canvas scene.
     DesignViewItem *m_designItem = nullptr;

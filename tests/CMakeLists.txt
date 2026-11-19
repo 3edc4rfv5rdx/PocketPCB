@@ -31,6 +31,7 @@ ppcb_add_test(test_netlist)
 ppcb_add_test(test_erc)
 ppcb_add_test(test_stephistory)
 ppcb_add_test(test_strokefont)
+ppcb_add_test(test_bom)
 # Reads the library and the example project kept in the source tree.
 ppcb_add_test(test_files)
 target_compile_definitions(test_files PRIVATE PPCB_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

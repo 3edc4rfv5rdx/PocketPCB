@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: A BOM tab beside the board lists the parts, alike ones in one row, with their value and comment typed in the table, and writes the list as TXT, CSV or PDF into the project's out folder
 - F: The history of steps goes to the user's cache folder, ~/.cache/PocketPCB/history, which can be written from an AppImage too
 - N: A PocketPCB-Projects folder, made beside the program when it starts, holds the project folders: saving and opening projects start there until another place is used, and Settings > Projects folder chooses another
 - N: Every part has a comment, written in the properties panel, not drawn on the sheet

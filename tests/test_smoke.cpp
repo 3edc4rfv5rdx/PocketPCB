@@ -254,7 +254,8 @@ private slots:
         QVERIFY(window.document()->projectPath().isEmpty());
         QVERIFY(window.designItem()->isVisible());
         QCOMPARE(visibleItems(window), 1);
-        QCOMPARE(tabTexts(window), QStringList({QStringLiteral("Sheet 1"), QStringLiteral("Board")}));
+        QCOMPARE(tabTexts(window), QStringList({QStringLiteral("Sheet 1"), QStringLiteral("Board"),
+                                                QStringLiteral("BOM")}));
         QVERIFY2(window.windowTitle().startsWith(QStringLiteral("untitled")),
                  qPrintable(window.windowTitle()));
         QVERIFY(!window.isWindowModified());
@@ -309,7 +310,7 @@ private slots:
         QVERIFY(window.openProject(path));
         QCOMPARE(window.document()->projectPath(), path);
         QCOMPARE(tabTexts(window), QStringList({QStringLiteral("Sheet 1"), QStringLiteral("Питание"),
-                                                QStringLiteral("Board")}));
+                                                QStringLiteral("Board"), QStringLiteral("BOM")}));
         QVERIFY2(window.windowTitle().startsWith(QStringLiteral("amp.ppcb")),
                  qPrintable(window.windowTitle()));
         QCOMPARE(window.designItem()->page(), 0);
@@ -336,7 +337,7 @@ private slots:
         // A file that cannot be read changes nothing.
         QVERIFY(!window.openProject(dir.filePath(QStringLiteral("absent.ppcb"))));
         QCOMPARE(window.document()->projectPath(), path);
-        QCOMPARE(tabTexts(window).size(), 3);
+        QCOMPARE(tabTexts(window).size(), 4);
         QVERIFY(!window.statusText().isEmpty());
         // Nor does it go into the recent ones.
         QVERIFY(!AppSettings::recentProjects().contains(
@@ -349,7 +350,7 @@ private slots:
         // A new project drops the file and the second sheet.
         window.newProject();
         QVERIFY(window.document()->projectPath().isEmpty());
-        QCOMPARE(tabTexts(window).size(), 2);
+        QCOMPARE(tabTexts(window).size(), 3);
         QCOMPARE(window.designItem()->page(), 0);
     }
 
@@ -403,9 +404,10 @@ private slots:
         QVERIFY(QTest::qWaitForWindowExposed(&window));
         window.newProject();
         Document *document = window.document();
-        const QStringList oneSheet = {QStringLiteral("Sheet 1"), QStringLiteral("Board")};
+        const QStringList oneSheet = {QStringLiteral("Sheet 1"), QStringLiteral("Board"),
+                                      QStringLiteral("BOM")};
         const QStringList twoSheets = {QStringLiteral("Sheet 1"), QStringLiteral("Sheet 2"),
-                                       QStringLiteral("Board")};
+                                       QStringLiteral("Board"), QStringLiteral("BOM")};
 
         // "+" adds a sheet at the end and shows it.
         QToolButton *add = nullptr;

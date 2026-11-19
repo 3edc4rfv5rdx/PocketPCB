@@ -48,11 +48,11 @@ PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidge
 
     QFormLayout *form = new QFormLayout;
     form->addRow(tr("Designator"), m_designator);
-    form->addRow(tr("Value"), m_value);
+    form->addRow(valueTitle(), m_value);
     form->addRow(footprintTitle(), m_footprint);
     form->addRow(tr("Off board"), m_offBoard);
     form->addRow(powerTitle(), m_power);
-    form->addRow(tr("Comment"), m_comment);
+    form->addRow(commentTitle(), m_comment);
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(m_heading);
     layout->addLayout(form);
@@ -82,6 +82,16 @@ QString PropertiesPanel::propertiesTitle()
 QString PropertiesPanel::footprintTitle()
 {
     return tr("Footprint");
+}
+
+QString PropertiesPanel::valueTitle()
+{
+    return tr("Value");
+}
+
+QString PropertiesPanel::commentTitle()
+{
+    return tr("Comment");
 }
 
 QString PropertiesPanel::powerTitle()

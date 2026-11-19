@@ -2,6 +2,49 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
 <context>
+    <name>ppcb::BomPanel</name>
+    <message>
+        <source>BOM</source>
+        <translation>Перечень</translation>
+    </message>
+    <message>
+        <source>Designators</source>
+        <translation>Обозначения</translation>
+    </message>
+    <message>
+        <source>Quantity</source>
+        <translation>Кол-во</translation>
+    </message>
+    <message>
+        <source>Export TXT</source>
+        <translation>Сохранить TXT</translation>
+    </message>
+    <message>
+        <source>Export CSV</source>
+        <translation>Сохранить CSV</translation>
+    </message>
+    <message>
+        <source>Export PDF</source>
+        <translation>Сохранить PDF</translation>
+    </message>
+    <message>
+        <source>Save the project first</source>
+        <translation>Сначала сохраните проект</translation>
+    </message>
+    <message>
+        <source>Cannot make the folder</source>
+        <translation>Не удаётся создать папку</translation>
+    </message>
+    <message>
+        <source>Cannot write</source>
+        <translation>Не удаётся записать</translation>
+    </message>
+    <message>
+        <source>Written</source>
+        <translation>Записано</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::Format</name>
     <message>
         <source>%1 W</source>

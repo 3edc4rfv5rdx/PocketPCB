@@ -15,7 +15,8 @@ class Document;
 class SheetEditor;
 
 // The pages of the project as tabs over the canvas: the sheets, then the
-// board, which stays last. A sheet is added with the "+" button beside the
+// board, then the BOM, which is no page of the canvas; the board and the BOM
+// stay last. A sheet is added with the "+" button beside the
 // tabs or from the menu of a tab, renamed with a double click on its tab or
 // from that menu, where its paper is chosen and it is deleted too (the same
 // menu is View > Sheet for the sheet shown); dragging its tab moves it. Each
@@ -40,17 +41,23 @@ public:
     // Makes the tab of page 'page' (the sheets, then the board) the current
     // one, without pageChosen().
     void setCurrentPage(int page);
+    // Makes the tab of the BOM the current one, without bomChosen().
+    void setBomCurrent();
 
 signals:
     // A tab was chosen or clicked, or a sheet added: 'page' is to be shown.
     void pageChosen(int page);
+    // The tab of the BOM was chosen or clicked.
+    void bomChosen();
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
-    // The page a tab stands for; -1 for a tab of a sheet that is gone.
+    // The page a tab stands for; -1 for a tab of a sheet that is gone and
+    // for the tab of the BOM.
     int pageOfTab(int tab) const;
+    bool isBomTab(int tab) const;
     int tabOfPage(int page) const;
     // The place of the sheet 'id' among the sheets; -1 when it is gone.
     int sheetIndex(const ObjectId &id) const;
