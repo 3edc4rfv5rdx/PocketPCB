@@ -268,15 +268,30 @@ private slots:
         bus.points = {Point{20 * MM, 20 * MM}, Point{40 * MM, 20 * MM}};
         bus.name = QStringLiteral("D[0..7]");
         sheet.buses = {bus};
-        const TextHit hit = textAt(sheet, Library(), busNameRect(bus).center());
+        const TextHit hit = textAt(sheet, Library(), busNameRect(bus, 0).center());
         QCOMPARE(hit.owner, id(1));
         QCOMPARE(textOwnerPoint(sheet, hit), bus.points.first());
         const Point delta{5 * MM, -3 * MM};
         const Sheet moved = withTextMoved(sheet, hit, delta);
         QCOMPARE(moved.buses.at(0).points, bus.points);
-        QCOMPARE(moved.buses.at(0).nameAt, delta);
+        QCOMPARE(moved.buses.at(0).namesAt, QList<Point>({delta}));
         QCOMPARE(textPoint(moved, hit), bus.points.first() + delta);
-        QCOMPARE(textRect(moved, Library(), hit), busNameRect(bus).translated(5, -3));
+        QCOMPARE(textRect(moved, Library(), hit), busNameRect(bus, 0).translated(5, -3));
+
+        // Shown once more at the far end: each place is found, moved and
+        // deleted alone, but the last one stays.
+        const Sheet twice = withBusNameAdded(sheet, id(1), bus.points.last());
+        QCOMPARE(twice.buses.at(0).namesAt,
+                 QList<Point>({Point(), bus.points.last() - bus.points.first()}));
+        const TextHit far = textAt(twice, Library(), busNameRect(twice.buses.at(0), 1).center());
+        QCOMPARE(far.index, 1);
+        QCOMPARE(withTextMoved(twice, far, delta).buses.at(0).namesAt.at(1),
+                 twice.buses.at(0).namesAt.at(1) + delta);
+        QVERIFY(isBusNameRemovable(twice, far));
+        const Sheet once = withoutBusName(twice, far);
+        QCOMPARE(once.buses.at(0).namesAt, QList<Point>({Point()}));
+        QVERIFY(!isBusNameRemovable(once, hit));
+        QVERIFY(withoutBusName(once, hit) == once);
     }
 
     void busesAreNamed()

@@ -79,9 +79,6 @@ QSet<ObjectId> joinedWires(const Sheet &sheet, const ObjectId &wire);
 // The ids of the buses joined to the bus 'bus' of 'sheet', one through
 // another, the bus itself among them; empty when it has no such bus.
 QSet<ObjectId> joinedBuses(const Sheet &sheet, const ObjectId &bus);
-// True when the name of 'bus' is shown: it is the first of the buses joined
-// to it on 'sheet', so that a bus and its branches show it once.
-bool isBusNameShown(const Sheet &sheet, const Bus &bus);
 // The points where three or more ends of buses and buses meet, as
 // junctions() counts them for wires: where a dot of the bus colour is drawn.
 QList<Point> busJunctions(const Sheet &sheet);

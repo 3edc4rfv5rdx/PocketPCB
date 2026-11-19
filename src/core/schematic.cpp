@@ -36,6 +36,7 @@ const char KEY_SCOPE[] = "scope";
 const char KEY_NET_CLASS[] = "netClass";
 const char KEY_NAME[] = "name";
 const char KEY_NAME_AT[] = "nameAt";
+const char KEY_NAMES_AT[] = "namesAt";
 const char KEY_SYMBOL[] = "symbol";
 
 // A wire or a bus.
@@ -153,7 +154,7 @@ QJsonObject busToJson(const Bus &bus)
     object.insert(QLatin1String(KEY_ID), idToJson(bus.id));
     object.insert(QLatin1String(KEY_POINTS), chainToJson(bus.points));
     object.insert(QLatin1String(KEY_NAME), bus.name);
-    object.insert(QLatin1String(KEY_NAME_AT), pointToJson(bus.nameAt));
+    object.insert(QLatin1String(KEY_NAMES_AT), chainToJson(bus.namesAt));
     return object;
 }
 
@@ -163,9 +164,13 @@ Bus busFromJson(const QJsonObject &object, const QString &where, ReadContext &co
     bus.id = context.reader.uniqueId(object, KEY_ID, where, context.ids);
     bus.points = chainFromJson(object, where, context.reader);
     bus.name = context.reader.nonEmptyString(object, KEY_NAME, where);
-    // Buses written before their name could be moved have it above their start.
-    if (object.contains(QLatin1String(KEY_NAME_AT)))
-        bus.nameAt = context.reader.point(object, KEY_NAME_AT, where);
+    // Buses written before their name could be shown more than once have
+    // one place for it, and those written before it could be moved have it
+    // above their start.
+    if (object.contains(QLatin1String(KEY_NAMES_AT)))
+        bus.namesAt = context.reader.pointList(object, KEY_NAMES_AT, where);
+    else if (object.contains(QLatin1String(KEY_NAME_AT)))
+        bus.namesAt = {context.reader.point(object, KEY_NAME_AT, where)};
     return bus;
 }
 
@@ -320,7 +325,7 @@ bool operator==(const Wire &a, const Wire &b)
 
 bool operator==(const Bus &a, const Bus &b)
 {
-    return a.id == b.id && a.points == b.points && a.name == b.name && a.nameAt == b.nameAt;
+    return a.id == b.id && a.points == b.points && a.name == b.name && a.namesAt == b.namesAt;
 }
 
 bool operator==(const Label &a, const Label &b)

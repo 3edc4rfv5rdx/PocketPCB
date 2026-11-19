@@ -1442,16 +1442,6 @@ QSet<ObjectId> joinedBuses(const Sheet &sheet, const ObjectId &bus)
     return joinedWires(busLines(sheet), bus);
 }
 
-bool isBusNameShown(const Sheet &sheet, const Bus &bus)
-{
-    const QSet<ObjectId> group = joinedBuses(sheet, bus.id);
-    for (const Bus &other : sheet.buses) {
-        if (group.contains(other.id))
-            return other.id == bus.id;
-    }
-    return true;
-}
-
 QList<Point> busJunctions(const Sheet &sheet)
 {
     return junctions(busLines(sheet), Library());

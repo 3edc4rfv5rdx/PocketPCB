@@ -1206,7 +1206,7 @@ private slots:
         QVERIFY(!editor->isWiring());
 
         // Its name stands above its first point.
-        const QPointF name = busNameRect(sheet().buses.last()).center();
+        const QPointF name = busNameRect(sheet().buses.last(), 0).center();
         editor->doubleClick(name, false);
         QLineEdit *line = nullptr;
         for (QLineEdit *edit : window.canvas()->viewport()->findChildren<QLineEdit *>()) {

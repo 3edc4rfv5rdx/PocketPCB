@@ -408,6 +408,10 @@
         <translation>Записывать историю шагов</translation>
     </message>
     <message>
+        <source>Add name here</source>
+        <translation>Добавить имя здесь</translation>
+    </message>
+    <message>
         <source>Cannot write the history of steps into</source>
         <translation>Не удаётся записать историю шагов в</translation>
     </message>
@@ -709,6 +713,10 @@
     <message>
         <source>Rename</source>
         <translation>Переименовать</translation>
+    </message>
+    <message>
+        <source>Add name</source>
+        <translation>Добавить имя</translation>
     </message>
     <message>
         <source>Bus</source>

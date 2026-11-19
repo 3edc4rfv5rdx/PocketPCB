@@ -116,11 +116,12 @@ Point componentTextPoint(const Component &component, ComponentText text);
 QRectF componentTextRect(const Component &component, ComponentText text,
                          const Library &library);
 
-// Where the name of a bus stands: its first point and the name's offset.
-Point busNamePoint(const Bus &bus);
-// A rectangle surely holding the name of a bus, in millimetres: just above
-// where it stands.
-QRectF busNameRect(const Bus &bus);
+// Where the name of a bus stands the 'index'th time it is shown: its first
+// point and that place's offset; its first point when there is no such place.
+Point busNamePoint(const Bus &bus, int index);
+// A rectangle surely holding the name of a bus shown there, in millimetres:
+// just above where it stands.
+QRectF busNameRect(const Bus &bus, int index);
 
 // Where the text of a label stands: its point and the text's offset.
 Point labelTextPoint(const Label &label);

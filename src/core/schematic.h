@@ -47,9 +47,10 @@ struct Bus
     ObjectId id;
     QList<Point> points;
     QString name;
-    // Where the name stands, relative to the first point: just above it,
-    // unless moved away from it.
-    Point nameAt;
+    // Where the name is shown, each place relative to the first point: just
+    // above it at first. A bus may show it more than once, and a branch of
+    // a bus (see joinedBuses()) not at all.
+    QList<Point> namesAt = {Point()};
 };
 
 enum class LabelScope { Global, Local };

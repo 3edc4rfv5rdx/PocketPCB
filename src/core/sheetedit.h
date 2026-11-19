@@ -35,12 +35,19 @@ Point dragAnchor(const Sheet &sheet, const ObjectId &id, const QPointF &near);
 
 // A text that a click chooses alone and a drag moves while its object
 // stays: the designator or the value of a component, the text of a label or
-// the name of a bus, whose 'text' is not used. A null owner when there is none.
+// one place of the name of a bus, whose 'text' is not used. A null owner
+// when there is none.
 struct TextHit
 {
     ObjectId owner;
     ComponentText text = ComponentText::Designator;
+    // Which place of a bus's name (Bus::namesAt); 0 for the rest.
+    int index = 0;
 };
+inline bool operator==(const TextHit &a, const TextHit &b)
+{
+    return a.owner == b.owner && a.text == b.text && a.index == b.index;
+}
 // The text under 'point' (millimetres): the topmost whose rectangle holds
 // the point, the texts of components first. No room is added around it, as
 // the rectangle has room enough and a click on the symbol next to it must
@@ -59,6 +66,14 @@ Point textOwnerPoint(const Sheet &sheet, const TextHit &hit);
 QRectF textRect(const Sheet &sheet, const Library &library, const TextHit &hit);
 // 'sheet' with the text 'hit' moved by 'delta'; its object stays.
 Sheet withTextMoved(const Sheet &sheet, const TextHit &hit, const Point &delta);
+// 'sheet' with the bus 'bus' showing its name once more, standing at 'at';
+// 'sheet' as it is without such a bus.
+Sheet withBusNameAdded(const Sheet &sheet, const ObjectId &bus, const Point &at);
+// True when 'hit' is a place of a bus's name that may go: the bus, or a
+// bus joined to it (joinedBuses()), shows the name somewhere else too.
+bool isBusNameRemovable(const Sheet &sheet, const TextHit &hit);
+// 'sheet' without that place of the name; as it is when it may not go.
+Sheet withoutBusName(const Sheet &sheet, const TextHit &hit);
 
 // Properties of components. Each returns 'sheet' with the components of
 // 'ids' changed; the other objects stay as they are.

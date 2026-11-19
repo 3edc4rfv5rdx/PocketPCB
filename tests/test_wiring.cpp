@@ -364,9 +364,9 @@ private slots:
         QVERIFY(entersBusAt(moved, -5 * MM));
     }
 
-    // A bus drawn on to another is its branch: they are joined, the name is
-    // shown once, a dot of the bus colour marks the T, and the branch goes
-    // with the bus it branches off.
+    // A bus drawn on to another is its branch: they are joined, a dot of the
+    // bus colour marks the T, and the branch goes with the bus it branches
+    // off.
     void busesBranchOffBuses()
     {
         const Library library;
@@ -383,9 +383,6 @@ private slots:
         const ObjectId main = sheet.buses.at(0).id;
         const ObjectId branch = sheet.buses.at(1).id;
         QCOMPARE(joinedBuses(sheet, main), QSet<ObjectId>({main, branch}));
-        QVERIFY(isBusNameShown(sheet, sheet.buses.at(0)));
-        QVERIFY(!isBusNameShown(sheet, sheet.buses.at(1)));
-        QVERIFY(isBusNameShown(sheet, sheet.buses.at(2)));
         QCOMPARE(busJunctions(sheet), QList<Point>({mm(20, 0)}));
 
         // The bus goes up: the branch's end goes with it.

@@ -62,7 +62,8 @@ public:
         OffBoard,
         OnBoard,
         Rename,
-        Bus
+        Bus,
+        AddName,
     };
     static QString actionName(Action action);
 
@@ -195,6 +196,11 @@ public:
     bool hasChosen() const { return !m_selection.isEmpty() || hasSegment() || hasText(); }
     // The text of 'id' edited in place, as a double click does.
     void editInPlace(const ObjectId &id) { editText(id); }
+    // True when 'id' is a bus of the sheet shown.
+    bool isBus(const ObjectId &id) const;
+    // The bus 'bus' shows its name once more, at the grid point nearest to
+    // 'at' (millimetres), as one step.
+    void addBusName(const ObjectId &bus, const QPointF &at);
     // The name of the menu item that edits the text of 'id' in place; empty
     // when the sheet edited has no such object.
     QString editInPlaceName(const ObjectId &id) const;

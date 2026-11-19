@@ -178,8 +178,11 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
     if (onName)
         hit = name.owner;
     m_dragAnchor = dragAnchor(*currentSheet(), hit, at);
-    // Shift on a wire: every wire joined to it, added with Ctrl.
-    const QSet<ObjectId> wires = net ? joinedWires(*currentSheet(), hit) : QSet<ObjectId>();
+    // Shift on a wire: every wire joined to it, added with Ctrl; on a bus,
+    // the bus with its branches and the bus it branches off.
+    QSet<ObjectId> wires;
+    if (net)
+        wires = isBus(hit) ? joinedBuses(*currentSheet(), hit) : joinedWires(*currentSheet(), hit);
     if (!wires.isEmpty()) {
         if (adding)
             m_selection.unite(wires);
@@ -365,7 +368,7 @@ ObjectId SheetEditor::chooseForMenu(const QPointF &at)
     const TextHit text = textAt(*sheet, library, at);
     const bool chosen =
         (!hit.isNull() && m_selection.contains(hit))
-        || (hasText() && text.owner == m_chosenText.owner && text.text == m_chosenText.text)
+        || (hasText() && text == m_chosenText)
         || (hasSegment() && hit == m_segmentLine
             && segmentAt(linePoints(*sheet, hit), at) == m_segmentIndex);
     if (!chosen && (!hit.isNull() || !text.owner.isNull())) {
@@ -391,6 +394,26 @@ ObjectId SheetEditor::chooseForMenu(const QPointF &at)
         }
     }
     return ObjectId();
+}
+
+bool SheetEditor::isBus(const ObjectId &id) const
+{
+    const Sheet *sheet = currentSheet();
+    return sheet != nullptr && std::any_of(sheet->buses.cbegin(), sheet->buses.cend(),
+                                           [&id](const Bus &bus) { return bus.id == id; });
+}
+
+void SheetEditor::addBusName(const ObjectId &bus, const QPointF &at)
+{
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr || !isBus(bus))
+        return;
+    const Sheet edited = withBusNameAdded(*sheet, bus, snapped(at));
+    Design design = m_document->design();
+    const QString name = stepName(actionName(Action::AddName), *sheet, {bus});
+    design.schematic.sheets[m_sheet] = edited;
+    m_document->change(name, design, m_sheet, {bus});
+    emit changed();
 }
 
 QString SheetEditor::editInPlaceName(const ObjectId &id) const
@@ -430,10 +453,28 @@ void SheetEditor::editText(const ObjectId &id)
             rect = powerNameRect(power, library);
         }
     }
-    for (const Bus &bus : sheet->buses) {
-        if (bus.id == id) {
-            text = bus.name;
-            rect = busNameRect(bus);
+    // Over the place of a bus's name chosen, else the first it shows, else
+    // the first of a bus joined to it: they have one name.
+    if (std::any_of(sheet->buses.cbegin(), sheet->buses.cend(),
+                    [&id](const Bus &bus) { return bus.id == id; })) {
+        const QSet<ObjectId> group = joinedBuses(*sheet, id);
+        for (const Bus &bus : sheet->buses) {
+            if (bus.id == id && hasText() && m_chosenText.owner == id) {
+                text = bus.name;
+                rect = busNameRect(bus, m_chosenText.index);
+            }
+        }
+        for (const Bus &bus : sheet->buses) {
+            if (rect.isNull() && bus.id == id && !bus.namesAt.isEmpty()) {
+                text = bus.name;
+                rect = busNameRect(bus, 0);
+            }
+        }
+        for (const Bus &bus : sheet->buses) {
+            if (rect.isNull() && group.contains(bus.id) && !bus.namesAt.isEmpty()) {
+                text = bus.name;
+                rect = busNameRect(bus, 0);
+            }
         }
     }
     // A label of the sheet, or the one being placed, where it stands.
@@ -837,6 +878,16 @@ void SheetEditor::deleteSelection()
 void SheetEditor::removeSelection(Action action)
 {
     const Sheet *sheet = currentSheet();
+    // A place of a bus's name chosen alone goes, unless it is the last.
+    if (action == Action::Delete && hasText() && isBusNameRemovable(*sheet, m_chosenText)) {
+        const QString name = stepName(actionName(action));
+        Design design = m_document->design();
+        design.schematic.sheets[m_sheet] = withoutBusName(*sheet, m_chosenText);
+        m_chosenText = TextHit();
+        m_document->change(name, design, m_sheet, QSet<ObjectId>());
+        emit changed();
+        return;
+    }
     if (hasSegment()) {
         const QString name = stepName(actionName(action));
         Design design = m_document->design();
@@ -1229,12 +1280,14 @@ void SheetEditor::finishWire()
         bus.id = id;
         bus.points = points;
         bus.name = nextBusName(design.schematic);
-        // Begun or ended on another bus, it is a branch of it, with its name.
+        // Begun or ended on another bus, it is a branch of it, with its
+        // name, which it does not show until asked.
         for (const Bus &other : sheet.buses) {
             Wire line;
             line.points = other.points;
             if (isOnWire(line, points.first()) || isOnWire(line, points.last())) {
                 bus.name = other.name;
+                bus.namesAt.clear();
                 break;
             }
         }
@@ -1379,6 +1432,8 @@ QString SheetEditor::actionName(Action action)
         return tr("Rename");
     case Action::Bus:
         return tr("Bus");
+    case Action::AddName:
+        return tr("Add name");
     }
     return QString();
 }

@@ -82,7 +82,8 @@ Sheet transformed(const Sheet &sheet, const QSet<ObjectId> &ids, const Transform
         if (ids.contains(bus.id)) {
             for (Point &point : bus.points)
                 point = transform.point(point);
-            bus.nameAt = transform.offset(bus.nameAt);
+            for (Point &place : bus.namesAt)
+                place = transform.offset(place);
         }
     }
     for (Label &label : result.labels) {
@@ -190,8 +191,10 @@ TextHit textAt(const Sheet &sheet, const Library &library, const QPointF &point)
             return TextHit{it->id, ComponentText::Designator};
     }
     for (auto it = sheet.buses.crbegin(); it != sheet.buses.crend(); ++it) {
-        if (isBusNameShown(sheet, *it) && busNameRect(*it).contains(point))
-            return TextHit{it->id, ComponentText::Designator};
+        for (int i = int(it->namesAt.size()) - 1; i >= 0; --i) {
+            if (busNameRect(*it, i).contains(point))
+                return TextHit{it->id, ComponentText::Designator, i};
+        }
     }
     return TextHit();
 }
@@ -223,10 +226,12 @@ const Item *ownerOf(const QList<Item> &items, const ObjectId &id)
 
 bool hasText(const Sheet &sheet, const TextHit &hit)
 {
-    return !hit.owner.isNull()
-           && (ownerOf(sheet.components, hit.owner) != nullptr
-               || ownerOf(sheet.labels, hit.owner) != nullptr
-               || ownerOf(sheet.buses, hit.owner) != nullptr);
+    if (hit.owner.isNull())
+        return false;
+    if (const Bus *bus = ownerOf(sheet.buses, hit.owner))
+        return hit.index >= 0 && hit.index < bus->namesAt.size();
+    return ownerOf(sheet.components, hit.owner) != nullptr
+           || ownerOf(sheet.labels, hit.owner) != nullptr;
 }
 
 Point textPoint(const Sheet &sheet, const TextHit &hit)
@@ -236,7 +241,7 @@ Point textPoint(const Sheet &sheet, const TextHit &hit)
     if (const Label *label = ownerOf(sheet.labels, hit.owner))
         return labelTextPoint(*label);
     if (const Bus *bus = ownerOf(sheet.buses, hit.owner))
-        return busNamePoint(*bus);
+        return busNamePoint(*bus, hit.index);
     return Point();
 }
 
@@ -258,7 +263,7 @@ QRectF textRect(const Sheet &sheet, const Library &library, const TextHit &hit)
     if (const Label *label = ownerOf(sheet.labels, hit.owner))
         return labelTextRect(*label);
     if (const Bus *bus = ownerOf(sheet.buses, hit.owner))
-        return busNameRect(*bus);
+        return busNameRect(*bus, hit.index);
     return QRectF();
 }
 
@@ -272,8 +277,40 @@ Sheet withTextMoved(const Sheet &sheet, const TextHit &hit, const Point &delta)
     }
     if (Label *label = ownerOf(result.labels, hit.owner))
         label->textAt = label->textAt + delta;
-    if (Bus *bus = ownerOf(result.buses, hit.owner))
-        bus->nameAt = bus->nameAt + delta;
+    if (Bus *bus = ownerOf(result.buses, hit.owner)) {
+        if (hit.index >= 0 && hit.index < bus->namesAt.size())
+            bus->namesAt[hit.index] = bus->namesAt.at(hit.index) + delta;
+    }
+    return result;
+}
+
+Sheet withBusNameAdded(const Sheet &sheet, const ObjectId &bus, const Point &at)
+{
+    Sheet result = sheet;
+    if (Bus *found = ownerOf(result.buses, bus))
+        found->namesAt.append(at - found->points.value(0));
+    return result;
+}
+
+bool isBusNameRemovable(const Sheet &sheet, const TextHit &hit)
+{
+    if (!hasText(sheet, hit) || ownerOf(sheet.buses, hit.owner) == nullptr)
+        return false;
+    int places = 0;
+    const QSet<ObjectId> group = joinedBuses(sheet, hit.owner);
+    for (const Bus &bus : sheet.buses) {
+        if (group.contains(bus.id))
+            places += int(bus.namesAt.size());
+    }
+    return places > 1;
+}
+
+Sheet withoutBusName(const Sheet &sheet, const TextHit &hit)
+{
+    if (!isBusNameRemovable(sheet, hit))
+        return sheet;
+    Sheet result = sheet;
+    ownerOf(result.buses, hit.owner)->namesAt.removeAt(hit.index);
     return result;
 }
 

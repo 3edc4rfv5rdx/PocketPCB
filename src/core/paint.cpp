@@ -593,10 +593,12 @@ void paintLabel(QPainter &painter, const Label &label, bool joined)
     painter.restore();
 }
 
-// Where the name of a bus is drawn: just above where it stands.
-QPointF busNameAt(const Bus &bus)
+// Where the name of a bus is drawn the 'index'th time: just above where it
+// stands.
+QPointF busNameAt(const Bus &bus, int index)
 {
-    return toMm(busNamePoint(bus)) - QPointF(0, LABEL_TEXT_HEIGHT / 2 + BUS_WIDTH + LABEL_GAP);
+    return toMm(busNamePoint(bus, index))
+           - QPointF(0, LABEL_TEXT_HEIGHT / 2 + BUS_WIDTH + LABEL_GAP);
 }
 
 // From the coordinates of a power symbol's drawing to those of the sheet:
@@ -993,8 +995,8 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const Library &li
     for (const Bus &bus : sheet.buses) {
         painter.setPen(linePen(paintcolor::bus(), BUS_WIDTH));
         painter.drawPolyline(toPolygon(bus.points));
-        if (isBusNameShown(sheet, bus))
-            drawText(painter, busNameAt(bus), bus.name, LABEL_TEXT_HEIGHT, TextAlign::Left,
+        for (int i = 0; i < bus.namesAt.size(); ++i)
+            drawText(painter, busNameAt(bus, i), bus.name, LABEL_TEXT_HEIGHT, TextAlign::Left,
                      paintcolor::bus());
     }
     painter.setPen(Qt::NoPen);
@@ -1117,14 +1119,14 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
     return shapes;
 }
 
-Point busNamePoint(const Bus &bus)
+Point busNamePoint(const Bus &bus, int index)
 {
-    return bus.points.value(0) + bus.nameAt;
+    return bus.points.value(0) + bus.namesAt.value(index);
 }
 
-QRectF busNameRect(const Bus &bus)
+QRectF busNameRect(const Bus &bus, int index)
 {
-    return textBounds(busNameAt(bus), bus.name, LABEL_TEXT_HEIGHT, TextAlign::Left);
+    return textBounds(busNameAt(bus, index), bus.name, LABEL_TEXT_HEIGHT, TextAlign::Left);
 }
 
 Point labelTextPoint(const Label &label)

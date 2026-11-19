@@ -408,6 +408,10 @@
         <translation>Записувати історію кроків</translation>
     </message>
     <message>
+        <source>Add name here</source>
+        <translation>Додати назву тут</translation>
+    </message>
+    <message>
         <source>Cannot write the history of steps into</source>
         <translation>Не вдається записати історію кроків до</translation>
     </message>
@@ -709,6 +713,10 @@
     <message>
         <source>Rename</source>
         <translation>Перейменувати</translation>
+    </message>
+    <message>
+        <source>Add name</source>
+        <translation>Додати назву</translation>
     </message>
     <message>
         <source>Bus</source>

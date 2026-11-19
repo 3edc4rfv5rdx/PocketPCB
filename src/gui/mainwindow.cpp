@@ -588,6 +588,11 @@ void MainWindow::showSheetMenu(const QPoint &globalPos)
             QAction *edit = menu.addAction(m_sheetEditor->editInPlaceName(editable));
             connect(edit, &QAction::triggered, m_sheetEditor,
                     [this, editable] { m_sheetEditor->editInPlace(editable); });
+            if (m_sheetEditor->isBus(editable)) {
+                QAction *name = menu.addAction(tr("Add name here"));
+                connect(name, &QAction::triggered, m_sheetEditor,
+                        [this, editable, at] { m_sheetEditor->addBusName(editable, at); });
+            }
             menu.addSeparator();
         }
         add("actionRotate");
