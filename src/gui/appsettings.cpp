@@ -32,6 +32,7 @@ const char KEY_SHEET_BACKGROUND[] = "view/sheetBackground";
 const char KEY_LAST_LIBRARY_FOLDER[] = "library/lastFolder";
 const char KEY_USER_LIBRARY_FOLDER[] = "library/folder";
 const char KEY_LAST_PROJECT_FOLDER[] = "project/lastFolder";
+const char KEY_PROJECTS_FOLDER[] = "project/projectsFolder";
 const char KEY_RECENT_PROJECTS[] = "project/recent";
 const char KEY_BACKUP_COUNT[] = "project/backupCount";
 const char KEY_AUTOSAVE_MINUTES[] = "project/autosaveMinutes";
@@ -42,6 +43,9 @@ const int DEFAULT_AUTOSAVE_MINUTES = 5;
 const char USER_LIBRARY_FOLDER[] = "library";
 // Beside the program.
 const char STEP_HISTORY_FOLDER[] = "history";
+// Beside the program, or beside the AppImage file named by this variable.
+const char PROJECTS_FOLDER[] = "PocketPCB-Projects";
+const char APPIMAGE_VARIABLE[] = "APPIMAGE";
 // Where an AppImage keeps the built-in library, from the program's folder.
 const char INSTALLED_LIBRARY_FOLDER[] = "../share/pocketpcb/library";
 const char KEY_WINDOW_GEOMETRY[] = "window/geometry";
@@ -249,6 +253,31 @@ QString AppSettings::lastProjectFolder()
 void AppSettings::setLastProjectFolder(const QString &folder)
 {
     writeValue(KEY_LAST_PROJECT_FOLDER, folder);
+}
+
+QString AppSettings::projectsFolder()
+{
+    const QString appImage = qEnvironmentVariable(APPIMAGE_VARIABLE);
+    const QString programFolder = appImage.isEmpty() ? QCoreApplication::applicationDirPath()
+                                                     : QFileInfo(appImage).absolutePath();
+    const QString byDefault = QDir(programFolder).filePath(QLatin1String(PROJECTS_FOLDER));
+    const QString folder = readValueOrWriteDefault(KEY_PROJECTS_FOLDER, byDefault).toString();
+    return folder.isEmpty() ? byDefault : folder;
+}
+
+void AppSettings::setProjectsFolder(const QString &folder)
+{
+    writeValue(KEY_PROJECTS_FOLDER, folder);
+}
+
+QString AppSettings::projectDialogFolder()
+{
+    const QString last = lastProjectFolder();
+    if (!last.isEmpty() && QFileInfo(last).isDir())
+        return last;
+    const QString projects = projectsFolder();
+    QDir().mkpath(projects);
+    return projects;
 }
 
 QStringList AppSettings::recentProjects()

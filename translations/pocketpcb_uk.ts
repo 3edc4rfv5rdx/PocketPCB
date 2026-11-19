@@ -415,6 +415,10 @@
         <translation>Записувати історію кроків</translation>
     </message>
     <message>
+        <source>Projects folder</source>
+        <translation>Тека проєктів</translation>
+    </message>
+    <message>
         <source>Add name here</source>
         <translation>Додати назву тут</translation>
     </message>

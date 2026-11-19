@@ -415,6 +415,10 @@
         <translation>Записывать историю шагов</translation>
     </message>
     <message>
+        <source>Projects folder</source>
+        <translation>Папка проектов</translation>
+    </message>
+    <message>
         <source>Add name here</source>
         <translation>Добавить имя здесь</translation>
     </message>

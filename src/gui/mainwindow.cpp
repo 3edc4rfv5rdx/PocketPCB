@@ -519,6 +519,10 @@ void MainWindow::createMenus()
     connect(gridAction, &QAction::triggered, this,
             [this] { applyWireRouting(WireRouting::Grid); });
 
+    QAction *projectsAction = settingsMenu->addAction(tr("Projects folder") + QStringLiteral("…"));
+    projectsAction->setObjectName(QStringLiteral("actionProjectsFolder"));
+    connect(projectsAction, &QAction::triggered, this, &MainWindow::chooseProjectsFolder);
+
     QAction *historyAction = settingsMenu->addAction(tr("Keep a history of steps"));
     historyAction->setCheckable(true);
     historyAction->setChecked(AppSettings::keepStepHistory());
@@ -803,6 +807,17 @@ void MainWindow::offerAutosave()
         showStatus(error);
 }
 
+void MainWindow::chooseProjectsFolder()
+{
+    const QString folder = QFileDialog::getExistingDirectory(this, tr("Projects folder"),
+                                                             AppSettings::projectsFolder());
+    if (folder.isEmpty())
+        return;
+    AppSettings::setProjectsFolder(folder);
+    // The dialogs start there from now on.
+    AppSettings::setLastProjectFolder(folder);
+}
+
 void MainWindow::chooseNewProject()
 {
     if (confirmLeavingProject())
@@ -812,7 +827,7 @@ void MainWindow::chooseNewProject()
 void MainWindow::chooseProjectToOpen()
 {
     const QString path = QFileDialog::getOpenFileName(
-        this, tr("Open project"), AppSettings::lastProjectFolder(),
+        this, tr("Open project"), AppSettings::projectDialogFolder(),
         tr("PocketPCB projects") + QStringLiteral(" (*") + QLatin1String(FILE_EXT_PROJECT)
             + QLatin1Char(')'));
     // Asked once a project is chosen: a dialog closed without one leaves
@@ -874,9 +889,7 @@ bool MainWindow::chooseProjectToSaveAs()
 {
     const QString path = m_document->projectPath();
     const QString name = path.isEmpty() ? tr("untitled") : QFileInfo(path).completeBaseName();
-    QString parentFolder = AppSettings::lastProjectFolder();
-    if (parentFolder.isEmpty())
-        parentFolder = QDir::homePath();
+    const QString parentFolder = AppSettings::projectDialogFolder();
 
     SaveProjectDialog dialog(name, parentFolder, this);
     if (dialog.exec() != QDialog::Accepted)

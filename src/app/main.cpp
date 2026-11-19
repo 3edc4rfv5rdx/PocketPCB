@@ -4,12 +4,15 @@
 #include "project.h"
 
 #include <QApplication>
+#include <QDir>
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     ppcb::AppSettings::initApplication();
     ppcb::installLanguage();
+    // The common folder of the projects is there from the start.
+    QDir().mkpath(ppcb::AppSettings::projectsFolder());
 
     ppcb::MainWindow window;
     window.show();

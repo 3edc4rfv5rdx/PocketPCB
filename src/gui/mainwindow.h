@@ -127,6 +127,8 @@ private:
     bool isSheetShown() const;
     void applyZoomCenterAndWarp(bool on);
     void applyWireRouting(WireRouting routing);
+    // Asks for the common folder of the project folders.
+    void chooseProjectsFolder();
     // Keeps 'language' (a code, or empty for the system's) for the next
     // start, and says so.
     void setInterfaceLanguage(const QString &language);
