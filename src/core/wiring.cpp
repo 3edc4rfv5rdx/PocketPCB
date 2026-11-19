@@ -1419,6 +1419,40 @@ QSet<ObjectId> joinedWires(const Sheet &sheet, const ObjectId &wire)
     return found;
 }
 
+QSet<ObjectId> chainedWires(const Sheet &sheet, const Library &library, const ObjectId &wire)
+{
+    const auto first = std::find_if(sheet.wires.cbegin(), sheet.wires.cend(),
+                                    [&wire](const Wire &w) { return w.id == wire; });
+    if (first == sheet.wires.cend())
+        return {};
+    QSet<ObjectId> found = {wire};
+    if (first->points.isEmpty())
+        return found;
+    const QList<Point> pins = pinPoints(sheet, library);
+    // From each end of the wire, on while the chain goes on.
+    for (const Point &start : {first->points.first(), first->points.last()}) {
+        const Wire *current = &*first;
+        Point at = start;
+        while (!pins.contains(at) && !isOnBus(sheet, at)) {
+            const Wire *next = nullptr;
+            int touching = 0;
+            for (const Wire &other : sheet.wires) {
+                if (&other == current || other.points.isEmpty() || !isOnWire(other, at))
+                    continue;
+                ++touching;
+                if (other.points.first() == at || other.points.last() == at)
+                    next = &other;
+            }
+            if (touching != 1 || next == nullptr || found.contains(next->id))
+                break;
+            found.insert(next->id);
+            at = next->points.first() == at ? next->points.last() : next->points.first();
+            current = next;
+        }
+    }
+    return found;
+}
+
 namespace {
 
 // 'sheet' with its buses as its wires, and nothing else: buses join each

@@ -74,6 +74,12 @@ bool isConnectionPoint(const Sheet &sheet, const Library &library, const Point &
 // Empty when the sheet has no such wire.
 QSet<ObjectId> joinedWires(const Sheet &sheet, const ObjectId &wire);
 
+// The ids of the wires that go on from the wire 'wire' of 'sheet' one
+// after another, end to end, the wire itself among them: through a point
+// where just two wire ends meet, with no other wire on it, no pin of
+// 'library' and no bus. Empty when the sheet has no such wire.
+QSet<ObjectId> chainedWires(const Sheet &sheet, const Library &library, const ObjectId &wire);
+
 // Buses joined to each other as wires are: where an end of one lies on
 // another. A bus drawn on to another is a branch of it, with its name.
 // The ids of the buses joined to the bus 'bus' of 'sheet', one through

@@ -949,6 +949,36 @@ private slots:
         QVERIFY(joinedWires(sheet, newObjectId()).isEmpty());
     }
 
+    // A chain goes on through points where just two wire ends meet, and
+    // stops at a fork, at a wire passing, at a pin and at a bus.
+    void chainedWiresStopAtForks()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        // A, B, C end to end; D and E both go on from C's end: a fork. F
+        // ends on B's middle. G and H meet on a pin; I and J on a bus.
+        sheet.wires = {wire({mm(0, 0), mm(10, 0)}), wire({mm(10, 0), mm(20, 0), mm(20, 10)}),
+                       wire({mm(20, 10), mm(30, 10)}), wire({mm(30, 10), mm(40, 10)}),
+                       wire({mm(30, 10), mm(30, 20)}), wire({mm(15, 0), mm(15, -10)}),
+                       wire({mm(50, 0), mm(55, 0)}), wire({mm(55, 0), mm(60, 0)}),
+                       wire({mm(70, 0), mm(75, 0)}), wire({mm(75, 0), mm(80, 0)})};
+        sheet.components = {twoPin(mm(60, 0))};
+        Bus bus;
+        bus.id = newObjectId();
+        bus.points = {mm(75, -10), mm(75, 10)};
+        sheet.buses = {bus};
+        const QList<Wire> &w = sheet.wires;
+        const QSet<ObjectId> abc = {w.at(0).id, w.at(1).id, w.at(2).id};
+        QCOMPARE(chainedWires(sheet, library, w.at(0).id), abc);
+        QCOMPARE(chainedWires(sheet, library, w.at(2).id), abc);
+        QCOMPARE(chainedWires(sheet, library, w.at(3).id), QSet<ObjectId>({w.at(3).id}));
+        QCOMPARE(chainedWires(sheet, library, w.at(5).id), QSet<ObjectId>({w.at(5).id}));
+        // (55, 0) is the left pin of the part at (60, 0).
+        QCOMPARE(chainedWires(sheet, library, w.at(6).id), QSet<ObjectId>({w.at(6).id}));
+        QCOMPARE(chainedWires(sheet, library, w.at(8).id), QSet<ObjectId>({w.at(8).id}));
+        QVERIFY(chainedWires(sheet, library, newObjectId()).isEmpty());
+    }
+
     void aWireEndIsDraggedAlone()
     {
         const Library library = twoPinLibrary();

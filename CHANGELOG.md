@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A double click on a wire chooses it with the wires going on from it end to end, up to a fork, a pin or a bus
 - N: An empty date in the title block shows the day of the last save
 - F: The BOM written as TXT marks its group headings with "=== "
 - N: File > Update parts from library lists the project parts the library has otherwise and updates those ticked as one step
