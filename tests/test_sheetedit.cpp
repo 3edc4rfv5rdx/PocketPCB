@@ -323,6 +323,19 @@ private slots:
         QCOMPARE(renamed.buses.at(1).name, QStringLiteral("A[0..3]"));
     }
 
+    // Two parts side by side, the texts of the second reaching over the
+    // drawing of the first: a click on the drawing takes the first.
+    void aClickOnTheDrawingTakesItsPart()
+    {
+        const QList<SheetObjectShape> shapes = {
+            SheetObjectShape{id(20), QRectF(0, 0, 30, 10), QPolygonF(), QRectF(0, 0, 10, 10)},
+            SheetObjectShape{id(21), QRectF(5, 0, 20, 10), QPolygonF(), QRectF(15, 0, 10, 10)}};
+        QCOMPARE(objectAt(shapes, QPointF(7, 5), 0.1), id(20));
+        QCOMPARE(objectAt(shapes, QPointF(20, 5), 0.1), id(21));
+        // On the texts alone, the topmost.
+        QCOMPARE(objectAt(shapes, QPointF(12, 5), 0.1), id(21));
+    }
+
     void rectangleTakesWhatIsWhollyInside()
     {
         const QList<SheetObjectShape> shapes = sheetObjectShapes(fullSheet(), resistorLibrary());

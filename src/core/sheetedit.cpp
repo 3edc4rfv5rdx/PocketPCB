@@ -133,9 +133,17 @@ ObjectId objectAt(const QList<SheetObjectShape> &shapes, const QPointF &point, d
         if (!it->polyline.isEmpty() && isNearPolyline(it->polyline, point, tolerance))
             return it->id;
     }
+    const auto grown = [tolerance](const QRectF &rect) {
+        return rect.adjusted(-tolerance, -tolerance, tolerance, tolerance);
+    };
+    // The drawing of a part before the texts of a part beside it, which may
+    // reach over it.
     for (auto it = shapes.crbegin(); it != shapes.crend(); ++it) {
-        if (it->polyline.isEmpty()
-            && it->rect.adjusted(-tolerance, -tolerance, tolerance, tolerance).contains(point))
+        if (it->polyline.isEmpty() && !it->body.isNull() && grown(it->body).contains(point))
+            return it->id;
+    }
+    for (auto it = shapes.crbegin(); it != shapes.crend(); ++it) {
+        if (it->polyline.isEmpty() && grown(it->rect).contains(point))
             return it->id;
     }
     return ObjectId();

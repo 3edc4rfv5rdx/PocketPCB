@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A click on a part takes that part, not one beside it whose designator or value reaches over it
 - N: Resistors have a rated power, 0.125 W at first, chosen in the properties panel or the menu of the sheet and marked inside the body after GOST, Roman numerals from 5 W
 - F: Deleting a part deletes the no-connect marks on its pins too, unless a pin of another part is there
 - N: A bus shows its name in several places: Add name here in its menu puts one more, each is dragged or deleted alone, and Shift and a click choose a bus with its branches

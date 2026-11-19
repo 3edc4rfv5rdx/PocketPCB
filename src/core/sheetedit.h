@@ -17,7 +17,9 @@ bool isNearPolyline(const QPolygonF &polyline, const QPointF &point, double tole
 // The object under 'point' (millimetres): one found by its line when within
 // 'tolerance' of it, any other when the point is in its rectangle grown by
 // 'tolerance'. One found by its line comes first, so that a wire can be
-// taken where it reaches a part; then the topmost. A null id when nothing is.
+// taken where it reaches a part; then one by its drawing without its texts
+// (SheetObjectShape::body), so that the texts of a part beside it do not
+// take the click; then the topmost. A null id when nothing is.
 ObjectId objectAt(const QList<SheetObjectShape> &shapes, const QPointF &point, double tolerance);
 
 // The objects that lie wholly inside 'rect' (millimetres): a component or
