@@ -130,8 +130,8 @@ private slots:
                                                     "R1, R2  2\n"));
     }
 
-    // A group heading is not measured and gets an empty line before it
-    // unless it follows the rule.
+    // A group heading is not measured, starts with "=== " and gets an empty
+    // line before it unless it follows the rule.
     void plainTextSetsGroupHeadingsApart()
     {
         const QList<QStringList> table = {{QStringLiteral("Ref"), QStringLiteral("Qty")},
@@ -141,10 +141,10 @@ private slots:
                                           {QStringLiteral("R1"), QStringLiteral("1")}};
         QCOMPARE(plainTextOf(table), QStringLiteral("Ref  Qty\n"
                                                     "--------\n"
-                                                    "Capacitors\n"
+                                                    "=== Capacitors\n"
                                                     "C1   1\n"
                                                     "\n"
-                                                    "Resistors\n"
+                                                    "=== Resistors\n"
                                                     "R1   1\n"));
     }
 };

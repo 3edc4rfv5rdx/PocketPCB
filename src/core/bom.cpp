@@ -41,6 +41,8 @@ const QChar CSV_QUOTE = QLatin1Char('"');
 const char CSV_LINE_END[] = "\r\n";
 const int COLUMN_GAP = 2;
 const QChar HEADING_RULE = QLatin1Char('-');
+// What a group heading starts with in plain text.
+const char GROUP_MARK[] = "=== ";
 
 } // namespace
 
@@ -167,8 +169,12 @@ QString plainTextOf(const QList<QStringList> &table)
     };
     QString text;
     for (int r = 0; r < table.size(); ++r) {
-        if (isGroupHeading(r, table.at(r)) && r > 1)
-            text += QLatin1Char('\n');
+        if (isGroupHeading(r, table.at(r))) {
+            if (r > 1)
+                text += QLatin1Char('\n');
+            text += QLatin1String(GROUP_MARK) + table.at(r).first() + QLatin1Char('\n');
+            continue;
+        }
         text += line(table.at(r));
         if (r == 0) {
             int total = 0;

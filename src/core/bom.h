@@ -51,7 +51,8 @@ bool designatorLess(const QString &a, const QString &b);
 QString csvOf(const QList<QStringList> &table);
 // The same as plain text: each column as wide as its widest field (group
 // headings left out), two spaces between, a line of dashes under the
-// heading, an empty line before a group heading that does not follow it.
+// heading, a group heading after "=== " and an empty line before it unless
+// it follows the rule.
 QString plainTextOf(const QList<QStringList> &table);
 
 } // namespace ppcb

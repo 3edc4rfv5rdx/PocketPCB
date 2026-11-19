@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The BOM written as TXT marks its group headings with "=== "
 - N: File > Update parts from library lists the project parts the library has otherwise and updates those ticked as one step
 - N: With international designators a resistor shows its power after the value instead of GOST marks, unless most resistors have that power
 - N: The Net classes tab of the project properties adds, renames, changes and deletes net classes and chooses the default and the power class
