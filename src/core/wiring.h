@@ -117,9 +117,12 @@ enum class WireRouting { Hand, Grid };
 // wire ends went together, an end at a point a wire already led still
 // passes through stays there, joined to it, unless it would run along
 // that wire from there: then it goes too. A moved wire
-// whose end lay on a pin of a component left in place, on a wire left in
-// place or on a bus left in place keeps that end there: a bend leads back to it, the least bad way,
-// and a wire led after a pin keeps passing through it. An end on a pin
+// whose end lay on a pin of a component left in place or on a bus left in
+// place keeps that end there; an end that lay on a wire left as it is, even
+// at such a pin, slides along the wires left as they are towards where it
+// goes, as the end of a moved segment does (withSegmentMoved()). A bend
+// leads back to where the end is held, the least bad way, and a wire led
+// after a pin keeps passing through it. An end on a pin
 // that is moved as well just goes, whatever else lay there.
 // A wire left in place that passes through a pin that goes counts as joined
 // to it: it is cut at the pin first, and its two parts follow.
@@ -147,8 +150,8 @@ Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &
 // 'sheet' with the segment 'index' (from point 'index' to the next) of the
 // wire 'wire' moved by 'delta', across itself only when it is level or
 // upright. The segments next to it grow or shrink, or bend to reach it; an
-// end of the wire that lies on another wire slides along it when the move
-// goes that way, even from a pin there, as far as the wires there reach,
+// end of the wire that lies on another wire slides along it as far as the
+// move goes its way, even from a pin there, as far as the wires there reach,
 // and a bend leads on from where it gets to; else an end joined to a pin,
 // a wire or a bus stays, and a bend leads to it. The ends of other wires on the segment
 // go along with it; those on a segment next to it that shrinks away from

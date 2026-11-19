@@ -1106,6 +1106,45 @@ QList<Point> ledBack(const QList<Point> &points, const Point &to, const Obstacle
     return bestWire(candidates, obstacles);
 }
 
+// Where 'point', lying on wires of 'wires' not among 'skip', gets sliding
+// along them towards 'to': along a level or upright segment as far as
+// straight across from 'to', along a slanted one onto 'to' alone, and on
+// from one wire to the next while that brings it nearer, as far as the
+// wires reach. 'point' itself when it lies on none.
+Point slidAlongWires(const QList<Wire> &wires, const QSet<ObjectId> &skip, const Point &point,
+                     const Point &to)
+{
+    const auto distance = [&to](const Point &from) {
+        return std::llabs(to.x - from.x) + std::llabs(to.y - from.y);
+    };
+    Point reached = point;
+    for (bool further = true; further;) {
+        further = false;
+        for (const Wire &other : wires) {
+            if (skip.contains(other.id))
+                continue;
+            for (int i = 1; i < other.points.size(); ++i) {
+                const Point &s0 = other.points.at(i - 1);
+                const Point &s1 = other.points.at(i);
+                if (!isOnSegment(s0, s1, reached))
+                    continue;
+                Point along = reached;
+                if (isOnSegment(s0, s1, to))
+                    along = to;
+                else if (s0.y == s1.y)
+                    along.x = qBound(qMin(s0.x, s1.x), to.x, qMax(s0.x, s1.x));
+                else if (s0.x == s1.x)
+                    along.y = qBound(qMin(s0.y, s1.y), to.y, qMax(s0.y, s1.y));
+                if (distance(along) < distance(reached)) {
+                    reached = along;
+                    further = true;
+                }
+            }
+        }
+    }
+    return reached;
+}
+
 } // namespace
 
 Point placedPoint(const Point &at, int rotation, bool mirrored, const Point &point)
@@ -1424,13 +1463,31 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
     QHash<ObjectId, const Wire *> wiresBefore;
     for (const Wire &wire : before.wires)
         wiresBefore.insert(wire.id, &wire);
-    // Where the end 'end' of a moved wire is held by what is not moved with
-    // it: there, on a pin or a wire left in place, or where a wire that
-    // goes whole takes it. Nothing when it is free, or on a pin that goes
-    // as well.
-    const auto heldAt = [&](const Point &end) -> std::optional<Point> {
+    QHash<ObjectId, const Wire *> wiresAfter;
+    for (const Wire &wire : after.wires)
+        wiresAfter.insert(wire.id, &wire);
+    // The wires that do not stay as they are: an end of a moved wire slides
+    // only along the others.
+    const QSet<ObjectId> changing = QSet<ObjectId>(moved).unite(following);
+    const auto onWireOf = [&](const Point &end, const QSet<ObjectId> &skip) {
+        return std::any_of(before.wires.cbegin(), before.wires.cend(), [&](const Wire &other) {
+            return !skip.contains(other.id) && other.points.size() >= 2 && isOnWire(other, end);
+        });
+    };
+    // Where the end 'end' of a moved wire, gone to 'goneTo' with it, is held
+    // by what is not moved with it: on a pin or a bus left in place, there;
+    // on a wire that stays as it is, even on such a pin, slid along the
+    // wires that stay towards 'goneTo', as the end of a moved segment
+    // slides; on a wire laid again, there; where a wire that goes whole
+    // takes it. Nothing when it is free, or on a pin that goes as well.
+    // 'still', when given, tells whether it is held by what stays.
+    const auto heldAt = [&](const Point &end, const Point &goneTo,
+                            bool *still = nullptr) -> std::optional<Point> {
+        if (still != nullptr)
+            *still = true;
+        const bool onStillWire = onWireOf(end, changing);
         if (follower.isStillPin(end))
-            return end;
+            return onStillWire ? slidAlongWires(before.wires, changing, end, goneTo) : end;
         // A bus left in place keeps the end of a wire that enters it.
         const bool onStillBus =
             std::any_of(before.buses.cbegin(), before.buses.cend(), [&](const Bus &bus) {
@@ -1442,25 +1499,40 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
             return end;
         if (follower.isMovedPin(end))
             return std::nullopt;
-        if (const std::optional<Point> to = follower.shiftedWith(end))
+        if (const std::optional<Point> to = follower.shiftedWith(end)) {
+            if (still != nullptr)
+                *still = false;
             return to;
-        const bool onWire =
-            std::any_of(before.wires.cbegin(), before.wires.cend(), [&](const Wire &other) {
-                return !moved.contains(other.id) && other.points.size() >= 2
-                       && isOnWire(other, end);
-            });
-        return onWire ? std::optional<Point>(end) : std::nullopt;
+        }
+        if (onStillWire)
+            return slidAlongWires(before.wires, changing, end, goneTo);
+        return onWireOf(end, moved) ? std::optional<Point>(end) : std::nullopt;
     };
-    // The ends that stay where they are, with the wire they belong to: those
-    // of the wires that stay, and those of the moved ones held in place. A
-    // wire is joined to another where one of them lies on it.
+    // Where the moved wire 'was' has taken its last end, or its first: its
+    // end itself when it is not laid the same.
+    const auto goneTo = [&](const Wire &was, bool last) {
+        const Wire *now = wiresAfter.value(was.id);
+        if (now == nullptr || now->points.size() != was.points.size())
+            return last ? was.points.last() : was.points.first();
+        return last ? now->points.last() : now->points.first();
+    };
+    // The ends that stay, with the wire they belong to: those of the wires
+    // that stay, and those of the moved ones held by what stays, where they
+    // are held. A wire is joined to another where one of them lies on it.
     QList<QPair<Point, ObjectId>> ends;
     for (const Wire &wire : before.wires) {
         if (wire.points.size() < 2)
             continue;
-        for (const Point &end : {wire.points.first(), wire.points.last()}) {
-            if (!moved.contains(wire.id) || heldAt(end) == std::optional<Point>(end))
+        for (const bool last : {false, true}) {
+            const Point end = last ? wire.points.last() : wire.points.first();
+            if (!moved.contains(wire.id)) {
                 ends.append(qMakePair(end, wire.id));
+                continue;
+            }
+            bool still = false;
+            const std::optional<Point> held = heldAt(end, goneTo(wire, last), &still);
+            if (held && still)
+                ends.append(qMakePair(*held, wire.id));
         }
     }
     Sheet result = after;
@@ -1494,8 +1566,8 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
             if (was != nullptr && was->points.size() == wire.points.size()) {
                 QList<Point> points = wire.points;
                 const Obstacles own = obstacles.without(wire.id);
-                const std::optional<Point> last = heldAt(was->points.last());
-                const std::optional<Point> first = heldAt(was->points.first());
+                const std::optional<Point> last = heldAt(was->points.last(), points.last());
+                const std::optional<Point> first = heldAt(was->points.first(), points.first());
                 if (last && points.last() != *last)
                     points = ledBack(points, *last, own);
                 if (first && points.first() != *first) {
@@ -1689,47 +1761,14 @@ static Sheet segmentMoved(const Sheet &sheet, const Library &library, const Obje
             return other.id != wire && other.points.size() >= 2 && isOnWire(other, point);
         });
     };
-    // Unless it can slide along the wires it lies on, towards where it
-    // goes: what else is there stays joined to it through them. Where it
-    // gets to: 'to' itself, or as far that way as the wires reach, from
-    // one on to the next.
-    const auto slidTo = [&](const Point &point, const Point &to) {
-        const auto distance = [&to](const Point &from) {
-            return std::llabs(to.x - from.x) + std::llabs(to.y - from.y);
-        };
-        Point reached = point;
-        for (bool further = true; further;) {
-            further = false;
-            for (const Wire &other : sheet.wires) {
-                if (other.id == wire)
-                    continue;
-                for (int i = 1; i < other.points.size(); ++i) {
-                    const Point &s0 = other.points.at(i - 1);
-                    const Point &s1 = other.points.at(i);
-                    if (!isOnSegment(s0, s1, reached))
-                        continue;
-                    Point along = reached;
-                    if (isOnSegment(s0, s1, to))
-                        along = to;
-                    else if (s0.y == s1.y && to.y == s0.y)
-                        along.x = qBound(qMin(s0.x, s1.x), to.x, qMax(s0.x, s1.x));
-                    else if (s0.x == s1.x && to.x == s0.x)
-                        along.y = qBound(qMin(s0.y, s1.y), to.y, qMax(s0.y, s1.y));
-                    if (distance(along) < distance(reached)) {
-                        reached = along;
-                        further = true;
-                    }
-                }
-            }
-        }
-        return reached;
-    };
-    // The wire's ends held by something: they stay, or slide along it, and
-    // a bend leads on from where they get to.
+    // The wire's ends held by something: they stay, or slide along the
+    // wires they lie on, towards where they go, so that what else is there
+    // stays joined to them through those wires; a bend leads on from where
+    // they get to.
     const bool aHeld = index == 0 && held(a);
     const bool bHeld = index + 2 == n && held(b);
-    const Point aAt = aHeld ? slidTo(a, na) : na;
-    const Point bAt = bHeld ? slidTo(b, nb) : nb;
+    const Point aAt = aHeld ? slidAlongWires(sheet.wires, {wire}, a, na) : na;
+    const Point bAt = bHeld ? slidAlongWires(sheet.wires, {wire}, b, nb) : nb;
 
     QList<Point> points;
     if (index > 0) {

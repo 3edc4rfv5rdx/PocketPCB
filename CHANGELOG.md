@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A whole wire dragged slides its ends along the wires they lie on, as a dragged segment does, instead of leaving bends back to them
 - E: '.' slants the wire corner too, so the key of '/' does it on the Russian layout
 - F: A value, net name, label or bus name edited in place stays open over its text while the view is zoomed or panned, instead of closing
 - E: A wire whose end follows a moved part keeps the pins left in place on its middle, such as a ground, instead of leaving them unjoined

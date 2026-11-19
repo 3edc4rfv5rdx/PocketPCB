@@ -1029,6 +1029,58 @@ private slots:
                  sheet.wires.at(0).points);
     }
 
+    // An upright wire between two level rails, moved whole: its ends slide
+    // along the rails, as those of its segment do, instead of staying with
+    // bends back to them.
+    void aWholeWireSlidesAlongTheWiresItsEndsLieOn()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.wires = {wire({mm(0, 0), mm(20, 0)}), wire({mm(0, 10), mm(20, 10)}),
+                       wire({mm(10, 0), mm(10, 10)})};
+        const QSet<ObjectId> line = {sheet.wires.at(2).id};
+        Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, line, mm(3, 0)), line, library);
+        QCOMPARE(moved.wires.at(2).points, QList<Point>({mm(13, 0), mm(13, 10)}));
+        QCOMPARE(moved.wires.at(0).points, sheet.wires.at(0).points);
+        QCOMPARE(moved.wires.at(1).points, sheet.wires.at(1).points);
+        // Moved aslant: its ends slide as far as straight across from where
+        // they went.
+        moved = withWiresFollowing(sheet, movedObjects(sheet, line, mm(3, 2)), line, library);
+        QCOMPARE(moved.wires.at(2).points.first(), mm(13, 0));
+        QCOMPARE(moved.wires.at(2).points.last(), mm(13, 10));
+    }
+
+    // The same wire with its top end on a rail it is moved past the end of:
+    // its end slides to the end of the rail and a bend leads on.
+    void aWholeWireSlidesAsFarAsTheWireReaches()
+    {
+        const Library library;
+        Sheet sheet;
+        sheet.wires = {wire({mm(0, 0), mm(20, 0)}), wire({mm(10, 0), mm(10, 10)})};
+        const QSet<ObjectId> line = {sheet.wires.at(1).id};
+        const QList<Wire> wires =
+            withWiresFollowing(sheet, movedObjects(sheet, line, mm(15, 0)), line, library).wires;
+        QCOMPARE(wires.at(1).points, QList<Point>({mm(20, 0), mm(25, 0), mm(25, 10)}));
+        QCOMPARE(wires.at(0).points, sheet.wires.at(0).points);
+    }
+
+    // A level wire from the right pin of a part at the origin, with an
+    // upright wire going down from the same pin, moved down whole: it
+    // slides down the upright one, as its segment does.
+    void aWholeWireSlidesOffAPinAlongAWireThere()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0))};
+        sheet.wires = {wire({mm(5, 0), mm(5, 20)}), wire({mm(5, 0), mm(20, 0)})};
+        const QSet<ObjectId> line = {sheet.wires.at(1).id};
+        const Sheet moved =
+            withWiresFollowing(sheet, movedObjects(sheet, line, mm(0, 4)), line, library);
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(5, 4), mm(20, 4)}));
+        QCOMPARE(moved.wires.at(0).points, sheet.wires.at(0).points);
+    }
+
     // On the grid a wire end dragged past a part goes round it, through
     // neither its body nor its pins. Laid again from its free end it takes
     // two bends, cheaper than the four of a detour off its run.
