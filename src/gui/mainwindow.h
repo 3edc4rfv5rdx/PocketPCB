@@ -125,6 +125,7 @@ private:
     // A sheet of the project is on the canvas, not the board or a library file.
     bool isSheetShown() const;
     void applyZoomCenterAndWarp(bool on);
+    void applyWireRouting(WireRouting routing);
     // Keeps 'language' (a code, or empty for the system's) for the next
     // start, and says so.
     void setInterfaceLanguage(const QString &language);

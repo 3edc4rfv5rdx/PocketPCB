@@ -5,6 +5,7 @@
 #include "netlist.h"
 #include "paint.h"
 #include "sheetedit.h"
+#include "wiring.h"
 
 #include <QLineF>
 #include <QObject>
@@ -64,6 +65,9 @@ public:
         Bus
     };
     static QString actionName(Action action);
+
+    // How wires are laid again when what they are joined to goes.
+    void setWireRouting(WireRouting routing) { m_wireRouting = routing; }
 
     // The sheet being edited, or -1 when the page shown is not a sheet.
     int sheet() const { return m_sheet; }
@@ -319,6 +323,7 @@ private:
 
     Document *m_document;
     CanvasView *m_canvas;
+    WireRouting m_wireRouting = WireRouting::Hand;
     int m_sheet = -1;
     QSet<ObjectId> m_selection;
     // The segment chosen by a click on a wire or a bus: its line and its

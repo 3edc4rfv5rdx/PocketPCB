@@ -53,6 +53,10 @@ struct GridRouteRules
     // same column and row; a negative value forbids it. Unset: the layer is
     // never changed.
     std::function<int(const GridNode &at, int layer)> layerCost;
+    // What a way that starts at 'start' costs before its first step, for a
+    // start that goes on from something already there; a negative value
+    // leaves the start out. Unset: nothing.
+    std::function<int(const GridNode &start)> startCost;
     // How many nodes the search looks on from before it gives up.
     int maxExpanded = 1000000;
 };

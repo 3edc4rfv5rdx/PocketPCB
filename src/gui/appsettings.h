@@ -1,5 +1,7 @@
 #pragma once
 
+#include "wiring.h"
+
 #include <QByteArray>
 #include <QColor>
 #include <QString>
@@ -37,6 +39,11 @@ public:
     static void setSheetBackground(const QColor &color);
     // The pale colours offered for it, white first.
     static QList<QColor> sheetBackgrounds();
+
+    // How wires are laid again when what they are joined to goes; on the
+    // grid by default.
+    static WireRouting wireRouting();
+    static void setWireRouting(WireRouting routing);
 
     // true: the point under the cursor is moved to the view centre on zoom
     // and the mouse cursor follows it; false: the point stays where it is.

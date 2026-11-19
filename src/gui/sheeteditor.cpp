@@ -752,23 +752,25 @@ void SheetEditor::updateDrag()
         if (!line.isEmpty()) {
             const Point to = (m_endIsLast ? line.last() : line.first()) + m_dragDelta;
             m_preview = isBus(m_endLine)
-                            ? withBusEndAt(m_dragStart, library, m_endLine, m_endIsLast, to)
-                            : withWireEndAt(m_dragStart, library, m_endLine, m_endIsLast, to);
+                            ? withBusEndAt(m_dragStart, library, m_endLine, m_endIsLast, to,
+                                           m_wireRouting)
+                            : withWireEndAt(m_dragStart, library, m_endLine, m_endIsLast, to,
+                                            m_wireRouting);
         }
         return;
     }
     if (hasSegment()) {
         m_preview = isBus(m_segmentLine)
                         ? withBusSegmentMoved(m_dragStart, library, m_segmentLine,
-                                              m_segmentIndex, m_dragDelta)
+                                              m_segmentIndex, m_dragDelta, m_wireRouting)
                         : withSegmentMoved(m_dragStart, library, m_segmentLine, m_segmentIndex,
-                                           m_dragDelta);
+                                           m_dragDelta, m_wireRouting);
         return;
     }
     const Sheet moved = movedObjects(m_dragBase, m_selection, m_dragDelta);
     m_preview = m_dragDetached ? moved
                                : withWiresFollowing(m_dragStart, moved, m_selection,
-                                                    m_document->design().library);
+                                                    m_document->design().library, m_wireRouting);
 }
 
 void SheetEditor::rotateSelection()
@@ -788,7 +790,7 @@ void SheetEditor::rotateSelection()
         return;
     apply(actionName(Action::Rotate),
           withWiresFollowing(*sheet, rotatedObjects(*sheet, m_selection, selectionCenter(*sheet)),
-                             m_selection, m_document->design().library));
+                             m_selection, m_document->design().library, m_wireRouting));
 }
 
 void SheetEditor::mirrorSelection()
@@ -808,7 +810,7 @@ void SheetEditor::mirrorSelection()
         return;
     apply(actionName(Action::Mirror),
           withWiresFollowing(*sheet, mirroredObjects(*sheet, m_selection, selectionCenter(*sheet)),
-                             m_selection, m_document->design().library));
+                             m_selection, m_document->design().library, m_wireRouting));
 }
 
 void SheetEditor::deleteSelection()

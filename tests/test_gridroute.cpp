@@ -155,6 +155,23 @@ private slots:
         QCOMPARE(path.first(), node(15, 1));
     }
 
+    // A start that costs more is taken only while the way from it is cheaper
+    // by more than that; a start with a negative cost is left out.
+    void startCosts()
+    {
+        GridRouteRules rules = walled(20, 3, {});
+        int far = 0;
+        rules.startCost = [&far](const GridNode &start) { return start.column == 15 ? far : 0; };
+        const QList<GridNode> starts = {node(0, 1), node(15, 1)};
+        QCOMPARE(gridRoute(rules, starts, {node(10, 1)}).first(), node(15, 1));
+        far = 60;
+        QCOMPARE(gridRoute(rules, starts, {node(10, 1)}).first(), node(0, 1));
+        far = 40;
+        QCOMPARE(gridRoute(rules, starts, {node(10, 1)}).first(), node(15, 1));
+        far = -1;
+        QCOMPARE(gridRoute(rules, starts, {node(14, 1)}).first(), node(0, 1));
+    }
+
     void offTheGridIsLeftOut()
     {
         const GridRouteRules rules = walled(4, 4, {});

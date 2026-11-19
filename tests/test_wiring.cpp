@@ -54,6 +54,71 @@ Wire wire(const QList<Point> &points)
     return result;
 }
 
+// The grid wires are laid on: half the pin grid.
+const Coord H = PIN_GRID / 2;
+
+Point h(Coord x, Coord y)
+{
+    return Point{x * H, y * H};
+}
+
+// A symbol on that grid: pins at (-4, 0) and (4, 0) steps, each two steps
+// long, wired from the left and from the right, and a body 4 by 2 steps.
+Library gridLibrary()
+{
+    Symbol symbol;
+    Pin left;
+    left.number = QStringLiteral("1");
+    left.at = h(-4, 0);
+    left.length = 2 * H;
+    left.side = PinSide::Left;
+    Pin right = left;
+    right.number = QStringLiteral("2");
+    right.side = PinSide::Right;
+    right.at = h(4, 0);
+    symbol.pins = {left, right};
+    Graphic body;
+    body.kind = GraphicKind::Rect;
+    body.a = h(-2, -1);
+    body.b = h(2, 1);
+    symbol.graphics = {body};
+    Library library;
+    library.symbols.insert(QStringLiteral("grid"), symbol);
+    Part part;
+    part.symbol = QStringLiteral("grid");
+    library.parts.insert(QStringLiteral("grid"), part);
+    return library;
+}
+
+Component gridPart(const Point &at)
+{
+    Component component = twoPin(at);
+    component.part = QStringLiteral("grid");
+    return component;
+}
+
+// True when a point of the grid inside the rectangle from 'a' to 'b', edges
+// left out, lies on the wire 'points'.
+bool passesInside(const QList<Point> &points, const Point &a, const Point &b)
+{
+    Wire line;
+    line.points = points;
+    for (Coord x = a.x + H; x < b.x; x += H) {
+        for (Coord y = a.y + H; y < b.y; y += H) {
+            if (isOnWire(line, Point{x, y}))
+                return true;
+        }
+    }
+    return false;
+}
+
+bool liesOnWire(const QList<Point> &points, const Point &point)
+{
+    Wire line;
+    line.points = points;
+    return isOnWire(line, point);
+}
+
 } // namespace
 
 class TestWiring : public QObject
@@ -962,6 +1027,146 @@ private slots:
         // The upright one stays as it is.
         QCOMPARE(withSegmentMoved(sheet, library, id, 0, mm(0, 4)).wires.at(0).points,
                  sheet.wires.at(0).points);
+    }
+
+    // On the grid a wire end dragged past a part goes round it, through
+    // neither its body nor its pins. Laid again from its free end it takes
+    // two bends, cheaper than the four of a detour off its run.
+    void gridWiresGoRoundParts()
+    {
+        const Library library = gridLibrary();
+        Sheet sheet;
+        sheet.components = {gridPart(h(10, 0))};
+        sheet.wires = {wire({h(0, 0), h(2, 0)})};
+        const QList<Point> points =
+            withWireEndAt(sheet, library, sheet.wires.first().id, true, h(20, 0),
+                          WireRouting::Grid)
+                .wires.first()
+                .points;
+        QCOMPARE(points.first(), h(0, 0));
+        QCOMPARE(points.last(), h(20, 0));
+        QCOMPARE(points.size(), 4);
+        // The body with its edges, and the lines of both pins.
+        QVERIFY(!passesInside(points, h(7, -2), h(13, 2)));
+        QVERIFY(!liesOnWire(points, h(6, 0)));
+        QVERIFY(!liesOnWire(points, h(14, 0)));
+    }
+
+    // A pin dragged aside: the last segment slides with it, as it does by
+    // hand, rather than a step being added at the end.
+    void gridWiresSlideTheLastSegment()
+    {
+        Sheet sheet;
+        sheet.wires = {wire({h(0, 0), h(10, 0), h(10, 10)})};
+        const QList<Point> points =
+            withWireEndAt(sheet, Library(), sheet.wires.first().id, true, h(12, 10),
+                          WireRouting::Grid)
+                .wires.first()
+                .points;
+        QCOMPARE(points, QList<Point>({h(0, 0), h(12, 0), h(12, 10)}));
+    }
+
+    // A part dragged down: its wire, of the ways as cheap, keeps its run and
+    // comes down into the pin.
+    void gridWiresFollowAMovedPart()
+    {
+        const Library library = gridLibrary();
+        Sheet sheet;
+        sheet.components = {gridPart(h(0, 0))};
+        sheet.wires = {wire({h(-20, 0), h(-4, 0)})};
+        const QSet<ObjectId> part = {sheet.components.first().id};
+        const Sheet moved = withWiresFollowing(sheet, movedObjects(sheet, part, h(0, 10)), part,
+                                               library, WireRouting::Grid);
+        QCOMPARE(moved.wires.first().points, QList<Point>({h(-20, 0), h(-4, 0), h(-4, 10)}));
+    }
+
+    // Another wire is crossed where that is cheapest, but neither run along
+    // nor passed through at its end, which would join them.
+    void gridWiresCrossOtherWiresOnly()
+    {
+        Sheet sheet;
+        sheet.wires = {wire({h(0, 0), h(2, 0)}), wire({h(5, -5), h(5, 5)})};
+        const auto dragged = [&sheet] {
+            return withWireEndAt(sheet, Library(), sheet.wires.first().id, true, h(10, 0),
+                                 WireRouting::Grid)
+                .wires.first()
+                .points;
+        };
+        QCOMPARE(dragged(), QList<Point>({h(0, 0), h(10, 0)}));
+        sheet.wires[1].points = {h(5, 0), h(5, 5)};
+        const QList<Point> round = dragged();
+        QCOMPARE(round.last(), h(10, 0));
+        QVERIFY(!liesOnWire(round, h(5, 0)));
+        for (Coord y = 1; y <= 5; ++y)
+            QVERIFY(!liesOnWire(round, h(5, y)));
+    }
+
+    // A wire dragged onto a bus from below its end comes to it square,
+    // not up along it.
+    void gridWiresKeepOffTheLineOfABus()
+    {
+        Sheet sheet;
+        sheet.wires = {wire({h(5, 8), h(5, 7)})};
+        Bus bus;
+        bus.id = newObjectId();
+        bus.points = {h(5, -5), h(5, 5)};
+        sheet.buses = {bus};
+        const QList<Point> points =
+            withWireEndAt(sheet, Library(), sheet.wires.first().id, true, h(5, -3),
+                          WireRouting::Grid)
+                .wires.first()
+                .points;
+        QCOMPARE(points.first(), h(5, 8));
+        QCOMPARE(points.last(), h(5, -3));
+        for (Coord y = -2; y <= 5; ++y)
+            QVERIFY(!liesOnWire(points, h(5, y)));
+    }
+
+    // A junction at the origin: one wire from the left, one going up, and
+    // a third down and right to a part's left pin. The part dragged up: the
+    // third wire leaves the junction for the nearest point of the wire going
+    // up, straight across; dragged onto that wire, the wire is cut where the
+    // pin lands on it and the third is gone.
+    void gridWiresRejoinTheirNet()
+    {
+        const Library library = gridLibrary();
+        Sheet sheet;
+        sheet.components = {gridPart(h(14, 5))};
+        sheet.wires = {wire({h(-10, 0), h(0, 0)}), wire({h(0, 0), h(0, -10)}),
+                       wire({h(0, 0), h(0, 5), h(10, 5)})};
+        const ObjectId third = sheet.wires.at(2).id;
+        const QSet<ObjectId> part = {sheet.components.first().id};
+        const auto dragged = [&](const Point &delta) {
+            return withWiresFollowing(sheet, movedObjects(sheet, part, delta), part, library,
+                                      WireRouting::Grid);
+        };
+        Sheet moved = dragged(h(0, -10));
+        QCOMPARE(moved.wires.size(), 3);
+        QCOMPARE(moved.wires.at(0).points, sheet.wires.at(0).points);
+        QCOMPARE(moved.wires.at(1).points, sheet.wires.at(1).points);
+        QCOMPARE(moved.wires.at(2).points, QList<Point>({h(0, -5), h(10, -5)}));
+
+        moved = dragged(h(-10, -10));
+        QVERIFY(std::none_of(moved.wires.cbegin(), moved.wires.cend(),
+                             [&third](const Wire &w) { return w.id == third; }));
+        QCOMPARE(moved.wires.size(), 3);
+        QVERIFY(std::any_of(moved.wires.cbegin(), moved.wires.cend(),
+                            [](const Wire &w) { return w.points.last() == h(0, -5); }));
+        // By hand the third wire stays on the junction.
+        const Sheet byHand = withWiresFollowing(sheet, movedObjects(sheet, part, h(0, -10)), part,
+                                                library, WireRouting::Hand);
+        QCOMPARE(byHand.wires.at(2).points.first(), h(0, 0));
+    }
+
+    // Off the grid the wire is laid by hand.
+    void gridWiresOffTheGridAreLaidByHand()
+    {
+        Sheet sheet;
+        sheet.wires = {wire({h(0, 0), h(10, 0)})};
+        const Point to = h(12, 3) + Point{H / 3, 0};
+        const ObjectId id = sheet.wires.first().id;
+        QCOMPARE(withWireEndAt(sheet, Library(), id, true, to, WireRouting::Grid).wires,
+                 withWireEndAt(sheet, Library(), id, true, to, WireRouting::Hand).wires);
     }
 
     void segmentsAreFoundCutAndCopied()

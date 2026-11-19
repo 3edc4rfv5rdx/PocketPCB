@@ -110,8 +110,11 @@ public:
         if (goals_.isEmpty())
             return {};
         for (const GridNode &start : starts) {
-            if (contains(start))
-                reach(State{start, NO_DIRECTION}, 0, -1);
+            if (!contains(start))
+                continue;
+            const qint64 cost = rules_.startCost ? rules_.startCost(start) : 0;
+            if (cost >= 0)
+                reach(State{start, NO_DIRECTION}, cost, -1);
         }
         int expanded = 0;
         while (!open_.empty()) {

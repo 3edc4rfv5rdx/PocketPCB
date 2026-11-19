@@ -392,6 +392,18 @@
         <translation>Мова</translation>
     </message>
     <message>
+        <source>Wire routing</source>
+        <translation>Прокладання проводів</translation>
+    </message>
+    <message>
+        <source>Simple</source>
+        <translation>Просте</translation>
+    </message>
+    <message>
+        <source>Around obstacles</source>
+        <translation>З обходом перешкод</translation>
+    </message>
+    <message>
         <source>System language</source>
         <translation>Як у системі</translation>
     </message>

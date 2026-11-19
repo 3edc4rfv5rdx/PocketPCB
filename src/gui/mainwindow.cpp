@@ -124,6 +124,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_designItem = new DesignViewItem(m_document, m_canvas->scene()->sceneRect());
     m_canvas->scene()->addItem(m_designItem);
     m_sheetEditor = new SheetEditor(m_document, m_canvas, this);
+    m_sheetEditor->setWireRouting(AppSettings::wireRouting());
 
     // The pages of the project as tabs over the canvas.
     m_sheetTabs = new SheetTabs(m_document, m_sheetEditor, this);
@@ -494,6 +495,20 @@ void MainWindow::createMenus()
             addChoice(languageMenu, languageGroup, languageName(code), language == code);
         connect(action, &QAction::triggered, this, [this, code] { setInterfaceLanguage(code); });
     }
+
+    // How wires follow what they are joined to: a few ways tried, or the
+    // cheapest way round everything on the grid.
+    QMenu *routingMenu = settingsMenu->addMenu(tr("Wire routing"));
+    QActionGroup *routingGroup = new QActionGroup(this);
+    const WireRouting routing = AppSettings::wireRouting();
+    QAction *handAction = addChoice(routingMenu, routingGroup, tr("Simple"),
+                                    routing == WireRouting::Hand);
+    connect(handAction, &QAction::triggered, this,
+            [this] { applyWireRouting(WireRouting::Hand); });
+    QAction *gridAction = addChoice(routingMenu, routingGroup, tr("Around obstacles"),
+                                    routing == WireRouting::Grid);
+    connect(gridAction, &QAction::triggered, this,
+            [this] { applyWireRouting(WireRouting::Grid); });
 }
 
 void MainWindow::setInterfaceLanguage(const QString &language)
@@ -643,6 +658,12 @@ void MainWindow::applyZoomCenterAndWarp(bool on)
 {
     m_canvas->setZoomCenterAndWarp(on);
     AppSettings::setZoomCenterAndWarp(on);
+}
+
+void MainWindow::applyWireRouting(WireRouting routing)
+{
+    m_sheetEditor->setWireRouting(routing);
+    AppSettings::setWireRouting(routing);
 }
 
 void MainWindow::newProject()

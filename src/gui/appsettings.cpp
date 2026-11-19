@@ -26,6 +26,7 @@ const char KEY_LANGUAGE[] = "interface/language";
 const char KEY_GRID_STYLE[] = "view/gridStyle";
 const char KEY_CURSOR_STYLE[] = "view/cursorStyle";
 const char KEY_ZOOM_WARP[] = "view/zoomCenterAndWarp";
+const char KEY_WIRE_ROUTING[] = "schematic/wireRouting";
 const char KEY_SHEET_BACKGROUND[] = "view/sheetBackground";
 const char KEY_LAST_LIBRARY_FOLDER[] = "library/lastFolder";
 const char KEY_USER_LIBRARY_FOLDER[] = "library/folder";
@@ -49,6 +50,9 @@ const char GRID_DOTS[] = "dots";
 const char CURSOR_ARROW[] = "arrow";
 const char CURSOR_SMALL_CROSS[] = "smallCross";
 const char CURSOR_FULL_CROSS[] = "fullCross";
+
+const char ROUTING_HAND[] = "hand";
+const char ROUTING_GRID[] = "grid";
 
 QVariant readValue(const char *key, const QVariant &defaultValue)
 {
@@ -152,6 +156,22 @@ void AppSettings::setCursorStyle(CursorStyle style)
     else if (style == CursorStyle::FullCross)
         text = CURSOR_FULL_CROSS;
     writeValue(KEY_CURSOR_STYLE, QLatin1String(text));
+}
+
+WireRouting AppSettings::wireRouting()
+{
+    const QString text = readValue(KEY_WIRE_ROUTING, QLatin1String(ROUTING_GRID)).toString();
+    if (text == QLatin1String(ROUTING_HAND))
+        return WireRouting::Hand;
+    return WireRouting::Grid;
+}
+
+void AppSettings::setWireRouting(WireRouting routing)
+{
+    const char *text = ROUTING_GRID;
+    if (routing == WireRouting::Hand)
+        text = ROUTING_HAND;
+    writeValue(KEY_WIRE_ROUTING, QLatin1String(text));
 }
 
 bool AppSettings::zoomCenterAndWarp()

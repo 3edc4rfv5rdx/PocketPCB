@@ -1,5 +1,6 @@
 #include "wiring.h"
 
+#include "gridroute.h"
 #include "paint.h"
 
 #include <QHash>
@@ -7,6 +8,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cmath>
+#include <numeric>
 #include <optional>
 #include <tuple>
 
@@ -82,6 +84,11 @@ struct Obstacles
     QList<QRectF> bodies;
     // The segments of the wires, with the wire they belong to.
     QList<QPair<ObjectId, QPair<Point, Point>>> wires;
+    // The segments of the buses, which only a wire laid on the grid keeps
+    // off.
+    QList<QPair<Point, Point>> buses;
+    // How a wire is laid among them.
+    WireRouting routing = WireRouting::Hand;
 
     // The same without the segments of the wire 'id': what that wire keeps
     // off when it is laid again.
@@ -100,10 +107,12 @@ struct Obstacles
     }
 };
 
-// The obstacles of the components of 'sheet' whose symbol 'library' has.
-Obstacles obstaclesOf(const Sheet &sheet, const Library &library)
+// The obstacles of the components of 'sheet' whose symbol 'library' has,
+// for wires laid by 'routing'.
+Obstacles obstaclesOf(const Sheet &sheet, const Library &library, WireRouting routing)
 {
     Obstacles obstacles;
+    obstacles.routing = routing;
     for (const SheetPin &pin : sheetPins(sheet, library))
         obstacles.pins.append(qMakePair(pin.at, pin.bodyEnd));
     for (const Component &component : sheet.components) {
@@ -129,6 +138,10 @@ Obstacles obstaclesOf(const Sheet &sheet, const Library &library)
     }
     for (const Wire &wire : sheet.wires)
         obstacles.add(wire);
+    for (const Bus &bus : sheet.buses) {
+        for (int i = 1; i < bus.points.size(); ++i)
+            obstacles.buses.append(qMakePair(bus.points.at(i - 1), bus.points.at(i)));
+    }
     return obstacles;
 }
 
@@ -230,11 +243,13 @@ QList<Point> bestWire(const QList<QList<Point>> &candidates, const Obstacles &ob
     return candidates.at(best);
 }
 
-// 'value' brought to the nearest half of the pin grid, where wires may bend.
+// Half the pin grid, where wires may bend.
+constexpr Coord BEND_GRID = PIN_GRID / 2;
+
+// 'value' brought to the nearest point of BEND_GRID.
 Coord onHalfGrid(Coord value)
 {
-    const Coord step = PIN_GRID / 2;
-    return Coord(std::llround(double(value) / step)) * step;
+    return Coord(std::llround(double(value) / BEND_GRID)) * BEND_GRID;
 }
 
 // The ways from 'from' to 'to', each starting with 'from' and straightened:
@@ -287,6 +302,399 @@ QList<Point> withJoints(const QList<Point> &points, const QList<Point> &joints)
     return result;
 }
 
+// Laying a wire on the grid (WireRouting::Grid): the cheapest way over the
+// nodes of BEND_GRID, found by gridRoute().
+
+// What a way costs: a step of the grid, a bend, and a wire crossed. A
+// wire laid again from a point of it gains a point for each step it keeps,
+// fewer than a crossing costs: of wires as cheap, the one that keeps more.
+constexpr int GRID_STEP_COST = 100;
+constexpr int GRID_BEND_COST = 400;
+constexpr int GRID_CROSSING_COST = 50;
+constexpr int GRID_KEPT_GAIN_MAX = GRID_CROSSING_COST - 1;
+// How far the grid reaches beyond everything on the sheet, in steps.
+constexpr int GRID_MARGIN = 8;
+// A larger grid, or a longer search, is given up for the ways by hand.
+constexpr qint64 GRID_MAX_NODES = 4000000;
+constexpr int GRID_MAX_EXPANDED = 300000;
+
+// 'a' / 'b' rounded down and up, 'b' > 0.
+Coord floorDiv(Coord a, Coord b)
+{
+    return a / b - (a % b < 0 ? 1 : 0);
+}
+
+Coord ceilDiv(Coord a, Coord b)
+{
+    return -floorDiv(-a, b);
+}
+
+// True when 'point' is a node of the grid of BEND_GRID through 'origin'.
+bool isGridNode(const Point &point, const Point &origin)
+{
+    return (point.x - origin.x) % BEND_GRID == 0 && (point.y - origin.y) % BEND_GRID == 0;
+}
+
+// The way from 'a' to 'b' in steps of one: (1, 0), (-1, 1) and so on.
+Point headingOf(const Point &a, const Point &b)
+{
+    return Point{sign(b.x - a.x), sign(b.y - a.y)};
+}
+
+// The nodes of the grid through 'origin' on the segment a-b, from 'a' to
+// 'b', ends included; none for a segment not level, upright or at 45
+// degrees.
+QList<Point> gridNodesOn(const Point &a, const Point &b, const Point &origin)
+{
+    if (a == b)
+        return isGridNode(a, origin) ? QList<Point>{a} : QList<Point>{};
+    if (!isStraightOrDiagonal(b - a))
+        return {};
+    const Point heading = headingOf(a, b);
+    const Coord length = qMax(std::llabs(b.x - a.x), std::llabs(b.y - a.y));
+    // The first distance along the segment that is on the grid across it.
+    const Coord along = heading.x != 0 ? origin.x - a.x : origin.y - a.y;
+    const Coord first =
+        ((heading.x != 0 ? heading.x : heading.y) * along % BEND_GRID + BEND_GRID) % BEND_GRID;
+    QList<Point> nodes;
+    for (Coord t = first; t <= length; t += BEND_GRID) {
+        const Point node{a.x + heading.x * t, a.y + heading.y * t};
+        if (isGridNode(node, origin))
+            nodes.append(node);
+    }
+    return nodes;
+}
+
+// Where a wire laid on the grid may start: a point, the points of the wire
+// it goes on from that come before it, and the way that wire goes into it
+// (zero for none): a first step another way is a bend, and none goes back.
+// What it costs is what the wire it keeps costs (keptCost()), so that the
+// cheapest wire is laid as a whole.
+struct GridStart
+{
+    Point at;
+    QList<Point> before;
+    Point heading;
+    int cost = 0;
+};
+
+// What the wire 'points' would cost were it laid on the grid, its level
+// and upright length in steps and its bends, less the gain for the steps it
+// keeps.
+int keptCost(const QList<Point> &points)
+{
+    const QList<Point> wire = straightened(points);
+    qint64 length = 0;
+    for (int i = 1; i < wire.size(); ++i)
+        length += std::llabs(wire.at(i).x - wire.at(i - 1).x)
+                  + std::llabs(wire.at(i).y - wire.at(i - 1).y);
+    const qint64 steps = length / BEND_GRID;
+    return int(length * GRID_STEP_COST / BEND_GRID
+               + qMax<qint64>(0, wire.size() - 2) * GRID_BEND_COST
+               - qMin<qint64>(steps, GRID_KEPT_GAIN_MAX));
+}
+
+// The cheapest way from one of 'starts' to 'to' over the nodes of BEND_GRID
+// through 'to', as the points of the whole wire: the 'before' of the start
+// it takes, that start and the corners after it. It goes through no body of
+// a part, no pin's line, no point of another wire or a bus and no point of
+// 'own' (the wire it goes on from), and along no other wire or bus; to cross
+// one costs a little. Empty when there is no such way, when no start is on that grid or
+// when the grid would be too large: then it is laid by hand.
+QList<Point> gridLaid(const Obstacles &obstacles, const QList<Point> &own,
+                      const QList<GridStart> &starts, const Point &to)
+{
+    const Coord step = BEND_GRID;
+    // The nodes of the grid cover everything with a margin round it.
+    Coord lowX = to.x, highX = to.x, lowY = to.y, highY = to.y;
+    const auto cover = [&](double x, double y) {
+        lowX = qMin(lowX, Coord(std::floor(x)));
+        highX = qMax(highX, Coord(std::ceil(x)));
+        lowY = qMin(lowY, Coord(std::floor(y)));
+        highY = qMax(highY, Coord(std::ceil(y)));
+    };
+    for (const GridStart &start : starts)
+        cover(start.at.x, start.at.y);
+    for (const Point &point : own)
+        cover(point.x, point.y);
+    for (const auto &[tip, end] : obstacles.pins) {
+        cover(tip.x, tip.y);
+        cover(end.x, end.y);
+    }
+    for (const QRectF &body : obstacles.bodies) {
+        cover(body.left(), body.top());
+        cover(body.right(), body.bottom());
+    }
+    for (const auto &[owner, segment] : obstacles.wires) {
+        cover(segment.first.x, segment.first.y);
+        cover(segment.second.x, segment.second.y);
+    }
+    for (const auto &[a, b] : obstacles.buses) {
+        cover(a.x, a.y);
+        cover(b.x, b.y);
+    }
+    const Coord left = to.x - (ceilDiv(to.x - lowX, step) + GRID_MARGIN) * step;
+    const Coord top = to.y - (ceilDiv(to.y - lowY, step) + GRID_MARGIN) * step;
+    const qint64 columns = (to.x - left) / step + ceilDiv(highX - to.x, step) + GRID_MARGIN + 1;
+    const qint64 rows = (to.y - top) / step + ceilDiv(highY - to.y, step) + GRID_MARGIN + 1;
+    if (columns * rows > GRID_MAX_NODES)
+        return {};
+
+    // 'point', a node of the grid, as a node of gridRoute().
+    const auto nodeOf = [&](const Point &point) {
+        return GridNode{int((point.x - left) / step), int((point.y - top) / step), 0};
+    };
+    const auto pointOf = [&](const GridNode &node) {
+        return Point{left + node.column * step, top + node.row * step};
+    };
+    const auto indexOf = [&](int column, int row) { return qint64(row) * columns + column; };
+    // A step, by the node it starts from on the left or above it, times
+    // two, plus one for an upright step.
+    const auto stepIndex = [&](const GridNode &a, const GridNode &b) {
+        return a.row == b.row ? indexOf(qMin(a.column, b.column), a.row) * 2
+                              : indexOf(a.column, qMin(a.row, b.row)) * 2 + 1;
+    };
+
+    QSet<qint64> blocked;
+    QSet<qint64> blockedSteps;
+    QSet<qint64> crossed;
+    const auto blockNodesOn = [&](const Point &a, const Point &b, QSet<qint64> &set) {
+        for (const Point &node : gridNodesOn(a, b, to)) {
+            const GridNode n = nodeOf(node);
+            set.insert(indexOf(n.column, n.row));
+        }
+    };
+    // The steps that share some length with the level or upright segment
+    // a-b on a line of the grid.
+    const auto blockStepsAlong = [&](const Point &a, const Point &b) {
+        if (a.y == b.y && a.x != b.x && (a.y - to.y) % step == 0) {
+            const int row = int((a.y - top) / step);
+            const Coord first = floorDiv(qMin(a.x, b.x) - left, step);
+            const Coord last = ceilDiv(qMax(a.x, b.x) - left, step);
+            for (Coord column = first; column < last; ++column)
+                blockedSteps.insert(indexOf(int(column), row) * 2);
+        } else if (a.x == b.x && a.y != b.y && (a.x - to.x) % step == 0) {
+            const int column = int((a.x - left) / step);
+            const Coord first = floorDiv(qMin(a.y, b.y) - top, step);
+            const Coord last = ceilDiv(qMax(a.y, b.y) - top, step);
+            for (Coord row = first; row < last; ++row)
+                blockedSteps.insert(indexOf(column, int(row)) * 2 + 1);
+        }
+    };
+    for (const auto &[tip, end] : obstacles.pins) {
+        blockNodesOn(tip, end, blocked);
+        blockStepsAlong(tip, end);
+    }
+    for (const QRectF &body : obstacles.bodies) {
+        const auto inside = [&body](double x, double y) {
+            return x > body.left() && x < body.right() && y > body.top() && y < body.bottom();
+        };
+        const int firstColumn =
+            int(qMax<Coord>(0, floorDiv(Coord(std::floor(body.left())) - left, step)));
+        const int lastColumn =
+            int(qMin<Coord>(columns - 1, ceilDiv(Coord(std::ceil(body.right())) - left, step)));
+        const int firstRow =
+            int(qMax<Coord>(0, floorDiv(Coord(std::floor(body.top())) - top, step)));
+        const int lastRow =
+            int(qMin<Coord>(rows - 1, ceilDiv(Coord(std::ceil(body.bottom())) - top, step)));
+        for (int row = firstRow; row <= lastRow; ++row) {
+            for (int column = firstColumn; column <= lastColumn; ++column) {
+                const Point p = pointOf(GridNode{column, row, 0});
+                if (inside(p.x, p.y))
+                    blocked.insert(indexOf(column, row));
+                if (inside(p.x + step / 2.0, p.y))
+                    blockedSteps.insert(indexOf(column, row) * 2);
+                if (inside(p.x, p.y + step / 2.0))
+                    blockedSteps.insert(indexOf(column, row) * 2 + 1);
+            }
+        }
+    }
+    for (const auto &[owner, segment] : obstacles.wires) {
+        blockNodesOn(segment.first, segment.first, blocked);
+        blockNodesOn(segment.second, segment.second, blocked);
+        blockNodesOn(segment.first, segment.second, crossed);
+        blockStepsAlong(segment.first, segment.second);
+    }
+    // A bus is crossed like a wire and never run along; a wire may end on it.
+    for (const auto &[a, b] : obstacles.buses) {
+        blockNodesOn(a, a, blocked);
+        blockNodesOn(b, b, blocked);
+        blockNodesOn(a, b, crossed);
+        blockStepsAlong(a, b);
+    }
+    QSet<qint64> ownNodes;
+    for (int i = 0; i < own.size(); ++i)
+        blockNodesOn(own.at(i), own.at(i + 1 < own.size() ? i + 1 : i), ownNodes);
+
+    const GridNode goal = nodeOf(to);
+    QHash<qint64, GridStart> startAt;
+    QList<GridNode> startNodes;
+    for (const GridStart &start : starts) {
+        if (!isGridNode(start.at, to))
+            continue;
+        const GridNode node = nodeOf(start.at);
+        const qint64 index = indexOf(node.column, node.row);
+        if (!startAt.contains(index)) {
+            startAt.insert(index, start);
+            startNodes.append(node);
+        }
+    }
+    // The wire would come back onto itself.
+    const qint64 goalIndex = indexOf(goal.column, goal.row);
+    if (ownNodes.contains(goalIndex) && !startAt.contains(goalIndex))
+        return {};
+
+    GridRouteRules rules;
+    rules.columns = int(columns);
+    rules.rows = int(rows);
+    rules.straightCost = GRID_STEP_COST;
+    rules.bend90Cost = GRID_BEND_COST;
+    rules.maxExpanded = GRID_MAX_EXPANDED;
+    rules.startCost = [&](const GridNode &node) {
+        return startAt.value(indexOf(node.column, node.row)).cost;
+    };
+    rules.stepCost = [&](const GridNode &from, const GridNode &next) {
+        if (blockedSteps.contains(stepIndex(from, next)))
+            return -1;
+        const qint64 index = indexOf(next.column, next.row);
+        if (next != goal && (blocked.contains(index) || ownNodes.contains(index)))
+            return -1;
+        int cost = crossed.contains(index) ? GRID_CROSSING_COST : 0;
+        const auto start = startAt.constFind(indexOf(from.column, from.row));
+        if (start != startAt.constEnd() && start->heading != Point()) {
+            const Point heading{next.column - from.column, next.row - from.row};
+            if (heading == Point() - start->heading)
+                return -1;
+            if (heading != start->heading)
+                cost += GRID_BEND_COST;
+        }
+        return cost;
+    };
+    const QList<GridNode> path = gridRoute(rules, startNodes, {goal});
+    if (path.isEmpty())
+        return {};
+    const GridStart &start = startAt[indexOf(path.first().column, path.first().row)];
+    QList<Point> points = start.before;
+    points.append(start.at);
+    const QList<GridNode> corners = gridCorners(path);
+    for (int i = 1; i < corners.size(); ++i)
+        points.append(pointOf(corners.at(i)));
+    return straightened(points);
+}
+
+// The wires of 'obstacles' joined to the point 'at' and those joined to
+// them, one through another, when they hold together without a wire ending
+// at 'at': where a wire that ends there alone could be joined instead. Two
+// wires are joined where an end of one lies on the other or both end on
+// the end of one pin. None when the wires on 'at' are not joined to each
+// other but through that point.
+QList<QList<Point>> netWiresAt(const Point &at, const Obstacles &obstacles)
+{
+    // The wires, from their segments in the order they were added.
+    QList<QList<Point>> wires;
+    ObjectId last;
+    for (const auto &[owner, segment] : obstacles.wires) {
+        if (wires.isEmpty() || owner != last || wires.last().last() != segment.first) {
+            wires.append({segment.first});
+            last = owner;
+        }
+        wires.last().append(segment.second);
+    }
+    QList<int> group(wires.size());
+    std::iota(group.begin(), group.end(), 0);
+    const auto root = [&group](int i) {
+        while (group.at(i) != i)
+            i = group.at(i);
+        return i;
+    };
+    const auto join = [&](int a, int b) { group[root(a)] = root(b); };
+    QSet<quint64> tips;
+    for (const auto &[tip, end] : obstacles.pins)
+        tips.insert(key(tip));
+    // The first wire found ending on each pin.
+    QHash<quint64, int> onTip;
+    for (int i = 0; i < wires.size(); ++i) {
+        for (const Point &end : {wires.at(i).first(), wires.at(i).last()}) {
+            if (!tips.contains(key(end)))
+                continue;
+            if (onTip.contains(key(end)))
+                join(i, onTip.value(key(end)));
+            else
+                onTip.insert(key(end), i);
+        }
+    }
+    for (int a = 0; a < wires.size(); ++a) {
+        for (int b = a + 1; b < wires.size(); ++b) {
+            const QList<Point> &p = wires.at(a);
+            const QList<Point> &q = wires.at(b);
+            if (liesOn(q, p.first()) || liesOn(q, p.last()) || liesOn(p, q.first())
+                || liesOn(p, q.last()))
+                join(a, b);
+        }
+    }
+    int net = -1;
+    for (int i = 0; i < wires.size(); ++i) {
+        if (!liesOn(wires.at(i), at))
+            continue;
+        if (net >= 0 && root(i) != net)
+            return {};
+        net = root(i);
+    }
+    QList<QList<Point>> result;
+    for (int i = 0; i < wires.size(); ++i) {
+        if (net >= 0 && root(i) == net)
+            result.append(wires.at(i));
+    }
+    return result;
+}
+
+// ledTo() on the grid: the cheapest wire that keeps the wire up to the last
+// point of 'kept' on it (its first point when 'kept' has none), laid again
+// from there or from a point after it, keeping it up to that point; of
+// wires as cheap, the one that keeps more. With 'rejoin', a wire held only
+// by its first point, which stays, may instead be laid from any point of
+// the wires joined to it there (netWiresAt()), leaving that point. Empty
+// when gridLaid() finds no way.
+QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QList<Point> &kept,
+                       bool rejoin, const Obstacles &obstacles)
+{
+    const QList<Point> points = withJoints(wirePoints, kept);
+    int from = 0;
+    for (int i = points.size() - 1; i > 0; --i) {
+        if (kept.contains(points.at(i))) {
+            from = i;
+            break;
+        }
+    }
+    // From the far end back: of starts as cheap, the one that keeps more.
+    QList<GridStart> starts;
+    for (int i = points.size() - 1; i >= from; --i) {
+        if (i + 1 < points.size()) {
+            const Point heading = headingOf(points.at(i), points.at(i + 1));
+            const QList<Point> nodes = gridNodesOn(points.at(i), points.at(i + 1), to);
+            for (int j = nodes.size() - 1; j >= 0; --j) {
+                if (nodes.at(j) != points.at(i) && nodes.at(j) != points.at(i + 1)) {
+                    const QList<Point> before = points.mid(0, i + 1);
+                    starts.append(GridStart{nodes.at(j), before, heading,
+                                            keptCost(before + QList<Point>{nodes.at(j)})});
+                }
+            }
+        }
+        const Point heading = i > 0 ? headingOf(points.at(i - 1), points.at(i)) : Point();
+        starts.append(
+            GridStart{points.at(i), points.mid(0, i), heading, keptCost(points.mid(0, i + 1))});
+    }
+    if (rejoin && from == 0) {
+        for (const QList<Point> &wire : netWiresAt(points.first(), obstacles)) {
+            for (int i = 1; i < wire.size(); ++i) {
+                for (const Point &node : gridNodesOn(wire.at(i - 1), wire.at(i), to))
+                    starts.append(GridStart{node, {}, Point()});
+            }
+        }
+    }
+    return gridLaid(obstacles, points, starts, to);
+}
+
 // The wire 'points' (two or more) with its last point gone to 'to'.
 //
 // First the way a drag in other editors does it: the last segment slides
@@ -301,10 +709,16 @@ QList<Point> withJoints(const QList<Point> &points, const QList<Point> &joints)
 // a wire is laid again only as far back as needed to keep it clear. The
 // points of 'kept' inside its segments count as its points for this. When
 // nothing comes clear, the least bad of all; when no candidate keeps
-// 'kept', the least bad of those that do not.
+// 'kept', the least bad of those that do not. On the grid, gridLedTo()
+// with 'rejoin' when it finds a way.
 QList<Point> ledTo(const QList<Point> &wirePoints, const Point &to, const QList<Point> &kept,
-                   const Obstacles &obstacles)
+                   bool rejoin, const Obstacles &obstacles)
 {
+    if (obstacles.routing == WireRouting::Grid) {
+        const QList<Point> laid = gridLedTo(wirePoints, to, kept, rejoin, obstacles);
+        if (!laid.isEmpty())
+            return laid;
+    }
     const QList<Point> points = withJoints(wirePoints, kept);
     const auto keepsAll = [&](const QList<Point> &candidate) {
         return std::all_of(kept.cbegin(), kept.cend(),
@@ -353,10 +767,16 @@ QList<Point> ledTo(const QList<Point> &wirePoints, const Point &to, const QList<
     return bestWire(unkept, obstacles);
 }
 
-// A wire from 'from' to 'to', the least bad of routesBetween().
+// A wire from 'from' to 'to', the least bad of routesBetween(); on the
+// grid, gridLaid() when it finds a way.
 QList<Point> laidBetween(const Point &from, const Point &to, bool upright,
                          const Obstacles &obstacles)
 {
+    if (obstacles.routing == WireRouting::Grid) {
+        const QList<Point> laid = gridLaid(obstacles, {}, {GridStart{from, {}, Point()}}, to);
+        if (!laid.isEmpty())
+            return laid;
+    }
     return bestWire(routesBetween(from, to, upright), obstacles);
 }
 
@@ -411,10 +831,25 @@ void cutAt(QList<Wire> &wires, const Point &point)
 // A new wire to 'to' from 'from' or from the wires of 'wires' that pass
 // through 'from' or end there: from 'from' itself, or from the point of one
 // of their segments straight across from 'to', joining the wire there. The
-// least bad of all the ways (bestWire()).
+// least bad of all the ways (bestWire()). On the grid, gridLaid() from
+// 'from' or any point of those wires, when it finds a way.
 QList<Point> laidToJoint(const Point &from, const Point &to, const QList<Wire> &wires,
                          const Obstacles &obstacles)
 {
+    if (obstacles.routing == WireRouting::Grid) {
+        QList<GridStart> starts = {GridStart{from, {}, Point()}};
+        for (const Wire &wire : wires) {
+            if (wire.points.size() < 2 || !isOnWire(wire, from))
+                continue;
+            for (int i = 1; i < wire.points.size(); ++i) {
+                for (const Point &node : gridNodesOn(wire.points.at(i - 1), wire.points.at(i), to))
+                    starts.append(GridStart{node, {}, Point()});
+            }
+        }
+        const QList<Point> laid = gridLaid(obstacles, {}, starts, to);
+        if (!laid.isEmpty())
+            return laid;
+    }
     QList<Point> starts = {from};
     for (const Wire &wire : wires) {
         if (wire.points.size() < 2 || !isOnWire(wire, from))
@@ -572,10 +1007,18 @@ QList<Point> jointsOn(const Sheet &sheet, const Wire &wire, const QList<ObjectId
 }
 
 // The wire 'points' (two or more) with a way from its last point back to
-// 'to' added, the least bad of routesBetween(); nothing is cut away.
+// 'to' added, the least bad of routesBetween(); on the grid, gridLaid()
+// when it finds a way. Nothing is cut away.
 QList<Point> ledBack(const QList<Point> &points, const Point &to, const Obstacles &obstacles)
 {
     const int n = points.size();
+    if (obstacles.routing == WireRouting::Grid) {
+        const GridStart start{points.last(), points.mid(0, n - 1),
+                              headingOf(points.at(n - 2), points.last())};
+        const QList<Point> laid = gridLaid(obstacles, points, {start}, to);
+        if (!laid.isEmpty())
+            return laid;
+    }
     const bool vertical = points.at(n - 2).x == points.at(n - 1).x;
     QList<QList<Point>> candidates;
     for (const QList<Point> &route : routesBetween(points.last(), to, vertical))
@@ -860,7 +1303,8 @@ QList<Point> simplifiedWire(const QList<Point> &points)
 }
 
 static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
-                            const QSet<ObjectId> &moved, const Library &library)
+                            const QSet<ObjectId> &moved, const Library &library,
+                            WireRouting routing)
 {
     // A wire left in place that passes through a pin that goes is cut there
     // first, in both sheets alike, so that its two parts end on the pin and
@@ -888,7 +1332,7 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
     const PointFollower follower(before, after, moved, library);
     // The wires that have an end to follow are no obstacles where they were:
     // each becomes one again where it is laid.
-    Obstacles obstacles = obstaclesOf(after, library);
+    Obstacles obstacles = obstaclesOf(after, library, routing);
     QSet<ObjectId> following;
     for (const Wire &wire : before.wires) {
         if (!moved.contains(wire.id) && wire.points.size() >= 2
@@ -1016,13 +1460,15 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
                 const bool upright = points.at(0).x == points.at(1).x;
                 points = laidBetween(*newFirst, *newLast, upright, obstacles.without(wire.id));
             } else {
+                // An end that stays may leave its point for another of the
+                // wires joined to it there.
                 if (newLast)
-                    points = ledTo(points, *newLast, kept, obstacles.without(wire.id));
+                    points = ledTo(points, *newLast, kept, !newFirst, obstacles.without(wire.id));
                 if (newFirst && points.size() >= 2) {
                     std::reverse(points.begin(), points.end());
                     if (newLast)
                         kept.append(*newLast);
-                    points = ledTo(points, *newFirst, kept, obstacles.without(wire.id));
+                    points = ledTo(points, *newFirst, kept, !newLast, obstacles.without(wire.id));
                     std::reverse(points.begin(), points.end());
                 }
             }
@@ -1044,7 +1490,7 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
     QSet<QPair<quint64, quint64>> joined;
     Sheet laid = after;
     laid.wires = wires;
-    const Obstacles now = obstaclesOf(laid, library);
+    const Obstacles now = obstaclesOf(laid, library, routing);
     for (const PointFollower::MovedPin &pin : follower.movedPins()) {
         if (!follower.isStillPin(pin.from) || pin.to == pin.from)
             continue;
@@ -1095,7 +1541,7 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
 }
 
 static Sheet wireEndAt(const Sheet &sheet, const Library &library, const ObjectId &wire,
-                       bool last, const Point &to)
+                       bool last, const Point &to, WireRouting routing)
 {
     Sheet result = sheet;
     for (int i = 0; i < result.wires.size(); ++i) {
@@ -1108,7 +1554,9 @@ static Sheet wireEndAt(const Sheet &sheet, const Library &library, const ObjectI
         // The other wires joined to this one, apart from at the end that
         // goes, must stay joined.
         const QList<Point> kept = jointsOn(sheet, dragged, {}, {points.last()});
-        points = ledTo(points, to, kept, obstaclesOf(sheet, library).without(wire));
+        // The wire dragged keeps its other end where it is.
+        points = ledTo(points, to, kept, false,
+                       obstaclesOf(sheet, library, routing).without(wire));
         if (!last)
             std::reverse(points.begin(), points.end());
         if (points.size() < 2)
@@ -1121,7 +1569,7 @@ static Sheet wireEndAt(const Sheet &sheet, const Library &library, const ObjectI
 }
 
 static Sheet segmentMoved(const Sheet &sheet, const Library &library, const ObjectId &wire,
-                          int index, const Point &delta)
+                          int index, const Point &delta, WireRouting routing)
 {
     int at = -1;
     for (int i = 0; i < sheet.wires.size(); ++i) {
@@ -1146,7 +1594,7 @@ static Sheet segmentMoved(const Sheet &sheet, const Library &library, const Obje
         return sheet;
     const Point na = a + d;
     const Point nb = b + d;
-    const Obstacles obstacles = obstaclesOf(sheet, library);
+    const Obstacles obstacles = obstaclesOf(sheet, library, routing);
     // An end of the wire stays where a pin, another wire or a bus holds it.
     const QList<Point> pins = pinPoints(sheet, library);
     const auto held = [&](const Point &point) {
@@ -1240,7 +1688,7 @@ static Sheet segmentMoved(const Sheet &sheet, const Library &library, const Obje
         return std::nullopt;
     };
     // What they keep off: the wire where it is now, not where it was.
-    const Obstacles around = obstaclesOf(result, library);
+    const Obstacles around = obstaclesOf(result, library, routing);
     for (int i = 0; i < result.wires.size(); ++i) {
         if (i == at)
             continue;
@@ -1262,13 +1710,13 @@ static Sheet segmentMoved(const Sheet &sheet, const Library &library, const Obje
         const Obstacles own = around.without(other.id);
         QList<Point> moving = other.points;
         if (last)
-            moving = ledTo(moving, *last, jointsOn(sheet, other, {wire}, {lastEnd}), own);
+            moving = ledTo(moving, *last, jointsOn(sheet, other, {wire}, {lastEnd}), !first, own);
         if (first && moving.size() >= 2) {
             QList<Point> kept = jointsOn(sheet, other, {wire}, {firstEnd});
             if (last)
                 kept.append(*last);
             std::reverse(moving.begin(), moving.end());
-            moving = ledTo(moving, *first, kept, own);
+            moving = ledTo(moving, *first, kept, !last, own);
             std::reverse(moving.begin(), moving.end());
         }
         other.points = moving;
@@ -1483,7 +1931,7 @@ Sheet wireAsBus(const Sheet &edited, const Sheet &original, const ObjectId &id, 
 } // namespace
 
 Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
-                         const Library &library)
+                         const Library &library, WireRouting routing)
 {
     // A moved bus takes the wires that enter it along, as a moved wire does
     // the wires on it; it goes itself just as it was moved.
@@ -1497,7 +1945,7 @@ Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<Obj
             to = busAsWire(to, bus.id);
         }
     }
-    Sheet followed = wiresFollowing(from, to, moved, library);
+    Sheet followed = wiresFollowing(from, to, moved, library, routing);
     for (const ObjectId &bus : buses)
         followed = wireAsBus(followed, after, bus, true);
     followed = withBusEntriesKept(before, followed);
@@ -1505,32 +1953,33 @@ Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<Obj
 }
 
 Sheet withBusEndAt(const Sheet &sheet, const Library &library, const ObjectId &bus, bool last,
-                   const Point &to)
+                   const Point &to, WireRouting routing)
 {
-    const Sheet laid = wireEndAt(busAsWire(sheet, bus), library, bus, last, to);
+    const Sheet laid = wireEndAt(busAsWire(sheet, bus), library, bus, last, to, routing);
     const Sheet result = withBusEntriesKept(sheet, wireAsBus(laid, sheet, bus, false));
     return withMarksCarried(sheet, result, QSet<ObjectId>(), library);
 }
 
 Sheet withBusSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &bus,
-                          int index, const Point &delta)
+                          int index, const Point &delta, WireRouting routing)
 {
-    const Sheet laid = segmentMoved(busAsWire(sheet, bus), library, bus, index, delta);
+    const Sheet laid = segmentMoved(busAsWire(sheet, bus), library, bus, index, delta, routing);
     const Sheet result = withBusEntriesKept(sheet, wireAsBus(laid, sheet, bus, false));
     return withMarksCarried(sheet, result, QSet<ObjectId>(), library);
 }
 
 Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &wire, bool last,
-                    const Point &to)
+                    const Point &to, WireRouting routing)
 {
-    return withMarksCarried(sheet, wireEndAt(sheet, library, wire, last, to), QSet<ObjectId>(),
-                             library);
+    return withMarksCarried(sheet, wireEndAt(sheet, library, wire, last, to, routing),
+                            QSet<ObjectId>(), library);
 }
 
 Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &wire,
-                       int index, const Point &delta)
+                       int index, const Point &delta, WireRouting routing)
 {
-    const Sheet moved = withBusEntriesKept(sheet, segmentMoved(sheet, library, wire, index, delta));
+    const Sheet moved =
+        withBusEntriesKept(sheet, segmentMoved(sheet, library, wire, index, delta, routing));
     return withMarksCarried(sheet, moved, QSet<ObjectId>(), library);
 }
 

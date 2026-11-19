@@ -90,6 +90,13 @@ QList<Point> wireRoute(const Point &from, const Point &to, bool swapped, bool di
 // that go on straight ahead.
 QList<Point> simplifiedWire(const QList<Point> &points);
 
+// How the program lays a wire again when what it is joined to goes: Hand
+// tries a few ways with one or two bends and takes the least bad; Grid
+// searches the nodes of half the pin grid for the cheapest way round the
+// bodies of parts, the pins and the other wires, and lays it by hand where
+// the wire is off that grid or no way is found.
+enum class WireRouting { Hand, Grid };
+
 // 'after', where the objects 'moved' of 'before' have been moved, turned or
 // mirrored, with the other wires kept on them. A wire end that lay on a pin
 // of a moved component or on a moved wire goes where that point went: the
@@ -122,8 +129,12 @@ QList<Point> simplifiedWire(const QList<Point> &points);
 // the pin; a label that lay on a wire stays as far along the same segment as
 // it was while the wire keeps its number of corners, else where it was while
 // still on the wire, else at the nearest point of the wire.
+// The ways above are those of WireRouting::Hand. On the grid a wire end
+// that goes is led on from the point of the wire, after the last one that
+// another wire is joined to, where that costs least, and a wire laid anew
+// or led back takes the cheapest way there.
 Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
-                         const Library &library);
+                         const Library &library, WireRouting routing = WireRouting::Hand);
 
 // 'sheet' with one end of the wire 'wire' taken to 'to': the last end when
 // 'last', else the first. The wire is led there the way withWiresFollowing()
@@ -131,7 +142,7 @@ Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<Obj
 // left with no length; labels on it go with it as in withWiresFollowing().
 // 'sheet' as it is when it has no such wire.
 Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &wire, bool last,
-                    const Point &to);
+                    const Point &to, WireRouting routing = WireRouting::Hand);
 
 // 'sheet' with the segment 'index' (from point 'index' to the next) of the
 // wire 'wire' moved by 'delta', across itself only when it is level or
@@ -145,15 +156,15 @@ Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &
 // in withWiresFollowing(). 'sheet' as it is when it has no such segment or
 // the move is nothing.
 Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &wire,
-                       int index, const Point &delta);
+                       int index, const Point &delta, WireRouting routing = WireRouting::Hand);
 
 // withWireEndAt() and withSegmentMoved() for the bus 'bus': it is laid the
 // way a wire is, and the wires that enter it go with it as the wires on a
 // wire do, entering it at 45 degrees again. A whole bus moved in
 // withWiresFollowing() takes the wires that enter it along the same way.
 Sheet withBusEndAt(const Sheet &sheet, const Library &library, const ObjectId &bus, bool last,
-                   const Point &to);
+                   const Point &to, WireRouting routing = WireRouting::Hand);
 Sheet withBusSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &bus,
-                          int index, const Point &delta);
+                          int index, const Point &delta, WireRouting routing = WireRouting::Hand);
 
 } // namespace ppcb
