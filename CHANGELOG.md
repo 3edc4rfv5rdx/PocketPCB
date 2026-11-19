@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A click near a part's designator or value takes it only on its letters, so that a text beside another part no longer takes the click meant for it
 - E: A click on a part takes that part, not one beside it whose designator or value reaches over it
 - N: Resistors have a rated power, 0.125 W at first, chosen in the properties panel or the menu of the sheet and marked inside the body after GOST, Roman numerals from 5 W
 - F: Deleting a part deletes the no-connect marks on its pins too, unless a pin of another part is there

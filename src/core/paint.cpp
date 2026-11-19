@@ -30,8 +30,9 @@ const double ORIGIN_MARK_SIZE = 0.8;
 const double PAD_TEXT_SHARE = 0.45;
 // The lines of the letters are this share of the height of capitals wide.
 const double STROKE_WIDTH_SHARE = 0.12;
-// Width of a letter as a share of the text height, for bounds only.
-const double LETTER_WIDTH_SHARE = 1.0;
+// How far letters such as 'y' reach under the baseline, as a share of the
+// height of capitals.
+const double DESCENT_SHARE = 1.0 / 3;
 // A dashed line: the length of a dash and of the gap after it.
 const double DASH_LENGTH = 1.5;
 const double DASH_GAP = 1.0;
@@ -163,16 +164,23 @@ void drawText(QPainter &painter, const QPointF &at, const QString &text, double 
     painter.restore();
 }
 
-// A rectangle surely holding a text drawn by drawText().
+// A rectangle holding a text drawn by drawText(), not turned: from the top
+// of its capitals to the bottom of letters such as 'y', the width of its
+// letters, and the width of their lines round that. For no text, one of
+// no size at 'at', which holds no point.
 QRectF textBounds(const QPointF &at, const QString &text, double height, TextAlign align)
 {
-    const double width = text.size() * height * LETTER_WIDTH_SHARE;
+    if (text.isEmpty())
+        return QRectF(at, QSizeF());
+    const double width = strokeText(text).width * height;
     double left = at.x();
     if (align == TextAlign::Center)
         left -= width / 2;
     else if (align == TextAlign::Right)
         left -= width;
-    return QRectF(left, at.y() - height, width, 2 * height);
+    const double margin = height * STROKE_WIDTH_SHARE;
+    return QRectF(left - margin, at.y() - height / 2 - margin, width + 2 * margin,
+                  height * (1 + DESCENT_SHARE) + 2 * margin);
 }
 
 // Dashes of the same length whatever the line width. Their ends are cut
