@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The close button on the BOM tab has no padding, so the tabs keep the height of their text
 - F: The BOM tab is hidden until View > BOM shows it, closes by the button on it, and stays as left the next time
 - F: The BOM has no power column: the power most resistors have is said once below the list, another one follows the value
 - N: The BOM puts the parts under group headings, such as Resistors or Capacitors, in the tab and in TXT, CSV and PDF, and shows the footprint and the comment last

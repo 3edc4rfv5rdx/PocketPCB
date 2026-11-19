@@ -62,6 +62,12 @@ SheetTabs::SheetTabs(Document *document, SheetEditor *editor, QWidget *parent)
     m_bomClose->setIcon(style()->standardIcon(QStyle::SP_TitleBarCloseButton));
     m_bomClose->setToolTip(tr("Close"));
     m_bomClose->setAutoRaise(true);
+    // No padding: as large as the close button the style draws on a tab,
+    // so that the tabs keep the height of their text.
+    const QSize closeSize(style()->pixelMetric(QStyle::PM_TabCloseIndicatorWidth, nullptr, m_bar),
+                          style()->pixelMetric(QStyle::PM_TabCloseIndicatorHeight, nullptr, m_bar));
+    m_bomClose->setIconSize(closeSize);
+    m_bomClose->setFixedSize(closeSize);
     m_bomClose->hide();
     connect(m_bomClose, &QToolButton::clicked, this, &SheetTabs::bomClosed);
 
