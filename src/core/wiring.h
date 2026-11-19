@@ -126,6 +126,13 @@ enum class WireRouting { Hand, Grid };
 // that is moved as well just goes, whatever else lay there.
 // A wire left in place that passes through a pin that goes counts as joined
 // to it: it is cut at the pin first, and its two parts follow.
+// A pin with nothing on it but the ends of two wires in one line, one going
+// on the way the other comes, leaves the line they make as it is, and what
+// else lies on the line stays on it: going along the line onto one of them,
+// short of its next point, it slides along the line, one wire growing as
+// the other shrinks; going anywhere else, it gets a new wire from the line,
+// laid the way a pin that touched a pin left in place gets one. The far ends
+// of the two wires must stay for this.
 // A wire that entered a bus at 45 degrees and still ends on one enters it
 // at 45 degrees again where it comes to it (see withBusEntry()).
 // A label or a no-connect mark not among 'moved' that lay on a pin goes with

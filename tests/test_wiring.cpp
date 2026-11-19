@@ -1029,6 +1029,43 @@ private slots:
                  sheet.wires.at(0).points);
     }
 
+    // An upright part whose lower pin joins a level line of two wires, with
+    // a third wire hanging from the right one: moved along the line past
+    // it, the pin slides along the line, which stays as it is, instead of
+    // one wire going round the other.
+    void aPinSlidesAlongTheLineOfItsTwoWires()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.components = {twoPin(mm(0, 0), 90)};
+        sheet.wires = {wire({mm(-20, 5), mm(0, 5)}), wire({mm(0, 5), mm(20, 5)}),
+                       wire({mm(3, 5), mm(3, 15)})};
+        const QSet<ObjectId> part = {sheet.components.first().id};
+        for (const WireRouting routing : {WireRouting::Hand, WireRouting::Grid}) {
+            const QList<Wire> wires =
+                withWiresFollowing(sheet, movedObjects(sheet, part, mm(6, 0)), part, library,
+                                   routing)
+                    .wires;
+            QCOMPARE(wires.size(), 3);
+            QCOMPARE(wires.at(0).points, QList<Point>({mm(-20, 5), mm(6, 5)}));
+            QCOMPARE(wires.at(1).points, QList<Point>({mm(6, 5), mm(20, 5)}));
+            QCOMPARE(wires.at(2).points, sheet.wires.at(2).points);
+        }
+        // Moved off the line as well: the line stays as it is, and a new
+        // wire joins the pin to it straight across.
+        for (const WireRouting routing : {WireRouting::Hand, WireRouting::Grid}) {
+            const QList<Wire> wires =
+                withWiresFollowing(sheet, movedObjects(sheet, part, mm(6, -3)), part, library,
+                                   routing)
+                    .wires;
+            QCOMPARE(wires.size(), 4);
+            QCOMPARE(wires.at(0).points, sheet.wires.at(0).points);
+            QCOMPARE(wires.at(1).points, sheet.wires.at(1).points);
+            QCOMPARE(wires.at(2).points, sheet.wires.at(2).points);
+            QCOMPARE(wires.at(3).points, QList<Point>({mm(6, 5), mm(6, 2)}));
+        }
+    }
+
     // An upright wire between two level rails, moved whole: its ends slide
     // along the rails, as those of its segment do, instead of staying with
     // bends back to them.
