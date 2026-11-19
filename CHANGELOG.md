@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A value, net name, label or bus name edited in place stays open over its text while the view is zoomed or panned, instead of closing
 - E: A wire whose end follows a moved part keeps the pins left in place on its middle, such as a ground, instead of leaving them unjoined
 - E: A pin moved back past a wire joined to its wire lands on that wire, or on another wire joined there, instead of being reached by a hook or a loop round the joint
 - E: A wire laid round obstacles no longer leaves the end of another wire hanging where it was joined to it

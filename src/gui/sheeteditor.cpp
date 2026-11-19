@@ -10,7 +10,6 @@
 #include <QKeyEvent>
 #include <QLineEdit>
 #include <QLineF>
-#include <QScrollBar>
 #include <QToolTip>
 
 #include <algorithm>
@@ -448,24 +447,31 @@ void SheetEditor::editText(const ObjectId &id)
     if (rect.isNull())
         return;
     m_textOwner = id;
+    m_textEditRect = rect;
     auto *edit = new QLineEdit(text, m_canvas->viewport());
     edit->selectAll();
+    edit->installEventFilter(this);
+    connect(edit, &QLineEdit::returnPressed, this, [this]() { finishTextEdit(true); });
+    // The line goes with its text when the view is zoomed or scrolled.
+    connect(m_canvas, &CanvasView::viewMoved, edit, [this]() { placeTextEdit(); });
+    m_textEdit = edit;
+    placeTextEdit();
+    edit->show();
+    edit->setFocus();
+}
+
+void SheetEditor::placeTextEdit()
+{
+    if (m_textEdit.isNull())
+        return;
+    QLineEdit *edit = m_textEdit;
     // Over the text, at least wide enough to type a value into.
-    const QRect place = m_canvas->mapFromScene(rect).boundingRect();
+    const QRect place = m_canvas->mapFromScene(m_textEditRect).boundingRect();
     const int width =
         qMax(place.width(), edit->fontMetrics().averageCharWidth() * VALUE_EDIT_LETTERS);
     const int height = edit->sizeHint().height();
     edit->setGeometry(place.center().x() - width / 2, place.center().y() - height / 2, width,
                       height);
-    edit->installEventFilter(this);
-    connect(edit, &QLineEdit::returnPressed, this, [this]() { finishTextEdit(true); });
-    // The line stays where it was put: moving the view ends it.
-    const auto end = [this]() { finishTextEdit(true); };
-    connect(m_canvas->horizontalScrollBar(), &QScrollBar::valueChanged, edit, end);
-    connect(m_canvas->verticalScrollBar(), &QScrollBar::valueChanged, edit, end);
-    m_textEdit = edit;
-    edit->show();
-    edit->setFocus();
 }
 
 void SheetEditor::finishTextEdit(bool keep)
@@ -477,8 +483,7 @@ void SheetEditor::finishTextEdit(bool keep)
     // Hiding it takes its focus away: that must not end it again.
     edit->removeEventFilter(this);
     edit->disconnect(this);
-    disconnect(m_canvas->horizontalScrollBar(), nullptr, edit, nullptr);
-    disconnect(m_canvas->verticalScrollBar(), nullptr, edit, nullptr);
+    disconnect(m_canvas, nullptr, edit, nullptr);
     const QString value = edit->text();
     edit->hide();
     edit->deleteLater();
@@ -610,6 +615,17 @@ bool SheetEditor::eventFilter(QObject *watched, QEvent *event)
         }
         break;
     case QEvent::FocusOut:
+        // A press of the panning buttons on the canvas takes the focus, but
+        // the view only moves: the line keeps it. A short right click opens
+        // a menu, which takes the focus again and ends the line.
+        if (static_cast<QFocusEvent *>(event)->reason() == Qt::MouseFocusReason
+            && (QApplication::mouseButtons() & (Qt::RightButton | Qt::MiddleButton))
+            && (QApplication::focusWidget() == m_canvas
+                || QApplication::focusWidget() == m_canvas->viewport())) {
+            QLineEdit *edit = m_textEdit;
+            QTimer::singleShot(0, edit, [edit]() { edit->setFocus(); });
+            break;
+        }
         finishTextEdit(true);
         break;
     default:

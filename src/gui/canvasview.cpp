@@ -106,6 +106,7 @@ void CanvasView::fitRect(const QRectF &rect)
     const double current = pixelsPerMm();
     scale(target / current, target / current);
     centerOn(rect.center());
+    emit viewMoved();
     updateCursor();
 }
 
@@ -121,6 +122,7 @@ void CanvasView::setView(const QPointF &center, double pixelsPerMm)
     const double current = this->pixelsPerMm();
     scale(target / current, target / current);
     centerOn(center);
+    emit viewMoved();
     updateCursor();
 }
 
@@ -221,6 +223,8 @@ void CanvasView::zoomAt(const QPoint &viewPos, double factor)
         // Bring the point back under the mouse.
         scrollBy(mapFromScene(scenePos) - viewPos);
     }
+    // A scale alone, with nothing scrolled, is not reported otherwise.
+    emit viewMoved();
     updateCursor();
 }
 
@@ -303,6 +307,12 @@ bool CanvasView::viewportEvent(QEvent *event)
         viewport()->update();
     }
     return QGraphicsView::viewportEvent(event);
+}
+
+void CanvasView::scrollContentsBy(int dx, int dy)
+{
+    QGraphicsView::scrollContentsBy(dx, dy);
+    emit viewMoved();
 }
 
 void CanvasView::followGlobalPos(const QPoint &globalPos)

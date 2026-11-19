@@ -249,6 +249,8 @@ private:
     void setHoveredNet(int net);
     // Shows the name of 'net' beside the cursor.
     void showNetTip(const Net &net);
+    // Puts the line over its text as the view shows it now.
+    void placeTextEdit();
     // Closes the line; 'keep' sets what it holds.
     void finishTextEdit(bool keep);
     // Puts the label being placed down with 'text', as one step, and offers
@@ -391,6 +393,8 @@ private:
     // symbol or label it belongs to.
     QPointer<QLineEdit> m_textEdit;
     ObjectId m_textOwner;
+    // Where that text stands, in millimetres.
+    QRectF m_textEditRect;
     // Placing labels: a click asks for the text (see startPlacingLabel()).
     bool m_askLabelText = false;
     // Placing no-connect marks: a click puts one down only on a free pin of

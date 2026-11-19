@@ -65,6 +65,8 @@ signals:
     void cursorMoved(ppcb::Coord x, ppcb::Coord y);
     // A short right click without movement.
     void contextMenuRequested(const QPoint &globalPos);
+    // The view was zoomed or scrolled: the scene stands elsewhere on it.
+    void viewMoved();
 
 protected:
     void drawBackground(QPainter *painter, const QRectF &rect) override;
@@ -75,6 +77,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
     bool viewportEvent(QEvent *event) override;
+    void scrollContentsBy(int dx, int dy) override;
 
 private:
     void zoomAt(const QPoint &viewPos, double factor);
