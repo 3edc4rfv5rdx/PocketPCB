@@ -341,6 +341,7 @@ void MainWindow::createMenus()
         action->setObjectName(QLatin1String(name));
         action->setShortcut(key);
         connect(action, &QAction::triggered, m_sheetEditor, slot);
+        return action;
     };
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Copy), "actionCopy",
                   QKeySequence::Copy, &SheetEditor::copySelection);
@@ -369,8 +370,12 @@ void MainWindow::createMenus()
                   &SheetEditor::startDrawingBus);
     addEditAction(tr("Turn the wire corner the other way"), "actionWireCorner",
                   QKeySequence(Qt::Key_Space), &SheetEditor::swapWireCorner);
-    addEditAction(tr("Slant the wire corner"), "actionWireSlant", QKeySequence(Qt::Key_Slash),
-                  &SheetEditor::toggleWireSlant);
+    QAction *slantAction = addEditAction(tr("Slant the wire corner"), "actionWireSlant",
+                                         QKeySequence(Qt::Key_Slash),
+                                         &SheetEditor::toggleWireSlant);
+    // The key of '/' gives '.' on the Russian layout, which Qt does not take
+    // for '/' as it takes Latin letters for the shortcuts on other layouts.
+    slantAction->setShortcuts({QKeySequence(Qt::Key_Slash), QKeySequence(Qt::Key_Period)});
     editMenu->addSeparator();
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Rotate), "actionRotate",
                   QKeySequence(Qt::Key_R), &SheetEditor::rotateSelection);
