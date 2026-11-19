@@ -63,6 +63,7 @@ private slots:
         QCOMPARE(part.connector, false);
         QCOMPARE(part.noValue, false);
         QCOMPARE(part.powerMw, 0);
+        QVERIFY(part.group.isEmpty());
         QVERIFY(part.name.isEmpty());
     }
 
@@ -101,6 +102,7 @@ private slots:
         part.connector = true;
         part.noValue = true;
         part.powerMw = 125;
+        part.group = QStringLiteral("connectors");
         part.name.insert(QStringLiteral("en"), QStringLiteral("Pin header"));
         part.name.insert(QStringLiteral("uk"), QStringLiteral("Штирьовий роз'єм"));
 
@@ -134,6 +136,7 @@ private slots:
         other = part; other.connector = true;               QVERIFY(other != part);
         other = part; other.noValue = true;                 QVERIFY(other != part);
         other = part; other.powerMw = 250;                  QVERIFY(other != part);
+        other = part; other.group = QStringLiteral("x");    QVERIFY(other != part);
         other = part; other.name.remove(QStringLiteral("ru")); QVERIFY(other != part);
         other = part; other.name[QStringLiteral("en")] += QLatin1Char('x'); QVERIFY(other != part);
     }

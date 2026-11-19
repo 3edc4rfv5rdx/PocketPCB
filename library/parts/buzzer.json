@@ -7,5 +7,6 @@
   "prefixGost": "HA",
   "value": "",
   "connector": false,
+  "group": "sound",
   "name": {"en": "Buzzer", "uk": "Зумер", "ru": "Зуммер"}
 }

@@ -7,5 +7,6 @@
   "prefixGost": "C",
   "value": "",
   "connector": false,
+  "group": "capacitors",
   "name": {"en": "Electrolytic capacitor", "uk": "Електролітичний конденсатор", "ru": "Электролитический конденсатор"}
 }

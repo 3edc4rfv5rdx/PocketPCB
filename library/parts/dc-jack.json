@@ -8,5 +8,6 @@
   "value": "",
   "connector": false,
   "noValue": true,
+  "group": "connectors",
   "name": {"en": "DC power jack", "uk": "Гніздо живлення", "ru": "Гнездо питания"}
 }

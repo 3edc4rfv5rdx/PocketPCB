@@ -7,5 +7,6 @@
   "prefixGost": "C",
   "value": "",
   "connector": false,
+  "group": "capacitors",
   "name": {"en": "Capacitor", "uk": "Конденсатор", "ru": "Конденсатор"}
 }

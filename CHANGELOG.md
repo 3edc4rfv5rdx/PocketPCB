@@ -3,6 +3,8 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The BOM has no power column: the power most resistors have is said once below the list, another one follows the value
+- N: The BOM puts the parts under group headings, such as Resistors or Capacitors, in the tab and in TXT, CSV and PDF, and shows the footprint and the comment last
 ## v0.6.163 (2026-11-19)
 - N: A BOM tab beside the board lists the parts, alike ones in one row, with their value and comment typed in the table, and writes the list as TXT, CSV or PDF into the project's out folder
 - F: The history of steps goes to the user's cache folder, ~/.cache/PocketPCB/history, which can be written from an AppImage too

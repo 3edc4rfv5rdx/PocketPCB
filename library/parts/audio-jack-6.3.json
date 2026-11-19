@@ -8,5 +8,6 @@
   "value": "",
   "connector": false,
   "noValue": true,
+  "group": "connectors",
   "name": {"en": "Audio jack 6.3", "uk": "Аудіогніздо 6.3", "ru": "Аудиогнездо 6.3"}
 }

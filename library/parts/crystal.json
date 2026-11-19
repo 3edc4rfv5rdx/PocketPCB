@@ -7,5 +7,6 @@
   "prefixGost": "ZQ",
   "value": "",
   "connector": false,
+  "group": "crystals",
   "name": {"en": "Crystal", "uk": "Кварцовий резонатор", "ru": "Кварцевый резонатор"}
 }

@@ -31,6 +31,9 @@ struct Part
     // Rated power a new component of the part starts with, in milliwatts;
     // 0 for a part that has none (only resistors have).
     int powerMw = 0;
+    // The group the bill of materials puts the part under, by key
+    // ("resistors"); partGroupName() gives its name. Empty for none.
+    QString group;
     // Name shown in the library panel, by interface language code
     // ("en", "uk", "ru"); may be empty.
     QMap<QString, QString> name;
@@ -47,6 +50,10 @@ constexpr int MAX_POWER_MW = 1000000;
 // 'number' (1 to 3999) in Roman numerals: the mark of a power of 5 W and
 // more. Empty for a number out of that range.
 QString romanNumeral(int number);
+
+// The name of the part group 'key' in the interface language: the key
+// itself for one the program does not know, "Other" for an empty one.
+QString partGroupName(const QString &key);
 
 bool operator==(const Part &a, const Part &b);
 inline bool operator!=(const Part &a, const Part &b) { return !(a == b); }

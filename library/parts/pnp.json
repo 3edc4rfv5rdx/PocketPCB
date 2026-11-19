@@ -7,5 +7,6 @@
   "prefixGost": "VT",
   "value": "",
   "connector": false,
+  "group": "transistors",
   "name": {"en": "PNP transistor", "uk": "Транзистор PNP", "ru": "Транзистор PNP"}
 }

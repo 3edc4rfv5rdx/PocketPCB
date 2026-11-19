@@ -32,6 +32,22 @@ const char UTF8_MARK[] = "\xEF\xBB\xBF";
 // The margins of a PDF page, in millimetres.
 const double PDF_MARGIN_MM = 15;
 
+// The value of a row, shown with the rated power after it when it is not
+// the common one; edited without it.
+class ValueItem : public QTableWidgetItem
+{
+public:
+    QString power;
+
+    QVariant data(int role) const override
+    {
+        const QVariant value = QTableWidgetItem::data(role);
+        if (role != Qt::DisplayRole || power.isEmpty())
+            return value;
+        return value.toString() + QLatin1Char(' ') + power;
+    }
+};
+
 } // namespace
 
 BomPanel::BomPanel(Document *document, QWidget *parent)
@@ -42,9 +58,8 @@ BomPanel::BomPanel(Document *document, QWidget *parent)
     m_table->setObjectName(QStringLiteral("bomTable"));
     m_table->setColumnCount(ColumnCount);
     m_table->setHorizontalHeaderLabels({tr("Designators"), PropertiesPanel::valueTitle(),
-                                        PropertiesPanel::footprintTitle(),
-                                        PropertiesPanel::powerTitle(),
-                                        PropertiesPanel::commentTitle(), tr("Quantity")});
+                                        tr("Quantity"), PropertiesPanel::footprintTitle(),
+                                        PropertiesPanel::commentTitle()});
     m_table->verticalHeader()->setVisible(false);
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     m_table->horizontalHeader()->setStretchLastSection(false);
@@ -55,6 +70,8 @@ BomPanel::BomPanel(Document *document, QWidget *parent)
     QPushButton *textButton = new QPushButton(tr("Export TXT"), this);
     QPushButton *csvButton = new QPushButton(tr("Export CSV"), this);
     QPushButton *pdfButton = new QPushButton(tr("Export PDF"), this);
+    m_note = new QLabel(this);
+    m_note->setTextInteractionFlags(Qt::TextSelectableByMouse);
     m_message = new QLabel(this);
     m_message->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
@@ -65,15 +82,17 @@ BomPanel::BomPanel(Document *document, QWidget *parent)
     buttons->addWidget(m_message, 1);
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(m_table);
+    layout->addWidget(m_note);
     layout->addLayout(buttons);
 
     connect(textButton, &QPushButton::clicked, this, &BomPanel::exportText);
     connect(csvButton, &QPushButton::clicked, this, &BomPanel::exportCsv);
     connect(pdfButton, &QPushButton::clicked, this, &BomPanel::exportPdf);
     connect(m_table, &QTableWidget::itemChanged, this, &BomPanel::cellEdited);
-    connect(m_table, &QTableWidget::cellDoubleClicked, this, [this](int row, int column) {
-        if (column == Designators && row >= 0 && row < m_rows.size())
-            emit componentsChosen(m_rows.at(row).ids);
+    connect(m_table, &QTableWidget::cellDoubleClicked, this, [this](int line, int column) {
+        const BomRow *row = rowOfLine(line);
+        if (column == Designators && row != nullptr)
+            emit componentsChosen(row->ids);
     });
     connect(m_document, &Document::designChanged, this, &BomPanel::refresh);
     refresh();
@@ -86,46 +105,94 @@ QString BomPanel::bomTitle()
 
 void BomPanel::refresh()
 {
-    m_rows = bomRows(m_document->design().schematic);
+    m_rows = bomRows(m_document->design().schematic, m_document->design().library);
+    m_lineRows.clear();
+    for (int r = 0; r < m_rows.size(); ++r) {
+        if (r == 0 || m_rows.at(r).group != m_rows.at(r - 1).group)
+            m_lineRows.append(NO_ROW);
+        m_lineRows.append(r);
+    }
     // Filling the table is not an edit.
     const QSignalBlocker blocker(m_table);
-    m_table->setRowCount(int(m_rows.size()));
-    for (int r = 0; r < m_rows.size(); ++r) {
-        const BomRow &row = m_rows.at(r);
-        const QStringList fields = {row.designators.join(QStringLiteral(", ")),
-                                    row.value,
-                                    row.footprint,
-                                    formatPower(row.powerMw),
-                                    row.comment,
-                                    QString::number(row.designators.size())};
+    m_table->clearSpans();
+    m_table->setRowCount(int(m_lineRows.size()));
+    const int commonPower = commonPowerMw(m_rows);
+    QFont headingFont = m_table->font();
+    headingFont.setBold(true);
+    for (int line = 0; line < m_lineRows.size(); ++line) {
+        const int r = m_lineRows.at(line);
+        QStringList fields;
+        if (r == NO_ROW) {
+            // The heading names the group of the row below it.
+            fields.append(partGroupName(m_rows.at(m_lineRows.at(line + 1)).group));
+            while (fields.size() < ColumnCount)
+                fields.append(QString());
+            m_table->setSpan(line, 0, 1, ColumnCount);
+        } else {
+            const BomRow &row = m_rows.at(r);
+            fields = {row.designators.join(QStringLiteral(", ")),
+                      row.value,
+                      QString::number(row.designators.size()),
+                      row.footprint,
+                      row.comment};
+        }
         for (int c = 0; c < ColumnCount; ++c) {
-            QTableWidgetItem *item = m_table->item(r, c);
+            QTableWidgetItem *item = m_table->item(line, c);
             if (item == nullptr) {
-                item = new QTableWidgetItem;
-                m_table->setItem(r, c, item);
+                item = c == Value ? new ValueItem : new QTableWidgetItem;
+                m_table->setItem(line, c, item);
+            }
+            if (c == Value) {
+                const int power = r == NO_ROW ? 0 : m_rows.at(r).powerMw;
+                static_cast<ValueItem *>(item)->power =
+                    power != commonPower ? formatPower(power) : QString();
             }
             item->setText(fields.at(c));
-            Qt::ItemFlags flags = Qt::ItemIsSelectable | Qt::ItemIsEnabled;
-            if (c == Value || c == Comment)
-                flags |= Qt::ItemIsEditable;
+            item->setFont(r == NO_ROW ? headingFont : m_table->font());
+            Qt::ItemFlags flags = Qt::ItemIsEnabled;
+            if (r != NO_ROW) {
+                flags |= Qt::ItemIsSelectable;
+                if (c == Value || c == Comment)
+                    flags |= Qt::ItemIsEditable;
+            }
             item->setFlags(flags);
-            if (c == Quantity)
-                item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+            item->setTextAlignment(r != NO_ROW && c == Quantity
+                                       ? Qt::AlignRight | Qt::AlignVCenter
+                                       : Qt::AlignLeft | Qt::AlignVCenter);
         }
     }
+    m_note->setText(powerNote());
+    m_note->setVisible(!m_note->text().isEmpty());
+}
+
+QString BomPanel::powerNote() const
+{
+    const int common = commonPowerMw(m_rows);
+    if (common <= 0)
+        return QString();
+    return tr("Resistor power unless stated") + QStringLiteral(": ") + formatPower(common);
+}
+
+const BomRow *BomPanel::rowOfLine(int line) const
+{
+    if (line < 0 || line >= m_lineRows.size() || m_lineRows.at(line) == NO_ROW)
+        return nullptr;
+    return &m_rows.at(m_lineRows.at(line));
 }
 
 void BomPanel::cellEdited(QTableWidgetItem *item)
 {
-    const int r = item->row();
-    if (r < 0 || r >= m_rows.size() || (item->column() != Value && item->column() != Comment))
+    const BomRow *shown = rowOfLine(item->row());
+    if (shown == nullptr || (item->column() != Value && item->column() != Comment))
         return;
     // A copy: the change below builds the rows anew.
-    const BomRow row = m_rows.at(r);
+    const BomRow row = *shown;
+    // Without the power the value is shown with.
+    const QString text = item->data(Qt::EditRole).toString();
     Design design = m_document->design();
     for (Sheet &sheet : design.schematic.sheets) {
-        sheet = item->column() == Value ? withComponentValue(sheet, row.ids, item->text())
-                                        : withComponentComment(sheet, row.ids, item->text());
+        sheet = item->column() == Value ? withComponentValue(sheet, row.ids, text)
+                                        : withComponentComment(sheet, row.ids, text);
     }
     const SheetEditor::Action action =
         item->column() == Value ? SheetEditor::Action::Value : SheetEditor::Action::Comment;
@@ -144,10 +211,11 @@ QList<QStringList> BomPanel::table() const
     for (int c = 0; c < ColumnCount; ++c)
         heading.append(m_table->horizontalHeaderItem(c)->text());
     rows.append(heading);
-    for (int r = 0; r < m_table->rowCount(); ++r) {
+    for (int line = 0; line < m_table->rowCount(); ++line) {
         QStringList fields;
-        for (int c = 0; c < ColumnCount; ++c)
-            fields.append(m_table->item(r, c)->text());
+        const int columns = rowOfLine(line) == nullptr ? 1 : ColumnCount;
+        for (int c = 0; c < columns; ++c)
+            fields.append(m_table->item(line, c)->text());
         rows.append(fields);
     }
     return rows;
@@ -184,13 +252,18 @@ void BomPanel::writeOutput(const QString &extension, const QByteArray &data)
 
 void BomPanel::exportText()
 {
-    writeOutput(QLatin1String(TEXT_EXTENSION), plainTextOf(table()).toUtf8());
+    QString text = plainTextOf(table());
+    if (!powerNote().isEmpty())
+        text += QLatin1Char('\n') + powerNote() + QLatin1Char('\n');
+    writeOutput(QLatin1String(TEXT_EXTENSION), text.toUtf8());
 }
 
 void BomPanel::exportCsv()
 {
-    writeOutput(QLatin1String(CSV_EXTENSION),
-                QByteArray(UTF8_MARK) + csvOf(table()).toUtf8());
+    QList<QStringList> rows = table();
+    if (!powerNote().isEmpty())
+        rows << QStringList() << QStringList(powerNote());
+    writeOutput(QLatin1String(CSV_EXTENSION), QByteArray(UTF8_MARK) + csvOf(rows).toUtf8());
 }
 
 void BomPanel::exportPdf()
@@ -203,14 +276,22 @@ void BomPanel::exportPdf()
                    + QFileInfo(m_document->projectPath()).completeBaseName().toHtmlEscaped()
                    + QStringLiteral("</h3><table border=\"1\" cellspacing=\"0\" cellpadding=\"3\">");
     for (int r = 0; r < rows.size(); ++r) {
-        const QString cell = r == 0 ? QStringLiteral("th") : QStringLiteral("td");
         html += QStringLiteral("<tr>");
-        for (const QString &field : rows.at(r))
-            html += QLatin1Char('<') + cell + QLatin1Char('>') + field.toHtmlEscaped()
-                    + QStringLiteral("</") + cell + QLatin1Char('>');
+        if (r > 0 && rows.at(r).size() == 1) {
+            // A group heading across the table.
+            html += QStringLiteral("<td colspan=\"%1\"><b>").arg(ColumnCount)
+                    + rows.at(r).first().toHtmlEscaped() + QStringLiteral("</b></td>");
+        } else {
+            const QString cell = r == 0 ? QStringLiteral("th") : QStringLiteral("td");
+            for (const QString &field : rows.at(r))
+                html += QLatin1Char('<') + cell + QLatin1Char('>') + field.toHtmlEscaped()
+                        + QStringLiteral("</") + cell + QLatin1Char('>');
+        }
         html += QStringLiteral("</tr>");
     }
     html += QStringLiteral("</table>");
+    if (!powerNote().isEmpty())
+        html += QStringLiteral("<p>") + powerNote().toHtmlEscaped() + QStringLiteral("</p>");
 
     QPdfWriter writer(path);
     writer.setPageSize(QPageSize(QPageSize::A4));

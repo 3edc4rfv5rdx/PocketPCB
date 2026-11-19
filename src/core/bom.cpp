@@ -1,5 +1,7 @@
 #include "bom.h"
 
+#include <QMap>
+
 #include <algorithm>
 
 namespace ppcb {
@@ -53,7 +55,7 @@ bool designatorLess(const QString &a, const QString &b)
     return a < b;
 }
 
-QList<BomRow> bomRows(const Schematic &schematic)
+QList<BomRow> bomRows(const Schematic &schematic, const Library &library)
 {
     QList<BomRow> rows;
     QList<BomKey> keys;
@@ -66,6 +68,8 @@ QList<BomRow> bomRows(const Schematic &schematic)
                 index = int(keys.size());
                 keys.append(key);
                 BomRow row;
+                if (const Part *part = library.findPart(key.part))
+                    row.group = part->group;
                 row.part = key.part;
                 row.value = key.value;
                 row.footprint = key.footprint;
@@ -82,7 +86,38 @@ QList<BomRow> bomRows(const Schematic &schematic)
     std::sort(rows.begin(), rows.end(), [](const BomRow &a, const BomRow &b) {
         return designatorLess(a.designators.value(0), b.designators.value(0));
     });
+    // Groups by their first rows, no group last.
+    QStringList groupOrder;
+    for (const BomRow &row : rows) {
+        if (!row.group.isEmpty() && !groupOrder.contains(row.group))
+            groupOrder.append(row.group);
+    }
+    const auto rank = [&groupOrder](const BomRow &row) {
+        return row.group.isEmpty() ? groupOrder.size() : groupOrder.indexOf(row.group);
+    };
+    std::stable_sort(rows.begin(), rows.end(), [&rank](const BomRow &a, const BomRow &b) {
+        return rank(a) < rank(b);
+    });
     return rows;
+}
+
+int commonPowerMw(const QList<BomRow> &rows)
+{
+    QMap<int, qsizetype> counts;
+    for (const BomRow &row : rows) {
+        if (row.powerMw > 0)
+            counts[row.powerMw] += row.designators.size();
+    }
+    int common = 0;
+    qsizetype most = 0;
+    // From the lowest power up: a later one wins only with more.
+    for (auto it = counts.constBegin(); it != counts.constEnd(); ++it) {
+        if (it.value() > most) {
+            most = it.value();
+            common = it.key();
+        }
+    }
+    return common;
 }
 
 QString csvOf(const QList<QStringList> &table)
@@ -105,8 +140,15 @@ QString csvOf(const QList<QStringList> &table)
 
 QString plainTextOf(const QList<QStringList> &table)
 {
+    const int columns = table.isEmpty() ? 0 : int(table.first().size());
+    const auto isGroupHeading = [columns](int r, const QStringList &row) {
+        return r > 0 && row.size() == 1 && columns > 1;
+    };
     QList<int> widths;
-    for (const QStringList &row : table) {
+    for (int r = 0; r < table.size(); ++r) {
+        const QStringList &row = table.at(r);
+        if (isGroupHeading(r, row))
+            continue;
         for (int i = 0; i < row.size(); ++i) {
             if (i >= widths.size())
                 widths.append(0);
@@ -123,6 +165,8 @@ QString plainTextOf(const QList<QStringList> &table)
     };
     QString text;
     for (int r = 0; r < table.size(); ++r) {
+        if (isGroupHeading(r, table.at(r)) && r > 1)
+            text += QLatin1Char('\n');
         text += line(table.at(r));
         if (r == 0) {
             int total = 0;

@@ -16,6 +16,10 @@
         <translation>Кол-во</translation>
     </message>
     <message>
+        <source>Resistor power unless stated</source>
+        <translation>Мощность резисторов, если не указано иное</translation>
+    </message>
+    <message>
         <source>Export TXT</source>
         <translation>Сохранить TXT</translation>
     </message>
@@ -305,6 +309,69 @@
     <message>
         <source>Sheet %1 of %2</source>
         <translation>Лист %1 из %2</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::Part</name>
+    <message>
+        <source>Resistors</source>
+        <translation>Резисторы</translation>
+    </message>
+    <message>
+        <source>Capacitors</source>
+        <translation>Конденсаторы</translation>
+    </message>
+    <message>
+        <source>Inductors</source>
+        <translation>Катушки индуктивности</translation>
+    </message>
+    <message>
+        <source>Diodes</source>
+        <translation>Диоды</translation>
+    </message>
+    <message>
+        <source>LEDs</source>
+        <translation>Светодиоды</translation>
+    </message>
+    <message>
+        <source>Thyristors</source>
+        <translation>Тиристоры</translation>
+    </message>
+    <message>
+        <source>Transistors</source>
+        <translation>Транзисторы</translation>
+    </message>
+    <message>
+        <source>Chips</source>
+        <translation>Микросхемы</translation>
+    </message>
+    <message>
+        <source>Crystals</source>
+        <translation>Кварцевые резонаторы</translation>
+    </message>
+    <message>
+        <source>Connectors</source>
+        <translation>Соединители</translation>
+    </message>
+    <message>
+        <source>Switches and buttons</source>
+        <translation>Переключатели и кнопки</translation>
+    </message>
+    <message>
+        <source>Fuses</source>
+        <translation>Предохранители</translation>
+    </message>
+    <message>
+        <source>Batteries</source>
+        <translation>Батареи</translation>
+    </message>
+    <message>
+        <source>Sound devices</source>
+        <translation>Звуковые устройства</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>Прочие</translation>
     </message>
 </context>
 <context>

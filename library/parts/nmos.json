@@ -7,5 +7,6 @@
   "prefixGost": "VT",
   "value": "",
   "connector": false,
+  "group": "transistors",
   "name": {"en": "N-channel MOSFET", "uk": "MOSFET, канал N", "ru": "MOSFET, канал N"}
 }

@@ -8,5 +8,6 @@
   "value": "",
   "connector": false,
   "noValue": true,
+  "group": "switches",
   "name": {"en": "Toggle switch", "uk": "Тумблер", "ru": "Тумблер"}
 }

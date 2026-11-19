@@ -7,5 +7,6 @@
   "prefixGost": "FU",
   "value": "",
   "connector": false,
+  "group": "fuses",
   "name": {"en": "Fuse", "uk": "Запобіжник", "ru": "Предохранитель"}
 }

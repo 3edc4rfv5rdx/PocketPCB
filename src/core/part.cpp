@@ -1,5 +1,7 @@
 #include "part.h"
 
+#include <QCoreApplication>
+
 namespace ppcb {
 
 namespace {
@@ -13,6 +15,31 @@ const char KEY_CONNECTOR[] = "connector";
 const char KEY_NO_VALUE[] = "noValue";
 const char KEY_POWER_MW[] = "powerMw";
 const char KEY_NAME[] = "name";
+const char KEY_GROUP[] = "group";
+
+const char GROUP_CONTEXT[] = "ppcb::Part";
+// The part groups the program names, by key.
+const struct
+{
+    const char *key;
+    const char *name;
+} PART_GROUPS[] = {
+    {"resistors", QT_TRANSLATE_NOOP("ppcb::Part", "Resistors")},
+    {"capacitors", QT_TRANSLATE_NOOP("ppcb::Part", "Capacitors")},
+    {"inductors", QT_TRANSLATE_NOOP("ppcb::Part", "Inductors")},
+    {"diodes", QT_TRANSLATE_NOOP("ppcb::Part", "Diodes")},
+    {"leds", QT_TRANSLATE_NOOP("ppcb::Part", "LEDs")},
+    {"thyristors", QT_TRANSLATE_NOOP("ppcb::Part", "Thyristors")},
+    {"transistors", QT_TRANSLATE_NOOP("ppcb::Part", "Transistors")},
+    {"chips", QT_TRANSLATE_NOOP("ppcb::Part", "Chips")},
+    {"crystals", QT_TRANSLATE_NOOP("ppcb::Part", "Crystals")},
+    {"connectors", QT_TRANSLATE_NOOP("ppcb::Part", "Connectors")},
+    {"switches", QT_TRANSLATE_NOOP("ppcb::Part", "Switches and buttons")},
+    {"fuses", QT_TRANSLATE_NOOP("ppcb::Part", "Fuses")},
+    {"batteries", QT_TRANSLATE_NOOP("ppcb::Part", "Batteries")},
+    {"sound", QT_TRANSLATE_NOOP("ppcb::Part", "Sound devices")},
+};
+const char OTHER_GROUP_NAME[] = QT_TRANSLATE_NOOP("ppcb::Part", "Other");
 
 } // namespace
 
@@ -20,7 +47,18 @@ bool operator==(const Part &a, const Part &b)
 {
     return a.symbol == b.symbol && a.footprints == b.footprints && a.prefix == b.prefix
            && a.prefixGost == b.prefixGost && a.value == b.value && a.connector == b.connector && a.noValue == b.noValue
-           && a.powerMw == b.powerMw && a.name == b.name;
+           && a.powerMw == b.powerMw && a.group == b.group && a.name == b.name;
+}
+
+QString partGroupName(const QString &key)
+{
+    if (key.isEmpty())
+        return QCoreApplication::translate(GROUP_CONTEXT, OTHER_GROUP_NAME);
+    for (const auto &group : PART_GROUPS) {
+        if (key == QLatin1String(group.key))
+            return QCoreApplication::translate(GROUP_CONTEXT, group.name);
+    }
+    return key;
 }
 
 QList<int> standardPowersMw()
@@ -62,6 +100,8 @@ QJsonObject partToJson(const Part &part)
     object.insert(QLatin1String(KEY_NO_VALUE), part.noValue);
     if (part.powerMw > 0)
         object.insert(QLatin1String(KEY_POWER_MW), part.powerMw);
+    if (!part.group.isEmpty())
+        object.insert(QLatin1String(KEY_GROUP), part.group);
     QJsonObject names;
     for (auto it = part.name.constBegin(); it != part.name.constEnd(); ++it)
         names.insert(it.key(), it.value());
@@ -78,8 +118,8 @@ Part partFromJson(const QJsonObject &object, const QString &where, JsonReader &r
         part.footprints = reader.nameList(object, KEY_FOOTPRINTS, where);
     part.prefix = reader.nonEmptyString(object, KEY_PREFIX, where);
     part.prefixGost = reader.nonEmptyString(object, KEY_PREFIX_GOST, where);
-    // Optional: no value, not a connector, a value asked for and no name
-    // when absent.
+    // Optional: no value, not a connector, a value asked for, no group and
+    // no name when absent.
     if (object.contains(QLatin1String(KEY_VALUE)))
         part.value = reader.string(object, KEY_VALUE, where);
     if (object.contains(QLatin1String(KEY_CONNECTOR)))
@@ -88,6 +128,8 @@ Part partFromJson(const QJsonObject &object, const QString &where, JsonReader &r
         part.noValue = reader.boolean(object, KEY_NO_VALUE, where);
     if (object.contains(QLatin1String(KEY_POWER_MW)))
         part.powerMw = reader.integer(object, KEY_POWER_MW, where, 0, MAX_POWER_MW);
+    if (object.contains(QLatin1String(KEY_GROUP)))
+        part.group = reader.string(object, KEY_GROUP, where);
     if (object.contains(QLatin1String(KEY_NAME)))
         part.name = reader.nameMap(object, KEY_NAME, where);
     return part;

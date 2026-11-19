@@ -8,5 +8,6 @@
   "value": "",
   "connector": true,
   "noValue": true,
+  "group": "connectors",
   "name": {"en": "Pin header 1×2", "uk": "Штирьовий роз’єм 1×2", "ru": "Штыревой разъём 1×2"}
 }

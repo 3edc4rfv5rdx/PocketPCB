@@ -8,5 +8,6 @@
   "value": "",
   "connector": false,
   "powerMw": 125,
+  "group": "resistors",
   "name": {"en": "Potentiometer", "uk": "Потенціометр", "ru": "Потенциометр"}
 }

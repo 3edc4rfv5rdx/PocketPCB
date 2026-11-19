@@ -7,5 +7,6 @@
   "prefixGost": "VT",
   "value": "",
   "connector": false,
+  "group": "transistors",
   "name": {"en": "P-channel JFET", "uk": "Польовий транзистор з p-n переходом, канал P", "ru": "Полевой транзистор с p-n переходом, канал P"}
 }

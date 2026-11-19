@@ -7,5 +7,6 @@
   "prefixGost": "DD",
   "value": "",
   "connector": false,
+  "group": "chips",
   "name": {"en": "Chip DIP-28", "uk": "Мікросхема DIP-28", "ru": "Микросхема DIP-28"}
 }

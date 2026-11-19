@@ -8,5 +8,6 @@
   "value": "",
   "connector": true,
   "noValue": true,
+  "group": "connectors",
   "name": {"en": "Screw terminal, 2 contacts", "uk": "Гвинтова клема, 2 контакти", "ru": "Винтовой клеммник, 2 контакта"}
 }

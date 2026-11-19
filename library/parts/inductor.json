@@ -7,5 +7,6 @@
   "prefixGost": "L",
   "value": "",
   "connector": false,
+  "group": "inductors",
   "name": {"en": "Inductor", "uk": "Котушка індуктивності", "ru": "Катушка индуктивности"}
 }

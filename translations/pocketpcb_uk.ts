@@ -16,6 +16,10 @@
         <translation>Кількість</translation>
     </message>
     <message>
+        <source>Resistor power unless stated</source>
+        <translation>Потужність резисторів, якщо не вказано інше</translation>
+    </message>
+    <message>
         <source>Export TXT</source>
         <translation>Зберегти TXT</translation>
     </message>
@@ -305,6 +309,69 @@
     <message>
         <source>Sheet %1 of %2</source>
         <translation>Аркуш %1 з %2</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::Part</name>
+    <message>
+        <source>Resistors</source>
+        <translation>Резистори</translation>
+    </message>
+    <message>
+        <source>Capacitors</source>
+        <translation>Конденсатори</translation>
+    </message>
+    <message>
+        <source>Inductors</source>
+        <translation>Котушки індуктивності</translation>
+    </message>
+    <message>
+        <source>Diodes</source>
+        <translation>Діоди</translation>
+    </message>
+    <message>
+        <source>LEDs</source>
+        <translation>Світлодіоди</translation>
+    </message>
+    <message>
+        <source>Thyristors</source>
+        <translation>Тиристори</translation>
+    </message>
+    <message>
+        <source>Transistors</source>
+        <translation>Транзистори</translation>
+    </message>
+    <message>
+        <source>Chips</source>
+        <translation>Мікросхеми</translation>
+    </message>
+    <message>
+        <source>Crystals</source>
+        <translation>Кварцові резонатори</translation>
+    </message>
+    <message>
+        <source>Connectors</source>
+        <translation>З'єднувачі</translation>
+    </message>
+    <message>
+        <source>Switches and buttons</source>
+        <translation>Перемикачі та кнопки</translation>
+    </message>
+    <message>
+        <source>Fuses</source>
+        <translation>Запобіжники</translation>
+    </message>
+    <message>
+        <source>Batteries</source>
+        <translation>Батареї</translation>
+    </message>
+    <message>
+        <source>Sound devices</source>
+        <translation>Звукові пристрої</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>Інше</translation>
     </message>
 </context>
 <context>

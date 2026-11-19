@@ -8,5 +8,6 @@
   "value": "",
   "connector": false,
   "powerMw": 125,
+  "group": "resistors",
   "name": {"en": "Trimmer resistor", "uk": "Підстроювальний резистор", "ru": "Подстроечный резистор"}
 }

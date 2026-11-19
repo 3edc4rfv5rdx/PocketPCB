@@ -7,5 +7,6 @@
   "prefixGost": "HL",
   "value": "",
   "connector": false,
+  "group": "leds",
   "name": {"en": "LED", "uk": "Світлодіод", "ru": "Светодиод"}
 }

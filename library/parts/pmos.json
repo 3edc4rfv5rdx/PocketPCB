@@ -7,5 +7,6 @@
   "prefixGost": "VT",
   "value": "",
   "connector": false,
+  "group": "transistors",
   "name": {"en": "P-channel MOSFET", "uk": "MOSFET, канал P", "ru": "MOSFET, канал P"}
 }

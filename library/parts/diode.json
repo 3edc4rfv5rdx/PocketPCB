@@ -7,5 +7,6 @@
   "prefixGost": "VD",
   "value": "",
   "connector": false,
+  "group": "diodes",
   "name": {"en": "Diode", "uk": "Діод", "ru": "Диод"}
 }

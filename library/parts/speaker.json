@@ -7,5 +7,6 @@
   "prefixGost": "BA",
   "value": "",
   "connector": false,
+  "group": "sound",
   "name": {"en": "Speaker", "uk": "Гучномовець", "ru": "Динамик"}
 }

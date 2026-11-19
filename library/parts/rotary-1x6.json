@@ -8,5 +8,6 @@
   "value": "",
   "connector": false,
   "noValue": true,
+  "group": "switches",
   "name": {"en": "Rotary switch, 6 positions", "uk": "Галетний перемикач, 6 положень", "ru": "Галетный переключатель, 6 положений"}
 }

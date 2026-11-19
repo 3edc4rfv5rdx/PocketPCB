@@ -7,5 +7,6 @@
   "prefixGost": "GB",
   "value": "",
   "connector": false,
+  "group": "batteries",
   "name": {"en": "Battery", "uk": "Батарея", "ru": "Батарея"}
 }

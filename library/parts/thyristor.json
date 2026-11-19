@@ -7,5 +7,6 @@
   "prefixGost": "VS",
   "value": "",
   "connector": false,
+  "group": "thyristors",
   "name": {"en": "Thyristor", "uk": "Тиристор", "ru": "Тиристор"}
 }
