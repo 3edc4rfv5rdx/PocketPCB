@@ -51,6 +51,14 @@
 <context>
     <name>ppcb::Format</name>
     <message>
+        <source>symbol</source>
+        <translation>символ</translation>
+    </message>
+    <message>
+        <source>footprints</source>
+        <translation>посадочные места</translation>
+    </message>
+    <message>
         <source>mm</source>
         <translation>мм</translation>
     </message>
@@ -625,14 +633,6 @@
         <translation>Деталь</translation>
     </message>
     <message>
-        <source>symbol</source>
-        <translation>символ</translation>
-    </message>
-    <message>
-        <source>footprints</source>
-        <translation>посадочные места</translation>
-    </message>
-    <message>
         <source>&amp;New project</source>
         <translation>&amp;Новый проект</translation>
     </message>
@@ -1093,6 +1093,29 @@
     <message>
         <source>Will be made</source>
         <translation>Будет создано</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::UpdatePartsDialog</name>
+    <message>
+        <source>These parts of the project differ from the library</source>
+        <translation>Эти детали проекта отличаются от библиотеки</translation>
+    </message>
+    <message>
+        <source>part fields</source>
+        <translation>поля детали</translation>
+    </message>
+    <message>
+        <source>pins moved, wires stay where they are</source>
+        <translation>выводы сдвинуты, провода остаются на месте</translation>
+    </message>
+    <message>
+        <source>Update parts from library</source>
+        <translation>Обновить детали из библиотеки</translation>
+    </message>
+    <message>
+        <source>Every part of the project is as in the library</source>
+        <translation>Все детали проекта такие же, как в библиотеке</translation>
     </message>
 </context>
 </TS>

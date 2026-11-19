@@ -150,6 +150,9 @@ private:
     // Both return true when the project was saved.
     bool saveProject();
     bool chooseProjectToSaveAs();
+    // File > Update parts from library: the parts chosen in the dialog
+    // (partDifferences(), withPartsUpdated()) as one step.
+    void updatePartsFromLibrary();
     // File > Project properties: what the dialog gives is one step.
     void editProjectProperties();
     // Puts the project on the canvas in the place of a library file.

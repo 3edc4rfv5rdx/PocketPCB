@@ -195,6 +195,29 @@ Component newComponent(const Library &library, const QString &partName,
 // the project does not change because the library did.
 Library withPartFrom(const Library &project, const Library &source, const QString &partName);
 // The same for the symbol 'symbolName' of a power symbol.
+// How a part used on the schematic differs between the project library and
+// another one: its own fields (any of Part), the drawing of its symbol, the
+// places or numbers of its pins, the footprints it lists.
+struct PartDifference
+{
+    QString part;
+    bool fields = false;
+    bool drawing = false;
+    bool pins = false;
+    bool footprints = false;
+};
+
+// The parts the components of 'design' use that 'source' has otherwise
+// than the project library, by name; a part 'source' lacks is left out.
+QList<PartDifference> partDifferences(const Design &design, const Library &source);
+
+// 'design' with the parts 'parts' taken from 'source' into its library with
+// their symbols and footprints, which other parts sharing them get too. A
+// component of such a part with no rated power gets the part's, and one
+// whose footprint the part no longer lists gets its first. Wires stay where
+// they are, also where pins have moved.
+Design withPartsUpdated(const Design &design, const Library &source, const QStringList &parts);
+
 Library withSymbolFrom(const Library &project, const Library &source, const QString &symbolName);
 
 } // namespace ppcb

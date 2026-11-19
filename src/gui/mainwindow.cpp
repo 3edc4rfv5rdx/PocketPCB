@@ -16,6 +16,7 @@
 #include "propertiespanel.h"
 #include "sheeteditor.h"
 #include "sheettabs.h"
+#include "updatepartsdialog.h"
 #include "stephistory.h"
 #include "libraryviewitem.h"
 #include "saveprojectdialog.h"
@@ -326,6 +327,10 @@ void MainWindow::createMenus()
         fileMenu->addAction(ProjectPropertiesDialog::title() + QStringLiteral("…"));
     propertiesAction->setObjectName(QStringLiteral("actionProjectProperties"));
     connect(propertiesAction, &QAction::triggered, this, &MainWindow::editProjectProperties);
+    QAction *updatePartsAction =
+        fileMenu->addAction(UpdatePartsDialog::title() + QStringLiteral("…"));
+    updatePartsAction->setObjectName(QStringLiteral("actionUpdateParts"));
+    connect(updatePartsAction, &QAction::triggered, this, &MainWindow::updatePartsFromLibrary);
     fileMenu->addSeparator();
 
     QAction *openLibraryAction = fileMenu->addAction(tr("Open library file") + QStringLiteral("…"));
@@ -923,6 +928,23 @@ bool MainWindow::chooseProjectToSaveAs()
     return saveProjectAs(dialog.parentFolder(), dialog.name());
 }
 
+void MainWindow::updatePartsFromLibrary()
+{
+    // A copy: the dialog waits for the user.
+    const Design design = m_document->design();
+    const QList<PartDifference> differences = partDifferences(design, m_library.items);
+    if (differences.isEmpty()) {
+        QMessageBox::information(this, UpdatePartsDialog::title(),
+                                 UpdatePartsDialog::nothingToUpdate() + QLatin1Char('.'));
+        return;
+    }
+    UpdatePartsDialog dialog(differences, m_library.items, this);
+    if (dialog.exec() != QDialog::Accepted || dialog.chosenParts().isEmpty())
+        return;
+    m_document->change(UpdatePartsDialog::title(),
+                       withPartsUpdated(design, m_library.items, dialog.chosenParts()));
+}
+
 void MainWindow::editProjectProperties()
 {
     ProjectPropertiesDialog dialog(m_document->design(), this);
@@ -1323,9 +1345,9 @@ bool MainWindow::showLibraryFile(const QString &path)
         message = PropertiesPanel::footprintTitle() + QLatin1String(": ") + name;
         break;
     case LibraryKind::Part:
-        message = tr("Part") + QLatin1String(": ") + name + QStringLiteral(" — ") + tr("symbol")
+        message = tr("Part") + QLatin1String(": ") + name + QStringLiteral(" — ") + symbolWord()
                   + QLatin1Char(' ') + content.part.symbol + QStringLiteral(" — ")
-                  + tr("footprints") + QLatin1Char(' ')
+                  + footprintsWord() + QLatin1Char(' ')
                   + content.part.footprints.join(QLatin1String(", "));
         break;
     }

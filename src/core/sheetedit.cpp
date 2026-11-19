@@ -639,6 +639,81 @@ Library withPartFrom(const Library &project, const Library &source, const QStrin
     return result;
 }
 
+QList<PartDifference> partDifferences(const Design &design, const Library &source)
+{
+    QStringList used;
+    for (const Sheet &sheet : design.schematic.sheets) {
+        for (const Component &component : sheet.components) {
+            if (!used.contains(component.part))
+                used.append(component.part);
+        }
+    }
+    used.sort();
+    // The points wires join a symbol at, by pin number.
+    const auto connections = [](const Symbol *symbol) {
+        QMap<QString, Point> points;
+        if (symbol != nullptr) {
+            for (const Pin &pin : symbol->pins)
+                points.insert(pin.number, pin.at);
+        }
+        return points;
+    };
+    const Library &project = design.library;
+    QList<PartDifference> result;
+    for (const QString &name : used) {
+        const Part *fresh = source.findPart(name);
+        if (fresh == nullptr)
+            continue;
+        const Part *kept = project.findPart(name);
+        PartDifference difference;
+        difference.part = name;
+        difference.fields = kept == nullptr || *kept != *fresh;
+        const Symbol *oldSymbol = kept != nullptr ? project.findSymbol(kept->symbol) : nullptr;
+        const Symbol *newSymbol = source.findSymbol(fresh->symbol);
+        difference.pins = connections(oldSymbol) != connections(newSymbol);
+        difference.drawing = (oldSymbol == nullptr) != (newSymbol == nullptr)
+                             || (oldSymbol != nullptr && *oldSymbol != *newSymbol);
+        for (const QString &footprint : fresh->footprints) {
+            const Footprint *oldFootprint = project.findFootprint(footprint);
+            const Footprint *newFootprint = source.findFootprint(footprint);
+            if (newFootprint != nullptr && (oldFootprint == nullptr || *oldFootprint != *newFootprint))
+                difference.footprints = true;
+        }
+        if (difference.fields || difference.drawing || difference.pins || difference.footprints)
+            result.append(difference);
+    }
+    return result;
+}
+
+Design withPartsUpdated(const Design &design, const Library &source, const QStringList &parts)
+{
+    Design result = design;
+    Library &library = result.library;
+    for (const QString &name : parts) {
+        const Part *part = source.findPart(name);
+        if (part == nullptr)
+            continue;
+        library.parts.insert(name, *part);
+        if (const Symbol *symbol = source.findSymbol(part->symbol))
+            library.symbols.insert(part->symbol, *symbol);
+        for (const QString &footprint : part->footprints) {
+            if (const Footprint *found = source.findFootprint(footprint))
+                library.footprints.insert(footprint, *found);
+        }
+        for (Sheet &sheet : result.schematic.sheets) {
+            for (Component &component : sheet.components) {
+                if (component.part != name)
+                    continue;
+                if (component.powerMw == 0)
+                    component.powerMw = part->powerMw;
+                if (!part->footprints.contains(component.footprint))
+                    component.footprint = part->footprints.value(0);
+            }
+        }
+    }
+    return result;
+}
+
 Library withSymbolFrom(const Library &project, const Library &source, const QString &symbolName)
 {
     Library result = project;

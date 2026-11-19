@@ -15,6 +15,7 @@ add_library(pocketpcb_gui STATIC
     propertiespanel.h propertiespanel.cpp
     sheeteditor.h sheeteditor.cpp
     sheettabs.h sheettabs.cpp
+    updatepartsdialog.h updatepartsdialog.cpp
     saveprojectdialog.h saveprojectdialog.cpp
 )
 target_include_directories(pocketpcb_gui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

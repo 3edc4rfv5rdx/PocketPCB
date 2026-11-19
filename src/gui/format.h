@@ -16,5 +16,8 @@ QString formatMmShort(Coord nm);
 
 // "mm", the unit after a length, in the current language.
 QString mmUnit();
+// "symbol" and "footprints", lower case, for what a part has.
+QString symbolWord();
+QString footprintsWord();
 
 } // namespace ppcb

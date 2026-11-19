@@ -619,6 +619,65 @@ private slots:
                  QStringLiteral("RG1"));
     }
 
+    // What differs is found per part used; the update takes the part with
+    // its symbol and footprints, gives power to components with none and a
+    // listed footprint to those whose footprint is gone.
+    void partsAreUpdatedFromTheLibrary()
+    {
+        Design design;
+        design.library = resistorLibrary();
+        Footprint oldFootprint;
+        oldFootprint.pads.append(Pad());
+        design.library.footprints.insert(QStringLiteral("old"), oldFootprint);
+        design.library.parts[QStringLiteral("resistor")].footprints = {QStringLiteral("old")};
+        Component used = fullSheet().components.first();
+        used.footprint = QStringLiteral("old");
+        Component powered = used;
+        powered.id = id(50);
+        powered.powerMw = 2000;
+        Sheet sheet;
+        sheet.components = {used, powered};
+        design.schematic.sheets = {sheet};
+
+        // The same library: nothing differs.
+        QVERIFY(partDifferences(design, design.library).isEmpty());
+
+        Library source = design.library;
+        Part &part = source.parts[QStringLiteral("resistor")];
+        part.powerMw = 125;
+        part.footprints = {QStringLiteral("new")};
+        source.footprints.insert(QStringLiteral("new"), Footprint());
+        QList<PartDifference> differences = partDifferences(design, source);
+        QCOMPARE(differences.size(), 1);
+        QCOMPARE(differences.first().part, QStringLiteral("resistor"));
+        QVERIFY(differences.first().fields);
+        QVERIFY(differences.first().footprints);
+        QVERIFY(!differences.first().drawing);
+        QVERIFY(!differences.first().pins);
+
+        // A pin moved is told apart from the drawing alone.
+        source.symbols[QStringLiteral("resistor")].pins[0].at.x -= 2540000;
+        differences = partDifferences(design, source);
+        QVERIFY(differences.first().drawing && differences.first().pins);
+        source.symbols[QStringLiteral("resistor")].pins[0].at.x += 2540000;
+        source.symbols[QStringLiteral("resistor")].pins[0].name = QStringLiteral("A");
+        differences = partDifferences(design, source);
+        QVERIFY(differences.first().drawing && !differences.first().pins);
+
+        const Design updated = withPartsUpdated(design, source, {QStringLiteral("resistor")});
+        QVERIFY(updated.library.parts.value(QStringLiteral("resistor")) == part);
+        QVERIFY(updated.library.symbols.value(QStringLiteral("resistor"))
+                == source.symbols.value(QStringLiteral("resistor")));
+        QVERIFY(updated.library.footprints.contains(QStringLiteral("new")));
+        const QList<Component> &components = updated.schematic.sheets.at(0).components;
+        QCOMPARE(components.at(0).powerMw, 125);
+        QCOMPARE(components.at(1).powerMw, 2000);
+        QCOMPARE(components.at(0).footprint, QStringLiteral("new"));
+        QVERIFY(partDifferences(updated, source).isEmpty());
+        // A part not chosen stays.
+        QVERIFY(withPartsUpdated(design, source, {}) == design);
+    }
+
     // Outside GOST a power not the common one follows the value as text,
     // and the value's rectangle grows with it.
     void powerFollowsTheValueOutsideGost()

@@ -44,4 +44,14 @@ QString mmUnit()
     return QCoreApplication::translate("ppcb::Format", "mm");
 }
 
+QString symbolWord()
+{
+    return QCoreApplication::translate("ppcb::Format", "symbol");
+}
+
+QString footprintsWord()
+{
+    return QCoreApplication::translate("ppcb::Format", "footprints");
+}
+
 } // namespace ppcb
