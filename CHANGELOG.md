@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- I: A generic grid search (A*) that the schematic wires and later the board tracks are to be laid with
 ## v0.5.128 (2026-11-18)
 - E: The language chosen in Settings > Language is kept across a restart instead of being lost
 - N: Settings > Language chooses the language of the interface, or the system's, taken at the next start

@@ -26,6 +26,7 @@ ppcb_add_test(test_projectview)
 ppcb_add_test(test_document)
 ppcb_add_test(test_sheetedit)
 ppcb_add_test(test_wiring)
+ppcb_add_test(test_gridroute)
 ppcb_add_test(test_netlist)
 ppcb_add_test(test_erc)
 # Reads the library and the example project kept in the source tree.
