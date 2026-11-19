@@ -150,7 +150,7 @@ Schematic emptySchematic()
 QImage render(const Schematic &schematic, const Library &library = Library())
 {
     return renderWith([&schematic, &library](QPainter &painter) {
-        paintSheet(painter, schematic, library, 0, TitleBlock());
+        paintSheet(painter, schematic, library, 0, TitleBlock(), PowerShown());
     });
 }
 
@@ -498,8 +498,8 @@ private slots:
 
         // A sheet that is not there draws nothing at all.
         const QImage nothing = renderWith([&schematic](QPainter &painter) {
-            paintSheet(painter, schematic, Library(), 1, TitleBlock());
-            paintSheet(painter, schematic, Library(), -1, TitleBlock());
+            paintSheet(painter, schematic, Library(), 1, TitleBlock(), PowerShown());
+            paintSheet(painter, schematic, Library(), -1, TitleBlock(), PowerShown());
         });
         QCOMPARE(nothing, newImage());
     }
@@ -518,7 +518,7 @@ private slots:
         const auto renderAround = [&schematic](double x, double y, const TitleBlock &block) {
             return renderWith([&](QPainter &painter) {
                 painter.translate(-x, -y);
-                paintSheet(painter, schematic, Library(), 0, block);
+                paintSheet(painter, schematic, Library(), 0, block, PowerShown());
             });
         };
         // The corner of the A4 frame is at 292, 205. The block is 90 mm wide

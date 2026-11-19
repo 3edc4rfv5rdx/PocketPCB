@@ -91,20 +91,24 @@ private slots:
     // without powers.
     void commonPowerCountsComponents()
     {
-        BomRow single;
-        single.designators = {QStringLiteral("R1")};
-        single.powerMw = 500;
-        BomRow pair;
-        pair.designators = {QStringLiteral("R2"), QStringLiteral("R3")};
-        pair.powerMw = 250;
-        BomRow none;
-        none.designators = {QStringLiteral("C1"), QStringLiteral("C2"), QStringLiteral("C3")};
-        QCOMPARE(commonPowerMw({single, pair, none}), 250);
-        single.designators.append(QStringLiteral("R4"));
-        QCOMPARE(commonPowerMw({single, pair, none}), 250);
-        single.designators.append(QStringLiteral("R5"));
-        QCOMPARE(commonPowerMw({single, pair, none}), 500);
-        QCOMPARE(commonPowerMw({none}), 0);
+        Schematic schematic;
+        Sheet first;
+        first.components = {component(1, QStringLiteral("R1"), QString(), 500),
+                            component(2, QStringLiteral("R2"), QString(), 250),
+                            component(3, QStringLiteral("C1"), QString())};
+        Sheet second;
+        second.components = {component(4, QStringLiteral("R3"), QString(), 250),
+                             component(5, QStringLiteral("C2"), QString()),
+                             component(6, QStringLiteral("C3"), QString())};
+        schematic.sheets = {first, second};
+        // Every sheet counts.
+        QCOMPARE(commonPowerMw(schematic), 250);
+        // A tie: the lower.
+        schematic.sheets[1].components.append(component(7, QStringLiteral("R4"), QString(), 500));
+        QCOMPARE(commonPowerMw(schematic), 250);
+        schematic.sheets[1].components.append(component(8, QStringLiteral("R5"), QString(), 500));
+        QCOMPARE(commonPowerMw(schematic), 500);
+        QCOMPARE(commonPowerMw(Schematic()), 0);
     }
 
     // A field with a comma or a quote is quoted, its quotes doubled.

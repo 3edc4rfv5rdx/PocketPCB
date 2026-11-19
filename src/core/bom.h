@@ -35,9 +35,9 @@ struct BomRow
 // designators.
 QList<BomRow> bomRows(const Schematic &schematic, const Library &library);
 
-// The rated power, in milliwatts, the most components of 'rows' have: the
-// lower of those as many have; 0 when none has a power.
-int commonPowerMw(const QList<BomRow> &rows);
+// The rated power, in milliwatts, the most components of 'schematic' have:
+// the lower of those as many have; 0 when none has a power.
+int commonPowerMw(const Schematic &schematic);
 
 // True when designator 'a' comes before 'b': by their letters, then by the
 // number after them, so that R2 comes before R10.

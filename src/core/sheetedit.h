@@ -55,8 +55,9 @@ inline bool operator==(const TextHit &a, const TextHit &b)
 // the rectangle has room enough and a click on the symbol next to it must
 // take the component. An empty value is found by its mark (see
 // componentTextShown()), when 'library' shows one; an empty designator not
-// at all.
-TextHit textAt(const Sheet &sheet, const Library &library, const QPointF &point);
+// at all. A value is found with the power 'power' shows after it.
+TextHit textAt(const Sheet &sheet, const Library &library, const PowerShown &power,
+               const QPointF &point);
 // True when 'sheet' has the text 'hit'.
 bool hasText(const Sheet &sheet, const TextHit &hit);
 // Where the text stands, which a drag lands on the grid, and the point of
@@ -65,7 +66,8 @@ Point textPoint(const Sheet &sheet, const TextHit &hit);
 Point textOwnerPoint(const Sheet &sheet, const TextHit &hit);
 // A rectangle surely holding the text, in millimetres; empty when 'sheet'
 // has no such text.
-QRectF textRect(const Sheet &sheet, const Library &library, const TextHit &hit);
+QRectF textRect(const Sheet &sheet, const Library &library, const PowerShown &power,
+                const TextHit &hit);
 // 'sheet' with the text 'hit' moved by 'delta'; its object stays.
 Sheet withTextMoved(const Sheet &sheet, const TextHit &hit, const Point &delta);
 // 'sheet' with the bus 'bus' showing its name once more, standing at 'at';
@@ -166,6 +168,9 @@ Sheet numberedOn(const Sheet &piece, const Schematic &schematic, const Library &
 
 // Placing parts.
 
+// How the rated powers of 'schematic' are shown in the designator style of
+// 'project': GOST marks in GOST, text after the value elsewhere.
+PowerShown powerShown(const Project &project, const Schematic &schematic);
 // The designator prefix of 'part' in 'style': R, VD, DD...
 QString designatorPrefix(const Part &part, DesignatorStyle style);
 // 'schematic' with its designators switched from style 'from' to 'to': one

@@ -121,7 +121,7 @@ class TestSheetEdit : public QObject
 private slots:
     void objectsAreFoundUnderTheMouse()
     {
-        const QList<SheetObjectShape> shapes = sheetObjectShapes(fullSheet(), resistorLibrary());
+        const QList<SheetObjectShape> shapes = sheetObjectShapes(fullSheet(), resistorLibrary(), PowerShown());
         // The body of the resistor, and its designator above it.
         QCOMPARE(objectAt(shapes, QPointF(50, 50), 0.5), id(1));
         QCOMPARE(objectAt(shapes, QPointF(50, 47), 0.5), id(1));
@@ -147,7 +147,7 @@ private slots:
         QCOMPARE(objectAt(crossing, QPointF(5, 8), 0.5), id(10));
 
         // A component the library lacks is still found where it stands.
-        const QList<SheetObjectShape> missing = sheetObjectShapes(fullSheet(), Library());
+        const QList<SheetObjectShape> missing = sheetObjectShapes(fullSheet(), Library(), PowerShown());
         QCOMPARE(objectAt(missing, QPointF(50, 50), 0.5), id(1));
     }
 
@@ -179,18 +179,18 @@ private slots:
         power.name = QStringLiteral("GND");
         power.symbol = QStringLiteral("ground");
         sheet.powerSymbols = {power};
-        const QRectF hidden = sheetObjectShapes(sheet, library).first().rect;
-        QCOMPARE(objectAt(sheetObjectShapes(sheet, library), QPointF(20, 22.54), 0.5), id(1));
+        const QRectF hidden = sheetObjectShapes(sheet, library, PowerShown()).first().rect;
+        QCOMPARE(objectAt(sheetObjectShapes(sheet, library, PowerShown()), QPointF(20, 22.54), 0.5), id(1));
         // The drawing reaches down to the bar, and no further.
         QVERIFY(hidden.bottom() < 23.5);
 
         sheet.powerSymbols[0].name = QStringLiteral("AGND");
-        const QRectF shown = sheetObjectShapes(sheet, library).first().rect;
+        const QRectF shown = sheetObjectShapes(sheet, library, PowerShown()).first().rect;
         QVERIFY(shown.bottom() > 25);
 
         // Turned over, the drawing goes up instead.
         sheet.powerSymbols[0].rotation = 180;
-        QVERIFY(sheetObjectShapes(sheet, library).first().rect.top() < 15.5);
+        QVERIFY(sheetObjectShapes(sheet, library, PowerShown()).first().rect.top() < 15.5);
 
         // Placed, its symbol is copied into the project, which keeps its own.
         Library project;
@@ -268,7 +268,7 @@ private slots:
         bus.points = {Point{20 * MM, 20 * MM}, Point{40 * MM, 20 * MM}};
         bus.name = QStringLiteral("D[0..7]");
         sheet.buses = {bus};
-        const TextHit hit = textAt(sheet, Library(), busNameRect(bus, 0).center());
+        const TextHit hit = textAt(sheet, Library(), PowerShown(), busNameRect(bus, 0).center());
         QCOMPARE(hit.owner, id(1));
         QCOMPARE(textOwnerPoint(sheet, hit), bus.points.first());
         const Point delta{5 * MM, -3 * MM};
@@ -276,14 +276,14 @@ private slots:
         QCOMPARE(moved.buses.at(0).points, bus.points);
         QCOMPARE(moved.buses.at(0).namesAt, QList<Point>({delta}));
         QCOMPARE(textPoint(moved, hit), bus.points.first() + delta);
-        QCOMPARE(textRect(moved, Library(), hit), busNameRect(bus, 0).translated(5, -3));
+        QCOMPARE(textRect(moved, Library(), PowerShown(), hit), busNameRect(bus, 0).translated(5, -3));
 
         // Shown once more at the far end: each place is found, moved and
         // deleted alone, but the last one stays.
         const Sheet twice = withBusNameAdded(sheet, id(1), bus.points.last());
         QCOMPARE(twice.buses.at(0).namesAt,
                  QList<Point>({Point(), bus.points.last() - bus.points.first()}));
-        const TextHit far = textAt(twice, Library(), busNameRect(twice.buses.at(0), 1).center());
+        const TextHit far = textAt(twice, Library(), PowerShown(), busNameRect(twice.buses.at(0), 1).center());
         QCOMPARE(far.index, 1);
         QCOMPARE(withTextMoved(twice, far, delta).buses.at(0).namesAt.at(1),
                  twice.buses.at(0).namesAt.at(1) + delta);
@@ -338,7 +338,7 @@ private slots:
 
     void rectangleTakesWhatIsWhollyInside()
     {
-        const QList<SheetObjectShape> shapes = sheetObjectShapes(fullSheet(), resistorLibrary());
+        const QList<SheetObjectShape> shapes = sheetObjectShapes(fullSheet(), resistorLibrary(), PowerShown());
         QCOMPARE(objectsInside(shapes, QRectF(5, 5, 40, 20)), QSet<ObjectId>({id(2)}));
         // Half of the wire is not enough.
         QVERIFY(objectsInside(shapes, QRectF(5, 5, 20, 20)).isEmpty());
@@ -372,28 +372,28 @@ private slots:
         Library library = resistorLibrary();
         Sheet sheet = fullSheet();
         // R1 at (50, 50): its designator at (50, 47), its value at (52, 53).
-        QCOMPARE(textAt(sheet, library, QPointF(50, 47)).owner, id(1));
-        QVERIFY(textAt(sheet, library, QPointF(50, 47)).text == ComponentText::Designator);
+        QCOMPARE(textAt(sheet, library, PowerShown(), QPointF(50, 47)).owner, id(1));
+        QVERIFY(textAt(sheet, library, PowerShown(), QPointF(50, 47)).text == ComponentText::Designator);
         // No value: its mark is found where it stands.
-        QCOMPARE(textAt(sheet, library, QPointF(52, 53)).owner, id(1));
-        QVERIFY(textAt(sheet, library, QPointF(52, 53)).text == ComponentText::Value);
+        QCOMPARE(textAt(sheet, library, PowerShown(), QPointF(52, 53)).owner, id(1));
+        QVERIFY(textAt(sheet, library, PowerShown(), QPointF(52, 53)).text == ComponentText::Value);
         // A part that needs no value shows no mark, and none is found.
         library.parts[QStringLiteral("resistor")].noValue = true;
-        QVERIFY(textAt(sheet, library, QPointF(52, 53)).owner.isNull());
-        QVERIFY(componentTextShown(sheet.components.at(0), ComponentText::Value, library)
+        QVERIFY(textAt(sheet, library, PowerShown(), QPointF(52, 53)).owner.isNull());
+        QVERIFY(componentTextShown(sheet.components.at(0), ComponentText::Value, library, PowerShown())
                     .isEmpty());
         library.parts[QStringLiteral("resistor")].noValue = false;
         // No designator: nothing is found.
         sheet.components[0].designator.clear();
-        QVERIFY(textAt(sheet, library, QPointF(50, 47)).owner.isNull());
+        QVERIFY(textAt(sheet, library, PowerShown(), QPointF(50, 47)).owner.isNull());
         sheet = withComponentValue(sheet, {id(1)}, QStringLiteral(" 10k "));
         QCOMPARE(sheet.components.at(0).value, QStringLiteral("10k"));
         sheet.components[0].designator = QStringLiteral("R1");
-        QCOMPARE(textAt(sheet, library, QPointF(52, 53)).owner, id(1));
-        QVERIFY(textAt(sheet, library, QPointF(52, 53)).text == ComponentText::Value);
-        QVERIFY(textAt(sheet, library, QPointF(80, 80)).owner.isNull());
+        QCOMPARE(textAt(sheet, library, PowerShown(), QPointF(52, 53)).owner, id(1));
+        QVERIFY(textAt(sheet, library, PowerShown(), QPointF(52, 53)).text == ComponentText::Value);
+        QVERIFY(textAt(sheet, library, PowerShown(), QPointF(80, 80)).owner.isNull());
         // The component's own point, between its texts, is not a text.
-        QVERIFY(textAt(sheet, library, QPointF(50, 50)).owner.isNull());
+        QVERIFY(textAt(sheet, library, PowerShown(), QPointF(50, 50)).owner.isNull());
 
         const Point delta{2 * MM, -1 * MM};
         const Sheet moved = withTextMoved(sheet, TextHit{id(1), ComponentText::Value}, delta);
@@ -417,12 +417,12 @@ private slots:
         label.at = Point{20 * MM, 20 * MM};
         label.text = QStringLiteral("DATA");
         sheet.labels = {label};
-        const TextHit hit = textAt(sheet, Library(), QPointF(21, 19));
+        const TextHit hit = textAt(sheet, Library(), PowerShown(), QPointF(21, 19));
         QCOMPARE(hit.owner, id(1));
         QVERIFY(hasText(sheet, hit));
         QCOMPARE(textPoint(sheet, hit), label.at);
         // Below the wire is no text.
-        QVERIFY(textAt(sheet, Library(), QPointF(21, 21)).owner.isNull());
+        QVERIFY(textAt(sheet, Library(), PowerShown(), QPointF(21, 21)).owner.isNull());
 
         const Point delta{0, -3 * MM};
         const Sheet moved = withTextMoved(sheet, hit, delta);
@@ -430,10 +430,10 @@ private slots:
         QCOMPARE(moved.labels.at(0).textAt, delta);
         QCOMPARE(textPoint(moved, hit), label.at + delta);
         QCOMPARE(textOwnerPoint(moved, hit), label.at);
-        QVERIFY(textRect(moved, Library(), hit).bottom() < 17.5);
+        QVERIFY(textRect(moved, Library(), PowerShown(), hit).bottom() < 17.5);
         // The old place no longer holds it; the new one does.
-        QVERIFY(textAt(moved, Library(), QPointF(21, 19)).owner.isNull());
-        QCOMPARE(textAt(moved, Library(), QPointF(21, 16)).owner, id(1));
+        QVERIFY(textAt(moved, Library(), PowerShown(), QPointF(21, 19)).owner.isNull());
+        QCOMPARE(textAt(moved, Library(), PowerShown(), QPointF(21, 16)).owner, id(1));
 
         // A quarter turn about its point takes the text round with it.
         const Sheet turned = rotatedObjects(moved, {id(1)}, label.at);
@@ -617,6 +617,42 @@ private slots:
         QCOMPARE(numberedOn(piece, schematic, library, DesignatorStyle::Gost)
                      .components.at(0).designator,
                  QStringLiteral("RG1"));
+    }
+
+    // Outside GOST a power not the common one follows the value as text,
+    // and the value's rectangle grows with it.
+    void powerFollowsTheValueOutsideGost()
+    {
+        const Library library = resistorLibrary();
+        Component component = fullSheet().components.first();
+        component.value = QStringLiteral("10k");
+        component.powerMw = 500;
+        const PowerShown marks{true, 125};
+        const PowerShown text{false, 125};
+        const PowerShown common{false, 500};
+        const auto shown = [&](const PowerShown &power) {
+            return componentTextShown(component, ComponentText::Value, library, power);
+        };
+        QCOMPARE(shown(marks), QStringLiteral("10k"));
+        QCOMPARE(shown(text), QStringLiteral("10k ") + formatPower(500));
+        QCOMPARE(shown(common), QStringLiteral("10k"));
+        QVERIFY(componentTextRect(component, ComponentText::Value, library, text).width()
+                > componentTextRect(component, ComponentText::Value, library, marks).width());
+        component.value.clear();
+        QVERIFY(shown(text).endsWith(QLatin1Char(' ') + formatPower(500)));
+        QVERIFY(shown(text).size() > formatPower(500).size() + 1);
+
+        Project project;
+        Schematic schematic;
+        Sheet sheet;
+        sheet.components = {component, component, fullSheet().components.first()};
+        sheet.components[2].powerMw = 250;
+        schematic.sheets = {sheet};
+        project.designatorStyle = DesignatorStyle::Gost;
+        QVERIFY(powerShown(project, schematic).marks);
+        project.designatorStyle = DesignatorStyle::International;
+        QVERIFY(!powerShown(project, schematic).marks);
+        QCOMPARE(powerShown(project, schematic).commonMw, 500);
     }
 
     // The prefix changes and the number stays; a designator the change

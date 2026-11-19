@@ -63,7 +63,9 @@ int netAt(const QList<Net> &nets, const Schematic &schematic, const Library &lib
         }
         return -1;
     };
-    const QList<SheetObjectShape> shapes = sheetObjectShapes(on, library);
+    // The power shown after a value would only widen the rectangle of a
+    // component, which is on no net itself: without it is near enough.
+    const QList<SheetObjectShape> shapes = sheetObjectShapes(on, library, PowerShown());
     const ObjectId hit = objectAt(shapes, point, tolerance);
     // A wire comes first, as objectAt() takes a line before a rectangle.
     const bool byLine =

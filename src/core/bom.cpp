@@ -101,12 +101,14 @@ QList<BomRow> bomRows(const Schematic &schematic, const Library &library)
     return rows;
 }
 
-int commonPowerMw(const QList<BomRow> &rows)
+int commonPowerMw(const Schematic &schematic)
 {
     QMap<int, qsizetype> counts;
-    for (const BomRow &row : rows) {
-        if (row.powerMw > 0)
-            counts[row.powerMw] += row.designators.size();
+    for (const Sheet &sheet : schematic.sheets) {
+        for (const Component &component : sheet.components) {
+            if (component.powerMw > 0)
+                ++counts[component.powerMw];
+        }
     }
     int common = 0;
     qsizetype most = 0;

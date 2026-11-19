@@ -185,13 +185,14 @@ QRectF selectionBounds(const QList<SheetObjectShape> &shapes, const QSet<ObjectI
     return bounds;
 }
 
-TextHit textAt(const Sheet &sheet, const Library &library, const QPointF &point)
+TextHit textAt(const Sheet &sheet, const Library &library, const PowerShown &power,
+               const QPointF &point)
 {
     for (auto it = sheet.components.crbegin(); it != sheet.components.crend(); ++it) {
         for (const ComponentText text : {ComponentText::Designator, ComponentText::Value}) {
-            if (componentTextShown(*it, text, library).isEmpty())
+            if (componentTextShown(*it, text, library, power).isEmpty())
                 continue;
-            if (componentTextRect(*it, text, library).contains(point))
+            if (componentTextRect(*it, text, library, power).contains(point))
                 return TextHit{it->id, text};
         }
     }
@@ -265,10 +266,11 @@ Point textOwnerPoint(const Sheet &sheet, const TextHit &hit)
     return Point();
 }
 
-QRectF textRect(const Sheet &sheet, const Library &library, const TextHit &hit)
+QRectF textRect(const Sheet &sheet, const Library &library, const PowerShown &power,
+                const TextHit &hit)
 {
     if (const Component *component = ownerOf(sheet.components, hit.owner))
-        return componentTextRect(*component, hit.text, library);
+        return componentTextRect(*component, hit.text, library, power);
     if (const Label *label = ownerOf(sheet.labels, hit.owner))
         return labelTextRect(*label);
     if (const Bus *bus = ownerOf(sheet.buses, hit.owner))
@@ -512,6 +514,14 @@ Sheet mirroredObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point
         }
     };
     return transformed(sheet, ids, transform);
+}
+
+PowerShown powerShown(const Project &project, const Schematic &schematic)
+{
+    PowerShown power;
+    power.marks = project.designatorStyle == DesignatorStyle::Gost;
+    power.commonMw = commonPowerMw(schematic);
+    return power;
 }
 
 QString designatorPrefix(const Part &part, DesignatorStyle style)

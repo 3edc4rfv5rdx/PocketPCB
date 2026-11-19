@@ -111,7 +111,13 @@ QList<SheetObjectShape> SheetEditor::shapes() const
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr)
         return {};
-    return sheetObjectShapes(*sheet, m_document->design().library);
+    return sheetObjectShapes(*sheet, m_document->design().library, shownPower());
+}
+
+PowerShown SheetEditor::shownPower() const
+{
+    const Design &design = m_document->design();
+    return powerShown(design.project, design.schematic);
 }
 
 double SheetEditor::pixelsToMm(double pixels) const
@@ -170,7 +176,7 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
     ObjectId hit = objectAt(found, at, pixelsToMm(HIT_PIXELS));
     // The name of a bus lies off its line, which alone finds the bus, or
     // near enough for the line to be found: a click on the name takes it.
-    const TextHit name = textAt(*currentSheet(), m_document->design().library, at);
+    const TextHit name = textAt(*currentSheet(), m_document->design().library, shownPower(), at);
     const bool onName =
         !name.owner.isNull() && (hit.isNull() || hit == name.owner)
         && std::any_of(currentSheet()->buses.cbegin(), currentSheet()->buses.cend(),
@@ -210,7 +216,8 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
         // it is chosen alone, and a drag moves it while its object stays.
         const TextHit text = isFoundByLine(found, hit) && !onName
                                  ? TextHit()
-                                 : textAt(*sheet, m_document->design().library, at);
+                                 : textAt(*sheet, m_document->design().library, shownPower(),
+                                          at);
         // A wire or a bus not chosen whole: the segment under the cursor is
         // chosen, and a drag moves it, or the line's end when taken near it.
         QList<Point> line;
@@ -275,7 +282,7 @@ QRectF SheetEditor::chosenText() const
 {
     if (!hasText() || m_dragging)
         return QRectF();
-    return textRect(*currentSheet(), m_document->design().library, m_chosenText);
+    return textRect(*currentSheet(), m_document->design().library, shownPower(), m_chosenText);
 }
 
 QLineF SheetEditor::textGuide() const
@@ -365,7 +372,7 @@ ObjectId SheetEditor::chooseForMenu(const QPointF &at)
     finishTextEdit(true);
     const Library &library = m_document->design().library;
     const ObjectId hit = objectAt(shapes(), at, pixelsToMm(HIT_PIXELS));
-    const TextHit text = textAt(*sheet, library, at);
+    const TextHit text = textAt(*sheet, library, shownPower(), at);
     const bool chosen =
         (!hit.isNull() && m_selection.contains(hit))
         || (hasText() && text == m_chosenText)
@@ -389,7 +396,8 @@ ObjectId SheetEditor::chooseForMenu(const QPointF &at)
         return hit;
     for (const Component &component : sheet->components) {
         if (component.id == hit
-            && !componentTextShown(component, ComponentText::Value, library).isEmpty()) {
+            && !componentTextShown(component, ComponentText::Value, library, shownPower())
+                    .isEmpty()) {
             return hit;
         }
     }
@@ -444,7 +452,7 @@ void SheetEditor::editText(const ObjectId &id)
     for (const Component &component : sheet->components) {
         if (component.id == id) {
             text = component.value;
-            rect = componentTextRect(component, ComponentText::Value, library);
+            rect = componentTextRect(component, ComponentText::Value, library, shownPower());
         }
     }
     for (const PowerSymbol &power : sheet->powerSymbols) {
@@ -794,7 +802,8 @@ Point SheetEditor::selectionCenter(const Sheet &sheet) const
                 return power.at;
         }
     }
-    const QList<SheetObjectShape> found = sheetObjectShapes(sheet, m_document->design().library);
+    const QList<SheetObjectShape> found =
+        sheetObjectShapes(sheet, m_document->design().library, shownPower());
     return snapped(selectionBounds(found, m_selection).center());
 }
 

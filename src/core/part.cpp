@@ -1,6 +1,7 @@
 #include "part.h"
 
 #include <QCoreApplication>
+#include <QLocale>
 
 namespace ppcb {
 
@@ -64,6 +65,17 @@ QString partGroupName(const QString &key)
 QList<int> standardPowersMw()
 {
     return {50, 125, 250, 500, 1000, 2000, 5000, 10000, 20000, 25000, 50000, 100000};
+}
+
+QString formatPower(int powerMw)
+{
+    if (powerMw <= 0)
+        return QString();
+    const int milliwattsPerWatt = 1000;
+    QLocale locale;
+    locale.setNumberOptions(QLocale::OmitGroupSeparator);
+    const QString watts = locale.toString(double(powerMw) / milliwattsPerWatt, 'g', 6);
+    return QCoreApplication::translate("ppcb::Format", "%1 W").arg(watts);
 }
 
 QString romanNumeral(int number)

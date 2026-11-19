@@ -116,7 +116,7 @@ void BomPanel::refresh()
     const QSignalBlocker blocker(m_table);
     m_table->clearSpans();
     m_table->setRowCount(int(m_lineRows.size()));
-    const int commonPower = commonPowerMw(m_rows);
+    const int commonPower = commonPowerMw(m_document->design().schematic);
     QFont headingFont = m_table->font();
     headingFont.setBold(true);
     for (int line = 0; line < m_lineRows.size(); ++line) {
@@ -167,7 +167,7 @@ void BomPanel::refresh()
 
 QString BomPanel::powerNote() const
 {
-    const int common = commonPowerMw(m_rows);
+    const int common = commonPowerMw(m_document->design().schematic);
     if (common <= 0)
         return QString();
     return tr("Resistor power unless stated") + QStringLiteral(": ") + formatPower(common);

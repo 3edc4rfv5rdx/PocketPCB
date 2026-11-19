@@ -75,12 +75,23 @@ void paintFootprint(QPainter &painter, const Footprint &footprint);
 // lies along X.
 QRectF paperRect(PaperSize paper);
 
+// How the rated power of a component is shown on a sheet: as GOST marks
+// inside its body, or as text after its value where it is not the power
+// most components have.
+struct PowerShown
+{
+    bool marks = true;
+    // The power left without text (commonPowerMw()), in milliwatts.
+    int commonMw = 0;
+};
+
 // Sheet 'index' of the schematic: the frame with the title block, then
 // everything placed on the sheet. Texts stay readable whatever way a symbol
 // is turned or mirrored. An index out of range draws nothing. Symbols come
 // from 'library'; one it lacks is drawn as a red square with a question mark.
+// Rated powers are shown as 'power' says.
 void paintSheet(QPainter &painter, const Schematic &schematic, const Library &library,
-                int index, const TitleBlock &titleBlock);
+                int index, const TitleBlock &titleBlock, const PowerShown &power);
 // A red ring around each of 'problems' on sheet 'index'.
 void paintErcMarks(QPainter &painter, const QList<ErcProblem> &problems, int index);
 
@@ -101,20 +112,23 @@ struct SheetObjectShape
 
 // The shapes of everything placed on 'sheet', in the order it is drawn: the
 // last is on top.
-QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &library);
+QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &library,
+                                          const PowerShown &power);
 
 // The texts a component shows beside its symbol.
 enum class ComponentText { Designator, Value };
 // What is drawn for the text: the designator, or the value; a grey "VALUE"
 // mark stands where the value is empty, to show where it goes and to be
 // taken there, unless the component's part in 'library' needs no value.
+// The rated power follows the value, or the mark, when 'power' shows it as
+// text and it is not the common one.
 QString componentTextShown(const Component &component, ComponentText text,
-                           const Library &library);
+                           const Library &library, const PowerShown &power);
 // Where the text stands on the sheet: the component's point and the text's offset.
 Point componentTextPoint(const Component &component, ComponentText text);
 // A rectangle surely holding the text as it is drawn, in millimetres.
 QRectF componentTextRect(const Component &component, ComponentText text,
-                         const Library &library);
+                         const Library &library, const PowerShown &power);
 
 // Where the name of a bus stands the 'index'th time it is shown: its first
 // point and that place's offset; its first point when there is no such place.

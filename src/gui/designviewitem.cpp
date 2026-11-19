@@ -64,7 +64,8 @@ void DesignViewItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *op
     const SheetEditor *editor = activeEditor();
     const Sheet *preview = editor == nullptr ? nullptr : editor->preview();
     if (preview == nullptr) {
-        paintSheet(*painter, design.schematic, design.library, m_page, design.project.titleBlock);
+        paintSheet(*painter, design.schematic, design.library, m_page, design.project.titleBlock,
+                   powerShown(design.project, design.schematic));
         paintLitNet(*painter, design.schematic.sheets.at(m_page));
         paintSelection(*painter, design.schematic.sheets.at(m_page));
         if (editor != nullptr && m_ercMarksShown)
@@ -76,7 +77,7 @@ void DesignViewItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *op
     schematic.sheets[m_page] = *preview;
     const Library *library = editor->previewLibrary();
     paintSheet(*painter, schematic, library != nullptr ? *library : design.library, m_page,
-               design.project.titleBlock);
+               design.project.titleBlock, powerShown(design.project, schematic));
     paintSelection(*painter, *preview);
 }
 
@@ -108,14 +109,16 @@ void DesignViewItem::paintLitNet(QPainter &painter, const Sheet &sheet) const
     const Net *net = editor == nullptr ? nullptr : editor->litNet();
     if (net == nullptr)
         return;
-    const Library &library = m_document->design().library;
+    const Design &design = m_document->design();
+    const Library &library = design.library;
     const QSet<ObjectId> drawn = net->objects.value(m_page);
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
     QColor color = paintcolor::litNet();
     color.setAlpha(LIT_NET_ALPHA);
     const QPen band(color, SELECTED_LINE_WIDTH, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    for (const SheetObjectShape &shape : sheetObjectShapes(sheet, library)) {
+    for (const SheetObjectShape &shape :
+         sheetObjectShapes(sheet, library, powerShown(design.project, design.schematic))) {
         if (!drawn.contains(shape.id))
             continue;
         if (shape.polyline.isEmpty()) {
@@ -152,7 +155,9 @@ void DesignViewItem::paintSelection(QPainter &painter, const Sheet &sheet) const
     QColor bandColor = paintcolor::selection();
     bandColor.setAlpha(110);
     const QPen band(bandColor, SELECTED_LINE_WIDTH, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    const QList<SheetObjectShape> shapes = sheetObjectShapes(sheet, m_document->design().library);
+    const Design &design = m_document->design();
+    const QList<SheetObjectShape> shapes =
+        sheetObjectShapes(sheet, design.library, powerShown(design.project, design.schematic));
     for (const SheetObjectShape &shape : shapes) {
         if (!editor->selection().contains(shape.id))
             continue;

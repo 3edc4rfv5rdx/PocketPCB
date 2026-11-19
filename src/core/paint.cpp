@@ -606,7 +606,8 @@ static void paintPowerMark(QPainter &painter, const Symbol &symbol, int powerMw)
     painter.restore();
 }
 
-void paintComponent(QPainter &painter, const Library &library, const Component &component)
+void paintComponent(QPainter &painter, const Library &library, const Component &component,
+                    const PowerShown &power)
 {
     const Symbol *symbol = library.findSymbolOfPart(component.part);
     if (symbol == nullptr) {
@@ -615,7 +616,7 @@ void paintComponent(QPainter &painter, const Library &library, const Component &
         painter.save();
         painter.setTransform(componentTransform(component), true);
         paintSymbolBody(painter, *symbol, true, false);
-        if (component.powerMw > 0)
+        if (power.marks && component.powerMw > 0)
             paintPowerMark(painter, *symbol, component.powerMw);
         painter.restore();
     }
@@ -624,7 +625,7 @@ void paintComponent(QPainter &painter, const Library &library, const Component &
              component.designator, PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center,
              paintcolor::symbol());
     drawText(painter, toMm(componentTextPoint(component, ComponentText::Value)),
-             componentTextShown(component, ComponentText::Value, library),
+             componentTextShown(component, ComponentText::Value, library, power),
              PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center,
              component.value.isEmpty() ? paintcolor::placeholder() : paintcolor::symbol());
 }
@@ -1057,7 +1058,7 @@ QRectF paperRect(PaperSize paper)
 }
 
 void paintSheet(QPainter &painter, const Schematic &schematic, const Library &library,
-                int index, const TitleBlock &titleBlock)
+                int index, const TitleBlock &titleBlock, const PowerShown &power)
 {
     if (index < 0 || index >= schematic.sheets.size())
         return;
@@ -1092,7 +1093,7 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const Library &li
         painter.drawEllipse(toMm(dot), JUNCTION_DIAMETER / 2, JUNCTION_DIAMETER / 2);
     painter.setBrush(Qt::NoBrush);
     for (const Component &component : sheet.components)
-        paintComponent(painter, library, component);
+        paintComponent(painter, library, component, power);
     for (const PowerSymbol &power : sheet.powerSymbols)
         paintPowerSymbol(painter, library, power);
     const QList<Point> pins = pinPoints(sheet, library);
@@ -1139,7 +1140,8 @@ Bounds symbolDrawingBounds(const Symbol &symbol)
 
 } // namespace
 
-QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &library)
+QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &library,
+                                          const PowerShown &power)
 {
     QList<SheetObjectShape> shapes;
     const auto addRect = [&shapes](const ObjectId &id, const QRectF &rect,
@@ -1166,9 +1168,9 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
             drawing = missingRect(toMm(component.at), MISSING_SYMBOL_SIZE);
         Bounds bounds;
         bounds.add(drawing);
-        bounds.add(componentTextRect(component, ComponentText::Designator, library));
-        if (!componentTextShown(component, ComponentText::Value, library).isEmpty())
-            bounds.add(componentTextRect(component, ComponentText::Value, library));
+        bounds.add(componentTextRect(component, ComponentText::Designator, library, power));
+        if (!componentTextShown(component, ComponentText::Value, library, power).isEmpty())
+            bounds.add(componentTextRect(component, ComponentText::Value, library, power));
         addRect(component.id, bounds.rect(), drawing);
     }
     for (const PowerSymbol &power : sheet.powerSymbols) {
@@ -1233,14 +1235,21 @@ QRectF powerNameRect(const PowerSymbol &power, const Library &library)
 }
 
 QString componentTextShown(const Component &component, ComponentText text,
-                           const Library &library)
+                           const Library &library, const PowerShown &power)
 {
     if (text == ComponentText::Designator)
         return component.designator;
-    if (!component.value.isEmpty())
-        return component.value;
-    const Part *part = library.findPart(component.part);
-    return part != nullptr && part->noValue ? QString() : QLatin1String(VALUE_PLACEHOLDER);
+    QString shown = component.value;
+    if (shown.isEmpty()) {
+        const Part *part = library.findPart(component.part);
+        if (part == nullptr || !part->noValue)
+            shown = QLatin1String(VALUE_PLACEHOLDER);
+    }
+    if (!power.marks && component.powerMw > 0 && component.powerMw != power.commonMw) {
+        const QString watts = formatPower(component.powerMw);
+        shown = shown.isEmpty() ? watts : shown + QLatin1Char(' ') + watts;
+    }
+    return shown;
 }
 
 Point componentTextPoint(const Component &component, ComponentText text)
@@ -1250,10 +1259,10 @@ Point componentTextPoint(const Component &component, ComponentText text)
 }
 
 QRectF componentTextRect(const Component &component, ComponentText text,
-                         const Library &library)
+                         const Library &library, const PowerShown &power)
 {
     return textBounds(toMm(componentTextPoint(component, text)),
-                      componentTextShown(component, text, library), PLACEHOLDER_TEXT_HEIGHT,
+                      componentTextShown(component, text, library, power), PLACEHOLDER_TEXT_HEIGHT,
                       TextAlign::Center);
 }
 

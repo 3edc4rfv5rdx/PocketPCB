@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: With international designators a resistor shows its power after the value instead of GOST marks, unless most resistors have that power
 - N: The Net classes tab of the project properties adds, renames, changes and deletes net classes and chooses the default and the power class
 - N: File > Project properties edits the title block and the designator style, and a new style renames the parts with their numbers kept
 - F: The close button on the BOM tab has no padding, so the tabs keep the height of their text
