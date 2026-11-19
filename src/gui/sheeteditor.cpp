@@ -1200,11 +1200,12 @@ void SheetEditor::wireClick(const Point &at)
     }
     const bool again = at == m_wirePoints.last();
     m_wirePoints.append(wireRoute(m_wirePoints.last(), at, m_wireSwapped, m_wireSlanted));
-    // A bus goes on until the second click on its end; a wire stops where it
-    // joins something, or on a bus, which it enters.
+    // A bus goes on until the second click on its end or until it comes to
+    // another bus, which it branches off; a wire stops where it joins
+    // something, or on a bus, which it enters.
     const Sheet &sheet = *currentSheet();
     const bool joins = !m_drawingBus && isConnectionPoint(sheet, m_document->design().library, at);
-    const bool entersBus = !m_drawingBus && !joins && isOnBus(sheet, at);
+    const bool entersBus = !joins && isOnBus(sheet, at);
     if (again || joins || entersBus)
         finishWire();
     else
@@ -1228,6 +1229,15 @@ void SheetEditor::finishWire()
         bus.id = id;
         bus.points = points;
         bus.name = nextBusName(design.schematic);
+        // Begun or ended on another bus, it is a branch of it, with its name.
+        for (const Bus &other : sheet.buses) {
+            Wire line;
+            line.points = other.points;
+            if (isOnWire(line, points.first()) || isOnWire(line, points.last())) {
+                bus.name = other.name;
+                break;
+            }
+        }
         sheet.buses.append(bus);
         name = actionName(Action::Bus) + QLatin1Char(' ') + bus.name;
     } else {

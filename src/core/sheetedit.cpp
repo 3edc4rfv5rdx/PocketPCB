@@ -1,5 +1,7 @@
 #include "sheetedit.h"
 
+#include "wiring.h"
+
 #include <QLineF>
 
 #include <algorithm>
@@ -188,7 +190,7 @@ TextHit textAt(const Sheet &sheet, const Library &library, const QPointF &point)
             return TextHit{it->id, ComponentText::Designator};
     }
     for (auto it = sheet.buses.crbegin(); it != sheet.buses.crend(); ++it) {
-        if (busNameRect(*it).contains(point))
+        if (isBusNameShown(sheet, *it) && busNameRect(*it).contains(point))
             return TextHit{it->id, ComponentText::Designator};
     }
     return TextHit();
@@ -312,9 +314,13 @@ Sheet withBusName(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &
     const QString trimmed = name.trimmed();
     if (trimmed.isEmpty())
         return sheet;
+    // A bus and its branches have one name.
+    QSet<ObjectId> named;
+    for (const ObjectId &id : ids)
+        named.unite(joinedBuses(sheet, id));
     Sheet result = sheet;
     for (Bus &bus : result.buses) {
-        if (ids.contains(bus.id))
+        if (named.contains(bus.id))
             bus.name = trimmed;
     }
     return result;

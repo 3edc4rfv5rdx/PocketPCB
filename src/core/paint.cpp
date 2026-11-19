@@ -54,6 +54,8 @@ const double WIRE_WIDTH = SYMBOL_LINE_WIDTH;
 const double BUS_WIDTH = 0.5;
 // The dot where wires join.
 const double JUNCTION_DIAMETER = 0.8;
+// Where buses meet: larger, as a bus is wider than a wire.
+const double BUS_JUNCTION_DIAMETER = 1.4;
 const double LABEL_TEXT_HEIGHT = 1.27;
 const double LABEL_GAP = 0.4;
 // The hollow diamond on a label's point, which it is taken by: from its
@@ -991,9 +993,15 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const Library &li
     for (const Bus &bus : sheet.buses) {
         painter.setPen(linePen(paintcolor::bus(), BUS_WIDTH));
         painter.drawPolyline(toPolygon(bus.points));
-        drawText(painter, busNameAt(bus), bus.name, LABEL_TEXT_HEIGHT, TextAlign::Left,
-                 paintcolor::bus());
+        if (isBusNameShown(sheet, bus))
+            drawText(painter, busNameAt(bus), bus.name, LABEL_TEXT_HEIGHT, TextAlign::Left,
+                     paintcolor::bus());
     }
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(paintcolor::bus());
+    for (const Point &dot : busJunctions(sheet))
+        painter.drawEllipse(toMm(dot), BUS_JUNCTION_DIAMETER / 2, BUS_JUNCTION_DIAMETER / 2);
+    painter.setBrush(Qt::NoBrush);
     for (const Wire &wire : sheet.wires) {
         painter.setPen(linePen(paintcolor::wire(), WIRE_WIDTH));
         painter.drawPolyline(toPolygon(wire.points));

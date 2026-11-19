@@ -70,7 +70,8 @@ Sheet withComponentValue(const Sheet &sheet, const QSet<ObjectId> &ids, const QS
 Sheet withPowerName(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &name);
 // The same for the text of the labels 'ids'.
 Sheet withLabelText(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &text);
-// The same for the name of the buses 'ids'.
+// The same for the name of the buses 'ids' and of the buses joined to
+// them (joinedBuses()).
 Sheet withBusName(const Sheet &sheet, const QSet<ObjectId> &ids, const QString &name);
 // The name a new bus gets: "BUS" and the lowest number no bus of the
 // schematic has ("BUS1" first). Only a label joins a net, so the name is a

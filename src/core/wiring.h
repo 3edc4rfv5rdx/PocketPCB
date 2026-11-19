@@ -74,6 +74,18 @@ bool isConnectionPoint(const Sheet &sheet, const Library &library, const Point &
 // Empty when the sheet has no such wire.
 QSet<ObjectId> joinedWires(const Sheet &sheet, const ObjectId &wire);
 
+// Buses joined to each other as wires are: where an end of one lies on
+// another. A bus drawn on to another is a branch of it, with its name.
+// The ids of the buses joined to the bus 'bus' of 'sheet', one through
+// another, the bus itself among them; empty when it has no such bus.
+QSet<ObjectId> joinedBuses(const Sheet &sheet, const ObjectId &bus);
+// True when the name of 'bus' is shown: it is the first of the buses joined
+// to it on 'sheet', so that a bus and its branches show it once.
+bool isBusNameShown(const Sheet &sheet, const Bus &bus);
+// The points where three or more ends of buses and buses meet, as
+// junctions() counts them for wires: where a dot of the bus colour is drawn.
+QList<Point> busJunctions(const Sheet &sheet);
+
 // The points where three or more ends, pins and wires meet: where a dot is
 // drawn. A wire passing through a point counts twice, so a wire ending on
 // the middle of another makes a dot, and so do three wire ends on one point.
@@ -175,8 +187,10 @@ Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectI
 
 // withWireEndAt() and withSegmentMoved() for the bus 'bus': it is laid the
 // way a wire is, and the wires that enter it go with it as the wires on a
-// wire do, entering it at 45 degrees again. A whole bus moved in
-// withWiresFollowing() takes the wires that enter it along the same way.
+// wire do, entering it at 45 degrees again. Its branches, and the bus it
+// branches off (joinedBuses()), are laid as wires joined to it are. A whole
+// bus moved in withWiresFollowing() takes the wires that enter it and its
+// branches along the same way.
 Sheet withBusEndAt(const Sheet &sheet, const Library &library, const ObjectId &bus, bool last,
                    const Point &to, WireRouting routing = WireRouting::Hand);
 Sheet withBusSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &bus,

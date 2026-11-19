@@ -364,6 +364,43 @@ private slots:
         QVERIFY(entersBusAt(moved, -5 * MM));
     }
 
+    // A bus drawn on to another is its branch: they are joined, the name is
+    // shown once, a dot of the bus colour marks the T, and the branch goes
+    // with the bus it branches off.
+    void busesBranchOffBuses()
+    {
+        const Library library;
+        Sheet sheet;
+        const auto bus = [](const QList<Point> &points) {
+            Bus result;
+            result.id = newObjectId();
+            result.points = points;
+            result.name = QStringLiteral("D[0..7]");
+            return result;
+        };
+        sheet.buses = {bus({mm(0, 0), mm(40, 0)}), bus({mm(20, 0), mm(20, 20)}),
+                       bus({mm(0, 30), mm(40, 30)})};
+        const ObjectId main = sheet.buses.at(0).id;
+        const ObjectId branch = sheet.buses.at(1).id;
+        QCOMPARE(joinedBuses(sheet, main), QSet<ObjectId>({main, branch}));
+        QVERIFY(isBusNameShown(sheet, sheet.buses.at(0)));
+        QVERIFY(!isBusNameShown(sheet, sheet.buses.at(1)));
+        QVERIFY(isBusNameShown(sheet, sheet.buses.at(2)));
+        QCOMPARE(busJunctions(sheet), QList<Point>({mm(20, 0)}));
+
+        // The bus goes up: the branch's end goes with it.
+        Sheet moved = withBusSegmentMoved(sheet, library, main, 0, mm(0, -5));
+        QCOMPARE(moved.buses.size(), 3);
+        QCOMPARE(moved.buses.at(0).points, QList<Point>({mm(0, -5), mm(40, -5)}));
+        QCOMPARE(moved.buses.at(1).points.first(), mm(20, -5));
+        QCOMPARE(moved.buses.at(1).points.last(), mm(20, 20));
+        QCOMPARE(moved.buses.at(1).name, sheet.buses.at(1).name);
+        const QSet<ObjectId> whole = {main};
+        moved = withWiresFollowing(sheet, movedObjects(sheet, whole, mm(0, -5)), whole, library);
+        QCOMPARE(moved.buses.at(0).points, QList<Point>({mm(0, -5), mm(40, -5)}));
+        QCOMPARE(moved.buses.at(1).points.first(), mm(20, -5));
+    }
+
     // A bus holds the end of a wire that enters it, and the entry stays at
     // 45 degrees however the wire is laid again.
     void busesHoldTheirEntries()

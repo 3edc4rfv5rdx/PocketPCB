@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: A bus drawn on to another branches off it: it ends there with a dot, takes its name, shown once and renamed together, and goes along when that bus is dragged
 - E: A wire whose end follows a pin other wires already reach may join them at their nearest point instead of going round to the pin
 - E: A pin moved away from a wire with a branch on it is reached by a new wire from the nearest point of its net instead of the wire going round to it
 - F: A rectangle drawn round parts and power symbols chooses them once it holds their drawing, without their designator, value or name

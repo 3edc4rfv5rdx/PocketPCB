@@ -1419,6 +1419,44 @@ QSet<ObjectId> joinedWires(const Sheet &sheet, const ObjectId &wire)
     return found;
 }
 
+namespace {
+
+// 'sheet' with its buses as its wires, and nothing else: buses join each
+// other as wires do.
+Sheet busLines(const Sheet &sheet)
+{
+    Sheet lines;
+    for (const Bus &bus : sheet.buses) {
+        Wire line;
+        line.id = bus.id;
+        line.points = bus.points;
+        lines.wires.append(line);
+    }
+    return lines;
+}
+
+} // namespace
+
+QSet<ObjectId> joinedBuses(const Sheet &sheet, const ObjectId &bus)
+{
+    return joinedWires(busLines(sheet), bus);
+}
+
+bool isBusNameShown(const Sheet &sheet, const Bus &bus)
+{
+    const QSet<ObjectId> group = joinedBuses(sheet, bus.id);
+    for (const Bus &other : sheet.buses) {
+        if (group.contains(other.id))
+            return other.id == bus.id;
+    }
+    return true;
+}
+
+QList<Point> busJunctions(const Sheet &sheet)
+{
+    return junctions(busLines(sheet), Library());
+}
+
 QList<Point> junctions(const Sheet &sheet, const Library &library)
 {
     // The points that may be junctions: wire ends and pins, each counted
@@ -2235,26 +2273,60 @@ Sheet wireAsBus(const Sheet &edited, const Sheet &original, const ObjectId &id, 
     return result;
 }
 
+// The buses of 'sheet' joined to one of 'ids' (joinedBuses()), those among
+// them too, in the order of the sheet.
+QList<ObjectId> busGroups(const Sheet &sheet, const QSet<ObjectId> &ids)
+{
+    QSet<ObjectId> group;
+    for (const ObjectId &id : ids)
+        group.unite(joinedBuses(sheet, id));
+    QList<ObjectId> ordered;
+    for (const Bus &bus : sheet.buses) {
+        if (group.contains(bus.id))
+            ordered.append(bus.id);
+    }
+    return ordered;
+}
+
+// 'sheet' with the buses 'ids' laid as wires (busAsWire()).
+Sheet busesAsWires(const Sheet &sheet, const QList<ObjectId> &ids)
+{
+    Sheet result = sheet;
+    for (const ObjectId &id : ids)
+        result = busAsWire(result, id);
+    return result;
+}
+
+// 'edited', a sheet of busesAsWires(), with the wires 'ids' made the buses
+// of 'original' again (wireAsBus()), keeping their own points when 'own'
+// holds their id.
+Sheet wiresAsBuses(const Sheet &edited, const Sheet &original, const QList<ObjectId> &ids,
+                   const QSet<ObjectId> &own)
+{
+    Sheet result = edited;
+    for (const ObjectId &id : ids)
+        result = wireAsBus(result, original, id, own.contains(id));
+    return result;
+}
+
 } // namespace
 
 Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
                          const Library &library, WireRouting routing)
 {
-    // A moved bus takes the wires that enter it along, as a moved wire does
-    // the wires on it; it goes itself just as it was moved.
-    Sheet from = before;
-    Sheet to = after;
-    QList<ObjectId> buses;
+    // A moved bus takes the wires that enter it and its branches along, as
+    // a moved wire does the wires on it; it goes itself just as it was
+    // moved.
+    QSet<ObjectId> movedBuses;
     for (const Bus &bus : before.buses) {
-        if (moved.contains(bus.id)) {
-            buses.append(bus.id);
-            from = busAsWire(from, bus.id);
-            to = busAsWire(to, bus.id);
-        }
+        if (moved.contains(bus.id))
+            movedBuses.insert(bus.id);
     }
+    const QList<ObjectId> buses = busGroups(before, movedBuses);
+    const Sheet from = busesAsWires(before, buses);
+    const Sheet to = busesAsWires(after, buses);
     Sheet followed = wiresFollowing(from, to, moved, library, routing);
-    for (const ObjectId &bus : buses)
-        followed = wireAsBus(followed, after, bus, true);
+    followed = wiresAsBuses(followed, after, buses, movedBuses);
     followed = withBusEntriesKept(before, followed);
     return withMarksCarried(before, followed, moved, library);
 }
@@ -2262,16 +2334,20 @@ Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<Obj
 Sheet withBusEndAt(const Sheet &sheet, const Library &library, const ObjectId &bus, bool last,
                    const Point &to, WireRouting routing)
 {
-    const Sheet laid = wireEndAt(busAsWire(sheet, bus), library, bus, last, to, routing);
-    const Sheet result = withBusEntriesKept(sheet, wireAsBus(laid, sheet, bus, false));
+    // Its branches, and the bus it branches off, are laid as wires are.
+    const QList<ObjectId> buses = busGroups(sheet, {bus});
+    const Sheet laid = wireEndAt(busesAsWires(sheet, buses), library, bus, last, to, routing);
+    const Sheet result = withBusEntriesKept(sheet, wiresAsBuses(laid, sheet, buses, {}));
     return withMarksCarried(sheet, result, QSet<ObjectId>(), library);
 }
 
 Sheet withBusSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &bus,
                           int index, const Point &delta, WireRouting routing)
 {
-    const Sheet laid = segmentMoved(busAsWire(sheet, bus), library, bus, index, delta, routing);
-    const Sheet result = withBusEntriesKept(sheet, wireAsBus(laid, sheet, bus, false));
+    const QList<ObjectId> buses = busGroups(sheet, {bus});
+    const Sheet laid =
+        segmentMoved(busesAsWires(sheet, buses), library, bus, index, delta, routing);
+    const Sheet result = withBusEntriesKept(sheet, wiresAsBuses(laid, sheet, buses, {}));
     return withMarksCarried(sheet, result, QSet<ObjectId>(), library);
 }
 

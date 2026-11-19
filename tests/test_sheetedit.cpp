@@ -297,6 +297,15 @@ private slots:
         QCOMPARE(withBusName(sheet, {id(3)}, QStringLiteral(" A[0..3] ")).buses.at(0).name,
                  QStringLiteral("A[0..3]"));
         QVERIFY(withBusName(sheet, {id(3)}, QStringLiteral(" ")) == sheet);
+        // A branch is renamed with the bus it branches off.
+        Sheet branched = sheet;
+        Bus branch = branched.buses.at(0);
+        branch.id = id(30);
+        branch.points = {Point{20 * MM, 80 * MM}, Point{20 * MM, 90 * MM}};
+        branched.buses.append(branch);
+        const Sheet renamed = withBusName(branched, {id(30)}, QStringLiteral("A[0..3]"));
+        QCOMPARE(renamed.buses.at(0).name, QStringLiteral("A[0..3]"));
+        QCOMPARE(renamed.buses.at(1).name, QStringLiteral("A[0..3]"));
     }
 
     void rectangleTakesWhatIsWhollyInside()
