@@ -168,6 +168,15 @@ Sheet numberedOn(const Sheet &piece, const Schematic &schematic, const Library &
 
 // The designator prefix of 'part' in 'style': R, VD, DD...
 QString designatorPrefix(const Part &part, DesignatorStyle style);
+// 'schematic' with its designators switched from style 'from' to 'to': one
+// made of its part's prefix in 'from' and a number with whatever follows
+// it ("VD3", "VD3a") gets the prefix in 'to' with the same rest. One that
+// would repeat a designator kept, or one given before it in the order of
+// designatorLess() (R1 and RV1 both become R1 in GOST), gets the first free
+// number instead. The others stay: those of parts 'library' lacks, of parts
+// whose prefix is the same in both styles, and those not made so.
+Schematic withDesignatorStyle(const Schematic &schematic, const Library &library,
+                              DesignatorStyle from, DesignatorStyle to);
 // The first designator with 'prefix' no component of the schematic has,
 // on any sheet: R1, then R2, and a gap left by a deleted R3 is filled.
 QString nextDesignator(const Schematic &schematic, const QString &prefix);

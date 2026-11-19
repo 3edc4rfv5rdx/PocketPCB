@@ -919,6 +919,61 @@
     </message>
 </context>
 <context>
+    <name>ppcb::ProjectPropertiesDialog</name>
+    <message>
+        <source>Title block</source>
+        <translation>Основная надпись</translation>
+    </message>
+    <message>
+        <source>Title</source>
+        <translation>Название</translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation>Автор</translation>
+    </message>
+    <message>
+        <source>Organization</source>
+        <translation>Организация</translation>
+    </message>
+    <message>
+        <source>Contacts</source>
+        <translation>Контакты</translation>
+    </message>
+    <message>
+        <source>Revision</source>
+        <translation>Ревизия</translation>
+    </message>
+    <message>
+        <source>Date</source>
+        <translation>Дата</translation>
+    </message>
+    <message>
+        <source>Note</source>
+        <translation>Примечание</translation>
+    </message>
+    <message>
+        <source>International</source>
+        <translation>Международный</translation>
+    </message>
+    <message>
+        <source>GOST</source>
+        <translation>ГОСТ</translation>
+    </message>
+    <message>
+        <source>Designator style</source>
+        <translation>Стиль обозначений</translation>
+    </message>
+    <message>
+        <source>General</source>
+        <translation>Общие</translation>
+    </message>
+    <message>
+        <source>Project properties</source>
+        <translation>Свойства проекта</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::PropertiesPanel</name>
     <message>
         <source>Properties</source>

@@ -12,8 +12,10 @@
 #include "netlist.h"
 #include "paint.h"
 #include "netspanel.h"
+#include "projectpropertiesdialog.h"
 #include "propertiespanel.h"
 #include "sheeteditor.h"
+#include "sheetedit.h"
 #include "sheettabs.h"
 #include "stephistory.h"
 #include "libraryviewitem.h"
@@ -319,6 +321,12 @@ void MainWindow::createMenus()
     saveAsAction->setObjectName(QStringLiteral("actionSaveProjectAs"));
     saveAsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
     connect(saveAsAction, &QAction::triggered, this, &MainWindow::chooseProjectToSaveAs);
+    fileMenu->addSeparator();
+
+    QAction *propertiesAction =
+        fileMenu->addAction(ProjectPropertiesDialog::title() + QStringLiteral("…"));
+    propertiesAction->setObjectName(QStringLiteral("actionProjectProperties"));
+    connect(propertiesAction, &QAction::triggered, this, &MainWindow::editProjectProperties);
     fileMenu->addSeparator();
 
     QAction *openLibraryAction = fileMenu->addAction(tr("Open library file") + QStringLiteral("…"));
@@ -914,6 +922,22 @@ bool MainWindow::chooseProjectToSaveAs()
         return false;
     AppSettings::setLastProjectFolder(dialog.parentFolder());
     return saveProjectAs(dialog.parentFolder(), dialog.name());
+}
+
+void MainWindow::editProjectProperties()
+{
+    ProjectPropertiesDialog dialog(m_document->design().project, this);
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    Design design = m_document->design();
+    const Project project = dialog.project();
+    if (project.designatorStyle != design.project.designatorStyle) {
+        design.schematic = withDesignatorStyle(design.schematic, design.library,
+                                               design.project.designatorStyle,
+                                               project.designatorStyle);
+    }
+    design.project = project;
+    m_document->change(ProjectPropertiesDialog::title(), design);
 }
 
 void MainWindow::showBom()

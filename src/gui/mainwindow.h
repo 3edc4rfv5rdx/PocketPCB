@@ -150,6 +150,9 @@ private:
     // Both return true when the project was saved.
     bool saveProject();
     bool chooseProjectToSaveAs();
+    // File > Project properties: what the dialog gives is one step; a new
+    // designator style renames the components (withDesignatorStyle()).
+    void editProjectProperties();
     // Puts the project on the canvas in the place of a library file.
     void showProject();
     // The key of page 'page' among the views: a sheet's id, or the board's key.

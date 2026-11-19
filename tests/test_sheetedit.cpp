@@ -619,6 +619,63 @@ private slots:
                  QStringLiteral("RG1"));
     }
 
+    // The prefix changes and the number stays; a designator the change
+    // would repeat gets the first free number; the others stay.
+    void designatorStyleRenamesWithNumbersKept()
+    {
+        Library library;
+        const auto addPart = [&library](const char *name, const char *prefix, const char *gost) {
+            Part part;
+            part.prefix = QLatin1String(prefix);
+            part.prefixGost = QLatin1String(gost);
+            library.parts.insert(QLatin1String(name), part);
+        };
+        addPart("resistor", "R", "R");
+        addPart("trimmer", "RV", "R");
+        addPart("diode", "D", "VD");
+        const auto component = [](quint64 value, const char *part, const char *designator) {
+            Component result;
+            result.id = id(value);
+            result.part = QLatin1String(part);
+            result.designator = QLatin1String(designator);
+            return result;
+        };
+        Schematic schematic;
+        Sheet first;
+        first.components = {component(1, "resistor", "R1"), component(2, "trimmer", "RV1"),
+                            component(3, "diode", "D3a"), component(4, "diode", "Power")};
+        Sheet second;
+        second.components = {component(5, "trimmer", "RV2"), component(6, "resistor", "R1"),
+                             component(7, "nothing", "D9"), component(8, "diode", "D10")};
+        schematic.sheets = {first, second};
+
+        const Schematic gost = withDesignatorStyle(schematic, library, DesignatorStyle::International,
+                                                   DesignatorStyle::Gost);
+        const auto designators = [](const Schematic &s) {
+            QStringList result;
+            for (const Sheet &sheet : s.sheets) {
+                for (const Component &c : sheet.components)
+                    result.append(c.designator);
+            }
+            return result;
+        };
+        // R1 stays twice, as it was; RV1 would be R1 and takes R3, after R2
+        // that RV2 became.
+        QCOMPARE(designators(gost),
+                 QStringList({QStringLiteral("R1"), QStringLiteral("R3"), QStringLiteral("VD3a"),
+                              QStringLiteral("Power"), QStringLiteral("R2"), QStringLiteral("R1"),
+                              QStringLiteral("D9"), QStringLiteral("VD10")}));
+
+        // Back: the diodes get their prefix back, the trimmers become RV
+        // with the numbers they got.
+        const Schematic back = withDesignatorStyle(gost, library, DesignatorStyle::Gost,
+                                                   DesignatorStyle::International);
+        QCOMPARE(designators(back),
+                 QStringList({QStringLiteral("R1"), QStringLiteral("RV3"), QStringLiteral("D3a"),
+                              QStringLiteral("Power"), QStringLiteral("RV2"), QStringLiteral("R1"),
+                              QStringLiteral("D9"), QStringLiteral("D10")}));
+    }
+
     void designatorsAreNumberedOn()
     {
         Schematic schematic;

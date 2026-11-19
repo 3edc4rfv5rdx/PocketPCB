@@ -11,6 +11,7 @@ add_library(pocketpcb_gui STATIC
     libraryviewitem.h libraryviewitem.cpp
     mainwindow.h mainwindow.cpp
     netspanel.h netspanel.cpp
+    projectpropertiesdialog.h projectpropertiesdialog.cpp
     propertiespanel.h propertiespanel.cpp
     sheeteditor.h sheeteditor.cpp
     sheettabs.h sheettabs.cpp

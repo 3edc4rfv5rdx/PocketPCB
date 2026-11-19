@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: File > Project properties edits the title block and the designator style, and a new style renames the parts with their numbers kept
 - F: The close button on the BOM tab has no padding, so the tabs keep the height of their text
 - F: The BOM tab is hidden until View > BOM shows it, closes by the button on it, and stays as left the next time
 - F: The BOM has no power column: the power most resistors have is said once below the list, another one follows the value

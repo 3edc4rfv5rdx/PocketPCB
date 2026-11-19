@@ -1,5 +1,6 @@
 #include "sheetedit.h"
 
+#include "bom.h"
 #include "wiring.h"
 
 #include <QLineF>
@@ -516,6 +517,59 @@ Sheet mirroredObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point
 QString designatorPrefix(const Part &part, DesignatorStyle style)
 {
     return style == DesignatorStyle::Gost ? part.prefixGost : part.prefix;
+}
+
+Schematic withDesignatorStyle(const Schematic &schematic, const Library &library,
+                              DesignatorStyle from, DesignatorStyle to)
+{
+    // A component whose designator takes the new prefix.
+    struct Renamed
+    {
+        int sheet;
+        int index;
+        QString old;
+        QString prefix;
+        QString rest;
+    };
+    Schematic result = schematic;
+    QSet<QString> taken;
+    QList<Renamed> renamed;
+    for (int s = 0; s < schematic.sheets.size(); ++s) {
+        const QList<Component> &components = schematic.sheets.at(s).components;
+        for (int i = 0; i < components.size(); ++i) {
+            const QString &designator = components.at(i).designator;
+            const Part *part = library.findPart(components.at(i).part);
+            const QString oldPrefix = part != nullptr ? designatorPrefix(*part, from) : QString();
+            // A part whose prefix stays keeps its designator as it is.
+            if (!oldPrefix.isEmpty() && oldPrefix != designatorPrefix(*part, to)
+                && designator.startsWith(oldPrefix)
+                && designator.size() > oldPrefix.size() && designator.at(oldPrefix.size()).isDigit()) {
+                renamed.append({s, i, designator, designatorPrefix(*part, to),
+                                designator.mid(oldPrefix.size())});
+            } else if (!designator.isEmpty()) {
+                taken.insert(designator);
+            }
+        }
+    }
+    std::stable_sort(renamed.begin(), renamed.end(), [](const Renamed &a, const Renamed &b) {
+        return designatorLess(a.old, b.old);
+    });
+    // Those whose new designator is taken wait for a free number, without
+    // one meanwhile.
+    QList<Renamed> repeated;
+    for (const Renamed &r : renamed) {
+        QString &designator = result.sheets[r.sheet].components[r.index].designator;
+        designator = r.prefix + r.rest;
+        if (taken.contains(designator)) {
+            designator.clear();
+            repeated.append(r);
+        } else {
+            taken.insert(designator);
+        }
+    }
+    for (const Renamed &r : repeated)
+        result.sheets[r.sheet].components[r.index].designator = nextDesignator(result, r.prefix);
+    return result;
 }
 
 QString nextDesignator(const Schematic &schematic, const QString &prefix)
