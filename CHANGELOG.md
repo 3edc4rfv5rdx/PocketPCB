@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A pin moved away from a wire with a branch on it is reached by a new wire from the nearest point of its net instead of the wire going round to it
 - F: A rectangle drawn round parts and power symbols chooses them once it holds their drawing, without their designator, value or name
 - N: Text on sheets and in symbols is drawn in a built-in stroke font, Newstroke from KiCad, the same on any computer, with Cyrillic, Greek and µ, Ω
 - E: A pin moved off the line of its two wires onto a wire of its own net is joined there instead of getting a wire round to it

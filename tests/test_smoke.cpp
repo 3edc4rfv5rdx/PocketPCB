@@ -880,7 +880,11 @@ private slots:
         QCOMPARE(sheet().components.at(0).at, r1.at);
         // The wires on its pins go with them.
         QCOMPARE(sheet().wires.at(0).points.last(), r1.at + Point({0, -5080000}));
-        QCOMPARE(sheet().wires.at(1).points.first(), r1.at + Point({0, 5080000}));
+        // The other may be reached by a new wire off its net instead.
+        const Point lower = r1.at + Point({0, 5080000});
+        QVERIFY(std::any_of(sheet().wires.cbegin(), sheet().wires.cend(), [&lower](const Wire &w) {
+            return w.points.first() == lower || w.points.last() == lower;
+        }));
 
         // A rectangle around it takes it, Delete removes it. The rectangle
         // starts below and to the left, where the demo sheet is empty.

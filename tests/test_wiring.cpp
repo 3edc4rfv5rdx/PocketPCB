@@ -1365,6 +1365,29 @@ private slots:
                             [](const Wire &w) { return liesOnWire(w.points, h(4, 8)); }));
     }
 
+    // An upright part whose top pin a wire comes to down an upright, with
+    // another wire branching off that upright. The part goes up and right:
+    // the wire keeps the upright down to the branch and ends there, and a
+    // new wire goes to the pin from the nearest point of the upright,
+    // instead of the wire going on round the part to come to the pin from
+    // above.
+    void gridWiresBranchOffTheNet()
+    {
+        const Library library = gridLibrary();
+        Sheet sheet;
+        Component upright = gridPart(h(17, 21));
+        upright.rotation = 90;
+        sheet.components = {upright};
+        sheet.wires = {wire({h(20, 12), h(20, 17), h(17, 17)}), wire({h(20, 16), h(10, 16)})};
+        const QSet<ObjectId> part = {upright.id};
+        const Sheet moved = withWiresFollowing(sheet, movedObjects(sheet, part, h(4, -2)), part,
+                                               library, WireRouting::Grid);
+        QCOMPARE(moved.wires.size(), 3);
+        QCOMPARE(moved.wires.at(0).points, QList<Point>({h(20, 12), h(20, 16)}));
+        QCOMPARE(moved.wires.at(1).points, QList<Point>({h(20, 15), h(21, 15)}));
+        QCOMPARE(moved.wires.at(2).points, sheet.wires.at(1).points);
+    }
+
     // Off the grid the wire is laid by hand.
     void gridWiresOffTheGridAreLaidByHand()
     {

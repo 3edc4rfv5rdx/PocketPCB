@@ -312,6 +312,9 @@ constexpr int GRID_STEP_COST = 100;
 constexpr int GRID_BEND_COST = 400;
 constexpr int GRID_CROSSING_COST = 50;
 constexpr int GRID_KEPT_GAIN_MAX = GRID_CROSSING_COST - 1;
+// A new wire branching off the net costs as much as a bend: of ways as
+// cheap, the wire goes on rather than branches.
+constexpr int GRID_BRANCH_COST = GRID_BEND_COST;
 // How far the grid reaches beyond everything on the sheet, in steps.
 constexpr int GRID_MARGIN = 8;
 // A larger grid, or a longer search, is given up for the ways by hand.
@@ -376,6 +379,8 @@ struct GridStart
     QList<Point> before;
     Point heading;
     int cost = 0;
+    // A new wire from there, branching off the net, not the wire going on.
+    bool branch = false;
 };
 
 // What the wire 'points' would cost were it laid on the grid, its level
@@ -401,9 +406,10 @@ int keptCost(const QList<Point> &points)
 // 'own' (what it keeps of the wire it goes on from), and along no other wire
 // or bus; to cross
 // one costs a little. Empty when there is no such way, when no start is on that grid or
-// when the grid would be too large: then it is laid by hand.
+// when the grid would be too large: then it is laid by hand. 'branched',
+// when given, tells whether the start taken is a branch.
 QList<Point> gridLaid(const Obstacles &obstacles, const QList<Point> &own,
-                      const QList<GridStart> &starts, const Point &to)
+                      const QList<GridStart> &starts, const Point &to, bool *branched = nullptr)
 {
     const Coord step = BEND_GRID;
     // The nodes of the grid cover everything with a margin round it.
@@ -575,6 +581,8 @@ QList<Point> gridLaid(const Obstacles &obstacles, const QList<Point> &own,
     if (path.isEmpty())
         return {};
     const GridStart &start = startAt[indexOf(path.first().column, path.first().row)];
+    if (branched != nullptr)
+        *branched = start.branch;
     QList<Point> points = start.before;
     points.append(start.at);
     const QList<GridNode> corners = gridCorners(path);
@@ -709,9 +717,13 @@ QList<Point> joinedWireAt(const QList<Point> &points, const Point &point,
 // by its first point, which stays, may instead be laid from any point of
 // the wires joined to it there (netWiresAt()), leaving that point. A pin
 // 'to' on the part it keeps, or on a wire joined to it, is joined there
-// instead. Empty when gridLaid() finds no way.
+// instead. With 'branch', a wire with a point of 'kept' on it may instead
+// end at the last of them, and a new wire, put into 'branch', go to 'to'
+// from any point of what it keeps or of the wires joined to that: when
+// going on from its end means a way round. Empty when gridLaid() finds no
+// way.
 QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QList<Point> &kept,
-                       bool rejoin, const Obstacles &obstacles)
+                       bool rejoin, const Obstacles &obstacles, QList<Point> *branch)
 {
     const QList<Point> points = withJoints(wirePoints, kept);
     int from = 0;
@@ -766,10 +778,42 @@ QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QL
             }
         }
     }
+    // A branch starts on what the wire keeps or on a wire joined to it;
+    // the wire itself then costs what it keeps.
+    if (branch != nullptr && from > 0) {
+        const int branchCost = keptCost(keptPart) + GRID_BRANCH_COST;
+        const WireGroups groups = wireGroupsOf(obstacles);
+        QSet<int> nets;
+        for (int i = 0; i < groups.wires.size(); ++i) {
+            const QList<Point> &wire = groups.wires.at(i);
+            if (liesOn(keptPart, wire.first()) || liesOn(keptPart, wire.last())
+                || liesOn(wire, keptPart.first()) || liesOn(wire, keptPart.last()))
+                nets.insert(groups.group.at(i));
+        }
+        QList<QList<Point>> lines = {keptPart};
+        for (int i = 0; i < groups.wires.size(); ++i) {
+            if (nets.contains(groups.group.at(i)))
+                lines.append(groups.wires.at(i));
+        }
+        for (const QList<Point> &line : lines) {
+            for (int i = 1; i < line.size(); ++i) {
+                for (const Point &node : gridNodesOn(line.at(i - 1), line.at(i), to))
+                    starts.append(GridStart{node, {}, Point(), branchCost, true});
+            }
+        }
+    }
     // Only the part every start keeps is in the way: the rest of the old
     // wire goes, and a way back through what a start keeps costs at least
     // three bends more than starting there, so it is never the cheapest.
-    return gridLaid(obstacles, keptPart, starts, to);
+    // Where the wire may go on from a point, it does: those starts come
+    // first, and the first start at a point is the one kept.
+    bool branched = false;
+    const QList<Point> laid = gridLaid(obstacles, keptPart, starts, to, &branched);
+    if (branched) {
+        *branch = laid;
+        return keptPart;
+    }
+    return laid;
 }
 
 // The wire 'points' (two or more) with its last point gone to 'to'.
@@ -789,10 +833,10 @@ QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QL
 // 'kept', the least bad of those that do not. On the grid, gridLedTo()
 // with 'rejoin' when it finds a way.
 QList<Point> ledTo(const QList<Point> &wirePoints, const Point &to, const QList<Point> &kept,
-                   bool rejoin, const Obstacles &obstacles)
+                   bool rejoin, const Obstacles &obstacles, QList<Point> *branch = nullptr)
 {
     if (obstacles.routing == WireRouting::Grid) {
-        const QList<Point> laid = gridLedTo(wirePoints, to, kept, rejoin, obstacles);
+        const QList<Point> laid = gridLedTo(wirePoints, to, kept, rejoin, obstacles, branch);
         if (!laid.isEmpty())
             return laid;
     }
@@ -1652,6 +1696,8 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
         }
         const Point first = wire.points.first();
         const Point last = wire.points.last();
+        // A new wire to where an end went, put after this one (see below).
+        Wire branchWire;
         std::optional<Point> newFirst = follower.follow(first);
         std::optional<Point> newLast = follower.follow(last);
         // A wire that goes whole has other ends following it: it is not held.
@@ -1680,6 +1726,11 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
                     kept.append(pin);
             }
             QList<Point> points = wire.points;
+            // With one end going, a wire with joints to keep may end at the
+            // last of them and the pin be reached by a new wire branching
+            // off the net (see gridLedTo()).
+            QList<Point> branch;
+            QList<Point> *branchOut = newFirst && newLast ? nullptr : &branch;
             if (newFirst && newLast && points.size() <= 3 && kept.isEmpty()) {
                 // Both ends went different ways, there is no middle segment
                 // to take it up and no wire joined to it to keep: the wire
@@ -1690,26 +1741,38 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
                 // An end that stays may leave its point for another of the
                 // wires joined to it there.
                 if (newLast)
-                    points = ledTo(points, *newLast, kept, !newFirst, obstacles.without(wire.id));
+                    points = ledTo(points, *newLast, kept, !newFirst, obstacles.without(wire.id),
+                                   branchOut);
                 if (newFirst && points.size() >= 2) {
                     std::reverse(points.begin(), points.end());
                     if (newLast)
                         kept.append(*newLast);
-                    points = ledTo(points, *newFirst, kept, !newLast, obstacles.without(wire.id));
+                    points = ledTo(points, *newFirst, kept, !newLast, obstacles.without(wire.id),
+                                   branchOut);
                     std::reverse(points.begin(), points.end());
                 }
             }
             wire.points = points;
+            if (branch.size() >= 2) {
+                // The new wire goes where the end went, the wire stays short.
+                branchWire.id = newObjectId();
+                branchWire.points = branch;
+                led.append(qMakePair(newFirst ? first : last, branchWire));
+            }
             if (wire.points.size() < 2)
                 continue;
-            if (newFirst)
+            if (newFirst && branch.isEmpty())
                 led.append(qMakePair(first, wire));
-            if (newLast)
+            if (newLast && branch.isEmpty())
                 led.append(qMakePair(last, wire));
         }
         if (following.contains(wire.id))
             obstacles.add(wire);
         wires.append(wire);
+        if (branchWire.points.size() >= 2) {
+            obstacles.add(branchWire);
+            wires.append(branchWire);
+        }
     }
 
     // Pins that touched pins left in place: a new wire keeps them joined.

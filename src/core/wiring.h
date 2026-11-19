@@ -143,7 +143,10 @@ enum class WireRouting { Hand, Grid };
 // The ways above are those of WireRouting::Hand. On the grid a wire end
 // that goes is led on from the point of the wire, after the last one that
 // another wire is joined to, where that costs least, and a wire laid anew
-// or led back takes the cheapest way there.
+// or led back takes the cheapest way there. A wire with one end going and
+// another wire joined to it may instead end at the last such joint, the
+// end being reached by a new wire from the nearest point of the net, when
+// that is cheaper than going on round.
 Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<ObjectId> &moved,
                          const Library &library, WireRouting routing = WireRouting::Hand);
 
