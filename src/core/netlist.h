@@ -94,6 +94,25 @@ QString netClassOf(const Net &net, const Project &project, const Schematic &sche
 Project withNetClass(const Project &project, const QList<Net> &all, const Net &net,
                      const QString &netClass);
 
+// A net class as edited in the project properties: 'original' is the name
+// it had, empty for a class added there.
+struct NetClassEdit
+{
+    QString original;
+    NetClass netClass;
+};
+
+// True when the table of nets or a label of 'design' gives class 'name'.
+bool isNetClassUsed(const Design &design, const QString &name);
+
+// 'design' with 'edits' as its net classes, in that order, and
+// 'defaultClass' and 'powerClass' (names in 'edits'). What gave a class
+// renamed gives it by its new name; what the table of nets gave a class
+// left out goes to the default class, and a label giving one gives none.
+// A name that was no class of 'design' is left as it is.
+Design withNetClasses(const Design &design, const QList<NetClassEdit> &edits,
+                      const QString &defaultClass, const QString &powerClass);
+
 // True when the pin 'number' of the component 'component' is on 'net'.
 bool netHasPin(const Net &net, const ObjectId &component, const QString &number);
 

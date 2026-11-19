@@ -39,6 +39,11 @@ QString formatMmShort(Coord nm)
     return text;
 }
 
+QString mmUnit()
+{
+    return QCoreApplication::translate("ppcb::Format", "mm");
+}
+
 QString formatPower(int powerMw)
 {
     if (powerMw <= 0)

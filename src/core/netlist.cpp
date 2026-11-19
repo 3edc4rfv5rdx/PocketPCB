@@ -425,6 +425,52 @@ QString netClassOf(const Net &net, const Project &project, const Schematic &sche
     return powered ? project.powerClass : project.defaultClass;
 }
 
+bool isNetClassUsed(const Design &design, const QString &name)
+{
+    for (const QString &netClass : design.project.classOfNet) {
+        if (netClass == name)
+            return true;
+    }
+    for (const Sheet &sheet : design.schematic.sheets) {
+        for (const Label &label : sheet.labels) {
+            if (label.netClass == name)
+                return true;
+        }
+    }
+    return false;
+}
+
+Design withNetClasses(const Design &design, const QList<NetClassEdit> &edits,
+                      const QString &defaultClass, const QString &powerClass)
+{
+    // The new name of each class kept, by its old one; the names before.
+    QHash<QString, QString> renamed;
+    QSet<QString> before;
+    for (const NetClass &netClass : design.project.netClasses)
+        before.insert(netClass.name);
+    Design result = design;
+    result.project.netClasses.clear();
+    for (const NetClassEdit &edit : edits) {
+        if (!edit.original.isEmpty())
+            renamed.insert(edit.original, edit.netClass.name);
+        result.project.netClasses.append(edit.netClass);
+    }
+    result.project.defaultClass = defaultClass;
+    result.project.powerClass = powerClass;
+    // A name that was no class before counts for nothing and stays so.
+    for (QString &netClass : result.project.classOfNet) {
+        if (before.contains(netClass))
+            netClass = renamed.value(netClass, defaultClass);
+    }
+    for (Sheet &sheet : result.schematic.sheets) {
+        for (Label &label : sheet.labels) {
+            if (before.contains(label.netClass))
+                label.netClass = renamed.value(label.netClass);
+        }
+    }
+    return result;
+}
+
 Project withNetClass(const Project &project, const QList<Net> &all, const Net &net,
                      const QString &netClass)
 {

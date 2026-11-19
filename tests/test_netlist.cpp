@@ -492,6 +492,51 @@ private slots:
         const QList<Net> wires = nets(bare, library);
         QVERIFY(withNetClass(project, wires, wires.first(), powerClass) == project);
     }
+
+    // A class renamed is given by its new name wherever it was given; what
+    // gave a class deleted gives the default one, or nothing for a label.
+    void netClassesEditedFollowEverywhere()
+    {
+        Design design = newDesign(QStringLiteral("amp"));
+        NetClass high;
+        high.name = QStringLiteral("High");
+        high.trackWidth = 3 * NM_PER_MM;
+        design.project.netClasses.append(high);
+        const QString signal = design.project.defaultClass;
+        const QString power = design.project.powerClass;
+        design.project.classOfNet = {{QStringLiteral("VCC"), power},
+                                     {QStringLiteral("NN1"), QStringLiteral("High")}};
+        Label powerLabel;
+        powerLabel.netClass = power;
+        Label highLabel;
+        highLabel.netClass = QStringLiteral("High");
+        Label plain;
+        design.schematic.sheets[0].labels = {powerLabel, highLabel, plain};
+        QVERIFY(isNetClassUsed(design, QStringLiteral("High")));
+        QVERIFY(!isNetClassUsed(design, signal));
+
+        // Power renamed to Main and made the default; High deleted; Thin added.
+        NetClass main = design.project.netClasses.at(1);
+        main.name = QStringLiteral("Main");
+        NetClass thin;
+        thin.name = QStringLiteral("Thin");
+        const QList<NetClassEdit> edits = {{signal, design.project.netClasses.at(0)},
+                                           {power, main},
+                                           {QString(), thin}};
+        const Design edited = withNetClasses(design, edits, QStringLiteral("Main"), signal);
+        QCOMPARE(int(edited.project.netClasses.size()), 3);
+        QCOMPARE(edited.project.netClasses.at(1).name, QStringLiteral("Main"));
+        QCOMPARE(edited.project.netClasses.at(2).name, QStringLiteral("Thin"));
+        QCOMPARE(edited.project.defaultClass, QStringLiteral("Main"));
+        QCOMPARE(edited.project.powerClass, signal);
+        QCOMPARE(edited.project.classOfNet.value(QStringLiteral("VCC")), QStringLiteral("Main"));
+        QCOMPARE(edited.project.classOfNet.value(QStringLiteral("NN1")), QStringLiteral("Main"));
+        const QList<Label> &labels = edited.schematic.sheets.at(0).labels;
+        QCOMPARE(labels.at(0).netClass, QStringLiteral("Main"));
+        QVERIFY(labels.at(1).netClass.isEmpty());
+        QVERIFY(labels.at(2).netClass.isEmpty());
+        QVERIFY(!isNetClassUsed(edited, QStringLiteral("High")));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestNetlist)

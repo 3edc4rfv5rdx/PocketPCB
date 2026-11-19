@@ -25,6 +25,8 @@ public:
 
     // The panel's title.
     static QString netsTitle();
+    // "Class": the heading of the net classes column.
+    static QString classTitle();
 
 signals:
     // A row was chosen: the name of its net; empty when none is.

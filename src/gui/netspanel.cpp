@@ -43,7 +43,7 @@ NetsPanel::NetsPanel(Document *document, SheetEditor *editor, QWidget *parent)
     m_filter->setClearButtonEnabled(true);
     m_table = new QTableWidget(0, ColumnCount, this);
     m_table->setObjectName(QStringLiteral("netsTable"));
-    m_table->setHorizontalHeaderLabels({tr("Name"), tr("Class"), tr("Pins")});
+    m_table->setHorizontalHeaderLabels({tr("Name"), classTitle(), tr("Pins")});
     m_table->verticalHeader()->hide();
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -72,6 +72,11 @@ NetsPanel::NetsPanel(Document *document, SheetEditor *editor, QWidget *parent)
 QString NetsPanel::netsTitle()
 {
     return tr("Nets");
+}
+
+QString NetsPanel::classTitle()
+{
+    return tr("Class");
 }
 
 void NetsPanel::refresh()

@@ -14,6 +14,9 @@ QString formatMmFixed(Coord nm);
 // For values shown in lists (grid steps, widths).
 QString formatMmShort(Coord nm);
 
+// "mm", the unit after a length, in the current language.
+QString mmUnit();
+
 // A rated power in watts, in the current locale: "0.125 W"; empty for 0.
 QString formatPower(int powerMw);
 

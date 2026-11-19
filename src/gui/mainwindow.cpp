@@ -15,7 +15,6 @@
 #include "projectpropertiesdialog.h"
 #include "propertiespanel.h"
 #include "sheeteditor.h"
-#include "sheetedit.h"
 #include "sheettabs.h"
 #include "stephistory.h"
 #include "libraryviewitem.h"
@@ -926,18 +925,10 @@ bool MainWindow::chooseProjectToSaveAs()
 
 void MainWindow::editProjectProperties()
 {
-    ProjectPropertiesDialog dialog(m_document->design().project, this);
+    ProjectPropertiesDialog dialog(m_document->design(), this);
     if (dialog.exec() != QDialog::Accepted)
         return;
-    Design design = m_document->design();
-    const Project project = dialog.project();
-    if (project.designatorStyle != design.project.designatorStyle) {
-        design.schematic = withDesignatorStyle(design.schematic, design.library,
-                                               design.project.designatorStyle,
-                                               project.designatorStyle);
-    }
-    design.project = project;
-    m_document->change(ProjectPropertiesDialog::title(), design);
+    m_document->change(ProjectPropertiesDialog::title(), dialog.design());
 }
 
 void MainWindow::showBom()
@@ -1084,7 +1075,7 @@ void MainWindow::storeGridStep(Coord step)
 
 QString MainWindow::gridStepText(Coord step)
 {
-    return formatMmShort(step) + QLatin1Char(' ') + tr("mm");
+    return formatMmShort(step) + QLatin1Char(' ') + mmUnit();
 }
 
 void MainWindow::showProject()
@@ -1356,7 +1347,7 @@ void MainWindow::watchLibraryFile()
 void MainWindow::showCursorPosition(Coord x, Coord y)
 {
     m_positionLabel->setText(QStringLiteral("X %1   Y %2 ").arg(formatMmFixed(x), formatMmFixed(y))
-                             + tr("mm"));
+                             + mmUnit());
 }
 
 void MainWindow::showGridStep(Coord step)

@@ -51,6 +51,10 @@
 <context>
     <name>ppcb::Format</name>
     <message>
+        <source>mm</source>
+        <translation>мм</translation>
+    </message>
+    <message>
         <source>%1 W</source>
         <translation>%1 Вт</translation>
     </message>
@@ -605,10 +609,6 @@
         <translation>Центрувати й переносити курсор під час масштабування</translation>
     </message>
     <message>
-        <source>mm</source>
-        <translation>мм</translation>
-    </message>
-    <message>
         <source>Open library file</source>
         <translation>Відкрити файл бібліотеки</translation>
     </message>
@@ -920,6 +920,54 @@
 </context>
 <context>
     <name>ppcb::ProjectPropertiesDialog</name>
+    <message>
+        <source>Net classes</source>
+        <translation>Класи кіл</translation>
+    </message>
+    <message>
+        <source>Track width</source>
+        <translation>Ширина доріжки</translation>
+    </message>
+    <message>
+        <source>Clearance</source>
+        <translation>Зазор</translation>
+    </message>
+    <message>
+        <source>Via hole</source>
+        <translation>Отвір переходу</translation>
+    </message>
+    <message>
+        <source>Via diameter</source>
+        <translation>Діаметр переходу</translation>
+    </message>
+    <message>
+        <source>Add</source>
+        <translation>Додати</translation>
+    </message>
+    <message>
+        <source>Default class</source>
+        <translation>Клас за замовчуванням</translation>
+    </message>
+    <message>
+        <source>Power class</source>
+        <translation>Клас живлення</translation>
+    </message>
+    <message>
+        <source>A net class needs a name</source>
+        <translation>Класу кіл потрібна назва</translation>
+    </message>
+    <message>
+        <source>Two net classes have the name</source>
+        <translation>Два класи кіл мають назву</translation>
+    </message>
+    <message>
+        <source>The via diameter must be larger than the via hole</source>
+        <translation>Діаметр переходу має бути більшим за отвір</translation>
+    </message>
+    <message>
+        <source>Nets of the deleted classes will take the default or the power class</source>
+        <translation>Кола видалених класів отримають клас за замовчуванням або клас живлення</translation>
+    </message>
     <message>
         <source>Title block</source>
         <translation>Основний напис</translation>

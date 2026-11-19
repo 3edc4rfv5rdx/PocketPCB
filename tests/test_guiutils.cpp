@@ -104,12 +104,16 @@ private slots:
     void translationsAreComplete()
     {
         // One of each kind of string: a menu, a choice, the unit.
-        const char *samples[] = {"&File", "Lines", "Full-window cross", "mm"};
+        const QList<QPair<const char *, const char *>> samples = {
+            {"ppcb::MainWindow", "&File"},
+            {"ppcb::MainWindow", "Lines"},
+            {"ppcb::MainWindow", "Full-window cross"},
+            {"ppcb::Format", "mm"}};
         for (const QString &language : {QStringLiteral("uk"), QStringLiteral("ru")}) {
             QTranslator translator;
             QVERIFY(loadTranslation(translator, language));
-            for (const char *sample : samples) {
-                const QString text = translator.translate("ppcb::MainWindow", sample);
+            for (const auto &[context, sample] : samples) {
+                const QString text = translator.translate(context, sample);
                 QVERIFY2(!text.isEmpty(), sample);
                 QVERIFY2(text != QLatin1String(sample), sample);
             }

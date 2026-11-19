@@ -51,6 +51,10 @@
 <context>
     <name>ppcb::Format</name>
     <message>
+        <source>mm</source>
+        <translation>мм</translation>
+    </message>
+    <message>
         <source>%1 W</source>
         <translation>%1 Вт</translation>
     </message>
@@ -605,10 +609,6 @@
         <translation>Центрировать и переносить курсор при масштабировании</translation>
     </message>
     <message>
-        <source>mm</source>
-        <translation>мм</translation>
-    </message>
-    <message>
         <source>Open library file</source>
         <translation>Открыть файл библиотеки</translation>
     </message>
@@ -920,6 +920,54 @@
 </context>
 <context>
     <name>ppcb::ProjectPropertiesDialog</name>
+    <message>
+        <source>Net classes</source>
+        <translation>Классы цепей</translation>
+    </message>
+    <message>
+        <source>Track width</source>
+        <translation>Ширина дорожки</translation>
+    </message>
+    <message>
+        <source>Clearance</source>
+        <translation>Зазор</translation>
+    </message>
+    <message>
+        <source>Via hole</source>
+        <translation>Отверстие перехода</translation>
+    </message>
+    <message>
+        <source>Via diameter</source>
+        <translation>Диаметр перехода</translation>
+    </message>
+    <message>
+        <source>Add</source>
+        <translation>Добавить</translation>
+    </message>
+    <message>
+        <source>Default class</source>
+        <translation>Класс по умолчанию</translation>
+    </message>
+    <message>
+        <source>Power class</source>
+        <translation>Класс питания</translation>
+    </message>
+    <message>
+        <source>A net class needs a name</source>
+        <translation>Классу цепей нужно имя</translation>
+    </message>
+    <message>
+        <source>Two net classes have the name</source>
+        <translation>Два класса цепей с именем</translation>
+    </message>
+    <message>
+        <source>The via diameter must be larger than the via hole</source>
+        <translation>Диаметр перехода должен быть больше отверстия</translation>
+    </message>
+    <message>
+        <source>Nets of the deleted classes will take the default or the power class</source>
+        <translation>Цепи удалённых классов получат класс по умолчанию или класс питания</translation>
+    </message>
     <message>
         <source>Title block</source>
         <translation>Основная надпись</translation>
