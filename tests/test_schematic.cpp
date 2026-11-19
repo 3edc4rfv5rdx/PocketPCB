@@ -32,6 +32,7 @@ Schematic fullSchematic()
     component.designator = QStringLiteral("R1");
     component.value = QStringLiteral("10k");
     component.offBoard = true;
+    component.powerMw = 250;
     component.at = Point{10 * PIN_GRID, 20 * PIN_GRID};
     component.rotation = 270;
     component.mirrored = true;
@@ -178,6 +179,7 @@ private slots:
         CHANGED(other.sheets[0].components[0].designator = QStringLiteral("R2"));
         CHANGED(other.sheets[0].components[0].value.clear());
         CHANGED(other.sheets[0].components[0].offBoard = false);
+        CHANGED(other.sheets[0].components[0].powerMw = 0);
         CHANGED(other.sheets[0].components[0].at.x += 1);
         CHANGED(other.sheets[0].components[0].rotation = 0);
         CHANGED(other.sheets[0].components[0].mirrored = false);

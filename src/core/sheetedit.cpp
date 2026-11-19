@@ -415,6 +415,16 @@ Sheet withComponentOffBoard(const Sheet &sheet, const QSet<ObjectId> &ids, bool 
     return withComponentsChanged(sheet, ids, [offBoard](Component &c) { c.offBoard = offBoard; });
 }
 
+Sheet withComponentPower(const Sheet &sheet, const QSet<ObjectId> &ids, int powerMw,
+                         const Library &library)
+{
+    return withComponentsChanged(sheet, ids, [powerMw, &library](Component &c) {
+        const Part *part = library.findPart(c.part);
+        if (part != nullptr && part->powerMw > 0)
+            c.powerMw = qBound(0, powerMw, MAX_POWER_MW);
+    });
+}
+
 bool isDesignatorTaken(const Schematic &schematic, const QString &designator,
                        const ObjectId &except)
 {
@@ -523,6 +533,7 @@ Component newComponent(const Library &library, const QString &partName, const QS
     if (const Part *part = library.findPart(partName)) {
         component.value = part->value;
         component.offBoard = part->footprints.isEmpty();
+        component.powerMw = part->powerMw;
     }
     if (const Symbol *symbol = library.findSymbolOfPart(partName)) {
         component.refAt = symbol->refAt;

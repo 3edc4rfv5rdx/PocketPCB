@@ -2,6 +2,13 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
 <context>
+    <name>ppcb::Format</name>
+    <message>
+        <source>%1 W</source>
+        <translation>%1 Вт</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::Document</name>
     <message>
         <source>the project file needs a name</source>
@@ -719,6 +726,10 @@
         <translation>Добавить имя</translation>
     </message>
     <message>
+        <source>Change power</source>
+        <translation>Изменить мощность</translation>
+    </message>
+    <message>
         <source>Bus</source>
         <translation>Шина</translation>
     </message>
@@ -794,6 +805,14 @@
     <message>
         <source>Footprint</source>
         <translation>Посадочное место</translation>
+    </message>
+    <message>
+        <source>Power</source>
+        <translation>Мощность</translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>нет</translation>
     </message>
     <message>
         <source>Designator</source>

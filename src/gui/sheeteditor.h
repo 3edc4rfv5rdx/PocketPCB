@@ -64,6 +64,7 @@ public:
         Rename,
         Bus,
         AddName,
+        Power,
     };
     static QString actionName(Action action);
 
@@ -217,6 +218,7 @@ public:
     void setComponentDesignator(const ObjectId &id, const QString &designator);
     void setComponentFootprint(const QSet<ObjectId> &ids, const QString &footprint);
     void setComponentOffBoard(const QSet<ObjectId> &ids, bool offBoard);
+    void setComponentPower(const QSet<ObjectId> &ids, int powerMw);
     // The net name of the power symbols 'ids', as one step; nothing happens
     // when it changes nothing or 'name' is blank.
     void setPowerName(const QSet<ObjectId> &ids, const QString &name);

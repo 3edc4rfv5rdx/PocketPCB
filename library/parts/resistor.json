@@ -7,5 +7,6 @@
   "prefixGost": "R",
   "value": "",
   "connector": false,
+  "powerMw": 125,
   "name": {"en": "Resistor", "uk": "Резистор", "ru": "Резистор"}
 }

@@ -28,6 +28,9 @@ struct Part
     // A part that needs no value (a button, a connector): the sheet shows no
     // mark in place of an empty one, and ERC asks for none.
     bool noValue = false;
+    // Rated power a new component of the part starts with, in milliwatts;
+    // 0 for a part that has none (only resistors have).
+    int powerMw = 0;
     // Name shown in the library panel, by interface language code
     // ("en", "uk", "ru"); may be empty.
     QMap<QString, QString> name;
@@ -36,6 +39,14 @@ struct Part
     // library name of the part) when none has.
     QString displayName(const QStringList &languages, const QString &fallback) const;
 };
+
+// Rated powers of resistors offered, in milliwatts, the least first.
+QList<int> standardPowersMw();
+// The largest power, in milliwatts, a component may be given.
+constexpr int MAX_POWER_MW = 1000000;
+// 'number' (1 to 3999) in Roman numerals: the mark of a power of 5 W and
+// more. Empty for a number out of that range.
+QString romanNumeral(int number);
 
 bool operator==(const Part &a, const Part &b);
 inline bool operator!=(const Part &a, const Part &b) { return !(a == b); }

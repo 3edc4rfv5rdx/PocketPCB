@@ -62,7 +62,19 @@ private slots:
         QVERIFY(part.value.isEmpty());
         QCOMPARE(part.connector, false);
         QCOMPARE(part.noValue, false);
+        QCOMPARE(part.powerMw, 0);
         QVERIFY(part.name.isEmpty());
+    }
+
+    // The marks of 5 W and more are Roman numerals.
+    void powersAboveFiveWattsAreRoman()
+    {
+        QCOMPARE(romanNumeral(5), QStringLiteral("V"));
+        QCOMPARE(romanNumeral(20), QStringLiteral("XX"));
+        QCOMPARE(romanNumeral(25), QStringLiteral("XXV"));
+        QCOMPARE(romanNumeral(1994), QStringLiteral("MCMXCIV"));
+        QVERIFY(romanNumeral(0).isEmpty());
+        QVERIFY(standardPowersMw().contains(125));
     }
 
     void displayNameFallsBack()
@@ -88,6 +100,7 @@ private slots:
         part.value = QStringLiteral("Питание ґ");
         part.connector = true;
         part.noValue = true;
+        part.powerMw = 125;
         part.name.insert(QStringLiteral("en"), QStringLiteral("Pin header"));
         part.name.insert(QStringLiteral("uk"), QStringLiteral("Штирьовий роз'єм"));
 
@@ -120,6 +133,7 @@ private slots:
         other = part; other.value.clear();                  QVERIFY(other != part);
         other = part; other.connector = true;               QVERIFY(other != part);
         other = part; other.noValue = true;                 QVERIFY(other != part);
+        other = part; other.powerMw = 250;                  QVERIFY(other != part);
         other = part; other.name.remove(QStringLiteral("ru")); QVERIFY(other != part);
         other = part; other.name[QStringLiteral("en")] += QLatin1Char('x'); QVERIFY(other != part);
     }

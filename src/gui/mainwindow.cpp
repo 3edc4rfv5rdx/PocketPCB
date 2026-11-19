@@ -47,6 +47,8 @@
 #include <QVBoxLayout>
 #include <QWidgetAction>
 
+#include <algorithm>
+
 namespace ppcb {
 
 namespace {
@@ -592,6 +594,25 @@ void MainWindow::showSheetMenu(const QPoint &globalPos)
                 QAction *name = menu.addAction(tr("Add name here"));
                 connect(name, &QAction::triggered, m_sheetEditor,
                         [this, editable, at] { m_sheetEditor->addBusName(editable, at); });
+            }
+            menu.addSeparator();
+        }
+        // The rated power of the resistors chosen, without the panel.
+        const QList<Component> chosen = m_sheetEditor->chosenComponents();
+        if (PropertiesPanel::havePower(chosen, m_document->design().library)) {
+            QMenu *power = menu.addMenu(PropertiesPanel::powerTitle());
+            QSet<ObjectId> ids;
+            for (const Component &component : chosen)
+                ids.insert(component.id);
+            for (const auto &[text, powerMw] : PropertiesPanel::powerChoices()) {
+                QAction *choice = power->addAction(text);
+                choice->setCheckable(true);
+                choice->setChecked(std::all_of(chosen.cbegin(), chosen.cend(),
+                                               [powerMw](const Component &c) {
+                                                   return c.powerMw == powerMw;
+                                               }));
+                connect(choice, &QAction::triggered, m_sheetEditor,
+                        [this, ids, powerMw] { m_sheetEditor->setComponentPower(ids, powerMw); });
             }
             menu.addSeparator();
         }

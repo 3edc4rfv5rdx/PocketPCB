@@ -85,6 +85,17 @@ const int CORNER_PIECES = 12;
 const double EMPTY_BOARD_WIDTH = 100.0;
 const double EMPTY_BOARD_HEIGHT = 80.0;
 const double HALF_TURN = 180.0;
+const double QUARTER_TURN = 90.0;
+// The mark of a rated power inside a resistor: how far its strokes reach
+// from the middle of the body across it and along it, how far apart they
+// stand, and the height of its Roman numerals.
+const double POWER_STROKE_HALF = 0.6;
+// Slanted strokes lean at 45 degrees, unlike the upright ones of 1 and 2 W.
+const double POWER_SLANT_HALF = POWER_STROKE_HALF;
+const double POWER_LONG_HALF = 1.5;
+const double POWER_STROKE_GAP = 0.6;
+const double POWER_TEXT_HEIGHT = 1.0;
+const int MILLIWATTS_PER_WATT = 1000;
 const double PI = 3.14159265358979323846;
 
 // What stands in for a symbol or footprint the project library lacks.
@@ -530,6 +541,63 @@ void paintMissing(QPainter &painter, const QPointF &center, double size)
     painter.restore();
 }
 
+// The mark of a resistor's rated power in the middle of its body, the first
+// rectangle of its symbol, after GOST 2.728: three, two or one slanted
+// strokes for 0.05, 0.125 and 0.25 W, a stroke along the body for 0.5 W,
+// one or two across it for 1 and 2 W, Roman numerals for 5 W and more in
+// whole watts. Nothing for any other power, or without a rectangle.
+static void paintPowerMark(QPainter &painter, const Symbol &symbol, int powerMw)
+{
+    const auto body = std::find_if(symbol.graphics.cbegin(), symbol.graphics.cend(),
+                                   [](const Graphic &g) { return g.kind == GraphicKind::Rect; });
+    if (body == symbol.graphics.cend())
+        return;
+    const QRectF rect = QRectF(toMm(body->a), toMm(body->b)).normalized();
+    painter.save();
+    painter.translate(rect.center());
+    // Along the body is along its longer side.
+    if (rect.height() > rect.width())
+        painter.rotate(QUARTER_TURN);
+    painter.setPen(linePen(paintcolor::symbol(), SYMBOL_LINE_WIDTH));
+    painter.setBrush(Qt::NoBrush);
+    // 'count' strokes side by side along the body, each drawn by 'stroke'
+    // about its own middle.
+    const auto strokes = [&painter](int count, const QLineF &stroke) {
+        for (int i = 0; i < count; ++i)
+            painter.drawLine(
+                stroke.translated((i - (count - 1) / 2.0) * POWER_STROKE_GAP, 0));
+    };
+    const QLineF slanted(-POWER_SLANT_HALF, POWER_STROKE_HALF, POWER_SLANT_HALF,
+                         -POWER_STROKE_HALF);
+    const QLineF across(0, -POWER_STROKE_HALF, 0, POWER_STROKE_HALF);
+    switch (powerMw) {
+    case 50:
+        strokes(3, slanted);
+        break;
+    case 125:
+        strokes(2, slanted);
+        break;
+    case 250:
+        strokes(1, slanted);
+        break;
+    case 500:
+        painter.drawLine(QLineF(-POWER_LONG_HALF, 0, POWER_LONG_HALF, 0));
+        break;
+    case 1000:
+        strokes(1, across);
+        break;
+    case 2000:
+        strokes(2, across);
+        break;
+    default:
+        if (powerMw >= 5 * MILLIWATTS_PER_WATT && powerMw % MILLIWATTS_PER_WATT == 0)
+            drawText(painter, QPointF(), romanNumeral(powerMw / MILLIWATTS_PER_WATT),
+                     POWER_TEXT_HEIGHT, TextAlign::Center, paintcolor::symbol(), true);
+        break;
+    }
+    painter.restore();
+}
+
 void paintComponent(QPainter &painter, const Library &library, const Component &component)
 {
     const Symbol *symbol = library.findSymbolOfPart(component.part);
@@ -539,6 +607,8 @@ void paintComponent(QPainter &painter, const Library &library, const Component &
         painter.save();
         painter.setTransform(componentTransform(component), true);
         paintSymbolBody(painter, *symbol, true, false);
+        if (component.powerMw > 0)
+            paintPowerMark(painter, *symbol, component.powerMw);
         painter.restore();
     }
 

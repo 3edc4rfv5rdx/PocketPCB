@@ -1,6 +1,7 @@
 #include "propertiespanel.h"
 
 #include "document.h"
+#include "format.h"
 #include "sheetedit.h"
 #include "sheeteditor.h"
 
@@ -40,12 +41,15 @@ PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidge
     m_footprint->setObjectName(QStringLiteral("propertiesFootprint"));
     m_offBoard = new QCheckBox(this);
     m_offBoard->setObjectName(QStringLiteral("propertiesOffBoard"));
+    m_power = new QComboBox(this);
+    m_power->setObjectName(QStringLiteral("propertiesPower"));
 
     QFormLayout *form = new QFormLayout;
     form->addRow(tr("Designator"), m_designator);
     form->addRow(tr("Value"), m_value);
     form->addRow(footprintTitle(), m_footprint);
     form->addRow(tr("Off board"), m_offBoard);
+    form->addRow(powerTitle(), m_power);
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(m_heading);
     layout->addLayout(form);
@@ -59,6 +63,7 @@ PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidge
     connect(m_value, &QLineEdit::editingFinished, this, &PropertiesPanel::commitValue);
     connect(m_footprint, &QComboBox::activated, this, &PropertiesPanel::commitFootprint);
     connect(m_offBoard, &QCheckBox::clicked, this, &PropertiesPanel::commitOffBoard);
+    connect(m_power, &QComboBox::activated, this, &PropertiesPanel::commitPower);
     connect(m_editor, &SheetEditor::changed, this, [this] { refresh(); });
     connect(m_document, &Document::designChanged, this, [this] { refresh(); });
     refresh(true);
@@ -72,6 +77,28 @@ QString PropertiesPanel::propertiesTitle()
 QString PropertiesPanel::footprintTitle()
 {
     return tr("Footprint");
+}
+
+QString PropertiesPanel::powerTitle()
+{
+    return tr("Power");
+}
+
+QList<QPair<QString, int>> PropertiesPanel::powerChoices()
+{
+    QList<QPair<QString, int>> choices = {qMakePair(tr("none"), 0)};
+    for (const int powerMw : standardPowersMw())
+        choices.append(qMakePair(formatPower(powerMw), powerMw));
+    return choices;
+}
+
+bool PropertiesPanel::havePower(const QList<Component> &components, const Library &library)
+{
+    return !components.isEmpty()
+           && std::all_of(components.cbegin(), components.cend(), [&library](const Component &c) {
+                  const Part *part = library.findPart(c.part);
+                  return part != nullptr && part->powerMw > 0;
+              });
 }
 
 bool PropertiesPanel::eventFilter(QObject *watched, QEvent *event)
@@ -169,6 +196,23 @@ void PropertiesPanel::refresh(bool force)
     m_offBoard->setCheckState(mixed                       ? Qt::PartiallyChecked
                               : offBoard > 0              ? Qt::Checked
                                                           : Qt::Unchecked);
+
+    // The rated power: of resistors only; the one they all have, or none.
+    m_power->clear();
+    m_power->setEnabled(havePower(chosen, m_document->design().library));
+    if (m_power->isEnabled()) {
+        for (const auto &[text, powerMw] : powerChoices())
+            m_power->addItem(text, powerMw);
+        bool powersDiffer = false;
+        for (const Component &component : chosen)
+            powersDiffer = powersDiffer || component.powerMw != chosen.first().powerMw;
+        const int current = chosen.first().powerMw;
+        // One not offered is still told.
+        m_power->setPlaceholderText(powersDiffer ? different : formatPower(current));
+        m_power->setCurrentIndex(powersDiffer ? -1 : m_power->findData(current));
+    } else {
+        m_power->setPlaceholderText(QString());
+    }
 }
 
 void PropertiesPanel::commitDesignator()
@@ -201,6 +245,14 @@ void PropertiesPanel::commitOffBoard()
     if (m_ids.isEmpty())
         return;
     m_editor->setComponentOffBoard(m_ids, m_offBoard->checkState() == Qt::Checked);
+    refresh(true);
+}
+
+void PropertiesPanel::commitPower(int index)
+{
+    if (m_ids.isEmpty() || index < 0)
+        return;
+    m_editor->setComponentPower(m_ids, m_power->itemData(index).toInt());
     refresh(true);
 }
 

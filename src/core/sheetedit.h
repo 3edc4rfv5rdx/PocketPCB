@@ -103,6 +103,10 @@ Sheet withComponentDesignator(const Sheet &sheet, const QSet<ObjectId> &ids,
 Sheet withComponentFootprint(const Sheet &sheet, const QSet<ObjectId> &ids,
                              const QString &footprint);
 Sheet withComponentOffBoard(const Sheet &sheet, const QSet<ObjectId> &ids, bool offBoard);
+// Rated power in milliwatts, 0 for none; only components of parts that
+// have one (Part::powerMw) take it.
+Sheet withComponentPower(const Sheet &sheet, const QSet<ObjectId> &ids, int powerMw,
+                         const Library &library);
 // True when a component of the schematic other than 'except' has 'designator'.
 bool isDesignatorTaken(const Schematic &schematic, const QString &designator,
                        const ObjectId &except);

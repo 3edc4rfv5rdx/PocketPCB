@@ -1,5 +1,6 @@
 #include "format.h"
 
+#include <QCoreApplication>
 #include <QLocale>
 
 #include <cmath>
@@ -36,6 +37,17 @@ QString formatMmShort(Coord nm)
     if (text.endsWith(point))
         text.chop(point.size());
     return text;
+}
+
+QString formatPower(int powerMw)
+{
+    if (powerMw <= 0)
+        return QString();
+    const int milliwattsPerWatt = 1000;
+    QLocale locale;
+    locale.setNumberOptions(QLocale::OmitGroupSeparator);
+    const QString watts = locale.toString(double(powerMw) / milliwattsPerWatt, 'g', 6);
+    return QCoreApplication::translate("ppcb::Format", "%1 W").arg(watts);
 }
 
 } // namespace ppcb

@@ -14,4 +14,7 @@ QString formatMmFixed(Coord nm);
 // For values shown in lists (grid steps, widths).
 QString formatMmShort(Coord nm);
 
+// A rated power in watts, in the current locale: "0.125 W"; empty for 0.
+QString formatPower(int powerMw);
+
 } // namespace ppcb

@@ -1,7 +1,11 @@
 #pragma once
 
+#include "library.h"
 #include "objectid.h"
+#include "schematic.h"
 
+#include <QList>
+#include <QPair>
 #include <QSet>
 #include <QWidget>
 
@@ -31,6 +35,12 @@ public:
     // The panel's title, and the name of a footprint as a field and in messages.
     static QString propertiesTitle();
     static QString footprintTitle();
+    // The rated power as a field and a menu, and what it offers: none, then
+    // the standard powers (standardPowersMw()), each with its milliwatts.
+    static QString powerTitle();
+    static QList<QPair<QString, int>> powerChoices();
+    // True when every one of 'components' is of a part with a rated power.
+    static bool havePower(const QList<Component> &components, const Library &library);
 
     // Shows the chosen components again. A field being typed in is left
     // alone while the same components stay chosen, unless 'force'.
@@ -45,6 +55,7 @@ private:
     void commitValue();
     void commitFootprint(int index);
     void commitOffBoard();
+    void commitPower(int index);
     // Red when the designator typed is another component's.
     void markDesignator();
     // True when 'field' keeps what the user is typing.
@@ -59,6 +70,7 @@ private:
     QLineEdit *m_value = nullptr;
     QComboBox *m_footprint = nullptr;
     QCheckBox *m_offBoard = nullptr;
+    QComboBox *m_power = nullptr;
     // The value differs between the components shown.
     bool m_valuesDiffer = false;
 };

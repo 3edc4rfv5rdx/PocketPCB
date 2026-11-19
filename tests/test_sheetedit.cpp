@@ -528,6 +528,13 @@ private slots:
         QCOMPARE(rest.graphics.size(), 1);
         QCOMPARE(rest.components.size(), 1);
         QVERIFY(withoutObjects(sheet, allIds()) == Sheet());
+        // A rated power goes to a part that has one only.
+        Library powered = resistorLibrary();
+        powered.parts[QStringLiteral("resistor")].powerMw = 125;
+        QCOMPARE(withComponentPower(sheet, {id(1)}, 2000, powered).components.at(0).powerMw, 2000);
+        QVERIFY(withComponentPower(sheet, {id(1)}, 2000, resistorLibrary()) == sheet);
+        QCOMPARE(newComponent(powered, QStringLiteral("resistor"), QString()).powerMw, 125);
+
         // The no-connect mark on a pin of a part goes with the part, unless
         // a pin of another part is there too.
         const Library library = resistorLibrary();

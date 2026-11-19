@@ -621,6 +621,13 @@ void SheetEditor::setComponentOffBoard(const QSet<ObjectId> &ids, bool offBoard)
                           withComponentOffBoard(*sheet, ids, offBoard));
 }
 
+void SheetEditor::setComponentPower(const QSet<ObjectId> &ids, int powerMw)
+{
+    if (const Sheet *sheet = currentSheet())
+        applyToComponents(Action::Power, ids,
+                          withComponentPower(*sheet, ids, powerMw, m_document->design().library));
+}
+
 void SheetEditor::applyToComponents(Action action, const QSet<ObjectId> &ids,
                                     const Sheet &edited)
 {
@@ -1438,6 +1445,8 @@ QString SheetEditor::actionName(Action action)
         return tr("Bus");
     case Action::AddName:
         return tr("Add name");
+    case Action::Power:
+        return tr("Change power");
     }
     return QString();
 }
