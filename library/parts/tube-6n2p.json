@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "tube-6n2p",
+  "footprints": ["socket-noval"],
+  "prefix": "V",
+  "prefixGost": "VL",
+  "value": "6N2P",
+  "connector": false,
+  "group": "tubes",
+  "name": {"en": "Double triode 6N2P", "uk": "Подвійний тріод 6Н2П", "ru": "Двойной триод 6Н2П"}
+}
