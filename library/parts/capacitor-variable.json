@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "capacitor-variable",
+  "footprints": [],
+  "prefix": "C",
+  "prefixGost": "C",
+  "value": "",
+  "connector": false,
+  "group": "capacitors",
+  "name": {"en": "Variable capacitor", "uk": "Змінний конденсатор", "ru": "Переменный конденсатор"}
+}

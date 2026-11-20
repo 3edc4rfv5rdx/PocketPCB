@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "thermistor-ptc",
+  "footprints": ["capacitor-5.08", "capacitor-2.54"],
+  "prefix": "RT",
+  "prefixGost": "RK",
+  "value": "",
+  "connector": false,
+  "group": "resistors",
+  "name": {"en": "Thermistor PTC", "uk": "Терморезистор PTC", "ru": "Терморезистор PTC"}
+}

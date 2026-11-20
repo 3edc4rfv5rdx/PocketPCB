@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "capacitor-trimmer",
+  "footprints": ["capacitor-5.08"],
+  "prefix": "C",
+  "prefixGost": "C",
+  "value": "",
+  "connector": false,
+  "group": "capacitors",
+  "name": {"en": "Trimmer capacitor", "uk": "Підстроювальний конденсатор", "ru": "Подстроечный конденсатор"}
+}

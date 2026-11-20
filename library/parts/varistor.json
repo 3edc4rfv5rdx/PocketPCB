@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "varistor",
+  "footprints": ["capacitor-5.08", "capacitor-2.54"],
+  "prefix": "RV",
+  "prefixGost": "RU",
+  "value": "",
+  "connector": false,
+  "group": "fuses",
+  "name": {"en": "Varistor", "uk": "Варистор", "ru": "Варистор"}
+}
