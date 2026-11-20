@@ -1,0 +1,22 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "circle", "center": [0, 0], "radius": 3.81},
+    {"kind": "line", "from": [-3.81, 0], "to": [-1.27, 0]},
+    {"kind": "line", "from": [-1.27, 0], "to": [2.032, -1.27]},
+    {"kind": "line", "from": [2.84, -2.54], "to": [2.032, -2.54]},
+    {"kind": "line", "from": [2.032, -2.54], "to": [2.032, -1.27]},
+    {"kind": "line", "from": [2.84, 2.54], "to": [2.032, 2.54]},
+    {"kind": "line", "from": [2.032, 2.54], "to": [2.032, 0.762]}
+  ],
+  "pins": [
+    {"number": "COM", "name": "COM", "at": [-5.08, 0], "side": "left", "length": 1.27},
+    {"number": "NC", "name": "NC", "at": [5.08, -2.54], "side": "right", "length": 2.24},
+    {"number": "NO", "name": "NO", "at": [5.08, 2.54], "side": "right", "length": 2.24}
+  ],
+  "refAt": [0, -5.08],
+  "valueAt": [0, 5.08],
+  "showPinNumbers": false,
+  "showPinNames": false
+}
