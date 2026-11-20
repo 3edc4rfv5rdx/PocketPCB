@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: The op amp, EL84 and 6L6 symbols have a pin for every pad of their footprints: offset and NC pins, unused tube pins
 - E: The coil pins of the relay symbol stand on the pin grid, so the library reads it
 - F: The EL84 / 6P14P symbol follows the reference drawing: the third grid joined to the cathode inside, pins 3 and 9 on the right
 - N: Built-in double triode 6N2P on a noval socket, its pin 9 the screen; ECC83 no longer claims to be the same tube

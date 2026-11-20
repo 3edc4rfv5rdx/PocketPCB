@@ -21,10 +21,13 @@
     {"number": "9", "name": "G2", "at": [10.16, -2.54], "side": "right", "length": 8.636},
     {"number": "3", "name": "K", "at": [10.16, 2.54], "side": "right", "length": 8.636},
     {"number": "4", "name": "F", "at": [-2.54, 10.16], "side": "down", "length": 5.08},
-    {"number": "5", "name": "F", "at": [2.54, 10.16], "side": "down", "length": 5.08}
+    {"number": "5", "name": "F", "at": [2.54, 10.16], "side": "down", "length": 5.08},
+    {"number": "1", "name": "IC", "at": [-7.62, 7.62], "side": "down", "length": 4.311},
+    {"number": "6", "name": "IC", "at": [7.62, 7.62], "side": "down", "length": 4.311},
+    {"number": "8", "name": "IC", "at": [5.08, 10.16], "side": "down", "length": 4.134}
   ],
   "refAt": [-7.62, -8.89],
-  "valueAt": [-7.62, 6.35],
+  "valueAt": [-10.16, 6.35],
   "showPinNumbers": true,
   "showPinNames": false
 }

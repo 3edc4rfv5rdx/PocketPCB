@@ -21,7 +21,9 @@
     {"number": "5", "name": "G1", "at": [-10.16, 0], "side": "left", "length": 8.636},
     {"number": "8", "name": "K", "at": [-10.16, 2.54], "side": "left", "length": 8.636},
     {"number": "2", "name": "F", "at": [-2.54, 10.16], "side": "down", "length": 5.08},
-    {"number": "7", "name": "F", "at": [2.54, 10.16], "side": "down", "length": 5.08}
+    {"number": "7", "name": "F", "at": [2.54, 10.16], "side": "down", "length": 5.08},
+    {"number": "1", "name": "IC", "at": [-7.62, 7.62], "side": "down", "length": 4.311},
+    {"number": "6", "name": "IC", "at": [7.62, 7.62], "side": "down", "length": 4.311}
   ],
   "refAt": [10.16, -8.89],
   "valueAt": [10.16, 6.35],
