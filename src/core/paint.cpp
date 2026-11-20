@@ -45,7 +45,9 @@ const double A4_LONG_SIDE = 297.0;
 const double A4_SHORT_SIDE = 210.0;
 const double A3_LONG_SIDE = 420.0;
 const double A3_SHORT_SIDE = 297.0;
+// The frame inside the paper's edge: wider on the left, room for binding.
 const double FRAME_MARGIN = 5.0;
+const double FRAME_BINDING_MARGIN = 20.0;
 const double FRAME_LINE_WIDTH = 0.3;
 const double TITLE_BLOCK_WIDTH = 90.0;
 const double TITLE_ROW_HEIGHT = 6.0;
@@ -741,7 +743,7 @@ void paintFrame(QPainter &painter, const Schematic &schematic, int index,
 {
     const Sheet &sheet = schematic.sheets.at(index);
     const QRectF paper = paperRect(sheet.paper);
-    const QRectF frame = paper.adjusted(FRAME_MARGIN, FRAME_MARGIN, -FRAME_MARGIN, -FRAME_MARGIN);
+    const QRectF frame = paper.adjusted(FRAME_BINDING_MARGIN, FRAME_MARGIN, -FRAME_MARGIN, -FRAME_MARGIN);
 
     QStringList rows;
     const QStringList fields = {

@@ -491,10 +491,16 @@ private slots:
         QVERIFY(!anyColor(image, -4, 7.5, -2, 9.2, paintcolor::looseLabel()));
         QVERIFY(anyColor(image, -4, 1, -2, 6, paintcolor::looseLabel()));
 
-        // The frame: 5 mm inside the paper, whose corner is the origin.
-        QVERIFY(isColor(colorAt(image, 5, 8), paintcolor::sheetFrame()));
-        QVERIFY(isColor(colorAt(image, 8, 5), paintcolor::sheetFrame()));
-        QVERIFY(isColor(colorAt(image, 8, 8), paintcolor::background()));
+        // The frame: 20 mm inside the paper's left edge, 5 mm inside its top,
+        // seen around 17, 0 of the paper, whose corner is the origin.
+        const QImage corner = renderWith([&schematic](QPainter &painter) {
+            painter.translate(-17, 0);
+            paintSheet(painter, schematic, Library(), 0, TitleBlock(), PowerShown());
+        });
+        QVERIFY(isColor(colorAt(corner, 3, 8), paintcolor::sheetFrame()));
+        QVERIFY(isColor(colorAt(corner, 6, 5), paintcolor::sheetFrame()));
+        QVERIFY(isColor(colorAt(corner, 6, 8), paintcolor::background()));
+        QVERIFY(isColor(colorAt(corner, 0, 8), paintcolor::background()));
 
         // A sheet that is not there draws nothing at all.
         const QImage nothing = renderWith([&schematic](QPainter &painter) {
