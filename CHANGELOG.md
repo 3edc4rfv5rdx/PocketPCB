@@ -3,6 +3,8 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Outline, Cut-out and Rectangular board share one button on the strip of tools, doing what was chosen last from its arrow
+- N: The board outline is chosen whole by a double click on an edge or Ctrl+A, dragged whole, and locked against changes with the Lock button
 - F: The history of steps keeps the board before and after each step as well as the schematic
 - N: A corner mark on the board shows the origin the coordinates count from
 - F: The board is drawn on black, the copper red on top and blue below, vias violet, the silkscreen white and the outline yellow

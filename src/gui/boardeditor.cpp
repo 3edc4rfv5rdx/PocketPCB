@@ -50,6 +50,12 @@ QString BoardEditor::actionName(Action action)
         return tr("Move board corner");
     case Action::MoveSide:
         return tr("Move board edge");
+    case Action::MoveOutline:
+        return tr("Move board outline");
+    case Action::LockOutline:
+        return tr("Lock board outline");
+    case Action::UnlockOutline:
+        return tr("Unlock board outline");
     case Action::RoundCorner:
         return tr("Round board corner");
     }
@@ -61,6 +67,7 @@ void BoardEditor::setActive(bool active)
     m_radiusEdit.close(true);
     m_active = active;
     m_tool = Tool::Select;
+    m_outlineChosen = false;
     m_outlinePoints.clear();
     m_cutting = false;
     dropDrag();
@@ -77,9 +84,10 @@ void BoardEditor::chooseSelectTool()
 
 void BoardEditor::startDrawingOutline()
 {
-    if (!m_active)
+    if (!m_active || refuseLocked())
         return;
     chooseSelectTool();
+    m_outlineChosen = false;
     m_tool = Tool::Outline;
     // Where the cursor is now, before it moves.
     m_cursor = Point{m_canvas->cursorX(), m_canvas->cursorY()};
@@ -88,9 +96,10 @@ void BoardEditor::startDrawingOutline()
 
 void BoardEditor::startCuttingOut()
 {
-    if (!m_active)
+    if (!m_active || refuseLocked())
         return;
     chooseSelectTool();
+    m_outlineChosen = false;
     m_tool = Tool::CutOut;
     // Where the cursor is now, before it moves.
     m_cursor = Point{m_canvas->cursorX(), m_canvas->cursorY()};
@@ -99,6 +108,8 @@ void BoardEditor::startCuttingOut()
 
 void BoardEditor::makeRectangleBoard(Coord width, Coord height)
 {
+    if (refuseLocked())
+        return;
     if (width > 0 && height > 0)
         apply(Action::RectangleBoard, rectangleOutline(Point(), width, height));
 }
@@ -142,6 +153,7 @@ void BoardEditor::press(const QPointF &at)
         break;
     }
     dropDrag();
+    m_lockTold = false;
     m_pressed = true;
     m_pressAt = at;
     m_pressGrid = m_canvas->snapped(at);
@@ -154,7 +166,12 @@ void BoardEditor::press(const QPointF &at)
         const QPointF end = toMm(outline().at((m_dragSide + 1) % count).at);
         m_dragSideEnd = QLineF(at, end).length() < QLineF(at, start).length();
     }
+    const bool onOutline = m_dragCorner >= 0 || m_dragSide >= 0;
+    if (!onOutline)
+        m_outlineChosen = false;
+    m_dragWhole = onOutline && hasChosen();
     setLit(m_dragCorner, m_dragSide);
+    emit changed();
 }
 
 void BoardEditor::move(const QPointF &at)
@@ -175,14 +192,24 @@ void BoardEditor::move(const QPointF &at)
         if (QLineF(at, m_pressAt).length()
             < m_canvas->pixelsToMm(QApplication::startDragDistance()))
             return;
+        if (isOutlineLocked()) {
+            if (!m_lockTold)
+                refuseLocked();
+            m_lockTold = true;
+            return;
+        }
         m_dragging = true;
         m_preview = outline();
     }
     // Where the outline would go wrong, it stays as it was last right.
     const Point cursor = m_canvas->snapped(at);
-    const std::optional<QList<OutlineCorner>> moved =
-        m_dragCorner >= 0 ? withOutlineCornerMoved(outline(), m_dragCorner, cursor)
-                          : withOutlineSideMoved(outline(), m_dragSide, cursor - m_pressGrid);
+    std::optional<QList<OutlineCorner>> moved;
+    if (m_dragWhole)
+        moved = outlineMoved(outline(), cursor - m_pressGrid);
+    else if (m_dragCorner >= 0)
+        moved = withOutlineCornerMoved(outline(), m_dragCorner, cursor);
+    else
+        moved = withOutlineSideMoved(outline(), m_dragSide, cursor - m_pressGrid);
     if (moved && *moved != *m_preview) {
         m_preview = moved;
         emit changed();
@@ -200,10 +227,12 @@ void BoardEditor::release(const QPointF &at)
         return;
     }
     const std::optional<QList<OutlineCorner>> moved = m_dragging ? m_preview : std::nullopt;
-    const bool corner = m_dragCorner >= 0;
+    const Action action = m_dragWhole            ? Action::MoveOutline
+                          : m_dragCorner >= 0    ? Action::MoveCorner
+                                                 : Action::MoveSide;
     dropDrag();
     if (moved && *moved != outline())
-        apply(corner ? Action::MoveCorner : Action::MoveSide, *moved);
+        apply(action, *moved);
     emit changed();
 }
 
@@ -217,8 +246,40 @@ void BoardEditor::doubleClick(const QPointF &at)
     }
     const int corner =
         outlineCornerAt(outline(), at, m_canvas->pixelsToMm(CanvasView::END_PIXELS));
-    if (corner >= 0)
-        editRadius(corner);
+    if (corner >= 0) {
+        if (!refuseLocked())
+            editRadius(corner);
+        return;
+    }
+    if (outlineSideAt(outline(), at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS)) >= 0)
+        chooseAll();
+}
+
+void BoardEditor::chooseAll()
+{
+    if (!m_active || outline().isEmpty())
+        return;
+    chooseSelectTool();
+    m_outlineChosen = true;
+    emit changed();
+}
+
+void BoardEditor::setChosenLocked(bool locked)
+{
+    if (!hasChosen() || locked == isOutlineLocked())
+        return;
+    Design design = m_document->design();
+    design.board.outlineLocked = locked;
+    m_document->change(actionName(locked ? Action::LockOutline : Action::UnlockOutline), design,
+                       boardPage());
+}
+
+bool BoardEditor::refuseLocked()
+{
+    if (!isOutlineLocked())
+        return false;
+    emit message(tr("The board outline is locked"));
+    return true;
 }
 
 void BoardEditor::hover(const Point &at)
@@ -235,6 +296,11 @@ void BoardEditor::hoverMouse(const QPointF &at)
 {
     if (!m_active || m_tool != Tool::Select || m_pressed)
         return;
+    // A locked outline is not offered for dragging.
+    if (isOutlineLocked()) {
+        setLit(-1, -1);
+        return;
+    }
     const double sideReach = m_canvas->pixelsToMm(CanvasView::HIT_PIXELS);
     const int corner =
         outlineCornerAt(outline(), at, m_canvas->pixelsToMm(CanvasView::END_PIXELS));
@@ -251,6 +317,8 @@ void BoardEditor::cancel()
         m_outlinePoints.clear();
     } else if (m_cutting) {
         m_cutting = false;
+    } else if (m_tool == Tool::Select && m_outlineChosen) {
+        m_outlineChosen = false;
     } else {
         chooseSelectTool();
         setLit(-1, -1);
@@ -380,6 +448,7 @@ void BoardEditor::dropDrag()
     m_dragging = false;
     m_dragCorner = -1;
     m_dragSide = -1;
+    m_dragWhole = false;
     m_preview.reset();
     m_litCorner = -1;
     m_litSide = -1;

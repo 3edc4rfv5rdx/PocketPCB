@@ -1409,6 +1409,32 @@ private slots:
         QCOMPARE(editor->tool(), BoardEditor::Tool::Select);
         QCOMPARE(outline(), rectangleOutline(Point(), 10 * NM_PER_MM, 10 * NM_PER_MM));
 
+        // A double click on a side chooses the outline whole; locked, it
+        // stays where it is; unlocked, a drag moves it all.
+        QAction *lock = window.findChild<QAction *>(QStringLiteral("actionLock"));
+        QVERIFY(!lock->isEnabled());
+        editor->doubleClick(QPointF(5, 0));
+        QVERIFY(editor->hasChosen());
+        QVERIFY(lock->isEnabled());
+        lock->trigger();
+        QVERIFY(window.document()->design().board.outlineLocked);
+        QVERIFY(lock->isChecked());
+        QVERIFY(!cutOut->isEnabled());
+        const QList<OutlineCorner> square = outline();
+        editor->press(QPointF(5, 0));
+        editor->move(QPointF(7, 3));
+        editor->release(QPointF(7, 3));
+        QCOMPARE(outline(), square);
+        lock->trigger();
+        QVERIFY(!window.document()->design().board.outlineLocked);
+        editor->press(QPointF(5, 0));
+        editor->move(QPointF(7, 3));
+        editor->release(QPointF(7, 3));
+        QCOMPARE(outline().first().at, (Point{2 * NM_PER_MM, 3 * NM_PER_MM}));
+        // Esc lets it go.
+        window.findChild<QAction *>(QStringLiteral("actionDeselect"))->trigger();
+        QVERIFY(!editor->hasChosen());
+
         // A sheet again: the board's modes step aside.
         window.showPage(0);
         QVERIFY(!editor->isActive());

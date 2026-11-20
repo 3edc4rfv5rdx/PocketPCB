@@ -166,6 +166,14 @@ std::optional<QList<OutlineCorner>> withOutlineCornerMoved(const QList<OutlineCo
     return moved;
 }
 
+QList<OutlineCorner> outlineMoved(const QList<OutlineCorner> &outline, const Point &delta)
+{
+    QList<OutlineCorner> moved = outline;
+    for (OutlineCorner &corner : moved)
+        corner.at = corner.at + delta;
+    return moved;
+}
+
 std::optional<QList<OutlineCorner>> withOutlineSideMoved(const QList<OutlineCorner> &outline,
                                                          int side, const Point &delta)
 {

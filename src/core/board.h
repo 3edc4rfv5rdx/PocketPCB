@@ -157,6 +157,8 @@ struct Board
     // The board's edge: a closed chain of corners (see outline.h). Empty
     // while the board has no outline yet.
     QList<OutlineCorner> outline;
+    // The outline may not be changed or moved until this is taken off.
+    bool outlineLocked = false;
     QList<Placement> placements;
     QList<Track> tracks;
     QList<Via> vias;

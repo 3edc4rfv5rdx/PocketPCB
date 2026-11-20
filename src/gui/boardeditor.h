@@ -36,7 +36,10 @@ public:
         RectangleBoard,
         MoveCorner,
         MoveSide,
+        MoveOutline,
         RoundCorner,
+        LockOutline,
+        UnlockOutline,
     };
     static QString actionName(Action action);
 
@@ -61,9 +64,22 @@ public:
     void makeRectangleBoard(Coord width, Coord height);
     // The outline's size; empty for a board without one.
     QRectF outlineBounds() const;
+    // The outline may not be changed or moved (Board::outlineLocked).
+    bool isOutlineLocked() const { return m_document->design().board.outlineLocked; }
 
-    // The left mouse button. A second click in a row is a press as well,
-    // and a corner under it in choosing gets its radius typed.
+    // The outline is chosen whole: by a double click on a side or by
+    // chooseAll(); a drag on any of its sides or corners then moves it all.
+    // Esc or a click off it drops it.
+    bool hasChosen() const { return m_active && m_outlineChosen && !outline().isEmpty(); }
+    void chooseAll();
+    // What is chosen is locked (the lock button is pressed); locking or
+    // unlocking it is one step.
+    bool chosenLocked() const { return hasChosen() && isOutlineLocked(); }
+    void setChosenLocked(bool locked);
+
+    // The left mouse button. A second click in a row is a press as well;
+    // in choosing, a corner under it gets its radius typed and a side
+    // under it chooses the outline whole.
     void press(const QPointF &at);
     void move(const QPointF &at);
     void release(const QPointF &at);
@@ -73,8 +89,9 @@ public:
     // The mouse over the board with no button held: the corner or the side
     // under it is lit.
     void hoverMouse(const QPointF &at);
-    // Esc: the outline or the cut-out being drawn is dropped; else drawing
-    // ends and choosing comes back.
+    // Esc: a drag is called off, or the outline or the cut-out being drawn
+    // is dropped, or the outline chosen whole; else drawing ends and
+    // choosing comes back.
     void cancel();
 
     // What the canvas shows: the outline as a drag would leave it, or null
@@ -95,7 +112,11 @@ public:
     std::optional<Point> drawnPoint() const;
     // The corners are marked while choosing; one of them or a side is lit
     // when under the mouse or dragged: an index, or -1.
-    bool showsCorners() const { return m_active && m_tool == Tool::Select; }
+    bool showsCorners() const
+    {
+        return m_active && m_tool == Tool::Select && !isOutlineLocked();
+    }
+    bool outlineChosen() const { return hasChosen(); }
     int litCorner() const { return m_litCorner; }
     int litSide() const { return m_litSide; }
 
@@ -116,6 +137,8 @@ private:
     // Opens the line to type the radius of 'corner' in.
     void editRadius(int corner);
     void radiusTyped(const QString &text);
+    // Says in the status bar that the outline is locked; true when it is.
+    bool refuseLocked();
     // Drops a drag and what is lit: the board changed under them.
     void dropDrag();
     void setLit(int corner, int side);
@@ -143,6 +166,11 @@ private:
     int m_dragSide = -1;
     // The side was taken nearer to its end corner than to its start.
     bool m_dragSideEnd = false;
+    // The press took the outline chosen whole: a drag moves it all.
+    bool m_dragWhole = false;
+    // A drag of the locked outline was refused once since the press.
+    bool m_lockTold = false;
+    bool m_outlineChosen = false;
     std::optional<QList<OutlineCorner>> m_preview;
 
     int m_litCorner = -1;

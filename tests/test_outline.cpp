@@ -160,6 +160,16 @@ private slots:
             QVERIFY(onGrid(corner.at, MM));
     }
 
+    void wholeOutlineMoved()
+    {
+        QList<OutlineCorner> board = rectangleOutline(mm(0, 0), 50 * MM, 30 * MM);
+        board[1].radius = MM;
+        const QList<OutlineCorner> moved = outlineMoved(board, mm(5, -2));
+        QCOMPARE(pointsOf(moved),
+                 (QList<Point>{mm(5, -2), mm(55, -2), mm(55, 28), mm(5, 28)}));
+        QCOMPARE(moved.at(1).radius, MM);
+    }
+
     void hits()
     {
         const QList<OutlineCorner> board = rectangleOutline(mm(0, 0), 50 * MM, 30 * MM);

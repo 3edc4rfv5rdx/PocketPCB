@@ -31,6 +31,9 @@ OutlineProblem outlineProblem(const QList<OutlineCorner> &outline);
 std::optional<QList<OutlineCorner>> withOutlineCornerMoved(const QList<OutlineCorner> &outline,
                                                            int corner, const Point &to);
 
+// The whole outline moved by 'delta'.
+QList<OutlineCorner> outlineMoved(const QList<OutlineCorner> &outline, const Point &delta);
+
 // The side 'side' moved by 'delta', both of its corners alike, the sides
 // next to it stretching after them; a level side moves only up or down, an
 // upright one only sideways. Nothing when the outline would go wrong.

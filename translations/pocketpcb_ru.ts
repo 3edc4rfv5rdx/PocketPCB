@@ -864,6 +864,10 @@
         <source>Coordinates while drawing the board</source>
         <translation>Координаты при рисовании платы</translation>
     </message>
+    <message>
+        <source>Lock</source>
+        <translation>Закрепить</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>
@@ -1341,6 +1345,22 @@
     <message>
         <source>Type the radius in millimetres</source>
         <translation>Введите радиус в миллиметрах</translation>
+    </message>
+    <message>
+        <source>Move board outline</source>
+        <translation>Переместить контур платы</translation>
+    </message>
+    <message>
+        <source>Lock board outline</source>
+        <translation>Закрепить контур платы</translation>
+    </message>
+    <message>
+        <source>Unlock board outline</source>
+        <translation>Открепить контур платы</translation>
+    </message>
+    <message>
+        <source>The board outline is locked</source>
+        <translation>Контур платы закреплён</translation>
     </message>
 </context>
 <context>

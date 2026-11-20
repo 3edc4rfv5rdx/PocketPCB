@@ -26,6 +26,7 @@ Board fullBoard()
                      OutlineCorner{Point{50 * MM, 30 * MM}, 0},
                      OutlineCorner{Point{10 * MM, 30 * MM}, 0},
                      OutlineCorner{Point{0, 20 * MM}, 0}};
+    board.outlineLocked = true;
 
     Placement placement;
     placement.id = id(0x11);
@@ -189,6 +190,7 @@ private slots:
         CHANGED(other.outline[1].at.x += 1);
         CHANGED(other.outline[1].radius = 0);
         CHANGED(other.outline.removeLast());
+        CHANGED(other.outlineLocked = false);
 
         // other.placements[0] is spelled out each time: CHANGED() replaces
         // 'other', so a reference into it would not survive.
@@ -287,6 +289,22 @@ private slots:
         const Board back = readBack(root, error);
         QVERIFY2(error.isEmpty(), qPrintable(error));
         QVERIFY(back == Board());
+    }
+
+    // Files written before the lock have an unlocked outline; a lock that
+    // is not true or false is refused.
+    void outlineLockIsOptional()
+    {
+        QJsonObject root = boardToJson(fullBoard());
+        root.remove(QStringLiteral("outlineLocked"));
+        QString error;
+        const Board back = readBack(root, error);
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+        QVERIFY(!back.outlineLocked);
+
+        root.insert(QStringLiteral("outlineLocked"), QStringLiteral("yes"));
+        error = errorOf(root);
+        QVERIFY2(error.startsWith(QStringLiteral("outlineLocked: ")), qPrintable(error));
     }
 
     void everyListMustBePresent()

@@ -139,6 +139,14 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         painter.drawLine(QPointF(4, 3), QPointF(4, 7));
         painter.drawLine(QPointF(20, 3), QPointF(20, 7));
         break;
+    case ToolIcon::Lock:
+        // A padlock: its body and the shackle over it.
+        painter.drawRect(QRectF(6, 11, 12, 9));
+        painter.drawPolyline(polygon({{8, 11}, {8, 8}}));
+        painter.drawPolyline(polygon({{16, 11}, {16, 8}}));
+        painter.drawArc(QRectF(8, 4, 8, 8), 0, 180 * 16);
+        painter.drawLine(QPointF(12, 14), QPointF(12, 17));
+        break;
     case ToolIcon::Rotate:
         // Three quarters round from the top, ending on the right going up.
         painter.drawArc(QRectF(5, 5, 14, 14), 90 * 16, 270 * 16);

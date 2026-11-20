@@ -191,10 +191,20 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     const QPen pen(paintcolor::selection(), 0);
 
     const int count = int(outline.size());
+    QColor band = paintcolor::selection();
+    band.setAlpha(110);
+    // The outline chosen whole: a band all round it.
+    if (editor->outlineChosen() && count > 0) {
+        QPolygonF corners;
+        for (const OutlineCorner &corner : outline)
+            corners.append(toMm(corner.at));
+        painter.setPen(QPen(band, LIT_EDGE_PIXELS * pixel, Qt::SolidLine, Qt::RoundCap,
+                            Qt::RoundJoin));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawPolygon(corners);
+    }
     const int side = editor->litSide();
     if (editor->showsCorners() && side >= 0 && side < count) {
-        QColor band = paintcolor::selection();
-        band.setAlpha(110);
         painter.setPen(QPen(band, LIT_EDGE_PIXELS * pixel, Qt::SolidLine, Qt::RoundCap));
         painter.drawLine(toMm(outline.at(side).at), toMm(outline.at((side + 1) % count).at));
     }

@@ -25,6 +25,8 @@ BoardLayer pasteLayer(BoardSide side)
 namespace {
 
 const char KEY_OUTLINE[] = "outline";
+// Optional: files written before it have an unlocked outline.
+const char KEY_OUTLINE_LOCKED[] = "outlineLocked";
 const char KEY_PLACEMENTS[] = "placements";
 const char KEY_TRACKS[] = "tracks";
 const char KEY_VIAS[] = "vias";
@@ -374,7 +376,7 @@ bool operator==(const Zone &a, const Zone &b)
 
 bool operator==(const Board &a, const Board &b)
 {
-    return a.outline == b.outline
+    return a.outline == b.outline && a.outlineLocked == b.outlineLocked
            && a.placements == b.placements && a.tracks == b.tracks && a.vias == b.vias
            && a.holes == b.holes && a.graphics == b.graphics && a.zones == b.zones;
 }
@@ -383,6 +385,7 @@ QJsonObject boardToJson(const Board &board)
 {
     QJsonObject root;
     root.insert(QLatin1String(KEY_OUTLINE), listToJson(board.outline, cornerToJson));
+    root.insert(QLatin1String(KEY_OUTLINE_LOCKED), board.outlineLocked);
     root.insert(QLatin1String(KEY_PLACEMENTS), listToJson(board.placements, placementToJson));
     root.insert(QLatin1String(KEY_TRACKS), listToJson(board.tracks, trackToJson));
     root.insert(QLatin1String(KEY_VIAS), listToJson(board.vias, viaToJson));
@@ -400,6 +403,8 @@ Board boardFromJson(const QJsonObject &root, JsonReader &reader)
     board.outline = listFromJson<OutlineCorner>(root, KEY_OUTLINE, QString(), context,
                                                 cornerFromJson);
     checkOutline(board.outline, reader);
+    if (root.contains(QLatin1String(KEY_OUTLINE_LOCKED)))
+        board.outlineLocked = reader.boolean(root, KEY_OUTLINE_LOCKED, QString());
     board.placements = listFromJson<Placement>(root, KEY_PLACEMENTS, QString(), context,
                                                placementFromJson);
     board.tracks = listFromJson<Track>(root, KEY_TRACKS, QString(), context, trackFromJson);

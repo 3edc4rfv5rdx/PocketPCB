@@ -470,8 +470,25 @@ void MainWindow::createMenus()
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Delete), "actionDelete",
                   QKeySequence::Delete, &SheetEditor::deleteSelection);
     editMenu->addSeparator();
-    addEditAction(tr("Select all"), "actionSelectAll", QKeySequence::SelectAll,
-                  &SheetEditor::selectAll);
+    QAction *selectAllAction = editMenu->addAction(tr("Select all"));
+    selectAllAction->setObjectName(QStringLiteral("actionSelectAll"));
+    selectAllAction->setShortcut(QKeySequence::SelectAll);
+    connect(selectAllAction, &QAction::triggered, this, [this] {
+        if (m_boardEditor->isActive())
+            m_boardEditor->chooseAll();
+        else
+            m_sheetEditor->selectAll();
+    });
+    // Locks or unlocks what is chosen, whatever it is; pressed while it is
+    // locked.
+    QAction *lockAction = editMenu->addAction(tr("Lock"));
+    lockAction->setObjectName(QStringLiteral("actionLock"));
+    lockAction->setCheckable(true);
+    connect(lockAction, &QAction::triggered, this, [this](bool locked) {
+        if (m_boardEditor->isActive())
+            m_boardEditor->setChosenLocked(locked);
+        updateTools();
+    });
     QAction *deselectAction = editMenu->addAction(tr("Deselect"));
     deselectAction->setObjectName(QStringLiteral("actionDeselect"));
     deselectAction->setShortcut(QKeySequence(Qt::Key_Escape));
@@ -1258,6 +1275,9 @@ void MainWindow::createToolBar()
 
     // The modes in the middle, one pressed: those of the sheet editor or of
     // the board editor, whichever page is shown; Select serves both.
+    // The lock a gap before the modes.
+    put("actionLock", ToolIcon::Lock);
+    gap();
     QAction *select = new QAction(tr("Select"), this);
     select->setObjectName(QStringLiteral("actionSelectTool"));
     select->setCheckable(true);
@@ -1285,10 +1305,22 @@ void MainWindow::createToolBar()
               {int(SheetEditor::Tool::NoConnect),
                put("actionPlaceNoConnect", ToolIcon::NoConnect)}},
              m_toolActions, m_sheetActions);
-    addModes({{int(BoardEditor::Tool::Outline), put("actionDrawOutline", ToolIcon::Outline)},
-              {int(BoardEditor::Tool::CutOut), put("actionCutOut", ToolIcon::CutOut)}},
+    // The outline of the board is drawn, cut and made a rectangle from one
+    // button: it does what was chosen last from its arrow, drawing at first.
+    QAction *drawOutline = put("actionDrawOutline", ToolIcon::Outline);
+    QAction *cutOut = dress("actionCutOut", ToolIcon::CutOut);
+    QAction *rectangleBoard = dress("actionRectangleBoard", ToolIcon::RectangleBoard);
+    addModes({{int(BoardEditor::Tool::Outline), drawOutline},
+              {int(BoardEditor::Tool::CutOut), cutOut}},
              m_boardToolActions, m_boardActions);
-    m_boardActions.append(put("actionRectangleBoard", ToolIcon::RectangleBoard));
+    m_boardActions.append(rectangleBoard);
+    auto *outlineButton = qobject_cast<QToolButton *>(bar->widgetForAction(drawOutline));
+    Q_ASSERT(outlineButton != nullptr);
+    QMenu *outlineMenu = new QMenu(this);
+    outlineMenu->addActions({drawOutline, cutOut, rectangleBoard});
+    outlineButton->setMenu(outlineMenu);
+    outlineButton->setPopupMode(QToolButton::MenuButtonPopup);
+    connect(outlineMenu, &QMenu::triggered, outlineButton, &QToolButton::setDefaultAction);
     // The arrow of the Power button chooses the symbol it places.
     QMenu *powerMenu = new QMenu(this);
     connect(powerMenu, &QMenu::aboutToShow, this, [this, powerMenu] { fillPowerMenu(powerMenu); });
@@ -1339,6 +1371,14 @@ void MainWindow::updateTools()
     const int boardTool = int(m_boardEditor->tool());
     for (auto it = m_boardToolActions.cbegin(); it != m_boardToolActions.cend(); ++it)
         it.value()->setChecked(board && it.key() == boardTool);
+    // A locked outline is not drawn anew, cut or made a rectangle.
+    if (board && m_boardEditor->isOutlineLocked()) {
+        for (QAction *action : std::as_const(m_boardActions))
+            action->setEnabled(false);
+    }
+    QAction *lock = findChild<QAction *>(QStringLiteral("actionLock"));
+    lock->setEnabled(board && m_boardEditor->hasChosen());
+    lock->setChecked(board && m_boardEditor->chosenLocked());
     QAction *select = findChild<QAction *>(QStringLiteral("actionSelectTool"));
     select->setEnabled(sheet || board);
     select->setChecked((sheet && m_sheetEditor->tool() == SheetEditor::Tool::Select)
