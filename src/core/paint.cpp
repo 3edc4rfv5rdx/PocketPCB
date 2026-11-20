@@ -19,7 +19,7 @@ namespace {
 // Sizes of what the program adds to a drawing, in millimetres.
 // Symbols and wires are drawn at least this thick on the screen and on paper,
 // whatever the width their files give.
-const double SYMBOL_LINE_WIDTH = 0.33;
+const double SYMBOL_LINE_WIDTH = 0.4;
 const double PIN_LINE_WIDTH = SYMBOL_LINE_WIDTH;
 const double PIN_TEXT_HEIGHT = 1.0;
 const double PIN_TEXT_GAP = 0.4;
@@ -54,9 +54,9 @@ const double TITLE_ROW_HEIGHT = 6.0;
 const double TITLE_TEXT_HEIGHT = 2.5;
 const double TITLE_TEXT_MARGIN = 2.0;
 const double WIRE_WIDTH = SYMBOL_LINE_WIDTH;
-const double BUS_WIDTH = 0.5;
+const double BUS_WIDTH = 1.0;
 // The dot where wires join.
-const double JUNCTION_DIAMETER = 0.8;
+const double JUNCTION_DIAMETER = 1.2;
 // Where buses meet: larger, as a bus is wider than a wire.
 const double BUS_JUNCTION_DIAMETER = 1.4;
 const double LABEL_TEXT_HEIGHT = 1.27;

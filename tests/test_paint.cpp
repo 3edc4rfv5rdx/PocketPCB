@@ -535,9 +535,10 @@ private slots:
         const QImage image = render(schematic, library);
         QVERIFY(isColor(colorAt(image, -5, -8), paintcolor::wire()));
         QVERIFY(isColor(colorAt(image, -5, -6), paintcolor::bus()));
-        // The bus is the thicker of the two.
-        QVERIFY(isColor(colorAt(image, -5, -6.2), paintcolor::bus()));
-        QVERIFY(isColor(colorAt(image, -5, -8.25), paintcolor::background()));
+        // The bus is the thicker of the two: the same pixel row off their
+        // middles, 0.25 to 0.3 mm, is the bus's colour and the background.
+        QVERIFY(isColor(colorAt(image, -5, -6.3), paintcolor::bus()));
+        QVERIFY(isColor(colorAt(image, -5, -8.3), paintcolor::background()));
         // A no-connect mark on no pin of a part is red.
         QVERIFY(isColor(colorAt(image, -8, -3), paintcolor::looseNoConnect()));
         // The stem of a power symbol points up, or down when turned over.
