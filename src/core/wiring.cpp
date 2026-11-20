@@ -2175,8 +2175,16 @@ static Sheet segmentMoved(const Sheet &sheet, const Library &library, const Obje
             return isOnWire(upToSegment, end) ? na : nb;
         return std::nullopt;
     };
-    // What they keep off: the wire where it is now, not where it was.
-    const Obstacles around = obstaclesOf(result, library, routing);
+    // What they keep off: the wire where it is now, not where it was, and
+    // of the wires that go with it only those laid already, where they are
+    // laid: one still where it was would count as a way already there.
+    Obstacles around = obstaclesOf(result, library, routing);
+    for (int i = 0; i < result.wires.size(); ++i) {
+        const Wire &other = result.wires.at(i);
+        if (i != at && other.points.size() >= 2
+            && (goesTo(other.points.first()) || goesTo(other.points.last())))
+            around = around.without(other.id);
+    }
     for (int i = 0; i < result.wires.size(); ++i) {
         if (i == at)
             continue;
@@ -2193,6 +2201,7 @@ static Sheet segmentMoved(const Sheet &sheet, const Library &library, const Obje
             const Point shift = *first - firstEnd;
             for (Point &point : other.points)
                 point = point + shift;
+            around.add(other);
             continue;
         }
         const Obstacles own = around.without(other.id);
@@ -2208,6 +2217,7 @@ static Sheet segmentMoved(const Sheet &sheet, const Library &library, const Obje
             std::reverse(moving.begin(), moving.end());
         }
         other.points = moving;
+        around.add(other);
     }
     result.wires.removeIf([](const Wire &w) { return w.points.size() < 2; });
     return result;

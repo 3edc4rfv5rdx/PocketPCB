@@ -1290,6 +1290,27 @@ private slots:
         QCOMPARE(points, QList<Point>({h(0, 0), h(12, 0), h(12, 10)}));
     }
 
+    // A level segment moved up with two wires ending on it at one point, one
+    // from a pin above, one from a pin below: both ends go with it, the one
+    // below too, though the wire above still lay there when it was laid.
+    void gridWiresFromBothSidesFollowAMovedSegment()
+    {
+        const Library library = gridLibrary();
+        Sheet sheet;
+        sheet.components = {gridPart(h(0, -8)), gridPart(h(0, 8))};
+        sheet.components[0].rotation = 90;
+        sheet.components[1].rotation = 90;
+        sheet.wires = {wire({h(-10, 0), h(10, 0)}), wire({h(0, -4), h(0, 0)}),
+                       wire({h(0, 0), h(0, 4)})};
+        const QList<Wire> wires = withSegmentMoved(sheet, library, sheet.wires.first().id, 0,
+                                                   h(0, -2), WireRouting::Grid)
+                                      .wires;
+        QCOMPARE(wires.size(), 3);
+        QCOMPARE(wires.at(0).points, QList<Point>({h(-10, -2), h(10, -2)}));
+        QCOMPARE(wires.at(1).points, QList<Point>({h(0, -4), h(0, -2)}));
+        QCOMPARE(wires.at(2).points, QList<Point>({h(0, -2), h(0, 4)}));
+    }
+
     // A part dragged down: its wire, of the ways as cheap, keeps its run and
     // comes down into the pin.
     void gridWiresFollowAMovedPart()
@@ -1549,6 +1570,7 @@ private slots:
         QCOMPARE(piece.wires.first().points, QList<Point>({mm(10, 10), mm(20, 10)}));
         QVERIFY(segmentOf(sheet, line.id, 3).wires.isEmpty());
     }
+
 };
 
 QTEST_GUILESS_MAIN(TestWiring)
