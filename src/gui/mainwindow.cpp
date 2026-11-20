@@ -954,18 +954,27 @@ void MainWindow::leaveAndOpenProject(const QString &path)
 
 void MainWindow::updateRecentMenu()
 {
-    m_recentMenu->clear();
+    fillRecentMenu(m_recentMenu);
+    m_recentMenu->setEnabled(!AppSettings::recentProjects().isEmpty());
+}
+
+void MainWindow::fillRecentMenu(QMenu *menu)
+{
+    menu->clear();
     const QStringList paths = AppSettings::recentProjects();
+    if (paths.isEmpty()) {
+        menu->addAction(tr("No recent projects"))->setEnabled(false);
+        return;
+    }
     for (const QString &path : paths) {
-        QAction *action = m_recentMenu->addAction(QFileInfo(path).completeBaseName());
+        QAction *action = menu->addAction(QFileInfo(path).completeBaseName());
         action->setToolTip(QDir::toNativeSeparators(path));
         connect(action, &QAction::triggered, this, [this, path] { openRecentProject(path); });
     }
-    m_recentMenu->addSeparator();
-    QAction *clearAction = m_recentMenu->addAction(tr("Clear list"));
+    menu->addSeparator();
+    QAction *clearAction = menu->addAction(tr("Clear list"));
     clearAction->setObjectName(QStringLiteral("actionClearRecentProjects"));
     connect(clearAction, &QAction::triggered, this, [] { AppSettings::clearRecentProjects(); });
-    m_recentMenu->setEnabled(!paths.isEmpty());
 }
 
 void MainWindow::openRecentProject(const QString &path)
@@ -1155,6 +1164,19 @@ void MainWindow::createToolBar()
         bar->addWidget(spacer);
     };
 
+    // The recent projects, read again each time the button opens them: the
+    // list may change in another window of the program as well.
+    QMenu *recentMenu = new QMenu(this);
+    recentMenu->setToolTipsVisible(true);
+    connect(recentMenu, &QMenu::aboutToShow, this,
+            [this, recentMenu] { fillRecentMenu(recentMenu); });
+    QToolButton *recentButton = new QToolButton(bar);
+    recentButton->setObjectName(QStringLiteral("recentProjectsButton"));
+    recentButton->setIcon(toolIcon(ToolIcon::Recent, color));
+    recentButton->setToolTip(m_recentMenu->title());
+    recentButton->setMenu(recentMenu);
+    recentButton->setPopupMode(QToolButton::InstantPopup);
+    bar->addWidget(recentButton);
     put("actionSaveProject", ToolIcon::Save);
     put("actionPrintSchematic", ToolIcon::Print);
     put("actionExportSchematicPdf", ToolIcon::Pdf);

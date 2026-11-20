@@ -168,6 +168,9 @@ private:
     void chooseProjectToOpen();
     // Fills the menu of recent projects from the settings.
     void updateRecentMenu();
+    // Fills 'menu' with the recent projects and Clear list; with none, a
+    // line that says so.
+    void fillRecentMenu(QMenu *menu);
     // Opens a project from that menu; one that is gone leaves the list.
     void openRecentProject(const QString &path);
     // Opens 'path' once the open project may be left, and remembers its folder.

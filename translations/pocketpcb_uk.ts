@@ -821,6 +821,10 @@
         <translation>Очистити список</translation>
     </message>
     <message>
+        <source>No recent projects</source>
+        <translation>Немає останніх проєктів</translation>
+    </message>
+    <message>
         <source>The project is no longer there</source>
         <translation>Проєкту більше немає на місці</translation>
     </message>

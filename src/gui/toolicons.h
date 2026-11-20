@@ -9,6 +9,7 @@ namespace ppcb {
 // the menu items they stand for.
 enum class ToolIcon {
     Menu,
+    Recent,
     Save,
     Print,
     Pdf,

@@ -54,6 +54,11 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         painter.drawRect(QRectF(8, 4, 7, 5));
         painter.drawRect(QRectF(7, 13, 10, 7));
         break;
+    case ToolIcon::Recent:
+        // A clock.
+        painter.drawEllipse(QPointF(12, 12), 8, 8);
+        painter.drawPolyline(polygon({{12, 7}, {12, 12}, {16, 12}}));
+        break;
     case ToolIcon::Print:
         // A printer: the paper in, the body, the sheet out.
         painter.drawPolyline(polygon({{7, 9}, {7, 4}, {17, 4}, {17, 9}}));
