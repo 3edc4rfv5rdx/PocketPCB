@@ -116,6 +116,29 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         painter.drawLine(QPointF(7, 7), QPointF(17, 17));
         painter.drawLine(QPointF(17, 7), QPointF(7, 17));
         break;
+    case ToolIcon::Outline:
+        // A board with a corner cut off, drawn corner by corner.
+        painter.drawPolyline(polygon({{4, 20}, {4, 4}, {14, 4}, {20, 10}, {20, 15}}));
+        dot(painter, {4, 20}, color);
+        dot(painter, {20, 15}, color);
+        break;
+    case ToolIcon::CutOut: {
+        // A board with a notch in its top edge, and the rectangle that made it.
+        painter.drawPolygon(
+            polygon({{3, 9}, {9, 9}, {9, 14}, {15, 14}, {15, 9}, {21, 9}, {21, 20}, {3, 20}}));
+        QPen cut = painter.pen();
+        cut.setStyle(Qt::DotLine);
+        painter.setPen(cut);
+        painter.drawPolyline(polygon({{9, 9}, {9, 3}, {15, 3}, {15, 9}}));
+        break;
+    }
+    case ToolIcon::RectangleBoard:
+        // A board with its width marked over it.
+        painter.drawRect(QRectF(4, 9, 16, 11));
+        painter.drawLine(QPointF(4, 5), QPointF(20, 5));
+        painter.drawLine(QPointF(4, 3), QPointF(4, 7));
+        painter.drawLine(QPointF(20, 3), QPointF(20, 7));
+        break;
     case ToolIcon::Rotate:
         // Three quarters round from the top, ending on the right going up.
         painter.drawArc(QRectF(5, 5, 14, 14), 90 * 16, 270 * 16);

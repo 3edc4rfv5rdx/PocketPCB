@@ -8,6 +8,8 @@ namespace ppcb {
 
 // Imperial grid: 0.635, 1.27, 2.54, 5.08, 10.16 mm.
 constexpr Coord DEFAULT_GRID_STEP = 2540000;
+// The board's grid in a new project: half of it, finer for tracks.
+constexpr Coord DEFAULT_BOARD_GRID_STEP = 1270000;
 
 // Available grid steps in nanometres, ascending.
 const std::vector<Coord> &gridSteps();

@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 
+#include "boardeditor.h"
 #include "bompanel.h"
 #include "canvasview.h"
 #include "designviewitem.h"
@@ -14,6 +15,7 @@
 #include "netspanel.h"
 #include "projectpropertiesdialog.h"
 #include "propertiespanel.h"
+#include "rectangleboarddialog.h"
 #include "sheeteditor.h"
 #include "sheettabs.h"
 #include "toolicons.h"
@@ -71,6 +73,9 @@ const int DEFAULT_HEIGHT = 750;
 // Wait after a change of the watched file before reading it, milliseconds.
 const int RELOAD_DELAY_MS = 150;
 const int MS_PER_MINUTE = 60 * 1000;
+// The size Rectangular board offers for a board without an outline.
+const Coord DEFAULT_BOARD_WIDTH = 100 * NM_PER_MM;
+const Coord DEFAULT_BOARD_HEIGHT = 80 * NM_PER_MM;
 // The buttons of the strip of tools: how much of the colour of the text
 // shows behind one under the mouse and one held down, and how much of the
 // colour of a choice behind one that stays pressed, 0 to 255; a frame of
@@ -154,6 +159,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_canvas->scene()->addItem(m_designItem);
     m_sheetEditor = new SheetEditor(m_document, m_canvas, this);
     m_sheetEditor->setWireRouting(AppSettings::wireRouting());
+    m_boardEditor = new BoardEditor(m_document, m_canvas, this);
 
     // The pages of the project as tabs over the canvas.
     m_sheetTabs = new SheetTabs(m_document, m_sheetEditor, this);
@@ -167,20 +173,31 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_sheetTabs, &SheetTabs::pageChosen, this, [this](int page) { showPage(page); });
 
     m_designItem->setEditor(m_sheetEditor);
+    m_designItem->setBoardEditor(m_boardEditor);
+    m_designItem->setDrawingCoordinatesShown(AppSettings::drawingCoordinatesShown());
     connect(m_sheetEditor, &SheetEditor::changed, this, [this] { m_designItem->update(); });
+    connect(m_boardEditor, &BoardEditor::changed, this, [this] { m_designItem->update(); });
+    connect(m_boardEditor, &BoardEditor::message, this, &MainWindow::showStatus);
     connect(m_document, &Document::stepApplied, this, &MainWindow::showStep);
     connect(m_document, &Document::stepMade, this, &MainWindow::recordStep);
     // The part being placed follows the cursor.
     connect(m_canvas, &CanvasView::cursorMoved, m_sheetEditor,
             [this](Coord x, Coord y) { m_sheetEditor->hover(Point{x, y}); });
-    // A short right click ends placing and drawing wires, as Esc does.
+    // The side of the board outline being drawn follows it too.
+    connect(m_canvas, &CanvasView::cursorMoved, m_boardEditor,
+            [this](Coord x, Coord y) { m_boardEditor->hover(Point{x, y}); });
     // A short right click ends placing and drawing wires, as Esc does; else
-    // it opens the menu of the sheet.
+    // it opens the menu of the sheet. On the board it ends drawing the
+    // outline or a cut-out.
     connect(m_canvas, &CanvasView::contextMenuRequested, this, [this](const QPoint &globalPos) {
-        if (m_sheetEditor->isPlacing() || m_sheetEditor->isWiring())
+        if (m_boardEditor->isActive()) {
+            if (m_boardEditor->isDrawing())
+                m_boardEditor->cancel();
+        } else if (m_sheetEditor->isPlacing() || m_sheetEditor->isWiring()) {
             m_sheetEditor->cancel();
-        else
+        } else {
             showSheetMenu(globalPos);
+        }
     });
     connect(m_document, &Document::designChanged, this, &MainWindow::projectChanged);
     connect(m_document, &Document::modifiedChanged, this, &MainWindow::updateTitle);
@@ -455,8 +472,27 @@ void MainWindow::createMenus()
     editMenu->addSeparator();
     addEditAction(tr("Select all"), "actionSelectAll", QKeySequence::SelectAll,
                   &SheetEditor::selectAll);
-    addEditAction(tr("Deselect"), "actionDeselect", QKeySequence(Qt::Key_Escape),
-                  &SheetEditor::cancel);
+    QAction *deselectAction = editMenu->addAction(tr("Deselect"));
+    deselectAction->setObjectName(QStringLiteral("actionDeselect"));
+    deselectAction->setShortcut(QKeySequence(Qt::Key_Escape));
+    connect(deselectAction, &QAction::triggered, this, &MainWindow::cancelEditing);
+    editMenu->addSeparator();
+
+    // The board.
+    const auto addBoardAction = [this, editMenu](BoardEditor::Action action, const char *name,
+                                                 auto slot) {
+        QAction *item = editMenu->addAction(BoardEditor::actionName(action));
+        item->setObjectName(QLatin1String(name));
+        connect(item, &QAction::triggered, m_boardEditor, slot);
+        return item;
+    };
+    addBoardAction(BoardEditor::Action::DrawOutline, "actionDrawOutline",
+                   &BoardEditor::startDrawingOutline);
+    addBoardAction(BoardEditor::Action::CutOut, "actionCutOut", &BoardEditor::startCuttingOut);
+    QAction *rectangleAction = editMenu->addAction(
+        BoardEditor::actionName(BoardEditor::Action::RectangleBoard) + QStringLiteral("…"));
+    rectangleAction->setObjectName(QStringLiteral("actionRectangleBoard"));
+    connect(rectangleAction, &QAction::triggered, this, &MainWindow::makeRectangleBoard);
 
     QMenu *viewMenu = m_mainMenu->addMenu(tr("&View"));
 
@@ -580,6 +616,15 @@ void MainWindow::createMenus()
     warpAction->setCheckable(true);
     warpAction->setChecked(m_canvas->zoomCenterAndWarp());
     connect(warpAction, &QAction::toggled, this, &MainWindow::applyZoomCenterAndWarp);
+
+    QAction *coordinatesAction = viewMenu->addAction(tr("Coordinates while drawing the board"));
+    coordinatesAction->setObjectName(QStringLiteral("actionDrawingCoordinates"));
+    coordinatesAction->setCheckable(true);
+    coordinatesAction->setChecked(AppSettings::drawingCoordinatesShown());
+    connect(coordinatesAction, &QAction::toggled, this, [this](bool on) {
+        AppSettings::setDrawingCoordinatesShown(on);
+        m_designItem->setDrawingCoordinatesShown(on);
+    });
 
     // The language of the interface, each named in itself; it is taken at
     // the next start.
@@ -806,8 +851,12 @@ bool MainWindow::isSheetShown() const
 
 void MainWindow::updateCanvasBackground()
 {
-    m_canvas->setBackgroundColor(isSheetShown() ? AppSettings::sheetBackground()
-                                                : paintcolor::background());
+    if (isSheetShown())
+        m_canvas->setBackgroundColor(AppSettings::sheetBackground());
+    else if (m_designItem->isVisible())
+        m_canvas->setBackgroundColor(paintcolor::boardBackground());
+    else
+        m_canvas->setBackgroundColor(paintcolor::background());
 }
 
 void MainWindow::applyZoomCenterAndWarp(bool on)
@@ -1071,6 +1120,7 @@ void MainWindow::showPage(int page, bool fit)
     m_sheetTabs->setCurrentPage(m_designItem->page());
     const int shown = m_designItem->page();
     m_sheetEditor->setSheet(shown == m_designItem->boardPage() ? -1 : shown);
+    m_boardEditor->setActive(shown == m_designItem->boardPage());
     applyProjectGrid();
     if (fit)
         showPageView();
@@ -1194,40 +1244,51 @@ void MainWindow::createToolBar()
         bar->addWidget(spacer);
     };
     // Undo and Redo a gap away from the file buttons, the zoom buttons a
-    // gap before the modes.
+    // gap after them.
     gap();
     put("actionUndo", ToolIcon::Undo);
     put("actionRedo", ToolIcon::Redo);
-    stretch();
+    gap();
     put("actionZoomIn", ToolIcon::ZoomIn);
     put("actionZoomOut", ToolIcon::ZoomOut);
     put("actionZoomFit", ToolIcon::ZoomFit);
     put("actionZoomFitDrawing", ToolIcon::ZoomFitDrawing);
     put("actionActualSize", ToolIcon::ActualSize);
-    gap();
+    stretch();
 
-    // The modes, one pressed: the one the sheet editor is in.
+    // The modes in the middle, one pressed: those of the sheet editor or of
+    // the board editor, whichever page is shown; Select serves both.
     QAction *select = new QAction(tr("Select"), this);
     select->setObjectName(QStringLiteral("actionSelectTool"));
-    connect(select, &QAction::triggered, m_sheetEditor, &SheetEditor::chooseSelectTool);
-    const QList<QPair<SheetEditor::Tool, QAction *>> modes = {
-        {SheetEditor::Tool::Select, put("actionSelectTool", ToolIcon::Select)},
-        {SheetEditor::Tool::Wire, put("actionWire", ToolIcon::Wire)},
-        {SheetEditor::Tool::Bus, put("actionBus", ToolIcon::Bus)},
-        {SheetEditor::Tool::Label, put("actionPlaceLabel", ToolIcon::Label)},
-        {SheetEditor::Tool::Power, put("actionPlacePower", ToolIcon::Power)},
-        {SheetEditor::Tool::NoConnect, put("actionPlaceNoConnect", ToolIcon::NoConnect)}};
+    select->setCheckable(true);
+    connect(select, &QAction::triggered, this, &MainWindow::chooseSelectTool);
+    put("actionSelectTool", ToolIcon::Select);
     select->setToolTip(select->text() + QStringLiteral(" (")
                        + QKeySequence(Qt::Key_Escape).toString(QKeySequence::NativeText)
                        + QLatin1Char(')'));
-    for (const auto &[tool, action] : modes) {
-        action->setCheckable(true);
-        m_toolActions.insert(int(tool), action);
-        m_sheetActions.append(action);
-        // After the action's own work: a click on a pressed button leaves it
-        // pressed while the mode goes on.
-        connect(action, &QAction::triggered, this, &MainWindow::updateTools);
-    }
+    connect(select, &QAction::triggered, this, &MainWindow::updateTools);
+    // After the action's own work: a click on a pressed button leaves it
+    // pressed while the mode goes on.
+    const auto addModes = [this](const QList<QPair<int, QAction *>> &modes,
+                                 QHash<int, QAction *> &toolActions, QList<QAction *> &actions) {
+        for (const auto &[tool, action] : modes) {
+            action->setCheckable(true);
+            toolActions.insert(tool, action);
+            actions.append(action);
+            connect(action, &QAction::triggered, this, &MainWindow::updateTools);
+        }
+    };
+    addModes({{int(SheetEditor::Tool::Wire), put("actionWire", ToolIcon::Wire)},
+              {int(SheetEditor::Tool::Bus), put("actionBus", ToolIcon::Bus)},
+              {int(SheetEditor::Tool::Label), put("actionPlaceLabel", ToolIcon::Label)},
+              {int(SheetEditor::Tool::Power), put("actionPlacePower", ToolIcon::Power)},
+              {int(SheetEditor::Tool::NoConnect),
+               put("actionPlaceNoConnect", ToolIcon::NoConnect)}},
+             m_toolActions, m_sheetActions);
+    addModes({{int(BoardEditor::Tool::Outline), put("actionDrawOutline", ToolIcon::Outline)},
+              {int(BoardEditor::Tool::CutOut), put("actionCutOut", ToolIcon::CutOut)}},
+             m_boardToolActions, m_boardActions);
+    m_boardActions.append(put("actionRectangleBoard", ToolIcon::RectangleBoard));
     // The arrow of the Power button chooses the symbol it places.
     QMenu *powerMenu = new QMenu(this);
     connect(powerMenu, &QMenu::aboutToShow, this, [this, powerMenu] { fillPowerMenu(powerMenu); });
@@ -1255,17 +1316,62 @@ void MainWindow::createToolBar()
     }
 
     connect(m_sheetEditor, &SheetEditor::changed, this, &MainWindow::updateTools);
+    connect(m_boardEditor, &BoardEditor::changed, this, &MainWindow::updateTools);
     updateTools();
 }
 
 void MainWindow::updateTools()
 {
     const bool sheet = m_sheetEditor->sheet() >= 0;
-    for (QAction *action : std::as_const(m_sheetActions))
+    const bool board = m_boardEditor->isActive();
+    // The modes of the other page step aside, from the strip and the menu.
+    for (QAction *action : std::as_const(m_sheetActions)) {
         action->setEnabled(sheet);
-    const int tool = int(m_sheetEditor->tool());
+        action->setVisible(!board);
+    }
+    for (QAction *action : std::as_const(m_boardActions)) {
+        action->setEnabled(board);
+        action->setVisible(board);
+    }
+    const int sheetTool = int(m_sheetEditor->tool());
     for (auto it = m_toolActions.cbegin(); it != m_toolActions.cend(); ++it)
-        it.value()->setChecked(sheet && it.key() == tool);
+        it.value()->setChecked(sheet && it.key() == sheetTool);
+    const int boardTool = int(m_boardEditor->tool());
+    for (auto it = m_boardToolActions.cbegin(); it != m_boardToolActions.cend(); ++it)
+        it.value()->setChecked(board && it.key() == boardTool);
+    QAction *select = findChild<QAction *>(QStringLiteral("actionSelectTool"));
+    select->setEnabled(sheet || board);
+    select->setChecked((sheet && m_sheetEditor->tool() == SheetEditor::Tool::Select)
+                       || (board && m_boardEditor->tool() == BoardEditor::Tool::Select));
+}
+
+void MainWindow::cancelEditing()
+{
+    if (m_boardEditor->isActive())
+        m_boardEditor->cancel();
+    else
+        m_sheetEditor->cancel();
+}
+
+void MainWindow::chooseSelectTool()
+{
+    if (m_boardEditor->isActive())
+        m_boardEditor->chooseSelectTool();
+    else
+        m_sheetEditor->chooseSelectTool();
+}
+
+void MainWindow::makeRectangleBoard()
+{
+    if (!m_boardEditor->isActive())
+        return;
+    // The size of the outline there is, else a common one.
+    const QRectF bounds = m_boardEditor->outlineBounds();
+    const Coord width = bounds.isEmpty() ? DEFAULT_BOARD_WIDTH : mmToNm(bounds.width());
+    const Coord height = bounds.isEmpty() ? DEFAULT_BOARD_HEIGHT : mmToNm(bounds.height());
+    RectangleBoardDialog dialog(width, height, this);
+    if (dialog.exec() == QDialog::Accepted)
+        m_boardEditor->makeRectangleBoard(dialog.boardWidth(), dialog.boardHeight());
 }
 
 void MainWindow::fitView()
@@ -1357,7 +1463,8 @@ void MainWindow::recordStep(const QString &text, int page, const Design &before)
         return;
     const QString folder = AppSettings::stepHistoryFolder();
     if (!writeStep(folder, text, page, m_document->projectPath(), AppSettings::wireRouting(),
-                   before.schematic, m_document->design().schematic))
+                   before.schematic, m_document->design().schematic, before.board,
+                   m_document->design().board))
         showStatus(tr("Cannot write the history of steps into") + QLatin1Char(' ')
                    + QDir::toNativeSeparators(folder));
 }
@@ -1421,6 +1528,9 @@ void MainWindow::projectChanged()
         m_sheetEditor->setSheet(sheet);
     else
         m_sheetEditor->setSelection(m_sheetEditor->selection());
+    const bool board = shown == m_designItem->boardPage();
+    if (m_boardEditor->isActive() != board)
+        m_boardEditor->setActive(board);
     applyProjectGrid();
     updateLibraryPanel();
 }
@@ -1714,8 +1824,7 @@ void MainWindow::watchLibraryFile()
 
 void MainWindow::showCursorPosition(Coord x, Coord y)
 {
-    m_positionLabel->setText(QStringLiteral("X %1   Y %2 ").arg(formatMmFixed(x), formatMmFixed(y))
-                             + mmUnit());
+    m_positionLabel->setText(formatPosition(x, y));
 }
 
 void MainWindow::showGridStep(Coord step)

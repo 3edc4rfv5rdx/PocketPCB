@@ -20,6 +20,7 @@ class QMenu;
 
 namespace ppcb {
 
+class BoardEditor;
 class BomPanel;
 class CanvasView;
 class DesignViewItem;
@@ -58,6 +59,7 @@ public:
     // or stay. True when the project may go; always true without changes.
     bool confirmLeavingProject();
     SheetEditor *sheetEditor() const { return m_sheetEditor; }
+    BoardEditor *boardEditor() const { return m_boardEditor; }
     // Starts placing a part from the panel on the sheet shown. False, with
     // the reason in the status bar, when no sheet is shown.
     bool placePart(LibraryPanel::Source source, const QString &part, const QString &footprint);
@@ -123,9 +125,15 @@ private:
     // undo and redo, the scale, the modes of the sheet in the middle and the
     // switches of the panels on the right. F10 opens the menu.
     void createToolBar();
-    // The mode buttons show what the sheet editor does now; the tools of
-    // the sheet work only while a sheet is edited.
+    // The mode buttons show what the sheet or the board editor does now:
+    // those of the sheet while a sheet is edited, those of the board while
+    // the board is. The tools of each work only there.
     void updateTools();
+    // Esc and the Select button go to the editor of the page shown.
+    void cancelEditing();
+    void chooseSelectTool();
+    // Asks for the size of a rectangular board and makes the outline one.
+    void makeRectangleBoard();
     // The whole page, or the library file, fills the canvas.
     void fitView();
     // What is drawn on the page, without the empty paper round it, or the
@@ -146,8 +154,8 @@ private:
     void applyCursorStyle(CursorStyle style);
     // Keeps 'color' as the paper of the sheets and shows it.
     void applySheetBackground(const QColor &color);
-    // The canvas takes the paper of the sheets when a sheet is shown, white
-    // under the board and a library file.
+    // The canvas takes the paper of the sheets when a sheet is shown, black
+    // under the board, white under a library file.
     void updateCanvasBackground();
     // The sheet shown, if one is, takes 'color' until the next
     // updateCanvasBackground().
@@ -245,6 +253,7 @@ private:
     // Owned by the canvas scene.
     DesignViewItem *m_designItem = nullptr;
     SheetEditor *m_sheetEditor = nullptr;
+    BoardEditor *m_boardEditor = nullptr;
     // The view is fitted to the page after the window is first shown.
     bool m_shownOnce = false;
     QLabel *m_positionLabel = nullptr;
@@ -283,8 +292,13 @@ private:
     QMenu *m_mainMenu = nullptr;
     // The mode buttons of the strip of tools, by the tool each stands for.
     QHash<int, QAction *> m_toolActions;
-    // The actions that work only while a sheet is edited.
+    // The actions that work only while a sheet is edited; the Select button
+    // is not among them.
     QList<QAction *> m_sheetActions;
+    // The mode buttons of the board, by the tool each stands for, and the
+    // actions that work only while the board is edited.
+    QHash<int, QAction *> m_boardToolActions;
+    QList<QAction *> m_boardActions;
 
     QFileSystemWatcher *m_libraryWatcher = nullptr;
     // Delays the reload a little: editors often save in several steps.

@@ -16,16 +16,15 @@ const int IMAGE_SIZE = 400;
 const double PIXELS_PER_MM = 20.0;
 // Antialiasing and colour conversion may shift a channel a little.
 const int COLOR_TOLERANCE = 40;
-const double PI = 3.14159265358979323846;
 
 // The "REF" and "VALUE" marks are moved here, away from what is tested.
 const Point FAR_REF{0, -9000000};
 const Point FAR_VALUE{0, 9000000};
 
-QImage newImage()
+QImage newImage(const QColor &background = paintcolor::background())
 {
     QImage image(IMAGE_SIZE, IMAGE_SIZE, QImage::Format_ARGB32_Premultiplied);
-    image.fill(paintcolor::background());
+    image.fill(background);
     return image;
 }
 
@@ -102,9 +101,9 @@ double arcY(int degrees) { return 5.0 * std::sin(degrees * PI / 180.0); }
 
 // A picture made by 'paint', which gets the painter set up as above.
 template <typename Paint>
-QImage renderWith(Paint paint)
+QImage renderWith(Paint paint, const QColor &background = paintcolor::background())
 {
-    QImage image = newImage();
+    QImage image = newImage(background);
     QPainter painter(&image);
     setUp(painter);
     paint(painter);
@@ -136,7 +135,8 @@ Library padLibrary()
 QImage render(const Board &board, const Library &library = padLibrary())
 {
     return renderWith(
-        [&board, &library](QPainter &painter) { paintBoard(painter, board, library); });
+        [&board, &library](QPainter &painter) { paintBoard(painter, board, library); },
+        paintcolor::boardBackground());
 }
 
 // A schematic of one sheet with nothing on it.
@@ -662,7 +662,7 @@ private slots:
         QVERIFY(isColor(colorAt(image, -7, -5), paintcolor::padBack()));
         QVERIFY(isColor(colorAt(image, -5, -7), paintcolor::padFront()));
         QVERIFY(isColor(colorAt(image, -5, -5), paintcolor::padFront()));
-        QVERIFY(isColor(colorAt(image, -7, -7), paintcolor::background()));
+        QVERIFY(isColor(colorAt(image, -7, -7), paintcolor::boardBackground()));
     }
 
     void viasAndMountingHoles()
@@ -685,16 +685,48 @@ private slots:
         board.holes.append(bare);
 
         const QImage image = render(board);
-        QVERIFY(isColor(colorAt(image, 5.75, -5), paintcolor::padBoth()));
-        QVERIFY(isColor(colorAt(image, 5, -5), paintcolor::background()));
-        QVERIFY(isColor(colorAt(image, 6.25, -5), paintcolor::background()));
+        QVERIFY(isColor(colorAt(image, 5.75, -5), paintcolor::via()));
+        QVERIFY(isColor(colorAt(image, 5, -5), paintcolor::boardBackground()));
+        QVERIFY(isColor(colorAt(image, 6.25, -5), paintcolor::boardBackground()));
         // The ring is 1 mm of copper around a hole of 2 mm.
         QVERIFY(isColor(colorAt(image, 6.5, 5), paintcolor::padBoth()));
-        QVERIFY(isColor(colorAt(image, 5, 5), paintcolor::background()));
-        QVERIFY(isColor(colorAt(image, 7.25, 5), paintcolor::background()));
+        QVERIFY(isColor(colorAt(image, 5, 5), paintcolor::boardBackground()));
+        QVERIFY(isColor(colorAt(image, 7.25, 5), paintcolor::boardBackground()));
         // A hole without plating has no copper anywhere.
         QVERIFY(!anyColor(image, -8, 2, -2, 8, paintcolor::padBoth()));
         QVERIFY(anyColor(image, -7, 4.9, -6, 5.1, paintcolor::bareHole()));
+    }
+
+    void hiddenLayersAreNotDrawn()
+    {
+        Board board;
+        Via via;
+        via.at = Point{5000000, -5000000};
+        via.drill = 1000000;
+        via.size = 2000000;
+        board.vias.append(via);
+        board.outline = {OutlineCorner{Point{-8000000, -8000000}, 0},
+                         OutlineCorner{Point{8000000, -8000000}, 0},
+                         OutlineCorner{Point{8000000, 8000000}, 0},
+                         OutlineCorner{Point{-8000000, 8000000}, 0}};
+        const auto renderShown = [&board](const BoardLayerSet &shown) {
+            return renderWith(
+                [&board, &shown](QPainter &painter) {
+                    paintBoard(painter, board, Library(), shown);
+                },
+                paintcolor::boardBackground());
+        };
+        BoardLayerSet noTop = BoardLayerSet::all();
+        noTop.set(BoardLayer::CopperTop, false);
+        // A via goes through: it shows while the bottom copper does.
+        QVERIFY(isColor(colorAt(renderShown(noTop), 5.75, -5), paintcolor::via()));
+        BoardLayerSet noCopper = noTop;
+        noCopper.set(BoardLayer::CopperBottom, false);
+        QVERIFY(!anyColor(renderShown(noCopper), 3, -7, 7, -3, paintcolor::via()));
+        QVERIFY(isColor(colorAt(renderShown(noCopper), 8, 0), paintcolor::boardOutline()));
+        BoardLayerSet noOutline = BoardLayerSet::all();
+        noOutline.set(BoardLayer::Outline, false);
+        QVERIFY(!anyColor(renderShown(noOutline), 7.5, -1, 8.5, 1, paintcolor::boardOutline()));
     }
 
     void placementIsTurnedAndFlipped()
@@ -732,19 +764,19 @@ private slots:
         board.placements[0].valueAt = Point{0, 6000000};
 
         // Neither is asked for.
-        QVERIFY(!anyColor(render(board), -4, -8, 4, -4, paintcolor::silkscreen()));
-        QVERIFY(!anyColor(render(board), -4, 4, 4, 8, paintcolor::silkscreen()));
+        QVERIFY(!anyColor(render(board), -4, -8, 4, -4, paintcolor::silkscreenTop()));
+        QVERIFY(!anyColor(render(board), -4, 4, 4, 8, paintcolor::silkscreenTop()));
 
         board.placements[0].showRef = true;
-        QVERIFY(anyColor(render(board), -4, -8, 4, -4, paintcolor::silkscreen()));
-        QVERIFY(!anyColor(render(board), -4, 4, 4, 8, paintcolor::silkscreen()));
+        QVERIFY(anyColor(render(board), -4, -8, 4, -4, paintcolor::silkscreenTop()));
+        QVERIFY(!anyColor(render(board), -4, 4, 4, 8, paintcolor::silkscreenTop()));
         board.placements[0].showValue = true;
-        QVERIFY(anyColor(render(board), -4, 4, 4, 8, paintcolor::silkscreen()));
+        QVERIFY(anyColor(render(board), -4, 4, 4, 8, paintcolor::silkscreenTop()));
 
         // On the bottom side the silkscreen has its own colour.
         board.placements[0].side = BoardSide::Bottom;
         QVERIFY(anyColor(render(board), -4, -8, 4, -4, paintcolor::silkscreenBottom()));
-        QVERIFY(!anyColor(render(board), -4, -8, 4, -4, paintcolor::silkscreen()));
+        QVERIFY(!anyColor(render(board), -4, -8, 4, -4, paintcolor::silkscreenTop()));
     }
 
     // The author's text on the bottom side is mirrored about its anchor.
@@ -760,8 +792,8 @@ private slots:
         Board top;
         top.graphics.append(item);
         const QImage topImage = render(top);
-        QVERIFY(anyColor(topImage, 0.2, -7, 9, -3, paintcolor::silkscreen()));
-        QVERIFY(!anyColor(topImage, -9, -7, -0.2, -3, paintcolor::silkscreen()));
+        QVERIFY(anyColor(topImage, 0.2, -7, 9, -3, paintcolor::silkscreenTop()));
+        QVERIFY(!anyColor(topImage, -9, -7, -0.2, -3, paintcolor::silkscreenTop()));
 
         item.side = BoardSide::Bottom;
         Board bottom;
@@ -778,12 +810,12 @@ private slots:
         QVERIFY(isColor(colorAt(sharp, 0, -8), paintcolor::boardOutline()));
         QVERIFY(isColor(colorAt(sharp, 8, 0), paintcolor::boardOutline()));
         QVERIFY(isColor(colorAt(sharp, 8, -8), paintcolor::boardOutline()));
-        QVERIFY(isColor(colorAt(sharp, 0, 0), paintcolor::background()));
+        QVERIFY(isColor(colorAt(sharp, 0, 0), paintcolor::boardBackground()));
 
         // Rounded with 4 mm: the arc's middle is 4 mm from its centre at 4, -4.
         const double onArc = 4 + 4 * std::cos(PI / 4);
         const QImage round = render(boardWithOutline(4000000));
-        QVERIFY(isColor(colorAt(round, 8, -8), paintcolor::background()));
+        QVERIFY(isColor(colorAt(round, 8, -8), paintcolor::boardBackground()));
         QVERIFY(isColor(colorAt(round, onArc, -onArc), paintcolor::boardOutline()));
         // The straight parts and the other corners stay.
         QVERIFY(isColor(colorAt(round, 0, -8), paintcolor::boardOutline()));
@@ -795,7 +827,7 @@ private slots:
         const double onLargeArc = 8 * std::cos(PI / 4);
         const QImage large = render(boardWithOutline(100000000));
         QVERIFY(isColor(colorAt(large, onLargeArc, -onLargeArc), paintcolor::boardOutline()));
-        QVERIFY(isColor(colorAt(large, onArc, -onArc), paintcolor::background()));
+        QVERIFY(isColor(colorAt(large, onArc, -onArc), paintcolor::boardBackground()));
         QVERIFY(isColor(colorAt(large, -4, -8), paintcolor::boardOutline()));
         QVERIFY(isColor(colorAt(large, 8, 4), paintcolor::boardOutline()));
     }

@@ -10,6 +10,9 @@ namespace ppcb {
 // A selection is a set of object ids; ids of objects not on the sheet are
 // left alone, so a selection may outlive the objects it names.
 
+// How far 'point' is from the segment 'a'-'b'.
+double distanceToSegment(const QPointF &point, const QPointF &a, const QPointF &b);
+
 // True when 'point' lies within 'tolerance' of the line 'polyline' (all in
 // millimetres), or of its one point.
 bool isNearPolyline(const QPolygonF &polyline, const QPointF &point, double tolerance);

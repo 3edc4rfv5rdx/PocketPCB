@@ -341,21 +341,15 @@ private slots:
                                 OutlineCorner{Point{MM, MM}, 0}, OutlineCorner{Point{0, 0}, 0}});
         QVERIFY2(error.startsWith(QStringLiteral("outline[0]: ")), qPrintable(error));
 
-        // A side in the middle that is neither straight nor at 45 degrees.
-        error = errorOfOutline({OutlineCorner{Point{0, 0}, 0}, OutlineCorner{Point{4 * MM, 0}, 0},
-                                OutlineCorner{Point{5 * MM, 3 * MM}, 0},
-                                OutlineCorner{Point{0, 3 * MM}, 0}});
-        QVERIFY2(error.startsWith(QStringLiteral("outline[2]: ")), qPrintable(error));
-
-        // The same for the closing side, from the last corner to the first.
-        error = errorOfOutline({OutlineCorner{Point{0, 0}, 0}, OutlineCorner{Point{4 * MM, 0}, 0},
-                                OutlineCorner{Point{4 * MM, 3 * MM}, 0},
-                                OutlineCorner{Point{MM, 3 * MM}, 0}});
-        QVERIFY2(error.startsWith(QStringLiteral("outline[0]: ")), qPrintable(error));
-
         // A triangle with a side at 45 degrees is the smallest outline.
         error = errorOfOutline({OutlineCorner{Point{0, 0}, 0}, OutlineCorner{Point{MM, 0}, 0},
                                 OutlineCorner{Point{0, MM}, 0}});
+        QCOMPARE(error, QString());
+
+        // Sides run any way.
+        error = errorOfOutline({OutlineCorner{Point{0, 0}, 0}, OutlineCorner{Point{4 * MM, 0}, 0},
+                                OutlineCorner{Point{5 * MM, 3 * MM}, 0},
+                                OutlineCorner{Point{0, 3 * MM}, 0}});
         QCOMPARE(error, QString());
 
         error = errorOfChange("outline", "radius", -0.1);

@@ -13,6 +13,7 @@ add_library(pocketpcb_core STATIC
     jsonio.h jsonio.cpp
     libraryfile.h libraryfile.cpp
     objectid.h objectid.cpp
+    outline.h outline.cpp
     paint.h paint.cpp
     part.h part.cpp
     point.h

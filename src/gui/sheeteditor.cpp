@@ -1,14 +1,11 @@
 #include "sheeteditor.h"
 
 #include "canvasview.h"
-#include "grid.h"
 #include "sheetedit.h"
 #include "wiring.h"
 
 #include <QApplication>
 #include <QCursor>
-#include <QKeyEvent>
-#include <QLineEdit>
 #include <QLineF>
 #include <QToolTip>
 
@@ -18,16 +15,10 @@ namespace ppcb {
 
 namespace {
 
-// How near the mouse must be to an object to take it, in screen pixels.
-const double HIT_PIXELS = 4.0;
-// How near the mouse must be to a wire's end to take the end alone.
-const double END_PIXELS = 8.0;
 // How long the mouse stays on a net before it is lit, in milliseconds.
 const int HOVER_DELAY_MS = 1000;
 // How many components a step's name lists before it stops.
 const int NAMED_COMPONENTS = 3;
-// The line a value is edited in holds at least this many letters.
-const int VALUE_EDIT_LETTERS = 12;
 
 // True when the object 'id' is found by its line: a wire, a bus, a drawing.
 bool isFoundByLine(const QList<SheetObjectShape> &shapes, const ObjectId &id)
@@ -45,7 +36,9 @@ SheetEditor::SheetEditor(Document *document, CanvasView *canvas, QObject *parent
     : QObject(parent)
     , m_document(document)
     , m_canvas(canvas)
+    , m_textEdit(canvas)
 {
+    connect(&m_textEdit, &InPlaceEdit::accepted, this, &SheetEditor::textEdited);
     connect(m_document, &Document::designChanged, this, &SheetEditor::refreshPreview);
     // The nets are stale, and so is the index of the one lit.
     connect(m_document, &Document::designChanged, this, [this] {
@@ -71,7 +64,7 @@ SheetEditor::SheetEditor(Document *document, CanvasView *canvas, QObject *parent
 void SheetEditor::setSheet(int sheet)
 {
     // Set on the sheet it was begun on.
-    finishTextEdit(true);
+    m_textEdit.close(true);
     m_sheet = sheet;
     m_placing = false;
     m_wiring = false;
@@ -120,40 +113,29 @@ PowerShown SheetEditor::shownPower() const
     return powerShown(design.project, design.schematic);
 }
 
-double SheetEditor::pixelsToMm(double pixels) const
-{
-    return pixels / m_canvas->pixelsPerMm();
-}
-
-Point SheetEditor::snapped(const QPointF &at) const
-{
-    const Coord step = m_canvas->gridStep();
-    return Point{snapToGrid(mmToNm(at.x()), step), snapToGrid(mmToNm(at.y()), step)};
-}
-
 void SheetEditor::press(const QPointF &at, bool adding, bool net)
 {
     if (currentSheet() == nullptr)
         return;
     clearHoveredNet();
     if (m_wiring) {
-        wireClick(snapped(at));
+        wireClick(m_canvas->snapped(at));
         return;
     }
     if (m_placing && m_askLabelText) {
         // A click with the line open takes what it holds; else the label
         // stops where it is and the line opens over it.
-        if (!m_textEdit.isNull()) {
-            finishTextEdit(true);
+        if (m_textEdit.isOpen()) {
+            m_textEdit.close(true);
             return;
         }
-        hover(snapped(at));
+        hover(m_canvas->snapped(at));
         if (!m_floating.labels.isEmpty())
             editText(m_floating.labels.first().id);
         return;
     }
     if (m_placing) {
-        hover(snapped(at));
+        hover(m_canvas->snapped(at));
         if (m_onPartPin && !m_floating.noConnects.isEmpty()) {
             const Point point = m_floatAt;
             const Sheet *sheet = currentSheet();
@@ -174,7 +156,7 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
     m_narrowTo = ObjectId();
     dropSegment();
     const QList<SheetObjectShape> found = shapes();
-    ObjectId hit = objectAt(found, at, pixelsToMm(HIT_PIXELS));
+    ObjectId hit = objectAt(found, at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
     // The name of a bus lies off its line, which alone finds the bus, or
     // near enough for the line to be found: a click on the name takes it.
     const TextHit name = textAt(*currentSheet(), m_document->design().library, shownPower(), at);
@@ -240,7 +222,7 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
             const Point end = last < first ? line.last() : line.first();
             const bool onPin =
                 !isBus && pinPoints(*sheet, m_document->design().library).contains(end);
-            if (qMin(first, last) <= pixelsToMm(END_PIXELS) && !onPin) {
+            if (qMin(first, last) <= m_canvas->pixelsToMm(CanvasView::END_PIXELS) && !onPin) {
                 m_endLine = hit;
                 m_endIsLast = last < first;
                 m_dragAnchor = end;
@@ -251,7 +233,7 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
             // it instead; a click still chooses the segment.
             if (!isBus) {
                 const Library &library = m_document->design().library;
-                double nearest = pixelsToMm(END_PIXELS);
+                double nearest = m_canvas->pixelsToMm(CanvasView::END_PIXELS);
                 for (const Point &dot : junctions(*sheet, library)) {
                     const double distance = QLineF(at, toMm(dot)).length();
                     if (distance <= nearest && !jointWire(*sheet, library, dot).isNull()) {
@@ -348,7 +330,7 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
             return;
         }
     }
-    const ObjectId hit = objectAt(shapes(), at, pixelsToMm(HIT_PIXELS));
+    const ObjectId hit = objectAt(shapes(), at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
     for (const PowerSymbol &power : sheet->powerSymbols) {
         if (power.id == hit) {
             editText(hit);
@@ -388,9 +370,9 @@ ObjectId SheetEditor::chooseForMenu(const QPointF &at)
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr || m_placing || m_wiring)
         return ObjectId();
-    finishTextEdit(true);
+    m_textEdit.close(true);
     const Library &library = m_document->design().library;
-    const ObjectId hit = objectAt(shapes(), at, pixelsToMm(HIT_PIXELS));
+    const ObjectId hit = objectAt(shapes(), at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
     const TextHit text = textAt(*sheet, library, shownPower(), at);
     const bool chosen =
         (!hit.isNull() && m_selection.contains(hit))
@@ -435,7 +417,7 @@ void SheetEditor::addBusName(const ObjectId &bus, const QPointF &at)
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr || !isBus(bus))
         return;
-    const Sheet edited = withBusNameAdded(*sheet, bus, snapped(at));
+    const Sheet edited = withBusNameAdded(*sheet, bus, m_canvas->snapped(at));
     Design design = m_document->design();
     const QString name = stepName(actionName(Action::AddName), *sheet, {bus});
     design.schematic.sheets[m_sheet] = edited;
@@ -447,14 +429,14 @@ bool SheetEditor::canJoinWiresAt(const QPointF &at) const
 {
     const Sheet *sheet = currentSheet();
     return sheet != nullptr
-           && ppcb::canJoinWiresAt(*sheet, m_document->design().library, snapped(at));
+           && ppcb::canJoinWiresAt(*sheet, m_document->design().library, m_canvas->snapped(at));
 }
 
 bool SheetEditor::canSeparateWiresAt(const QPointF &at) const
 {
     const Sheet *sheet = currentSheet();
     return sheet != nullptr
-           && ppcb::canSeparateWiresAt(*sheet, m_document->design().library, snapped(at));
+           && ppcb::canSeparateWiresAt(*sheet, m_document->design().library, m_canvas->snapped(at));
 }
 
 void SheetEditor::joinWiresAt(const QPointF &at)
@@ -462,7 +444,8 @@ void SheetEditor::joinWiresAt(const QPointF &at)
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr)
         return;
-    const Sheet edited = withWiresJoinedAt(*sheet, m_document->design().library, snapped(at));
+    const Sheet edited =
+        withWiresJoinedAt(*sheet, m_document->design().library, m_canvas->snapped(at));
     // The wires are cut or made one: a segment chosen may be another now.
     dropSegment();
     apply(actionName(Action::JoinWires), edited);
@@ -474,7 +457,8 @@ void SheetEditor::separateWiresAt(const QPointF &at)
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr)
         return;
-    const Sheet edited = withWiresSeparatedAt(*sheet, m_document->design().library, snapped(at));
+    const Sheet edited =
+        withWiresSeparatedAt(*sheet, m_document->design().library, m_canvas->snapped(at));
     dropSegment();
     apply(actionName(Action::SeparateWires), edited);
     setSelection(m_selection);
@@ -498,7 +482,7 @@ QString SheetEditor::editInPlaceName(const ObjectId &id) const
 
 void SheetEditor::editText(const ObjectId &id)
 {
-    finishTextEdit(true);
+    m_textEdit.close(true);
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr)
         return;
@@ -552,49 +536,11 @@ void SheetEditor::editText(const ObjectId &id)
     if (rect.isNull())
         return;
     m_textOwner = id;
-    m_textEditRect = rect;
-    auto *edit = new QLineEdit(text, m_canvas->viewport());
-    edit->selectAll();
-    edit->installEventFilter(this);
-    connect(edit, &QLineEdit::returnPressed, this, [this]() { finishTextEdit(true); });
-    // The line goes with its text when the view is zoomed or scrolled.
-    connect(m_canvas, &CanvasView::viewMoved, edit, [this]() { placeTextEdit(); });
-    m_textEdit = edit;
-    placeTextEdit();
-    edit->show();
-    edit->setFocus();
+    m_textEdit.open(text, rect);
 }
 
-void SheetEditor::placeTextEdit()
+void SheetEditor::textEdited(const QString &value)
 {
-    if (m_textEdit.isNull())
-        return;
-    QLineEdit *edit = m_textEdit;
-    // Over the text, at least wide enough to type a value into.
-    const QRect place = m_canvas->mapFromScene(m_textEditRect).boundingRect();
-    const int width =
-        qMax(place.width(), edit->fontMetrics().averageCharWidth() * VALUE_EDIT_LETTERS);
-    const int height = edit->sizeHint().height();
-    edit->setGeometry(place.center().x() - width / 2, place.center().y() - height / 2, width,
-                      height);
-}
-
-void SheetEditor::finishTextEdit(bool keep)
-{
-    if (m_textEdit.isNull())
-        return;
-    QLineEdit *edit = m_textEdit;
-    m_textEdit.clear();
-    // Hiding it takes its focus away: that must not end it again.
-    edit->removeEventFilter(this);
-    edit->disconnect(this);
-    disconnect(m_canvas, nullptr, edit, nullptr);
-    const QString value = edit->text();
-    edit->hide();
-    edit->deleteLater();
-    m_canvas->setFocus();
-    if (!keep)
-        return;
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr)
         return;
@@ -712,57 +658,18 @@ void SheetEditor::applyToComponents(Action action, const QSet<ObjectId> &ids,
     emit changed();
 }
 
-bool SheetEditor::eventFilter(QObject *watched, QEvent *event)
-{
-    if (watched != m_textEdit.data())
-        return QObject::eventFilter(watched, event);
-    switch (event->type()) {
-    case QEvent::ShortcutOverride: {
-        // Esc and Enter belong to the line, not to the window's actions.
-        const int key = static_cast<QKeyEvent *>(event)->key();
-        if (key == Qt::Key_Escape || key == Qt::Key_Return || key == Qt::Key_Enter) {
-            event->accept();
-            return true;
-        }
-        break;
-    }
-    case QEvent::KeyPress:
-        if (static_cast<QKeyEvent *>(event)->key() == Qt::Key_Escape) {
-            finishTextEdit(false);
-            return true;
-        }
-        break;
-    case QEvent::FocusOut:
-        // A press of the panning buttons on the canvas takes the focus, but
-        // the view only moves: the line keeps it. A short right click opens
-        // a menu, which takes the focus again and ends the line.
-        if (static_cast<QFocusEvent *>(event)->reason() == Qt::MouseFocusReason
-            && (QApplication::mouseButtons() & (Qt::RightButton | Qt::MiddleButton))
-            && (QApplication::focusWidget() == m_canvas
-                || QApplication::focusWidget() == m_canvas->viewport())) {
-            QLineEdit *edit = m_textEdit;
-            QTimer::singleShot(0, edit, [edit]() { edit->setFocus(); });
-            break;
-        }
-        finishTextEdit(true);
-        break;
-    default:
-        break;
-    }
-    return QObject::eventFilter(watched, event);
-}
-
 void SheetEditor::move(const QPointF &at, bool detached)
 {
     const Sheet *sheet = currentSheet();
     if (m_placing || m_wiring) {
-        hover(snapped(at));
+        hover(m_canvas->snapped(at));
         return;
     }
     if (!m_pressed || sheet == nullptr)
         return;
     if (!m_dragging && !m_rubberBanding) {
-        if (QLineF(at, m_pressAt).length() < pixelsToMm(QApplication::startDragDistance()))
+        if (QLineF(at, m_pressAt).length()
+            < m_canvas->pixelsToMm(QApplication::startDragDistance()))
             return;
         if (m_pressOnSelection) {
             m_dragging = true;
@@ -773,7 +680,7 @@ void SheetEditor::move(const QPointF &at, bool detached)
     }
     if (m_dragging) {
         // What was taken lands on the grid, wherever it stood before.
-        m_dragDelta = snapped(toMm(m_dragAnchor) + (at - m_pressAt)) - m_dragAnchor;
+        m_dragDelta = m_canvas->snapped(toMm(m_dragAnchor) + (at - m_pressAt)) - m_dragAnchor;
         m_dragDetached = detached;
         updateDrag();
     } else {
@@ -860,7 +767,7 @@ Point SheetEditor::selectionCenter(const Sheet &sheet) const
     }
     const QList<SheetObjectShape> found =
         sheetObjectShapes(sheet, m_document->design().library, shownPower());
-    return snapped(selectionBounds(found, m_selection).center());
+    return m_canvas->snapped(selectionBounds(found, m_selection).center());
 }
 
 void SheetEditor::transformDragged(Sheet (*transform)(const Sheet &, const QSet<ObjectId> &,
@@ -1095,7 +1002,8 @@ Sheet SheetEditor::selectionPiece(const Sheet &sheet) const
     if (hasSegment()) {
         const Sheet piece = segmentOf(sheet, m_segmentLine, m_segmentIndex);
         const QList<Point> ends = linePoints(piece, m_segmentLine);
-        const Point center = snapped(QLineF(toMm(ends.first()), toMm(ends.last())).center());
+        const Point center =
+            m_canvas->snapped(QLineF(toMm(ends.first()), toMm(ends.last())).center());
         return movedObjects(piece, objectIds(piece), Point() - center);
     }
     const Point center = selectionCenter(sheet);
@@ -1146,7 +1054,7 @@ SheetEditor::Tool SheetEditor::tool() const
 
 void SheetEditor::chooseSelectTool()
 {
-    finishTextEdit(false);
+    m_textEdit.close(false);
     m_placing = false;
     m_wiring = false;
     m_wirePoints.clear();
@@ -1169,7 +1077,7 @@ void SheetEditor::hover(const Point &at)
         return;
     }
     // A label waiting for its text stays where it is.
-    if (!m_placing || m_floatAt == at || !m_textEdit.isNull())
+    if (!m_placing || m_floatAt == at || m_textEdit.isOpen())
         return;
     m_floatAt = at;
     updateFloating();
@@ -1182,8 +1090,8 @@ void SheetEditor::hoverNet(const QPointF &at)
         return;
     }
     const Design &design = m_document->design();
-    const int net =
-        netAt(nets(), design.schematic, design.library, m_sheet, at, pixelsToMm(HIT_PIXELS));
+    const int net = netAt(nets(), design.schematic, design.library, m_sheet, at,
+                          m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
     if (net >= 0 && net == m_hoveredNet) {
         // Shown again after it went out by itself or with a click.
         showNetTip(m_nets.at(net));

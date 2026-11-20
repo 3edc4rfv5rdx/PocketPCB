@@ -25,16 +25,6 @@ int normalAngle(int degrees)
     return ((degrees % FULL_TURN_DEGREES) + FULL_TURN_DEGREES) % FULL_TURN_DEGREES;
 }
 
-double distanceToSegment(const QPointF &point, const QPointF &a, const QPointF &b)
-{
-    const QPointF ab = b - a;
-    const double lengthSquared = QPointF::dotProduct(ab, ab);
-    if (lengthSquared == 0)
-        return QLineF(point, a).length();
-    const double t = std::clamp(QPointF::dotProduct(point - a, ab) / lengthSquared, 0.0, 1.0);
-    return QLineF(point, a + t * ab).length();
-}
-
 // 'sheet' with 'edit' done to each component of 'ids'.
 Sheet withComponentsChanged(const Sheet &sheet, const QSet<ObjectId> &ids,
                             const std::function<void(Component &)> &edit)
@@ -118,6 +108,16 @@ Sheet transformed(const Sheet &sheet, const QSet<ObjectId> &ids, const Transform
 }
 
 } // namespace
+
+double distanceToSegment(const QPointF &point, const QPointF &a, const QPointF &b)
+{
+    const QPointF ab = b - a;
+    const double lengthSquared = QPointF::dotProduct(ab, ab);
+    if (lengthSquared == 0)
+        return QLineF(point, a).length();
+    const double t = std::clamp(QPointF::dotProduct(point - a, ab) / lengthSquared, 0.0, 1.0);
+    return QLineF(point, a + t * ab).length();
+}
 
 bool isNearPolyline(const QPolygonF &polyline, const QPointF &point, double tolerance)
 {

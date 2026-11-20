@@ -149,7 +149,7 @@ struct Project
     Rules rules;
 
     Coord schematicGridStep = DEFAULT_GRID_STEP;
-    Coord boardGridStep = DEFAULT_GRID_STEP;
+    Coord boardGridStep = DEFAULT_BOARD_GRID_STEP;
 };
 
 bool operator==(const TitleBlock &a, const TitleBlock &b);

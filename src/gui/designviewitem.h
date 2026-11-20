@@ -8,6 +8,7 @@ namespace ppcb {
 
 // Shows one page of the open project on the canvas. The pages are the
 // sheets of the schematic in their order, then the board.
+class BoardEditor;
 class SheetEditor;
 
 class DesignViewItem : public QGraphicsItem
@@ -40,6 +41,16 @@ public:
     // selection, a drag, a rectangle, the net under the mouse).
     // The editor must outlive the item.
     void setEditor(SheetEditor *editor);
+    // The board is edited through 'editor' the same way: the outline as it
+    // is dragged or drawn, its corners and what is lit. It must outlive the
+    // item.
+    void setBoardEditor(BoardEditor *editor);
+    // The layers of the board drawn; all at first.
+    BoardLayerSet boardLayers() const { return m_boardLayers; }
+    void setBoardLayers(const BoardLayerSet &layers);
+    // Whether the coordinates of the corner being drawn on the board are
+    // shown beside it.
+    void setDrawingCoordinatesShown(bool shown);
     // Whether the problems of the rules check are ringed on the sheet: while
     // their panel is open.
     void setErcMarksShown(bool shown);
@@ -59,6 +70,9 @@ protected:
 private:
     // The editor, when it edits the page shown.
     SheetEditor *activeEditor() const;
+    BoardEditor *activeBoardEditor() const;
+    // The board as the board editor shows it, with what it draws over it.
+    void paintBoardPage(QPainter &painter) const;
     // The net lit, under the mouse or chosen in the table of nets: a band
     // along its wires, its labels and power symbols filled in, a dot on its
     // pins.
@@ -67,6 +81,9 @@ private:
 
     const Document *m_document;
     SheetEditor *m_editor = nullptr;
+    BoardEditor *m_boardEditor = nullptr;
+    BoardLayerSet m_boardLayers = BoardLayerSet::all();
+    bool m_drawingCoordinatesShown = true;
     QRectF m_area;
     int m_page = 0;
     bool m_ercMarksShown = false;

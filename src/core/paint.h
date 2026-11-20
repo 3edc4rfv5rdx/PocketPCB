@@ -24,6 +24,7 @@ inline QColor symbol() { return QColor(132, 0, 0); }
 inline QColor pinText() { return QColor(0, 100, 100); }
 // "REF" and "VALUE" marks and the origin cross.
 inline QColor placeholder() { return QColor(140, 140, 140); }
+// The silkscreen of a footprint shown alone, on the paper.
 inline QColor silkscreen() { return QColor(0, 132, 132); }
 inline QColor padBoth() { return QColor(190, 150, 0); }
 inline QColor padFront() { return QColor(200, 50, 50); }
@@ -44,11 +45,21 @@ inline QColor noConnect() { return QColor(0, 0, 160); }
 inline QColor looseNoConnect() { return QColor(220, 0, 0); }
 inline QColor sheetGraphic() { return QColor(70, 70, 70); }
 inline QColor sheetFrame() { return QColor(90, 90, 90); }
-// The board. Copper has the colours of the pads: padFront() on the top
-// side, padBack() on the bottom, padBoth() for what goes through.
-inline QColor silkscreenBottom() { return QColor(132, 0, 132); }
-inline QColor boardOutline() { return QColor(60, 60, 60); }
-inline QColor bareHole() { return QColor(120, 120, 120); }
+// The board, on black. Copper has the colours of the pads: padFront() on
+// the top side, padBack() on the bottom, padBoth() for what goes through;
+// a via is violet.
+inline QColor boardBackground() { return QColor(0, 0, 0); }
+inline QColor via() { return QColor(160, 80, 220); }
+inline QColor silkscreenTop() { return QColor(240, 240, 240); }
+inline QColor silkscreenBottom() { return QColor(160, 160, 160); }
+inline QColor maskTop() { return QColor(40, 150, 70); }
+inline QColor maskBottom() { return QColor(40, 110, 150); }
+inline QColor pasteTop() { return QColor(180, 180, 180); }
+inline QColor pasteBottom() { return QColor(120, 120, 120); }
+inline QColor boardOutline() { return QColor(230, 200, 0); }
+// The mark of the origin, which coordinates on the board count from.
+inline QColor boardOrigin() { return QColor(0, 200, 220); }
+inline QColor bareHole() { return QColor(100, 100, 100); }
 // What stands in for a symbol or a footprint the project library lacks.
 inline QColor missing() { return QColor(220, 0, 0); }
 // The selection and the rectangle drawn to choose with.
@@ -175,12 +186,18 @@ QRectF labelTextRect(const Label &label);
 // a square around its point when 'library' lacks the symbol.
 QRectF powerNameRect(const PowerSymbol &power, const Library &library);
 
+// The colour 'layer' is drawn in on the board.
+QColor boardLayerColor(BoardLayer layer);
+
 // A rectangle that holds everything paintBoard() draws; never empty.
 QRectF boardBounds(const Board &board, const Library &library);
 // The board as seen from the top: bottom copper under top copper, the
 // silkscreen and the outline over them. What lies on the bottom side is
 // mirrored, texts included, as it is on the real board. Footprints come
 // from 'library'; one it lacks is drawn as a red square with a question mark.
-void paintBoard(QPainter &painter, const Board &board, const Library &library);
+// Only the layers in 'shown' are drawn; a pad or a via through the board
+// shows while either copper layer does, and holes always show.
+void paintBoard(QPainter &painter, const Board &board, const Library &library,
+                const BoardLayerSet &shown = BoardLayerSet::all());
 
 } // namespace ppcb

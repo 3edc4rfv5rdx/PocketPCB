@@ -2,6 +2,7 @@
 
 #include "document.h"
 #include "erc.h"
+#include "inplaceedit.h"
 #include "netlist.h"
 #include "paint.h"
 #include "sheetedit.h"
@@ -9,15 +10,12 @@
 
 #include <QLineF>
 #include <QObject>
-#include <QPointer>
 #include <QPointF>
 #include <QRectF>
 #include <QSet>
 #include <QTimer>
 
 #include <optional>
-
-class QLineEdit;
 
 namespace ppcb {
 
@@ -265,10 +263,6 @@ signals:
     // asked for.
     void netsChanged();
 
-protected:
-    // Keys and focus of the text being edited in place.
-    bool eventFilter(QObject *watched, QEvent *event) override;
-
 private:
     // Opens a line on the canvas over the value of the component 'id', over
     // the net name of the power symbol 'id' or over the text of the label
@@ -280,10 +274,9 @@ private:
     void setHoveredNet(int net);
     // Shows the name of 'net' beside the cursor.
     void showNetTip(const Net &net);
-    // Puts the line over its text as the view shows it now.
-    void placeTextEdit();
-    // Closes the line; 'keep' sets what it holds.
-    void finishTextEdit(bool keep);
+    // What the line held when it was closed keeping it: set as the text of
+    // its owner.
+    void textEdited(const QString &value);
     // Puts the label being placed down with 'text', as one step, and offers
     // the next one; nothing happens when 'text' is blank.
     void placeLabel(const QString &text);
@@ -352,9 +345,6 @@ private:
     QString stepName(const QString &action, const Sheet &objects,
                      const QSet<ObjectId> &ids) const;
     QString stepName(const QString &action) const;
-    // A distance on screen, in millimetres at the current zoom.
-    double pixelsToMm(double pixels) const;
-    Point snapped(const QPointF &at) const;
 
     Document *m_document;
     CanvasView *m_canvas;
@@ -427,10 +417,8 @@ private:
 
     // The text being edited in place: the line, and the component, power
     // symbol or label it belongs to.
-    QPointer<QLineEdit> m_textEdit;
+    InPlaceEdit m_textEdit;
     ObjectId m_textOwner;
-    // Where that text stands, in millimetres.
-    QRectF m_textEditRect;
     // Placing labels: a click asks for the text (see startPlacingLabel()).
     bool m_askLabelText = false;
     // Placing no-connect marks: a click puts one down only on a free pin of

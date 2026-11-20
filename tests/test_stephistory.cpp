@@ -34,14 +34,17 @@ class TestStepHistory : public QObject
 
 private slots:
     // A step goes into a numbered file named after it, made fit for a file
-    // name, with the schematic before and after it.
+    // name, with the schematic and the board before and after it.
     void aStepIsWrittenWithItsSchematics()
     {
         QTemporaryDir temp;
         const QString folder = QDir(temp.path()).filePath(QStringLiteral("history"));
+        Board board;
+        board.outline = {OutlineCorner{Point{0, 0}, 0}, OutlineCorner{Point{1000000, 0}, 0},
+                         OutlineCorner{Point{0, 1000000}, 0}};
         QVERIFY(writeStep(folder, QStringLiteral("Move R1/R2"), 1, QStringLiteral("/p/amp.ppcb"),
                           WireRouting::Grid, titled(QStringLiteral("a")),
-                          titled(QStringLiteral("b"))));
+                          titled(QStringLiteral("b")), Board(), board));
         QCOMPARE(stepFiles(folder), QStringList({QStringLiteral("000001 Move R1_R2.json")}));
 
         QFile file(QDir(folder).filePath(stepFiles(folder).first()));
@@ -55,6 +58,8 @@ private slots:
                  schematicToJson(titled(QStringLiteral("a"))));
         QCOMPARE(root.value(QStringLiteral("after")).toObject(),
                  schematicToJson(titled(QStringLiteral("b"))));
+        QCOMPARE(root.value(QStringLiteral("boardBefore")).toObject(), boardToJson(Board()));
+        QCOMPARE(root.value(QStringLiteral("boardAfter")).toObject(), boardToJson(board));
     }
 
     // The numbers go on from the highest in the folder, and only the newest
@@ -65,7 +70,7 @@ private slots:
         const QString folder = temp.path();
         for (int i = 0; i < STEP_HISTORY_KEPT + 2; ++i) {
             QVERIFY(writeStep(folder, QStringLiteral("Wire"), 0, QString(), WireRouting::Hand,
-                              Schematic(), Schematic()));
+                              Schematic(), Schematic(), Board(), Board()));
         }
         const QStringList files = stepFiles(folder);
         QCOMPARE(files.size(), STEP_HISTORY_KEPT);

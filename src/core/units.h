@@ -7,6 +7,8 @@ namespace ppcb {
 // All coordinates and sizes in the model are integer nanometres.
 using Coord = std::int64_t;
 
+constexpr double PI = 3.14159265358979323846;
+
 constexpr Coord NM_PER_MM = 1000000;
 constexpr Coord NM_PER_MIL = 25400;
 

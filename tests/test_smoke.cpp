@@ -1,4 +1,5 @@
 #include "appsettings.h"
+#include "boardeditor.h"
 #include "canvasview.h"
 #include "designviewitem.h"
 #include "document.h"
@@ -6,6 +7,7 @@
 #include "libraryfile.h"
 #include "librarypanel.h"
 #include "libraryviewitem.h"
+#include "outline.h"
 #include "paint.h"
 #include "mainwindow.h"
 #include "saveprojectdialog.h"
@@ -1334,6 +1336,84 @@ private slots:
         // Undo gives the old step back to the canvas.
         window.document()->undoStack()->undo();
         QCOMPARE(window.canvas()->gridStep(), mmToNm(2.54));
+    }
+
+    void boardOutlineIsEditedOnTheBoard()
+    {
+        MainWindow window;
+        BoardEditor *editor = window.boardEditor();
+        QAction *wire = window.findChild<QAction *>(QStringLiteral("actionWire"));
+        QAction *cutOut = window.findChild<QAction *>(QStringLiteral("actionCutOut"));
+        QAction *select = window.findChild<QAction *>(QStringLiteral("actionSelectTool"));
+        // The modes of the sheet on a sheet, those of the board on the board.
+        QVERIFY(wire->isVisible());
+        QVERIFY(!cutOut->isVisible());
+        QVERIFY(!editor->isActive());
+        window.showPage(window.designItem()->boardPage());
+        QVERIFY(editor->isActive());
+        QVERIFY(!wire->isVisible());
+        QVERIFY(cutOut->isVisible());
+        QVERIFY(select->isChecked());
+
+        window.canvas()->setGridStep(NM_PER_MM);
+        // Corners and edges are found within a few pixels: a close view.
+        window.canvas()->setView(QPointF(25, 15), 20);
+        editor->makeRectangleBoard(50 * NM_PER_MM, 30 * NM_PER_MM);
+        const auto outline = [&window] { return window.document()->design().board.outline; };
+        QCOMPARE(outline().size(), 4);
+
+        // A notch cut in the top edge, as one step.
+        cutOut->trigger();
+        QVERIFY(cutOut->isChecked());
+        QVERIFY(!select->isChecked());
+        editor->press(QPointF(20, -5));
+        editor->move(QPointF(30, 10));
+        QVERIFY(!editor->cutRect().isNull());
+        editor->release(QPointF(30, 10));
+        QCOMPARE(outline().size(), 8);
+        // One inside the board is refused and says why.
+        editor->press(QPointF(5, 15));
+        editor->release(QPointF(10, 20));
+        QCOMPARE(outline().size(), 8);
+        QVERIFY(!window.statusText().isEmpty());
+
+        // Esc goes back to choosing; the bottom of the notch dragged deeper.
+        window.findChild<QAction *>(QStringLiteral("actionDeselect"))->trigger();
+        QCOMPARE(editor->tool(), BoardEditor::Tool::Select);
+        QVERIFY(select->isChecked());
+        editor->press(QPointF(25, 10));
+        editor->move(QPointF(25, 15));
+        QVERIFY(editor->previewOutline() != nullptr);
+        editor->release(QPointF(25, 15));
+        QCOMPARE(outline().at(2).at, (Point{20 * NM_PER_MM, 15 * NM_PER_MM}));
+        QCOMPARE(outline().at(3).at, (Point{30 * NM_PER_MM, 15 * NM_PER_MM}));
+
+        window.document()->undoStack()->undo();
+        QCOMPARE(outline().at(2).at, (Point{20 * NM_PER_MM, 10 * NM_PER_MM}));
+        window.document()->undoStack()->undo();
+        QCOMPARE(outline().size(), 4);
+
+        // An outline drawn corner by corner; the first corner closes it only
+        // once there are three.
+        window.findChild<QAction *>(QStringLiteral("actionDrawOutline"))->trigger();
+        QCOMPARE(editor->tool(), BoardEditor::Tool::Outline);
+        editor->press(QPointF(0, 0));
+        editor->press(QPointF(10, 0));
+        editor->press(QPointF(0, 0));
+        QCOMPARE(outline().size(), 4);
+        QVERIFY(editor->isDrawing());
+        editor->press(QPointF(10, 10));
+        editor->press(QPointF(0, 10));
+        editor->press(QPointF(0, 0));
+        QVERIFY(!editor->isDrawing());
+        QCOMPARE(editor->tool(), BoardEditor::Tool::Select);
+        QCOMPARE(outline(), rectangleOutline(Point(), 10 * NM_PER_MM, 10 * NM_PER_MM));
+
+        // A sheet again: the board's modes step aside.
+        window.showPage(0);
+        QVERIFY(!editor->isActive());
+        QVERIFY(wire->isVisible());
+        QVERIFY(!cutOut->isVisible());
     }
 
     void undoActionsAndTitleFollowTheDocument()

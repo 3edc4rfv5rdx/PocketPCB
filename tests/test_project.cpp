@@ -583,7 +583,7 @@ private slots:
         QVERIFY(design.project.rules == productionRules());
         QVERIFY(design.project.designatorStyle == DesignatorStyle::International);
         QCOMPARE(design.project.schematicGridStep, DEFAULT_GRID_STEP);
-        QCOMPARE(design.project.boardGridStep, DEFAULT_GRID_STEP);
+        QCOMPARE(design.project.boardGridStep, DEFAULT_BOARD_GRID_STEP);
 
         QCOMPARE(design.project.netClasses.size(), 2);
         QCOMPARE(design.project.netClasses.at(0).name, QString::fromLatin1(NET_CLASS_SIGNAL));

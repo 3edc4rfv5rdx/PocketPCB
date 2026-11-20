@@ -4,6 +4,7 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QDoubleSpinBox>
 #include <QFileInfo>
 #include <QLocale>
 
@@ -16,6 +17,8 @@ namespace {
 const int MM_DECIMALS = 3;
 // Half of the last shown decimal: below it the value is displayed as zero.
 const double MM_SHOWN_AS_ZERO = 0.0005;
+// What a size box keeps: the length it was given, in nanometres.
+const char SIZE_PROPERTY[] = "nm";
 
 } // namespace
 
@@ -41,6 +44,49 @@ QString formatMmShort(Coord nm)
     if (text.endsWith(point))
         text.chop(point.size());
     return text;
+}
+
+QString formatPosition(Coord x, Coord y)
+{
+    return QStringLiteral("X %1   Y %2 ").arg(formatMmFixed(x), formatMmFixed(y)) + mmUnit();
+}
+
+bool parseMm(const QString &text, Coord &nm)
+{
+    const QString trimmed = text.trimmed();
+    // Group separators are refused, so that a comma is always a decimal point.
+    QLocale locale;
+    locale.setNumberOptions(QLocale::RejectGroupSeparator);
+    bool ok = false;
+    double mm = locale.toDouble(trimmed, &ok);
+    if (!ok) {
+        const QString pointed = QString(trimmed).replace(QLatin1Char(','), QLatin1Char('.'));
+        mm = QLocale::c().toDouble(pointed, &ok);
+    }
+    return ok && tryMmToNm(mm, nm);
+}
+
+QDoubleSpinBox *mmSizeBox(Coord nm, double minMm, double maxMm, double stepMm, QWidget *parent)
+{
+    QDoubleSpinBox *box = new QDoubleSpinBox(parent);
+    box->setDecimals(MM_DECIMALS);
+    box->setRange(minMm, maxMm);
+    box->setSingleStep(stepMm);
+    box->setValue(nmToMm(nm));
+    box->setProperty(SIZE_PROPERTY, QVariant::fromValue(qint64(nm)));
+    return box;
+}
+
+Coord mmSizeOf(const QDoubleSpinBox *box)
+{
+    const Coord given = box->property(SIZE_PROPERTY).toLongLong();
+    const double scale = std::pow(10.0, MM_DECIMALS);
+    const double shown = std::round(nmToMm(given) * scale) / scale;
+    if (std::abs(box->value() - shown) < 0.5 / scale)
+        return given;
+    Coord nm = given;
+    tryMmToNm(box->value(), nm);
+    return nm;
 }
 
 QString mmUnit()

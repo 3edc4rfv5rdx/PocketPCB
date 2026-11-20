@@ -30,7 +30,8 @@ QString fileNamePart(const QString &name)
 } // namespace
 
 bool writeStep(const QString &folder, const QString &name, int page, const QString &projectPath,
-               WireRouting routing, const Schematic &before, const Schematic &after)
+               WireRouting routing, const Schematic &before, const Schematic &after,
+               const Board &boardBefore, const Board &boardAfter)
 {
     QDir dir(folder);
     if (!dir.mkpath(QStringLiteral(".")))
@@ -49,6 +50,8 @@ bool writeStep(const QString &folder, const QString &name, int page, const QStri
                                                : QStringLiteral("grid"));
     root.insert(QStringLiteral("before"), schematicToJson(before));
     root.insert(QStringLiteral("after"), schematicToJson(after));
+    root.insert(QStringLiteral("boardBefore"), boardToJson(boardBefore));
+    root.insert(QStringLiteral("boardAfter"), boardToJson(boardAfter));
 
     const QString fileName = QStringLiteral("%1 %2.json")
                                  .arg(last + 1, NUMBER_DIGITS, 10, QLatin1Char('0'))

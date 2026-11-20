@@ -860,6 +860,10 @@
         <source>Draw bus</source>
         <translation>Намалювати шину</translation>
     </message>
+    <message>
+        <source>Coordinates while drawing the board</source>
+        <translation>Координати під час малювання плати</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>
@@ -1290,6 +1294,64 @@
     <message>
         <source>All sheets</source>
         <translation>Усі аркуші</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::BoardEditor</name>
+    <message>
+        <source>Draw board outline</source>
+        <translation>Намалювати контур плати</translation>
+    </message>
+    <message>
+        <source>Cut out of the board</source>
+        <translation>Виріз у платі</translation>
+    </message>
+    <message>
+        <source>Rectangular board</source>
+        <translation>Прямокутна плата</translation>
+    </message>
+    <message>
+        <source>Move board corner</source>
+        <translation>Перемістити кут плати</translation>
+    </message>
+    <message>
+        <source>Move board edge</source>
+        <translation>Перемістити край плати</translation>
+    </message>
+    <message>
+        <source>Round board corner</source>
+        <translation>Заокруглити кут плати</translation>
+    </message>
+    <message>
+        <source>The outline crosses itself</source>
+        <translation>Контур перетинає сам себе</translation>
+    </message>
+    <message>
+        <source>The cut-out takes nothing off the board</source>
+        <translation>Виріз нічого не прибирає з плати</translation>
+    </message>
+    <message>
+        <source>The cut-out must reach the edge of the board</source>
+        <translation>Виріз має заходити за край плати</translation>
+    </message>
+    <message>
+        <source>The cut-out would split the board</source>
+        <translation>Виріз розрізав би плату на частини</translation>
+    </message>
+    <message>
+        <source>Type the radius in millimetres</source>
+        <translation>Введіть радіус у міліметрах</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::RectangleBoardDialog</name>
+    <message>
+        <source>Width</source>
+        <translation>Ширина</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Висота</translation>
     </message>
 </context>
 </TS>

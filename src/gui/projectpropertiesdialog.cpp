@@ -20,7 +20,6 @@
 #include <QTableWidget>
 #include <QVBoxLayout>
 
-#include <cmath>
 
 namespace ppcb {
 
@@ -29,42 +28,20 @@ namespace {
 // The least width of the dialog, in pixels.
 const int MIN_DIALOG_WIDTH = 560;
 // The sizes of a net class, in millimetres: the least and the largest
-// typed, the step of the arrows, the decimals shown.
+// typed, the step of the arrows.
 const double MIN_CLASS_MM = 0.01;
 const double MAX_CLASS_MM = 50;
 const double CLASS_MM_STEP = 0.05;
-const int CLASS_MM_DECIMALS = 3;
 // What a row of the table of classes keeps in its name: the name the class
 // had, and a number that tells the row apart while names are typed.
 const int ORIGINAL_NAME_ROLE = Qt::UserRole;
 const int ROW_KEY_ROLE = Qt::UserRole + 1;
-// What a size box keeps: the size it was given, in nanometres.
-const char SIZE_PROPERTY[] = "nm";
 
 QDoubleSpinBox *sizeBox(Coord nm, QWidget *parent)
 {
-    QDoubleSpinBox *box = new QDoubleSpinBox(parent);
-    box->setDecimals(CLASS_MM_DECIMALS);
-    box->setRange(MIN_CLASS_MM, MAX_CLASS_MM);
-    box->setSingleStep(CLASS_MM_STEP);
-    box->setValue(nmToMm(nm));
-    box->setProperty(SIZE_PROPERTY, QVariant::fromValue(qint64(nm)));
+    QDoubleSpinBox *box = mmSizeBox(nm, MIN_CLASS_MM, MAX_CLASS_MM, CLASS_MM_STEP, parent);
     box->setFrame(false);
     return box;
-}
-
-// The size in 'box': the one it was given while what it shows is that
-// one rounded, so that a size finer than the decimals is not lost unseen.
-Coord sizeOf(const QDoubleSpinBox *box)
-{
-    const Coord given = box->property(SIZE_PROPERTY).toLongLong();
-    const double scale = std::pow(10.0, CLASS_MM_DECIMALS);
-    const double shown = std::round(nmToMm(given) * scale) / scale;
-    if (std::abs(box->value() - shown) < 0.5 / scale)
-        return given;
-    Coord nm = given;
-    tryMmToNm(box->value(), nm);
-    return nm;
 }
 
 } // namespace
@@ -266,7 +243,7 @@ QList<NetClassEdit> ProjectPropertiesDialog::netClassEdits() const
     for (int row = 0; row < m_classTable->rowCount(); ++row) {
         const QTableWidgetItem *name = m_classTable->item(row, ClassName);
         const auto size = [this, row](int column) {
-            return sizeOf(static_cast<const QDoubleSpinBox *>(m_classTable->cellWidget(row, column)));
+            return mmSizeOf(static_cast<const QDoubleSpinBox *>(m_classTable->cellWidget(row, column)));
         };
         NetClassEdit edit;
         edit.original = name->data(ORIGINAL_NAME_ROLE).toString();

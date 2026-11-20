@@ -4,6 +4,9 @@
 
 #include <QString>
 
+class QDoubleSpinBox;
+class QWidget;
+
 namespace ppcb {
 
 // Millimetres with exactly three decimals, in the current locale: "2.540".
@@ -13,6 +16,20 @@ QString formatMmFixed(Coord nm);
 // Millimetres with trailing zeros removed: "2.54", "10.16", "5".
 // For values shown in lists (grid steps, widths).
 QString formatMmShort(Coord nm);
+
+// "X 12.700   Y 5.080 mm": a point, as the status bar shows the cursor.
+QString formatPosition(Coord x, Coord y);
+
+// A length typed in millimetres, with a point or a comma before the
+// decimals; false for anything else or a length out of range.
+bool parseMm(const QString &text, Coord &nm);
+
+// A box to type a length 'nm' into, in millimetres, from 'minMm' to 'maxMm',
+// its arrows going by 'stepMm'; mmSizeOf() reads it.
+QDoubleSpinBox *mmSizeBox(Coord nm, double minMm, double maxMm, double stepMm, QWidget *parent);
+// The length in 'box': the one it was given while what it shows is that
+// one rounded, so that a length finer than the decimals is not lost unseen.
+Coord mmSizeOf(const QDoubleSpinBox *box);
 
 // "mm", the unit after a length, in the current language.
 QString mmUnit();

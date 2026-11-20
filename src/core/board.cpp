@@ -2,6 +2,26 @@
 
 namespace ppcb {
 
+BoardLayer copperLayer(BoardSide side)
+{
+    return side == BoardSide::Top ? BoardLayer::CopperTop : BoardLayer::CopperBottom;
+}
+
+BoardLayer maskLayer(BoardSide side)
+{
+    return side == BoardSide::Top ? BoardLayer::MaskTop : BoardLayer::MaskBottom;
+}
+
+BoardLayer silkscreenLayer(BoardSide side)
+{
+    return side == BoardSide::Top ? BoardLayer::SilkscreenTop : BoardLayer::SilkscreenBottom;
+}
+
+BoardLayer pasteLayer(BoardSide side)
+{
+    return side == BoardSide::Top ? BoardLayer::PasteTop : BoardLayer::PasteBottom;
+}
+
 namespace {
 
 const char KEY_OUTLINE[] = "outline";
@@ -100,11 +120,8 @@ void checkOutline(const QList<OutlineCorner> &outline, JsonReader &reader)
         const int previous = (i + outline.size() - 1) % outline.size();
         const Point step = outline.at(i).at - outline.at(previous).at;
         const QString stepWhere = JsonReader::pathOf(where, i);
-        if (step == Point()) {
+        if (step == Point())
             reader.fail(stepWhere, JsonReader::tr("neighbouring points coincide"));
-        } else if (!isStraightOrDiagonal(step)) {
-            reader.fail(stepWhere, JsonReader::tr("a segment is not at 0 45 or 90 degrees"));
-        }
     }
 }
 

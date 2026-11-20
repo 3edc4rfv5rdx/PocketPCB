@@ -3,6 +3,12 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The history of steps keeps the board before and after each step as well as the schematic
+- N: A corner mark on the board shows the origin the coordinates count from
+- F: The board is drawn on black, the copper red on top and blue below, vias violet, the silkscreen white and the outline yellow
+- F: A new project's board grid is 1.27 mm
+- N: The board outline: a rectangular board, an outline drawn corner by corner on any grid points with the coordinates beside the cursor, rectangular cut-outs across the edge, corners and edges dragged, a corner's radius typed in place
+- F: The zoom buttons stand on the left after Undo and Redo; the middle of the strip of tools holds the modes of the page shown, of the sheet or of the board
 - N: Connector pin (->) and socket (-<) parts, placed as a wire pad or a pin of a header
 ## v0.8.215 (2026-11-20)
 - N: A junction dot is dragged along the wire through it, the wires ending there following

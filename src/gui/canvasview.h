@@ -1,6 +1,7 @@
 #pragma once
 
 #include "appsettings.h"
+#include "point.h"
 #include "units.h"
 
 #include <QGraphicsView>
@@ -21,6 +22,11 @@ public:
     static constexpr double MIN_PIXELS_PER_MM = 0.5;
     static constexpr double MAX_PIXELS_PER_MM = 500.0;
     static constexpr double INITIAL_PIXELS_PER_MM = 4.0;
+    // How near the mouse must be to an object to take it, in screen pixels.
+    static constexpr double HIT_PIXELS = 4.0;
+    // How near the mouse must be to the end of a line (a wire's end, a
+    // corner of the board) to take the end alone.
+    static constexpr double END_PIXELS = 8.0;
 
     explicit CanvasView(QWidget *parent = nullptr);
 
@@ -29,6 +35,10 @@ public:
     CursorStyle cursorStyle() const { return m_cursorStyle; }
     bool zoomCenterAndWarp() const { return m_zoomCenterAndWarp; }
     double pixelsPerMm() const;
+    // A distance on screen, in millimetres at the current zoom.
+    double pixelsToMm(double pixels) const { return pixels / pixelsPerMm(); }
+    // The grid point nearest to 'at' (scene millimetres).
+    Point snapped(const QPointF &at) const;
 
     // Ignores a step that is not positive.
     void setGridStep(ppcb::Coord step);
@@ -80,7 +90,10 @@ protected:
     void scrollContentsBy(int dx, int dy) override;
 
 private:
+    // The background is dark: the grid and the cursor are drawn light.
+    bool isDark() const;
     void zoomAt(const QPoint &viewPos, double factor);
+
     void scrollBy(const QPoint &pixels);
     // Recomputes the snapped cursor position from the last known mouse
     // position; call after anything that moves the scene under the mouse.

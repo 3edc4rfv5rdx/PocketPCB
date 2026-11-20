@@ -860,6 +860,10 @@
         <source>Draw bus</source>
         <translation>Нарисовать шину</translation>
     </message>
+    <message>
+        <source>Coordinates while drawing the board</source>
+        <translation>Координаты при рисовании платы</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>
@@ -1290,6 +1294,64 @@
     <message>
         <source>All sheets</source>
         <translation>Все листы</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::BoardEditor</name>
+    <message>
+        <source>Draw board outline</source>
+        <translation>Нарисовать контур платы</translation>
+    </message>
+    <message>
+        <source>Cut out of the board</source>
+        <translation>Вырез в плате</translation>
+    </message>
+    <message>
+        <source>Rectangular board</source>
+        <translation>Прямоугольная плата</translation>
+    </message>
+    <message>
+        <source>Move board corner</source>
+        <translation>Переместить угол платы</translation>
+    </message>
+    <message>
+        <source>Move board edge</source>
+        <translation>Переместить край платы</translation>
+    </message>
+    <message>
+        <source>Round board corner</source>
+        <translation>Скруглить угол платы</translation>
+    </message>
+    <message>
+        <source>The outline crosses itself</source>
+        <translation>Контур пересекает сам себя</translation>
+    </message>
+    <message>
+        <source>The cut-out takes nothing off the board</source>
+        <translation>Вырез ничего не убирает с платы</translation>
+    </message>
+    <message>
+        <source>The cut-out must reach the edge of the board</source>
+        <translation>Вырез должен заходить за край платы</translation>
+    </message>
+    <message>
+        <source>The cut-out would split the board</source>
+        <translation>Вырез разрезал бы плату на части</translation>
+    </message>
+    <message>
+        <source>Type the radius in millimetres</source>
+        <translation>Введите радиус в миллиметрах</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::RectangleBoardDialog</name>
+    <message>
+        <source>Width</source>
+        <translation>Ширина</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Высота</translation>
     </message>
 </context>
 </TS>

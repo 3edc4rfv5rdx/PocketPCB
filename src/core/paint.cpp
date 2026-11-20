@@ -99,7 +99,6 @@ const double POWER_LONG_HALF = 1.5;
 const double POWER_STROKE_GAP = 0.6;
 const double POWER_TEXT_HEIGHT = 1.0;
 const int MILLIWATTS_PER_WATT = 1000;
-const double PI = 3.14159265358979323846;
 
 // What stands in for a symbol or footprint the project library lacks.
 const double MISSING_SYMBOL_SIZE = 5.08;
@@ -445,7 +444,7 @@ void paintPin(QPainter &painter, const Pin &pin, bool showNumber, bool showName,
 // Copper of one side of the board.
 QColor copperColor(BoardSide side)
 {
-    return side == BoardSide::Top ? paintcolor::padFront() : paintcolor::padBack();
+    return boardLayerColor(copperLayer(side));
 }
 
 BoardSide otherSide(BoardSide side)
@@ -475,8 +474,43 @@ QRectF padRect(const Pad &pad)
     return QRectF(at.x() - width / 2, at.y() - height / 2, width, height);
 }
 
-void paintPad(QPainter &painter, const Pad &pad, BoardSide partSide = BoardSide::Top,
-              bool upright = false)
+// What shows through a hole, and the colour of a pad's number over it.
+struct HoleColors
+{
+    QColor hole;
+    QColor text;
+};
+
+// A footprint alone on the paper, and one on the board.
+HoleColors paperHoles()
+{
+    return HoleColors{paintcolor::background(), paintcolor::symbol()};
+}
+
+HoleColors boardHoles()
+{
+    return HoleColors{paintcolor::boardBackground(), paintcolor::padText()};
+}
+
+// True when a pad on 'layers' of a part on 'partSide' has a copper layer
+// among 'shown'.
+bool padShown(PadLayers layers, BoardSide partSide, const BoardLayerSet &shown)
+{
+    const bool front = shown.contains(copperLayer(partSide));
+    const bool back = shown.contains(copperLayer(otherSide(partSide)));
+    switch (layers) {
+    case PadLayers::Both:
+        return front || back;
+    case PadLayers::Front:
+        return front;
+    case PadLayers::Back:
+        return back;
+    }
+    return true;
+}
+
+void paintPad(QPainter &painter, const Pad &pad, const HoleColors &holes,
+              BoardSide partSide = BoardSide::Top, bool upright = false)
 {
     const QRectF rect = padRect(pad);
     const double smaller = std::min(rect.width(), rect.height());
@@ -496,12 +530,12 @@ void paintPad(QPainter &painter, const Pad &pad, BoardSide partSide = BoardSide:
     }
 
     if (pad.hole > 0) {
-        painter.setBrush(paintcolor::background());
+        painter.setBrush(holes.hole);
         painter.drawEllipse(rect.center(), nmToMm(pad.hole) / 2, nmToMm(pad.hole) / 2);
     }
     if (!pad.number.isEmpty()) {
         drawText(painter, rect.center(), pad.number, smaller * PAD_TEXT_SHARE, TextAlign::Center,
-                 pad.hole > 0 ? paintcolor::symbol() : paintcolor::padText(), upright);
+                 pad.hole > 0 ? holes.text : paintcolor::padText(), upright);
     }
 }
 
@@ -867,8 +901,11 @@ QPainterPath outlinePath(const QList<OutlineCorner> &outline)
     return path;
 }
 
-void paintTracks(QPainter &painter, const Board &board, BoardSide side)
+void paintTracks(QPainter &painter, const Board &board, BoardSide side,
+                 const BoardLayerSet &shown)
 {
+    if (!shown.contains(copperLayer(side)))
+        return;
     for (const Track &track : board.tracks) {
         if (track.side != side)
             continue;
@@ -877,36 +914,46 @@ void paintTracks(QPainter &painter, const Board &board, BoardSide side)
     }
 }
 
-// A filled circle of copper with a hole in it.
-void paintRing(QPainter &painter, const QPointF &at, double copperDiameter, double holeDiameter)
+// A filled circle of copper of 'color' with a hole in it; only the hole
+// when 'copper' is false.
+void paintRing(QPainter &painter, const QPointF &at, double copperDiameter, double holeDiameter,
+               const QColor &color, bool copper)
 {
     painter.setPen(Qt::NoPen);
-    painter.setBrush(paintcolor::padBoth());
-    painter.drawEllipse(at, copperDiameter / 2, copperDiameter / 2);
-    painter.setBrush(paintcolor::background());
+    if (copper) {
+        painter.setBrush(color);
+        painter.drawEllipse(at, copperDiameter / 2, copperDiameter / 2);
+    }
+    painter.setBrush(paintcolor::boardBackground());
     painter.drawEllipse(at, holeDiameter / 2, holeDiameter / 2);
 }
 
-void paintMountingHole(QPainter &painter, const MountingHole &hole)
+bool throughShown(const BoardLayerSet &shown)
+{
+    return shown.contains(BoardLayer::CopperTop) || shown.contains(BoardLayer::CopperBottom);
+}
+
+void paintMountingHole(QPainter &painter, const MountingHole &hole, const BoardLayerSet &shown)
 {
     const QPointF at = toMm(hole.at);
     const double drill = nmToMm(hole.drill);
     if (hole.plated) {
-        paintRing(painter, at, drill + 2 * nmToMm(hole.ring), drill);
+        paintRing(painter, at, drill + 2 * nmToMm(hole.ring), drill, paintcolor::padBoth(),
+                  throughShown(shown));
         return;
     }
     painter.setPen(linePen(paintcolor::bareHole(), OUTLINE_WIDTH));
-    painter.setBrush(paintcolor::background());
+    painter.setBrush(paintcolor::boardBackground());
     painter.drawEllipse(at, drill / 2, drill / 2);
 }
 
 QColor silkscreenColor(BoardSide side)
 {
-    return side == BoardSide::Top ? paintcolor::silkscreen() : paintcolor::silkscreenBottom();
+    return boardLayerColor(silkscreenLayer(side));
 }
 
-void paintPlacementPads(QPainter &painter, const Library &library,
-                        const Placement &placement)
+void paintPlacementPads(QPainter &painter, const Library &library, const Placement &placement,
+                        const BoardLayerSet &shown)
 {
     const Footprint *footprint = library.findFootprint(placement.footprint);
     if (footprint == nullptr) {
@@ -915,8 +962,10 @@ void paintPlacementPads(QPainter &painter, const Library &library,
     }
     painter.save();
     painter.setTransform(placementTransform(placement), true);
-    for (const Pad &pad : footprint->pads)
-        paintPad(painter, pad, placement.side, true);
+    for (const Pad &pad : footprint->pads) {
+        if (padShown(pad.layers, placement.side, shown))
+            paintPad(painter, pad, boardHoles(), placement.side, true);
+    }
     painter.restore();
 }
 
@@ -1057,7 +1106,7 @@ void paintFootprint(QPainter &painter, const Footprint &footprint)
     painter.setRenderHint(QPainter::Antialiasing, true);
     // Copper first, silkscreen over it, as on a real board.
     for (const Pad &pad : footprint.pads)
-        paintPad(painter, pad);
+        paintPad(painter, pad, paperHoles());
     for (const Graphic &graphic : footprint.graphics)
         paintGraphic(painter, graphic, paintcolor::silkscreen());
     paintOriginMark(painter);
@@ -1372,7 +1421,33 @@ QRectF boardBounds(const Board &board, const Library &library)
     return bounds.rect();
 }
 
-void paintBoard(QPainter &painter, const Board &board, const Library &library)
+QColor boardLayerColor(BoardLayer layer)
+{
+    switch (layer) {
+    case BoardLayer::CopperTop:
+        return paintcolor::padFront();
+    case BoardLayer::CopperBottom:
+        return paintcolor::padBack();
+    case BoardLayer::MaskTop:
+        return paintcolor::maskTop();
+    case BoardLayer::MaskBottom:
+        return paintcolor::maskBottom();
+    case BoardLayer::SilkscreenTop:
+        return paintcolor::silkscreenTop();
+    case BoardLayer::SilkscreenBottom:
+        return paintcolor::silkscreenBottom();
+    case BoardLayer::PasteTop:
+        return paintcolor::pasteTop();
+    case BoardLayer::PasteBottom:
+        return paintcolor::pasteBottom();
+    case BoardLayer::Outline:
+        return paintcolor::boardOutline();
+    }
+    return paintcolor::boardOutline();
+}
+
+void paintBoard(QPainter &painter, const Board &board, const Library &library,
+                const BoardLayerSet &shown)
 {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -1380,27 +1455,37 @@ void paintBoard(QPainter &painter, const Board &board, const Library &library)
     // Zones are only outlined: nothing fills them yet.
     painter.setBrush(Qt::NoBrush);
     for (const Zone &zone : board.zones) {
+        if (!shown.contains(copperLayer(zone.side)))
+            continue;
         painter.setPen(dashedPen(copperColor(zone.side), ZONE_LINE_WIDTH));
         painter.drawPolygon(toPolygon(zone.points));
     }
 
-    paintTracks(painter, board, BoardSide::Bottom);
-    paintTracks(painter, board, BoardSide::Top);
+    paintTracks(painter, board, BoardSide::Bottom, shown);
+    paintTracks(painter, board, BoardSide::Top, shown);
     for (const Placement &placement : board.placements)
-        paintPlacementPads(painter, library, placement);
-    for (const Via &via : board.vias)
-        paintRing(painter, toMm(via.at), nmToMm(via.size), nmToMm(via.drill));
+        paintPlacementPads(painter, library, placement, shown);
+    for (const Via &via : board.vias) {
+        paintRing(painter, toMm(via.at), nmToMm(via.size), nmToMm(via.drill), paintcolor::via(),
+                  throughShown(shown));
+    }
     for (const MountingHole &hole : board.holes)
-        paintMountingHole(painter, hole);
+        paintMountingHole(painter, hole, shown);
 
-    for (const Placement &placement : board.placements)
-        paintPlacementSilkscreen(painter, library, placement);
-    for (const BoardGraphic &item : board.graphics)
-        paintBoardGraphic(painter, item);
+    for (const Placement &placement : board.placements) {
+        if (shown.contains(silkscreenLayer(placement.side)))
+            paintPlacementSilkscreen(painter, library, placement);
+    }
+    for (const BoardGraphic &item : board.graphics) {
+        if (shown.contains(silkscreenLayer(item.side)))
+            paintBoardGraphic(painter, item);
+    }
 
-    painter.setPen(linePen(paintcolor::boardOutline(), OUTLINE_WIDTH));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawPath(outlinePath(board.outline));
+    if (shown.contains(BoardLayer::Outline)) {
+        painter.setPen(linePen(paintcolor::boardOutline(), OUTLINE_WIDTH));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawPath(outlinePath(board.outline));
+    }
     painter.restore();
 }
 

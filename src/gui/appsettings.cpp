@@ -26,6 +26,7 @@ const char KEY_LANGUAGE[] = "interface/language";
 const char KEY_GRID_STYLE[] = "view/gridStyle";
 const char KEY_CURSOR_STYLE[] = "view/cursorStyle";
 const char KEY_ZOOM_WARP[] = "view/zoomCenterAndWarp";
+const char KEY_DRAWING_COORDINATES[] = "view/drawingCoordinates";
 const char KEY_SCREEN_DOTS[] = "view/screenDotsPerMm";
 const char KEY_WIRE_ROUTING[] = "schematic/wireRouting";
 const char KEY_STEP_HISTORY[] = "debug/keepStepHistory";
@@ -210,6 +211,16 @@ bool AppSettings::zoomCenterAndWarp()
 void AppSettings::setZoomCenterAndWarp(bool on)
 {
     writeValue(KEY_ZOOM_WARP, on);
+}
+
+bool AppSettings::drawingCoordinatesShown()
+{
+    return readValue(KEY_DRAWING_COORDINATES, true).toBool();
+}
+
+void AppSettings::setDrawingCoordinatesShown(bool on)
+{
+    writeValue(KEY_DRAWING_COORDINATES, on);
 }
 
 bool AppSettings::keepStepHistory()

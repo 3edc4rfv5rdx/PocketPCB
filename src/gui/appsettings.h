@@ -55,6 +55,11 @@ public:
     static bool zoomCenterAndWarp();
     static void setZoomCenterAndWarp(bool on);
 
+    // Whether the coordinates of the corner being drawn on the board are
+    // shown beside it; on by default.
+    static bool drawingCoordinatesShown();
+    static void setDrawingCoordinatesShown(bool on);
+
     // Whether every step made is written into stepHistoryFolder(), for
     // finding out what went wrong in one (see writeStep()); off by default.
     static bool keepStepHistory();

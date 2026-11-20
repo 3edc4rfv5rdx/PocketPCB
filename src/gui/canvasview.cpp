@@ -32,9 +32,16 @@ const double WHEEL_NOTCH = 120.0;
 // so that its edge stays in sight.
 const int FIT_MARGIN = 4;
 
+// The grid and the cursor on a light background, and on a dark one (the
+// board).
 const QColor GRID_LINE_COLOR(224, 224, 224);
 const QColor GRID_DOT_COLOR(150, 150, 150);
 const QColor CURSOR_COLOR(60, 60, 60);
+const QColor DARK_GRID_LINE_COLOR(45, 45, 45);
+const QColor DARK_GRID_DOT_COLOR(110, 110, 110);
+const QColor DARK_CURSOR_COLOR(210, 210, 210);
+// A background darker than this lightness (0 to 255) is dark.
+const int DARK_LIGHTNESS = 128;
 
 } // namespace
 
@@ -68,6 +75,11 @@ CanvasView::CanvasView(QWidget *parent)
 double CanvasView::pixelsPerMm() const
 {
     return transform().m11();
+}
+
+Point CanvasView::snapped(const QPointF &at) const
+{
+    return Point{snapToGrid(mmToNm(at.x()), m_gridStep), snapToGrid(mmToNm(at.y()), m_gridStep)};
 }
 
 void CanvasView::setGridStep(Coord step)
@@ -135,6 +147,11 @@ void CanvasView::setBackgroundColor(const QColor &color)
     viewport()->update();
 }
 
+bool CanvasView::isDark() const
+{
+    return m_background.lightness() < DARK_LIGHTNESS;
+}
+
 void CanvasView::drawBackground(QPainter *painter, const QRectF &rect)
 {
     painter->fillRect(rect, m_background);
@@ -160,7 +177,8 @@ void CanvasView::drawBackground(QPainter *painter, const QRectF &rect)
             const double y = row * step;
             lines.append(QLineF(rect.left(), y, rect.right(), y));
         }
-        painter->setPen(QPen(GRID_LINE_COLOR, 0)); // width 0: one pixel at any zoom
+        // Width 0: one pixel at any zoom.
+        painter->setPen(QPen(isDark() ? DARK_GRID_LINE_COLOR : GRID_LINE_COLOR, 0));
         painter->drawLines(lines);
     } else {
         QVector<QPointF> dots;
@@ -168,7 +186,7 @@ void CanvasView::drawBackground(QPainter *painter, const QRectF &rect)
             for (qint64 column = firstColumn; column <= lastColumn; ++column)
                 dots.append(QPointF(column * step, row * step));
         }
-        QPen pen(GRID_DOT_COLOR, GRID_DOT_PIXELS);
+        QPen pen(isDark() ? DARK_GRID_DOT_COLOR : GRID_DOT_COLOR, GRID_DOT_PIXELS);
         pen.setCosmetic(true); // width in pixels, not in millimetres
         painter->setPen(pen);
         painter->drawPoints(dots.constData(), int(dots.size()));
@@ -183,7 +201,7 @@ void CanvasView::drawForeground(QPainter *painter, const QRectF &rect)
 
     const double x = nmToMm(m_cursorX);
     const double y = nmToMm(m_cursorY);
-    painter->setPen(QPen(CURSOR_COLOR, 0));
+    painter->setPen(QPen(isDark() ? DARK_CURSOR_COLOR : CURSOR_COLOR, 0));
 
     if (m_cursorStyle == CursorStyle::FullCross) {
         const QRectF visible = mapToScene(viewport()->rect()).boundingRect();
