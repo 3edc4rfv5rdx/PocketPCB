@@ -81,6 +81,9 @@ const int HELD_ALPHA = 60;
 const int PRESSED_ALPHA = 90;
 // The arrow beside a button that has a menu, in pixels.
 const int MENU_ARROW_WIDTH = 12;
+// The gaps between the file buttons and Undo, and between the zoom buttons
+// and the modes, in pixels.
+const int GROUP_GAP = TOOL_ICON_SIZE;
 // The table of the colours of the paper: its swatches, in pixels, and how
 // many stand in a row. The one chosen has a frame in the selection colour.
 const int SWATCH_WIDTH = 72;
@@ -1180,15 +1183,23 @@ void MainWindow::createToolBar()
     put("actionSaveProject", ToolIcon::Save);
     put("actionPrintSchematic", ToolIcon::Print);
     put("actionExportSchematicPdf", ToolIcon::Pdf);
-    bar->addSeparator();
+    // A gap that does not grow.
+    const auto gap = [bar] {
+        QWidget *spacer = new QWidget(bar);
+        spacer->setFixedWidth(GROUP_GAP);
+        bar->addWidget(spacer);
+    };
+    // Undo and Redo a gap away from the file buttons, the zoom buttons a
+    // gap before the modes.
+    gap();
     put("actionUndo", ToolIcon::Undo);
     put("actionRedo", ToolIcon::Redo);
-    bar->addSeparator();
+    stretch();
     put("actionZoomIn", ToolIcon::ZoomIn);
     put("actionZoomOut", ToolIcon::ZoomOut);
     put("actionZoomFit", ToolIcon::ZoomFit);
     put("actionActualSize", ToolIcon::ActualSize);
-    stretch();
+    gap();
 
     // The modes, one pressed: the one the sheet editor is in.
     QAction *select = new QAction(tr("Select"), this);

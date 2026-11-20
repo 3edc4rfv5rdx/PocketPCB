@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: On the strip of tools Undo and Redo stand a gap away from the file buttons, the zoom buttons a gap before the modes
 - N: A Recent projects button on the strip of tools opens one of the projects opened lately
 - E: A lying sheet is printed turned on an upright page, so a printer driver no longer cuts its sides off
 - E: A wire segment dragged off a pin the wire passed through keeps the pin joined with a wire of its own
