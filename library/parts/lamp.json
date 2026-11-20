@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "lamp",
+  "footprints": ["wire-pads-2"],
+  "prefix": "LA",
+  "prefixGost": "EL",
+  "value": "",
+  "connector": false,
+  "group": "indicators",
+  "name": {"en": "Incandescent lamp", "uk": "Лампа розжарювання", "ru": "Лампа накаливания"}
+}

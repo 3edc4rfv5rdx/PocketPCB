@@ -1,0 +1,13 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "jumper",
+  "footprints": ["link-10.16", "link-7.62", "link-15.24"],
+  "prefix": "JP",
+  "prefixGost": "X",
+  "value": "",
+  "connector": false,
+  "noValue": true,
+  "group": "connectors",
+  "name": {"en": "Wire link", "uk": "Перемичка дротяна", "ru": "Перемычка проволочная"}
+}

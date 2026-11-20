@@ -1,0 +1,13 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "microphone",
+  "footprints": ["capacitor-2.54", "wire-pads-2"],
+  "prefix": "MK",
+  "prefixGost": "BM",
+  "value": "",
+  "connector": false,
+  "noValue": true,
+  "group": "sound",
+  "name": {"en": "Microphone", "uk": "Мікрофон", "ru": "Микрофон"}
+}

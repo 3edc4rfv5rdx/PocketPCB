@@ -1,0 +1,14 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "circle", "center": [0, 0], "radius": 0.762}
+  ],
+  "pins": [
+    {"number": "1", "at": [0, 2.54], "side": "down", "length": 1.778}
+  ],
+  "refAt": [2.54, -1.27],
+  "valueAt": [2.54, 1.27],
+  "showPinNumbers": false,
+  "showPinNames": false
+}

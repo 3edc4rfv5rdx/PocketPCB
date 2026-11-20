@@ -1,0 +1,13 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "neon",
+  "footprints": ["resistor-10.16", "wire-pads-2"],
+  "prefix": "NE",
+  "prefixGost": "HL",
+  "value": "",
+  "connector": false,
+  "noValue": true,
+  "group": "indicators",
+  "name": {"en": "Neon lamp", "uk": "Неонова лампа", "ru": "Неоновая лампа"}
+}

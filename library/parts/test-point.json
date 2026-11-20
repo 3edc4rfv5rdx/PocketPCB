@@ -1,0 +1,13 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "test-point",
+  "footprints": ["wire-pad"],
+  "prefix": "TP",
+  "prefixGost": "TP",
+  "value": "",
+  "connector": false,
+  "noValue": true,
+  "group": "connectors",
+  "name": {"en": "Test point", "uk": "Контрольна точка", "ru": "Контрольная точка"}
+}

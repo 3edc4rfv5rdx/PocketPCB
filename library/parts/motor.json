@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "motor",
+  "footprints": ["wire-pads-2"],
+  "prefix": "M",
+  "prefixGost": "M",
+  "value": "",
+  "connector": false,
+  "group": "electromechanics",
+  "name": {"en": "Motor", "uk": "Двигун", "ru": "Двигатель"}
+}

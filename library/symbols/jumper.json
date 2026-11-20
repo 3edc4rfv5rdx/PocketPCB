@@ -1,0 +1,17 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "line", "from": [-2.54, 0], "to": [2.54, 0], "width": 0.4},
+    {"kind": "circle", "center": [-2.54, 0], "radius": 0.381},
+    {"kind": "circle", "center": [2.54, 0], "radius": 0.381}
+  ],
+  "pins": [
+    {"number": "1", "at": [-5.08, 0], "side": "left", "length": 2.54},
+    {"number": "2", "at": [5.08, 0], "side": "right", "length": 2.54}
+  ],
+  "refAt": [0, -1.905],
+  "valueAt": [0, 1.905],
+  "showPinNumbers": false,
+  "showPinNames": false
+}
