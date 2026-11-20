@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "regulator-adj",
+  "footprints": ["to220-adj-out-in", "to92-adj-out-in"],
+  "prefix": "U",
+  "prefixGost": "DA",
+  "value": "LM317",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Adjustable regulator LM317", "uk": "Регульований стабілізатор LM317", "ru": "Регулируемый стабилизатор LM317"}
+}

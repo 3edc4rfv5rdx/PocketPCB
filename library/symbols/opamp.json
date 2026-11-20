@@ -1,0 +1,20 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "polygon", "points": [[-5.08, -5.08], [-5.08, 5.08], [5.08, 0]]},
+    {"kind": "text", "at": [-3.81, -2.54], "text": "-", "height": 1.27},
+    {"kind": "text", "at": [-3.81, 2.54], "text": "+", "height": 1.27}
+  ],
+  "pins": [
+    {"number": "2", "name": "-", "at": [-7.62, -2.54], "side": "left", "length": 2.54},
+    {"number": "3", "name": "+", "at": [-7.62, 2.54], "side": "left", "length": 2.54},
+    {"number": "6", "name": "OUT", "at": [7.62, 0], "side": "right", "length": 2.54},
+    {"number": "7", "name": "V+", "at": [0, -7.62], "side": "up", "length": 5.08},
+    {"number": "4", "name": "V-", "at": [0, 7.62], "side": "down", "length": 5.08}
+  ],
+  "refAt": [3.81, -3.81],
+  "valueAt": [3.81, 3.81],
+  "showPinNumbers": true,
+  "showPinNames": false
+}

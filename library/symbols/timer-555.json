@@ -1,0 +1,21 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "rect", "from": [-7.62, -5.08], "to": [7.62, 5.08]}
+  ],
+  "pins": [
+    {"number": "1", "name": "GND", "at": [0, 7.62], "side": "down", "length": 2.54},
+    {"number": "2", "name": "TR", "at": [-10.16, -2.54], "side": "left", "length": 2.54},
+    {"number": "3", "name": "Q", "at": [10.16, -2.54], "side": "right", "length": 2.54},
+    {"number": "4", "name": "R", "at": [-2.54, -7.62], "side": "up", "length": 2.54},
+    {"number": "5", "name": "CV", "at": [-10.16, 2.54], "side": "left", "length": 2.54},
+    {"number": "6", "name": "TH", "at": [-10.16, 0], "side": "left", "length": 2.54},
+    {"number": "7", "name": "DIS", "at": [10.16, 2.54], "side": "right", "length": 2.54},
+    {"number": "8", "name": "VCC", "at": [2.54, -7.62], "side": "up", "length": 2.54}
+  ],
+  "refAt": [0, -10.16],
+  "valueAt": [0, 10.16],
+  "showPinNumbers": true,
+  "showPinNames": true
+}

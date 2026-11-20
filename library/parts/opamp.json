@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "opamp",
+  "footprints": ["dip-8-7.62"],
+  "prefix": "U",
+  "prefixGost": "DA",
+  "value": "",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Op amp, single", "uk": "Операційний підсилювач, одинарний", "ru": "Операционный усилитель, одиночный"}
+}

@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "timer-555",
+  "footprints": ["dip-8-7.62"],
+  "prefix": "U",
+  "prefixGost": "DA",
+  "value": "NE555",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Timer 555", "uk": "Таймер 555", "ru": "Таймер 555"}
+}

@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "regulator",
+  "footprints": ["to220-in-gnd-out", "to92-out-gnd-in"],
+  "prefix": "U",
+  "prefixGost": "DA",
+  "value": "7805",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Voltage regulator 78xx", "uk": "Стабілізатор напруги 78xx", "ru": "Стабилизатор напряжения 78xx"}
+}
