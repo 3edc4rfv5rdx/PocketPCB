@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Wires, pins and symbol lines on the schematic are drawn 0.33 mm thick instead of 0.25
 - N: Built-in transformer with the starts of its windings marked by dots
 - N: Join wires and Separate wires in the menu of a crossing put a junction dot there or take it away
 - F: Qt's own buttons and dialogs (OK, Cancel, the file dialog) speak the interface language; the AppImage keeps only Qt's Ukrainian and Russian translations

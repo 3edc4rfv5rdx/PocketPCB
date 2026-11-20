@@ -478,7 +478,7 @@ private slots:
         QVERIFY(isColor(colorAt(image, -5, -6), paintcolor::bus()));
         // The bus is the thicker of the two.
         QVERIFY(isColor(colorAt(image, -5, -6.2), paintcolor::bus()));
-        QVERIFY(isColor(colorAt(image, -5, -8.2), paintcolor::background()));
+        QVERIFY(isColor(colorAt(image, -5, -8.25), paintcolor::background()));
         // A no-connect mark on no pin of a part is red.
         QVERIFY(isColor(colorAt(image, -8, -3), paintcolor::looseNoConnect()));
         // The stem of a power symbol points up, or down when turned over.
