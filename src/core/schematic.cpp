@@ -14,6 +14,7 @@ const char KEY_ROTATION[] = "rotation";
 
 const char KEY_TITLE[] = "title";
 const char KEY_PAPER[] = "paper";
+const char KEY_PORTRAIT[] = "portrait";
 const char KEY_COMPONENTS[] = "components";
 const char KEY_WIRES[] = "wires";
 const char KEY_BUSES[] = "buses";
@@ -280,6 +281,7 @@ QJsonObject sheetToJson(const Sheet &sheet)
     object.insert(QLatin1String(KEY_ID), idToJson(sheet.id));
     object.insert(QLatin1String(KEY_TITLE), sheet.title);
     object.insert(QLatin1String(KEY_PAPER), paperNames().at(int(sheet.paper)));
+    object.insert(QLatin1String(KEY_PORTRAIT), sheet.portrait);
     object.insert(QLatin1String(KEY_COMPONENTS), listToJson(sheet.components, componentToJson));
     object.insert(QLatin1String(KEY_WIRES), listToJson(sheet.wires, wireToJson));
     object.insert(QLatin1String(KEY_BUSES), listToJson(sheet.buses, busToJson));
@@ -297,6 +299,9 @@ Sheet sheetFromJson(const QJsonObject &object, const QString &where, ReadContext
     sheet.id = reader.uniqueId(object, KEY_ID, where, context.ids);
     sheet.title = reader.string(object, KEY_TITLE, where);
     sheet.paper = PaperSize(reader.choice(object, KEY_PAPER, where, paperNames()));
+    // Optional: lying paper when absent, as in files written before it.
+    if (object.contains(QLatin1String(KEY_PORTRAIT)))
+        sheet.portrait = reader.boolean(object, KEY_PORTRAIT, where);
     sheet.components = listFromJson<Component>(object, KEY_COMPONENTS, where, context,
                                                componentFromJson);
     sheet.wires = listFromJson<Wire>(object, KEY_WIRES, where, context, wireFromJson);
@@ -367,7 +372,7 @@ bool operator==(const SheetGraphic &a, const SheetGraphic &b)
 
 bool operator==(const Sheet &a, const Sheet &b)
 {
-    return a.id == b.id && a.title == b.title && a.paper == b.paper
+    return a.id == b.id && a.title == b.title && a.paper == b.paper && a.portrait == b.portrait
            && a.components == b.components && a.wires == b.wires && a.buses == b.buses
            && a.labels == b.labels
            && a.powerSymbols == b.powerSymbols && a.noConnects == b.noConnects

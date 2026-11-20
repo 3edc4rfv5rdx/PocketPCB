@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: A sheet's paper can stand upright: Landscape or Portrait in the Paper menu of its tab
 - F: The frame of a sheet stands 20 mm off the paper's left edge for binding, 5 mm off the others
 - F: Fitting the page fills the view, leaving only a few pixels around it
 - N: Settings > Screen size sets the real size of the screen for Actual size, by its diagonal or by a line measured with a ruler

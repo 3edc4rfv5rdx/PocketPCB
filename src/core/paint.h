@@ -72,8 +72,8 @@ void paintSymbol(QPainter &painter, const Symbol &symbol);
 void paintFootprint(QPainter &painter, const Footprint &footprint);
 
 // The paper of a sheet: its top left corner is the origin, the long side
-// lies along X.
-QRectF paperRect(PaperSize paper);
+// along X, or along Y on portrait paper.
+QRectF paperRect(const Sheet &sheet);
 
 // How the rated power of a component is shown on a sheet: as GOST marks
 // inside its body, or as text after its value where it is not the power

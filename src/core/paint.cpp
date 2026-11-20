@@ -742,7 +742,7 @@ void paintFrame(QPainter &painter, const Schematic &schematic, int index,
                 const TitleBlock &titleBlock)
 {
     const Sheet &sheet = schematic.sheets.at(index);
-    const QRectF paper = paperRect(sheet.paper);
+    const QRectF paper = paperRect(sheet);
     const QRectF frame = paper.adjusted(FRAME_BINDING_MARGIN, FRAME_MARGIN, -FRAME_MARGIN, -FRAME_MARGIN);
 
     QStringList rows;
@@ -1052,11 +1052,17 @@ void paintFootprint(QPainter &painter, const Footprint &footprint)
     painter.restore();
 }
 
-QRectF paperRect(PaperSize paper)
+QRectF paperRect(const Sheet &sheet)
 {
-    if (paper == PaperSize::A3)
-        return QRectF(0, 0, A3_LONG_SIDE, A3_SHORT_SIDE);
-    return QRectF(0, 0, A4_LONG_SIDE, A4_SHORT_SIDE);
+    double longSide = A4_LONG_SIDE;
+    double shortSide = A4_SHORT_SIDE;
+    if (sheet.paper == PaperSize::A3) {
+        longSide = A3_LONG_SIDE;
+        shortSide = A3_SHORT_SIDE;
+    }
+    if (sheet.portrait)
+        return QRectF(0, 0, shortSide, longSide);
+    return QRectF(0, 0, longSide, shortSide);
 }
 
 void paintSheet(QPainter &painter, const Schematic &schematic, const Library &library,

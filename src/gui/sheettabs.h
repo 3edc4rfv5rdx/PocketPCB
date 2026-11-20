@@ -73,6 +73,7 @@ private:
     void addSheet(int index);
     void deleteSheet(const ObjectId &id);
     void setPaper(const ObjectId &id, PaperSize paper);
+    void setPortrait(const ObjectId &id, bool portrait);
     // A line over tab 'tab' for the sheet's name: Enter or a click elsewhere
     // keeps it, Esc drops it. An empty name gives the sheet back its number.
     void startRename(int tab);
@@ -85,6 +86,8 @@ private:
     void settleEditor();
     // "<action> (<sheet>)": the name of a step.
     static QString stepName(const QString &action, const QString &sheet);
+    // "Landscape" or "Portrait": in the menu and in the name of the step.
+    static QString orientationName(bool portrait);
 
     Document *m_document;
     SheetEditor *m_editor;

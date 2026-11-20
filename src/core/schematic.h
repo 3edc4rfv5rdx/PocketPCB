@@ -111,6 +111,8 @@ struct Sheet
     ObjectId id;
     QString title;
     PaperSize paper = PaperSize::A4;
+    // The paper stands upright, its short side along X; else it lies.
+    bool portrait = false;
     QList<Component> components;
     QList<Wire> wires;
     QList<Bus> buses;

@@ -24,6 +24,7 @@ Schematic fullSchematic()
     first.id = id(0x10);
     first.title = QStringLiteral("Питание");
     first.paper = PaperSize::A3;
+    first.portrait = true;
 
     Component component;
     component.id = id(0x11);
@@ -173,6 +174,7 @@ private slots:
         CHANGED(other.sheets[0].id = id(1));
         CHANGED(other.sheets[0].title.clear());
         CHANGED(other.sheets[0].paper = PaperSize::A4);
+        CHANGED(other.sheets[0].portrait = false);
 
         CHANGED(other.sheets[0].components[0].id = id(1));
         CHANGED(other.sheets[0].components[0].part.clear());

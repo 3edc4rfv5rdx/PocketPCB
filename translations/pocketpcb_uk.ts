@@ -879,6 +879,14 @@
 <context>
     <name>ppcb::SheetTabs</name>
     <message>
+        <source>Landscape</source>
+        <translation>Альбомна</translation>
+    </message>
+    <message>
+        <source>Portrait</source>
+        <translation>Книжкова</translation>
+    </message>
+    <message>
         <source>Close</source>
         <translation>Закрити</translation>
     </message>

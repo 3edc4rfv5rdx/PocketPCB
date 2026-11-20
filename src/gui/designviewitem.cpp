@@ -48,7 +48,7 @@ QRectF DesignViewItem::pageBounds() const
     const Design &design = m_document->design();
     if (m_page == boardPage())
         return boardBounds(design.board, design.library);
-    return paperRect(design.schematic.sheets.at(m_page).paper);
+    return paperRect(design.schematic.sheets.at(m_page));
 }
 
 void DesignViewItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,

@@ -512,8 +512,14 @@ private slots:
 
     void paperSizes()
     {
-        QCOMPARE(paperRect(PaperSize::A4), QRectF(0, 0, 297, 210));
-        QCOMPARE(paperRect(PaperSize::A3), QRectF(0, 0, 420, 297));
+        Sheet sheet;
+        QCOMPARE(paperRect(sheet), QRectF(0, 0, 297, 210));
+        sheet.portrait = true;
+        QCOMPARE(paperRect(sheet), QRectF(0, 0, 210, 297));
+        sheet.paper = PaperSize::A3;
+        QCOMPARE(paperRect(sheet), QRectF(0, 0, 297, 420));
+        sheet.portrait = false;
+        QCOMPARE(paperRect(sheet), QRectF(0, 0, 420, 297));
     }
 
     // The title block grows by a row for every field that is filled in.

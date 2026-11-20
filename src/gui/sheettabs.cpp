@@ -250,6 +250,16 @@ void SheetTabs::fillMenu(QMenu *menu, int page)
         paperGroup->addAction(action);
         connect(action, &QAction::triggered, this, [this, id, paper] { setPaper(id, paper); });
     }
+    paperMenu->addSeparator();
+    QActionGroup *orientationGroup = new QActionGroup(paperMenu);
+    for (const bool portrait : {false, true}) {
+        QAction *action = paperMenu->addAction(orientationName(portrait));
+        action->setCheckable(true);
+        action->setChecked(sheets.at(page).portrait == portrait);
+        orientationGroup->addAction(action);
+        connect(action, &QAction::triggered, this,
+                [this, id, portrait] { setPortrait(id, portrait); });
+    }
     menu->addSeparator();
     QAction *deleteAction = menu->addAction(tr("Delete sheet"));
     deleteAction->setEnabled(sheets.size() > 1);
@@ -307,6 +317,25 @@ void SheetTabs::setPaper(const ObjectId &id, PaperSize paper)
     m_document->change(stepName(tr("Paper") + QLatin1Char(' ') + paperSizeName(paper),
                                 SheetEditor::sheetName(sheet, index)),
                        design, index);
+}
+
+void SheetTabs::setPortrait(const ObjectId &id, bool portrait)
+{
+    const int index = sheetIndex(id);
+    if (index < 0)
+        return;
+    Design design = m_document->design();
+    Sheet &sheet = design.schematic.sheets[index];
+    if (sheet.portrait == portrait)
+        return;
+    sheet.portrait = portrait;
+    m_document->change(stepName(orientationName(portrait), SheetEditor::sheetName(sheet, index)),
+                       design, index);
+}
+
+QString SheetTabs::orientationName(bool portrait)
+{
+    return portrait ? tr("Portrait") : tr("Landscape");
 }
 
 void SheetTabs::startRename(int tab)
