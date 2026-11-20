@@ -1,10 +1,8 @@
 #include "sheettabs.h"
 
-#include "bompanel.h"
 #include "document.h"
 #include "sheeteditor.h"
 
-#include <QAbstractButton>
 #include <QActionGroup>
 #include <QEvent>
 #include <QGuiApplication>
@@ -13,7 +11,6 @@
 #include <QLineEdit>
 #include <QMenu>
 #include <QMessageBox>
-#include <QPainter>
 #include <QSignalBlocker>
 #include <QTabBar>
 #include <QTimer>
@@ -23,57 +20,11 @@ namespace ppcb {
 
 namespace {
 
-// The id a tab keeps; the tabs of the board and of the BOM keep the null id.
+// The id a tab keeps; the tab of the board keeps the null id.
 ObjectId tabId(const QTabBar *bar, int tab)
 {
     return ObjectId{bar->tabData(tab).toULongLong()};
 }
-
-// What the tab of the BOM keeps besides its null id.
-const char BOM_TAB_MARK[] = "bom";
-
-// The close button of the BOM tab, as a share of the height of a line of
-// text, so that the tab keeps the height of the others; its cross, as a
-// share of the button.
-const double CLOSE_SIZE = 0.8;
-const double CROSS_SIZE = 0.4;
-const qreal CROSS_WIDTH = 1.3;
-
-// A small cross on the tab; under the mouse it turns over: a round spot of
-// the colour of the text, the cross in the colour of the paper.
-class TabCloseButton : public QAbstractButton
-{
-public:
-    explicit TabCloseButton(QWidget *parent)
-        : QAbstractButton(parent)
-    {
-        setAttribute(Qt::WA_Hover);
-        setCursor(Qt::ArrowCursor);
-        setFocusPolicy(Qt::NoFocus);
-        const int size = qRound(fontMetrics().height() * CLOSE_SIZE);
-        setFixedSize(size, size);
-    }
-
-protected:
-    void paintEvent(QPaintEvent *) override
-    {
-        QPainter painter(this);
-        painter.setRenderHint(QPainter::Antialiasing);
-        const QRectF box = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
-        const bool turned = underMouse() || isDown();
-        if (turned) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(palette().color(QPalette::WindowText));
-            painter.drawEllipse(box);
-        }
-        const QColor cross = palette().color(turned ? QPalette::Window : QPalette::WindowText);
-        painter.setPen(QPen(cross, CROSS_WIDTH, Qt::SolidLine, Qt::RoundCap));
-        const double half = box.width() * CROSS_SIZE / 2;
-        const QPointF middle = box.center();
-        painter.drawLine(middle + QPointF(-half, -half), middle + QPointF(half, half));
-        painter.drawLine(middle + QPointF(-half, half), middle + QPointF(half, -half));
-    }
-};
 
 } // namespace
 
@@ -101,22 +52,12 @@ SheetTabs::SheetTabs(Document *document, SheetEditor *editor, QWidget *parent)
     layout->addWidget(addButton);
     layout->addStretch();
 
-    m_bomClose = new TabCloseButton(m_bar);
-    m_bomClose->setObjectName(QStringLiteral("bomTabClose"));
-    m_bomClose->setToolTip(tr("Close"));
-    m_bomClose->hide();
-    connect(m_bomClose, &QAbstractButton::clicked, this, &SheetTabs::bomClosed);
-
     connect(addButton, &QToolButton::clicked, this,
             [this] { addSheet(int(m_document->design().schematic.sheets.size())); });
     // 'currentChanged' covers the keyboard and a tab passing its place while
     // dragged; 'tabBarClicked' adds the click on the current tab, which
     // brings the project back from a library file.
     const auto choose = [this](int tab) {
-        if (isBomTab(tab)) {
-            emit bomChosen();
-            return;
-        }
         const int page = tab >= 0 ? pageOfTab(tab) : -1;
         if (page >= 0)
             emit pageChosen(page);
@@ -136,14 +77,10 @@ SheetTabs::SheetTabs(Document *document, SheetEditor *editor, QWidget *parent)
 void SheetTabs::updatePages()
 {
     const QList<Sheet> &sheets = m_document->design().schematic.sheets;
-    const int count = int(sheets.size()) + (m_bomTab ? 2 : 1);
+    const int count = int(sheets.size()) + 1;
     // The tabs are relabelled in place, not made anew, so that a drag just
     // let go is not cut short.
     const QSignalBlocker blocker(m_bar);
-    for (int tab = 0; tab < m_bar->count(); ++tab) {
-        if (m_bar->tabButton(tab, QTabBar::RightSide) == m_bomClose)
-            m_bar->setTabButton(tab, QTabBar::RightSide, nullptr);
-    }
     while (m_bar->count() > count)
         m_bar->removeTab(m_bar->count() - 1);
     while (m_bar->count() < count)
@@ -155,32 +92,6 @@ void SheetTabs::updatePages()
     const int board = int(sheets.size());
     m_bar->setTabText(board, tr("Board"));
     m_bar->setTabData(board, QVariant::fromValue(ObjectId().value));
-    if (m_bomTab) {
-        m_bar->setTabText(board + 1, BomPanel::bomTitle());
-        m_bar->setTabData(board + 1, QLatin1String(BOM_TAB_MARK));
-        m_bar->setTabButton(board + 1, QTabBar::RightSide, m_bomClose);
-        m_bomClose->show();
-    }
-}
-
-void SheetTabs::setBomTabShown(bool shown)
-{
-    m_bomTab = shown;
-    updatePages();
-}
-
-void SheetTabs::setBomCurrent()
-{
-    if (!m_bomTab)
-        return;
-    const QSignalBlocker blocker(m_bar);
-    m_bar->setCurrentIndex(m_bar->count() - 1);
-}
-
-bool SheetTabs::isBomTab(int tab) const
-{
-    return tab >= 0 && tab < m_bar->count()
-           && m_bar->tabData(tab).toString() == QLatin1String(BOM_TAB_MARK);
 }
 
 void SheetTabs::setCurrentPage(int page)
@@ -214,7 +125,7 @@ bool SheetTabs::eventFilter(QObject *watched, QEvent *event)
 
 int SheetTabs::pageOfTab(int tab) const
 {
-    if (tab < 0 || tab >= m_bar->count() || isBomTab(tab))
+    if (tab < 0 || tab >= m_bar->count())
         return -1;
     const ObjectId id = tabId(m_bar, tab);
     if (id.isNull())
@@ -229,7 +140,7 @@ int SheetTabs::tabOfPage(int page) const
         return -1;
     const ObjectId id = page < sheets.size() ? sheets.at(page).id : ObjectId();
     for (int tab = 0; tab < m_bar->count(); ++tab) {
-        if (!isBomTab(tab) && tabId(m_bar, tab) == id)
+        if (tabId(m_bar, tab) == id)
             return tab;
     }
     return -1;
@@ -433,15 +344,11 @@ void SheetTabs::applyTabOrder()
     for (int i = 0; i < order.size() && i < sheets.size(); ++i)
         moved = moved || order.at(i) != sheets.at(i).id;
     if (!moved || order.size() != sheets.size()) {
-        // Only the tab of the board or of the BOM moved, or nothing did: it
-        // goes back to the end.
-        const bool bom = isBomTab(m_bar->currentIndex());
+        // Only the tab of the board moved, or nothing did: it goes back to
+        // the end.
         const int page = pageOfTab(m_bar->currentIndex());
         updatePages();
-        if (bom)
-            setBomCurrent();
-        else
-            setCurrentPage(page);
+        setCurrentPage(page);
         return;
     }
 

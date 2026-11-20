@@ -915,10 +915,6 @@
         <translation>Книжная</translation>
     </message>
     <message>
-        <source>Close</source>
-        <translation>Закрыть</translation>
-    </message>
-    <message>
         <source>Board</source>
         <translation>Плата</translation>
     </message>

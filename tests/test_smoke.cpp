@@ -18,6 +18,7 @@
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDir>
+#include <QDockWidget>
 #include <QFileInfo>
 #include <QLabel>
 #include <QLineEdit>
@@ -256,22 +257,15 @@ private slots:
         QCOMPARE(visibleItems(window), 1);
         QCOMPARE(tabTexts(window), QStringList({QStringLiteral("Sheet 1"), QStringLiteral("Board")}));
 
-        // View > BOM adds its tab and shows it; the button on the tab
-        // takes it away, the page under it shown again.
-        QAction *bom = window.findChild<QAction *>(QStringLiteral("actionBomTab"));
-        QVERIFY(bom != nullptr && !bom->isChecked());
-        bom->setChecked(true);
-        QCOMPARE(tabTexts(window), QStringList({QStringLiteral("Sheet 1"), QStringLiteral("Board"),
-                                                QStringLiteral("BOM")}));
-        QCOMPARE(window.findChild<QTabBar *>()->currentIndex(), 2);
-        QVERIFY(AppSettings::bomTabShown());
-        QAbstractButton *close = window.findChild<QAbstractButton *>(QStringLiteral("bomTabClose"));
-        QVERIFY(close != nullptr && !close->isHidden());
-        close->click();
-        QVERIFY(!bom->isChecked());
+        // The BOM is a panel, hidden at first; showing it leaves the tabs
+        // and the page shown as they are.
+        QDockWidget *bom = window.findChild<QDockWidget *>(QStringLiteral("bomDock"));
+        QVERIFY(bom != nullptr && bom->isHidden());
+        bom->toggleViewAction()->trigger();
+        QVERIFY(!bom->isHidden());
         QCOMPARE(tabTexts(window), QStringList({QStringLiteral("Sheet 1"), QStringLiteral("Board")}));
         QCOMPARE(window.findChild<QTabBar *>()->currentIndex(), 0);
-        QVERIFY(!AppSettings::bomTabShown());
+        QVERIFY(window.designItem()->isVisible());
         QVERIFY2(window.windowTitle().startsWith(QStringLiteral("untitled")),
                  qPrintable(window.windowTitle()));
         QVERIFY(!window.isWindowModified());

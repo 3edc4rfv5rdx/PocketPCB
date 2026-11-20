@@ -17,7 +17,6 @@ class QDockWidget;
 class QLabel;
 class QPushButton;
 class QMenu;
-class QStackedWidget;
 
 namespace ppcb {
 
@@ -210,14 +209,6 @@ private:
     bool showLibraryFile(const QString &path);
     void watchLibraryFile();
 
-    // The BOM takes the place of the canvas; the sheet editor rests, so that
-    // its keys do nothing to a sheet not shown.
-    void showBom();
-    // The canvas comes back in its place.
-    void showCanvas();
-    // View > BOM: the tab of the BOM is added and shown, or removed, the
-    // page under it shown again; the choice is kept in the settings.
-    void setBomTabShown(bool shown);
     // Shows the sheet of the first of 'ids' with those of them on it chosen.
     void showComponents(const QSet<ObjectId> &ids);
     // Undo or Redo of a step: its page is shown and what it touched chosen.
@@ -236,10 +227,6 @@ private:
 
     CanvasView *m_canvas = nullptr;
     SheetTabs *m_sheetTabs = nullptr;
-    // Under the tabs: the canvas, or the BOM while its tab is chosen.
-    QStackedWidget *m_pages = nullptr;
-    BomPanel *m_bomPanel = nullptr;
-    bool m_bomShown = false;
     Document *m_document = nullptr;
     // Owned by the canvas scene.
     DesignViewItem *m_designItem = nullptr;
@@ -275,8 +262,8 @@ private:
     QDockWidget *m_netsDock = nullptr;
     ErcPanel *m_ercPanel = nullptr;
     QDockWidget *m_ercDock = nullptr;
-    // View > BOM.
-    QAction *m_bomAction = nullptr;
+    BomPanel *m_bomPanel = nullptr;
+    QDockWidget *m_bomDock = nullptr;
     // File, Edit, View and Settings, behind the menu button: there is no
     // menu bar.
     QMenu *m_mainMenu = nullptr;

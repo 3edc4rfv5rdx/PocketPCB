@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The BOM is a panel like the library instead of a tab, so the schematic stays in sight beside it
 - F: The BOM tab closes by a small cross that keeps the tabs their height and turns over under the mouse
 - F: A pressed button of the strip of tools stands out in the colour of a choice, framed, and no button moves when another is pressed
 - N: Help > About names the program, its version, the day of its build and its license

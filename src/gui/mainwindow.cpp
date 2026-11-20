@@ -48,7 +48,6 @@
 #include <QPixmap>
 #include <QPushButton>
 #include <QShowEvent>
-#include <QStackedWidget>
 #include <QStatusBar>
 #include <QTimer>
 #include <QToolButton>
@@ -155,17 +154,10 @@ MainWindow::MainWindow(QWidget *parent)
     QVBoxLayout *layout = new QVBoxLayout(central);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
-    m_bomPanel = new BomPanel(m_document, this);
-    m_pages = new QStackedWidget(central);
-    m_pages->addWidget(m_canvas);
-    m_pages->addWidget(m_bomPanel);
     layout->addWidget(m_sheetTabs);
-    layout->addWidget(m_pages);
+    layout->addWidget(m_canvas);
     setCentralWidget(central);
     connect(m_sheetTabs, &SheetTabs::pageChosen, this, [this](int page) { showPage(page); });
-    connect(m_sheetTabs, &SheetTabs::bomChosen, this, &MainWindow::showBom);
-    m_sheetTabs->setBomTabShown(AppSettings::bomTabShown());
-    connect(m_bomPanel, &BomPanel::componentsChosen, this, &MainWindow::showComponents);
 
     m_designItem->setEditor(m_sheetEditor);
     connect(m_sheetEditor, &SheetEditor::changed, this, [this] { m_designItem->update(); });
@@ -220,6 +212,14 @@ MainWindow::MainWindow(QWidget *parent)
     m_ercDock->setObjectName(QStringLiteral("ercDock"));
     m_ercDock->setWidget(m_ercPanel);
     splitDockWidget(m_netsDock, m_ercDock, Qt::Vertical);
+    // The BOM, under the problems; hidden until asked for.
+    m_bomPanel = new BomPanel(m_document, this);
+    m_bomDock = new QDockWidget(BomPanel::bomTitle(), this);
+    m_bomDock->setObjectName(QStringLiteral("bomDock"));
+    m_bomDock->setWidget(m_bomPanel);
+    splitDockWidget(m_ercDock, m_bomDock, Qt::Vertical);
+    m_bomDock->hide();
+    connect(m_bomPanel, &BomPanel::componentsChosen, this, &MainWindow::showComponents);
     // A problem chosen there is shown: its sheet, centred on it, with what
     // it is about chosen; a missing value is typed in at once.
     connect(m_ercPanel, &ErcPanel::problemChosen, this, [this](const ErcProblem &problem) {
@@ -517,20 +517,13 @@ void MainWindow::createMenus()
         m_sheetTabs->fillMenu(sheetMenu, isSheetShown() ? m_designItem->page() : -1);
     });
 
-    m_bomAction = viewMenu->addAction(BomPanel::bomTitle());
-    m_bomAction->setObjectName(QStringLiteral("actionBomTab"));
-    m_bomAction->setCheckable(true);
-    m_bomAction->setChecked(AppSettings::bomTabShown());
-    connect(m_bomAction, &QAction::toggled, this, &MainWindow::setBomTabShown);
-    connect(m_sheetTabs, &SheetTabs::bomClosed, m_bomAction,
-            [this] { m_bomAction->setChecked(false); });
-
     viewMenu->addSeparator();
 
     viewMenu->addAction(m_libraryDock->toggleViewAction());
     viewMenu->addAction(m_propertiesDock->toggleViewAction());
     viewMenu->addAction(m_netsDock->toggleViewAction());
     viewMenu->addAction(m_ercDock->toggleViewAction());
+    viewMenu->addAction(m_bomDock->toggleViewAction());
     viewMenu->addSeparator();
 
     QAction *zoomInAction = viewMenu->addAction(tr("Zoom in"));
@@ -1003,30 +996,6 @@ void MainWindow::editProjectProperties()
     m_document->change(ProjectPropertiesDialog::title(), dialog.design());
 }
 
-void MainWindow::showBom()
-{
-    m_bomShown = true;
-    m_pages->setCurrentWidget(m_bomPanel);
-    m_sheetEditor->setSheet(-1);
-    m_sheetTabs->setBomCurrent();
-}
-
-void MainWindow::showCanvas()
-{
-    m_bomShown = false;
-    m_pages->setCurrentWidget(m_canvas);
-}
-
-void MainWindow::setBomTabShown(bool shown)
-{
-    AppSettings::setBomTabShown(shown);
-    m_sheetTabs->setBomTabShown(shown);
-    if (shown)
-        showBom();
-    else if (m_bomShown)
-        showPage(m_designItem->page());
-}
-
 void MainWindow::showComponents(const QSet<ObjectId> &ids)
 {
     const QList<Sheet> &sheets = m_document->design().schematic.sheets;
@@ -1044,7 +1013,6 @@ void MainWindow::showComponents(const QSet<ObjectId> &ids)
 void MainWindow::showPage(int page, bool fit)
 {
     rememberView();
-    showCanvas();
     showProject();
     m_designItem->setPage(page);
     m_shownViewKey = pageViewKey(m_designItem->page());
@@ -1196,7 +1164,7 @@ void MainWindow::createToolBar()
         {m_propertiesDock->toggleViewAction(), ToolIcon::Properties},
         {m_netsDock->toggleViewAction(), ToolIcon::Nets},
         {m_ercDock->toggleViewAction(), ToolIcon::Erc},
-        {m_bomAction, ToolIcon::Bom}};
+        {m_bomDock->toggleViewAction(), ToolIcon::Bom}};
     for (const auto &[action, icon] : panels) {
         action->setIcon(toolIcon(icon, color));
         bar->addAction(action);
@@ -1218,8 +1186,6 @@ void MainWindow::updateTools()
 
 void MainWindow::fitView()
 {
-    if (m_bomShown)
-        return;
     if (m_libraryItem != nullptr && m_libraryItem->isVisible())
         m_canvas->fitRect(m_libraryItem->boundingRect());
     else
@@ -1229,7 +1195,7 @@ void MainWindow::fitView()
 void MainWindow::showActualSize()
 {
     const QScreen *screen = m_canvas->screen();
-    if (screen == nullptr || m_bomShown)
+    if (screen == nullptr)
         return;
     m_canvas->setView(m_canvas->viewCenter(), screenPixelsPerMm(screen));
 }
@@ -1355,13 +1321,6 @@ void MainWindow::projectChanged()
     m_designItem->contentChanged();
 
     m_sheetTabs->updatePages();
-    if (m_bomShown) {
-        // The BOM stays in front, the sheet editor resting.
-        m_sheetTabs->setBomCurrent();
-        applyProjectGrid();
-        updateLibraryPanel();
-        return;
-    }
     m_sheetTabs->setCurrentPage(m_designItem->page());
     // The sheet edited may be gone, and so may what was chosen on it.
     const int shown = m_designItem->page();
@@ -1564,12 +1523,6 @@ bool MainWindow::showLibraryFile(const QString &path)
     }
     // The library file takes the place of the project on the canvas.
     rememberView();
-    if (m_bomShown) {
-        showCanvas();
-        m_sheetEditor->setSheet(m_designItem->page() == m_designItem->boardPage()
-                                    ? -1
-                                    : m_designItem->page());
-    }
     m_libraryItem->setVisible(true);
     m_designItem->setVisible(false);
     updateCanvasBackground();
