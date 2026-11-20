@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Built-in one-digit 0.56" seven-segment displays with a common cathode and a common anode
 - E: The op amp, EL84 and 6L6 symbols have a pin for every pad of their footprints: offset and NC pins, unused tube pins
 - E: The coil pins of the relay symbol stand on the pin grid, so the library reads it
 - F: The EL84 / 6P14P symbol follows the reference drawing: the third grid joined to the cathode inside, pins 3 and 9 on the right
