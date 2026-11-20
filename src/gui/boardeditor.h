@@ -60,7 +60,7 @@ public:
     // it, as Esc does.
     bool isDrawing() const { return !m_outlinePoints.isEmpty() || m_cutting; }
     // The outline becomes a rectangle 'width' by 'height' with its top left
-    // corner at the origin, as one step.
+    // corner at the origin, as one step; choosing comes back.
     void makeRectangleBoard(Coord width, Coord height);
     // The outline's size; empty for a board without one.
     QRectF outlineBounds() const;

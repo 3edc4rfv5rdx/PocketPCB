@@ -1340,6 +1340,7 @@ void MainWindow::createToolBar()
     m_boardActions.append(rectangleBoard);
     auto *outlineButton = qobject_cast<QToolButton *>(bar->widgetForAction(drawOutline));
     Q_ASSERT(outlineButton != nullptr);
+    m_outlineButton = outlineButton;
     QMenu *outlineMenu = new QMenu(this);
     outlineMenu->addActions({drawOutline, cutOut, rectangleBoard});
     outlineButton->setMenu(outlineMenu);
@@ -1395,6 +1396,10 @@ void MainWindow::updateTools()
     const int boardTool = int(m_boardEditor->tool());
     for (auto it = m_boardToolActions.cbegin(); it != m_boardToolActions.cend(); ++it)
         it.value()->setChecked(board && it.key() == boardTool);
+    // A mode of the outline on shows on its button, pressed.
+    if (QAction *on = m_boardToolActions.value(boardTool); board && on != nullptr
+        && m_outlineButton != nullptr && m_outlineButton->defaultAction() != on)
+        m_outlineButton->setDefaultAction(on);
     // A locked outline is not drawn anew, cut or made a rectangle.
     if (board && m_boardEditor->isOutlineLocked()) {
         for (QAction *action : std::as_const(m_boardActions))

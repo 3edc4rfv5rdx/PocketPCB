@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: Rectangular board goes back to Select, and the outline button shows the drawing mode while it is on, so the edges are dragged and not drawn over
 - N: Update board from schematic (F8) adds, removes and updates the footprints on the board after a list of the changes
 - F: Outline, Cut-out and Rectangular board share one button on the strip of tools, doing what was chosen last from its arrow
 - N: The board outline is chosen whole by a double click on an edge or Ctrl+A, dragged whole, and locked against changes with the Lock button

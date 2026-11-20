@@ -110,6 +110,8 @@ void BoardEditor::makeRectangleBoard(Coord width, Coord height)
 {
     if (refuseLocked())
         return;
+    // Back to choosing: the edges of the new board are dragged next.
+    chooseSelectTool();
     if (width > 0 && height > 0)
         apply(Action::RectangleBoard, rectangleOutline(Point(), width, height));
 }

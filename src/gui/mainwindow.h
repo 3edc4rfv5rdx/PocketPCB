@@ -16,6 +16,7 @@ class QComboBox;
 class QDockWidget;
 class QLabel;
 class QPushButton;
+class QToolButton;
 class QMenu;
 
 namespace ppcb {
@@ -302,6 +303,9 @@ private:
     // actions that work only while the board is edited.
     QHash<int, QAction *> m_boardToolActions;
     QList<QAction *> m_boardActions;
+    // The one button of the outline tools: it shows the mode on, else the
+    // tool chosen last from its arrow.
+    QToolButton *m_outlineButton = nullptr;
 
     QFileSystemWatcher *m_libraryWatcher = nullptr;
     // Delays the reload a little: editors often save in several steps.
