@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "zener",
+  "footprints": ["diode-7.62", "diode-10.16"],
+  "prefix": "D",
+  "prefixGost": "VD",
+  "value": "",
+  "connector": false,
+  "group": "fuses",
+  "name": {"en": "TVS diode", "uk": "TVS-діод", "ru": "TVS-диод"}
+}

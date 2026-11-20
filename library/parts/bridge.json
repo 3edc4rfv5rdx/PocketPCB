@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "bridge",
+  "footprints": ["bridge-inline-5.08"],
+  "prefix": "D",
+  "prefixGost": "VD",
+  "value": "",
+  "connector": false,
+  "group": "diodes",
+  "name": {"en": "Diode bridge", "uk": "Діодний міст", "ru": "Диодный мост"}
+}

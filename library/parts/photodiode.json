@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "photodiode",
+  "footprints": ["led-5mm", "led-3mm"],
+  "prefix": "D",
+  "prefixGost": "VD",
+  "value": "",
+  "connector": false,
+  "group": "optoelectronics",
+  "name": {"en": "Photodiode", "uk": "Фотодіод", "ru": "Фотодиод"}
+}

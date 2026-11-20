@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "tvs-bidirectional",
+  "footprints": ["diode-7.62", "diode-10.16"],
+  "prefix": "D",
+  "prefixGost": "VD",
+  "value": "",
+  "connector": false,
+  "group": "fuses",
+  "name": {"en": "TVS diode, bidirectional", "uk": "TVS-діод двонаправлений", "ru": "TVS-диод двунаправленный"}
+}

@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "schottky",
+  "footprints": ["diode-7.62", "diode-10.16"],
+  "prefix": "D",
+  "prefixGost": "VD",
+  "value": "",
+  "connector": false,
+  "group": "diodes",
+  "name": {"en": "Schottky diode", "uk": "Діод Шотткі", "ru": "Диод Шоттки"}
+}
