@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "transformer-dot",
+  "footprints": [],
+  "prefix": "T",
+  "prefixGost": "T",
+  "value": "",
+  "connector": false,
+  "group": "transformers",
+  "name": {"en": "Transformer with winding starts", "uk": "Трансформатор з початками обмоток", "ru": "Трансформатор с началами обмоток"}
+}

@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Built-in transformer with the starts of its windings marked by dots
 - N: Join wires and Separate wires in the menu of a crossing put a junction dot there or take it away
 - F: Qt's own buttons and dialogs (OK, Cancel, the file dialog) speak the interface language; the AppImage keeps only Qt's Ukrainian and Russian translations
 - F: The projects folder beside the program is no longer written into the settings, so a moved AppImage makes its own; only a folder chosen in Settings is kept
