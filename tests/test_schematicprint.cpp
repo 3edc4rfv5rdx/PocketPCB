@@ -3,6 +3,7 @@
 #include "objectid.h"
 #include "schematicprint.h"
 
+#include <QPrinter>
 #include <QRegularExpression>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -50,6 +51,29 @@ private slots:
         QVERIFY(qAbs(pages.at(0).height() - 210 * pointsPerMm) < 1);
         QVERIFY(qAbs(pages.at(1).width() - 297 * pointsPerMm) < 1);
         QVERIFY(qAbs(pages.at(1).height() - 420 * pointsPerMm) < 1);
+    }
+
+    // A lying sheet sent to a printer set to lie is printed on an upright
+    // page, turned on it, so that no driver cuts its sides off.
+    void printingUsesUprightPages()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        Document document;
+        QVERIFY(!document.design().schematic.sheets.first().portrait);
+        QPrinter printer(QPrinter::HighResolution);
+        printer.setOutputFormat(QPrinter::PdfFormat);
+        printer.setOutputFileName(dir.filePath(QStringLiteral("print.pdf")));
+        printer.setPageSize(QPageSize(QPageSize::A4));
+        printer.setPageOrientation(QPageLayout::Landscape);
+        QVERIFY(printSheets(printer, document, 0, 0));
+        QFile file(dir.filePath(QStringLiteral("print.pdf")));
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        const QString text = QString::fromLatin1(file.readAll());
+        const QRegularExpressionMatch m =
+            QRegularExpression(QStringLiteral("/MediaBox \\[0 0 ([0-9.]+) ([0-9.]+)\\]")).match(text);
+        QVERIFY(m.hasMatch());
+        QVERIFY(m.captured(1).toDouble() < m.captured(2).toDouble());
     }
 
     // A project never saved has no output folder: nothing is written.

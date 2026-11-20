@@ -2,6 +2,7 @@
 
 #include <QString>
 
+class QPrinter;
 class QWidget;
 
 namespace ppcb {
@@ -22,6 +23,12 @@ QString exportSchematicPdfTitle();
 // sheet of that paper fills the page 1:1. What to tell the user, empty when
 // the dialog was cancelled.
 QString printSchematic(QWidget *parent, const Document &document, int current);
+
+// Prints the sheets 'from' to 'to' of 'document' (indices, both in range)
+// on 'printer' as the dialog set it up, on upright pages of its paper
+// whatever way it was asked to lay them, each sheet turned and sized to
+// fit. False when the printer cannot be printed on.
+bool printSheets(QPrinter &printer, const Document &document, int from, int to);
 
 // Writes the sheets into "<project>-schematic.pdf" in the project's output
 // folder, each on a page of its own paper, 1:1. With several sheets and one

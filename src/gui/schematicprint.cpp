@@ -76,10 +76,6 @@ QString printSchematic(QWidget *parent, const Document &document, int current)
     QPrinter printer(QPrinter::HighResolution);
     printer.setDocName(projectName(document));
     printer.setFullPage(true);
-    // The way the first sheet to print lies, as the printer's default.
-    const int first = current >= 0 ? current : 0;
-    printer.setPageOrientation(sheets.at(first).portrait ? QPageLayout::Portrait
-                                                         : QPageLayout::Landscape);
     QPrintDialog dialog(&printer, parent);
     dialog.setWindowTitle(printSchematicTitle());
     dialog.setMinMax(1, int(sheets.size()));
@@ -98,19 +94,28 @@ QString printSchematic(QWidget *parent, const Document &document, int current)
         from = qBound(0, printer.fromPage() - 1, to);
         to = qBound(from, printer.toPage() - 1, to);
     }
-    // The printer keeps its paper and the way it lies: a sheet that lies
-    // the other way is turned on it.
+    if (!printSheets(printer, document, from, to))
+        return QCoreApplication::translate("ppcb::SchematicPrint", "Cannot print");
+    return QCoreApplication::translate("ppcb::SchematicPrint", "Sent to the printer");
+}
+
+bool printSheets(QPrinter &printer, const Document &document, int from, int to)
+{
+    // Upright pages whatever the dialog says: a driver may print a page
+    // asked to lie as an upright one without turning it, cutting its sides
+    // off. A sheet that lies is turned on the page here instead.
+    printer.setFullPage(true);
+    printer.setPageOrientation(QPageLayout::Portrait);
     const QPageLayout layout = printer.pageLayout();
     QPainter painter;
     if (!painter.begin(&printer))
-        return QCoreApplication::translate("ppcb::SchematicPrint", "Cannot print");
+        return false;
     for (int index = from; index <= to; ++index) {
         if (index > from)
             printer.newPage();
         paintPage(painter, document, index, layout, printer.resolution());
     }
-    painter.end();
-    return QCoreApplication::translate("ppcb::SchematicPrint", "Sent to the printer");
+    return painter.end();
 }
 
 QString exportSchematicPdf(QWidget *parent, const Document &document, int current)
