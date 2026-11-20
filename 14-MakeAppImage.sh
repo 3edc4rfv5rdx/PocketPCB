@@ -69,13 +69,30 @@ IMAGE="$PWD/$OUT_DIR/$PROJECT-$version-x86_64.AppImage"
 rm -f "$IMAGE"
 # Extract-and-run: the tools are AppImages themselves, and FUSE is not always
 # there to mount them.
-APPIMAGE_EXTRACT_AND_RUN=1 LDAI_OUTPUT="$IMAGE" ARCH=x86_64 "$LINUXDEPLOY" \
+export APPIMAGE_EXTRACT_AND_RUN=1
+"$LINUXDEPLOY" \
     --appdir "$APPDIR" \
     --executable "$APPDIR/usr/bin/$PROJECT" \
     --desktop-file "$APPDIR/usr/share/applications/$PROJECT.desktop" \
     --icon-file "$APPDIR/usr/share/icons/hicolor/scalable/apps/$PROJECT.svg" \
-    --plugin qt \
-    --output appimage
+    --plugin qt
+
+# The Qt plugin brings Qt's translations in every language; only those of the
+# languages the program speaks (translations/pocketpcb_<lang>.ts) are kept.
+keep_qt=" "
+for ts in translations/"$PROJECT"_*.ts; do
+    lang=${ts##*_}
+    keep_qt="$keep_qt qtbase_${lang%.ts}.qm "
+done
+for qm in "$APPDIR"/usr/translations/*.qm; do
+    [ -e "$qm" ] || continue
+    case "$keep_qt" in
+        *" $(basename "$qm") "*) ;;
+        *) rm -f "$qm" ;;
+    esac
+done
+
+LDAI_OUTPUT="$IMAGE" ARCH=x86_64 "$LINUXDEPLOY" --appdir "$APPDIR" --output appimage
 
 ls -t "$OUT_DIR/$PROJECT"-*-x86_64.AppImage 2>/dev/null | tail -n +$((KEEP + 1)) | while read -r old; do
     echo "Removing older image: $(basename "$old")"

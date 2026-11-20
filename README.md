@@ -45,7 +45,7 @@ The full specification is in [`tz.md`](tz.md) (English) and [`tz.ru.md`](tz.ru.m
 Needs CMake 3.22+, a C++17 compiler and Qt 6.4+ (Core, Gui, Widgets, LinguistTools, Test). On Ubuntu 24.04:
 
 ```
-sudo apt install build-essential cmake ninja-build qt6-base-dev qt6-tools-dev qt6-l10n-tools
+sudo apt install build-essential cmake ninja-build qt6-base-dev qt6-tools-dev qt6-l10n-tools qt6-translations-l10n
 ./00-Make.sh
 ```
 

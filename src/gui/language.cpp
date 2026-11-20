@@ -3,6 +3,7 @@
 #include "appsettings.h"
 
 #include <QCoreApplication>
+#include <QLibraryInfo>
 #include <QLocale>
 #include <QTranslator>
 
@@ -88,6 +89,14 @@ QString installLanguage()
         QCoreApplication::installTranslator(translator);
     else
         delete translator;
+    // Qt's own words (OK, Cancel, the file dialog) come from Qt's translations
+    // folder: the system's, or the one packed into the AppImage beside Qt.
+    QTranslator *qtTranslator = new QTranslator(QCoreApplication::instance());
+    if (qtTranslator->load(QStringLiteral("qtbase_") + language,
+                           QLibraryInfo::path(QLibraryInfo::TranslationsPath)))
+        QCoreApplication::installTranslator(qtTranslator);
+    else
+        delete qtTranslator;
     return language;
 }
 
