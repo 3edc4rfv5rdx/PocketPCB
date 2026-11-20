@@ -26,6 +26,7 @@ const char KEY_LANGUAGE[] = "interface/language";
 const char KEY_GRID_STYLE[] = "view/gridStyle";
 const char KEY_CURSOR_STYLE[] = "view/cursorStyle";
 const char KEY_ZOOM_WARP[] = "view/zoomCenterAndWarp";
+const char KEY_SCREEN_DOTS[] = "view/screenDotsPerMm";
 const char KEY_BOM_TAB[] = "view/bomTab";
 const char KEY_WIRE_ROUTING[] = "schematic/wireRouting";
 const char KEY_STEP_HISTORY[] = "debug/keepStepHistory";
@@ -174,6 +175,16 @@ void AppSettings::setCursorStyle(CursorStyle style)
     else if (style == CursorStyle::FullCross)
         text = CURSOR_FULL_CROSS;
     writeValue(KEY_CURSOR_STYLE, QLatin1String(text));
+}
+
+double AppSettings::screenDotsPerMm()
+{
+    return readValue(KEY_SCREEN_DOTS, 0.0).toDouble();
+}
+
+void AppSettings::setScreenDotsPerMm(double dots)
+{
+    writeValue(KEY_SCREEN_DOTS, dots);
 }
 
 WireRouting AppSettings::wireRouting()

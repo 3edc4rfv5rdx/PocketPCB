@@ -1124,6 +1124,33 @@
     </message>
 </context>
 <context>
+    <name>ppcb::ScreenSizeDialog</name>
+    <message>
+        <source>Type the diagonal of the screen, or drag the end of the line until it is %1 long on a ruler held to the screen</source>
+        <translation>Введіть діагональ екрана або тягніть кінець лінії, доки вона не стане завдовжки %1 за лінійкою, прикладеною до екрана</translation>
+    </message>
+    <message>
+        <source>Screen diagonal</source>
+        <translation>Діагональ екрана</translation>
+    </message>
+    <message>
+        <source>in</source>
+        <translation>дюйм</translation>
+    </message>
+    <message>
+        <source>As the screen reports</source>
+        <translation>Як повідомляє екран</translation>
+    </message>
+    <message>
+        <source>Screen size</source>
+        <translation>Розмір екрана</translation>
+    </message>
+    <message>
+        <source>%1 dots per inch</source>
+        <translation>%1 точок на дюйм</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::UpdatePartsDialog</name>
     <message>
         <source>These parts of the project differ from the library</source>

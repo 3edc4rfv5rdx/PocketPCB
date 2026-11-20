@@ -40,6 +40,11 @@ public:
     // The pale colours offered for it, white first.
     static QList<QColor> sheetBackgrounds();
 
+    // The dots of the screen in a millimetre, as set in Settings > Screen
+    // size; 0 (by default): as the screen reports its size.
+    static double screenDotsPerMm();
+    static void setScreenDotsPerMm(double dots);
+
     // How wires are laid again when what they are joined to goes; on the
     // grid by default.
     static WireRouting wireRouting();

@@ -18,6 +18,7 @@ add_library(pocketpcb_gui STATIC
     toolicons.h toolicons.cpp
     updatepartsdialog.h updatepartsdialog.cpp
     saveprojectdialog.h saveprojectdialog.cpp
+    screensizedialog.h screensizedialog.cpp
 )
 target_include_directories(pocketpcb_gui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(pocketpcb_gui PUBLIC pocketpcb_core Qt6::Widgets)

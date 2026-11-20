@@ -144,6 +144,7 @@ private:
     void applyWireRouting(WireRouting routing);
     // Asks for the common folder of the project folders.
     void chooseProjectsFolder();
+    void chooseScreenSize();
     // Keeps 'language' (a code, or empty for the system's) for the next
     // start, and says so.
     void setInterfaceLanguage(const QString &language);

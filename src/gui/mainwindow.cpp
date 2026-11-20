@@ -21,6 +21,7 @@
 #include "stephistory.h"
 #include "libraryviewitem.h"
 #include "saveprojectdialog.h"
+#include "screensizedialog.h"
 
 #include <QAction>
 #include <QScreen>
@@ -561,6 +562,10 @@ void MainWindow::createMenus()
             addChoice(languageMenu, languageGroup, languageName(code), language == code);
         connect(action, &QAction::triggered, this, [this, code] { setInterfaceLanguage(code); });
     }
+
+    QAction *screenAction = settingsMenu->addAction(ScreenSizeDialog::title() + QStringLiteral("…"));
+    screenAction->setObjectName(QStringLiteral("actionScreenSize"));
+    connect(screenAction, &QAction::triggered, this, &MainWindow::chooseScreenSize);
 
     // How wires follow what they are joined to: a few ways tried, or the
     // cheapest way round everything on the grid.
@@ -1151,10 +1156,17 @@ void MainWindow::showActualSize()
     const QScreen *screen = m_canvas->screen();
     if (screen == nullptr || m_bomShown)
         return;
-    // The screen's dots, as many as a pixel of the program covers.
-    const double mmPerInch = 25.4;
-    const double pixelsPerMm = screen->physicalDotsPerInch() / screen->devicePixelRatio() / mmPerInch;
-    m_canvas->setView(m_canvas->viewCenter(), pixelsPerMm);
+    m_canvas->setView(m_canvas->viewCenter(), screenPixelsPerMm(screen));
+}
+
+void MainWindow::chooseScreenSize()
+{
+    const QScreen *screen = m_canvas->screen();
+    if (screen == nullptr)
+        return;
+    ScreenSizeDialog dialog(screen, this);
+    if (dialog.exec() == QDialog::Accepted)
+        AppSettings::setScreenDotsPerMm(dialog.dotsPerMm());
 }
 
 void MainWindow::showPageView()
