@@ -67,6 +67,8 @@ public:
         AddName,
         Power,
         Comment,
+        JoinWires,
+        SeparateWires,
     };
     static QString actionName(Action action);
 
@@ -215,6 +217,14 @@ public:
     // The name of the menu item that edits the text of 'id' in place; empty
     // when the sheet edited has no such object.
     QString editInPlaceName(const ObjectId &id) const;
+    // Wires crossing at the grid point nearest to 'at' (millimetres) can be
+    // joined there with a dot, or a dot there taken away leaving them
+    // crossing (canJoinWiresAt(), canSeparateWiresAt() of the wiring).
+    bool canJoinWiresAt(const QPointF &at) const;
+    bool canSeparateWiresAt(const QPointF &at) const;
+    // Joins or separates them as one step.
+    void joinWiresAt(const QPointF &at);
+    void separateWiresAt(const QPointF &at);
     // Esc: placing ends, or a drag is called off, or the selection and the
     // net chosen in the table of nets are dropped.
     void cancel();

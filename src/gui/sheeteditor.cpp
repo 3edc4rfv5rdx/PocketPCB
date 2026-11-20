@@ -424,6 +424,43 @@ void SheetEditor::addBusName(const ObjectId &bus, const QPointF &at)
     emit changed();
 }
 
+bool SheetEditor::canJoinWiresAt(const QPointF &at) const
+{
+    const Sheet *sheet = currentSheet();
+    return sheet != nullptr
+           && ppcb::canJoinWiresAt(*sheet, m_document->design().library, snapped(at));
+}
+
+bool SheetEditor::canSeparateWiresAt(const QPointF &at) const
+{
+    const Sheet *sheet = currentSheet();
+    return sheet != nullptr
+           && ppcb::canSeparateWiresAt(*sheet, m_document->design().library, snapped(at));
+}
+
+void SheetEditor::joinWiresAt(const QPointF &at)
+{
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr)
+        return;
+    const Sheet edited = withWiresJoinedAt(*sheet, m_document->design().library, snapped(at));
+    // The wires are cut or made one: a segment chosen may be another now.
+    dropSegment();
+    apply(actionName(Action::JoinWires), edited);
+    setSelection(m_selection);
+}
+
+void SheetEditor::separateWiresAt(const QPointF &at)
+{
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr)
+        return;
+    const Sheet edited = withWiresSeparatedAt(*sheet, m_document->design().library, snapped(at));
+    dropSegment();
+    apply(actionName(Action::SeparateWires), edited);
+    setSelection(m_selection);
+}
+
 QString SheetEditor::editInPlaceName(const ObjectId &id) const
 {
     const Sheet *sheet = currentSheet();
@@ -1491,6 +1528,10 @@ QString SheetEditor::actionName(Action action)
         return tr("Change power");
     case Action::Comment:
         return tr("Change comment");
+    case Action::JoinWires:
+        return tr("Join wires");
+    case Action::SeparateWires:
+        return tr("Separate wires");
     }
     return QString();
 }

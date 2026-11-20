@@ -989,6 +989,51 @@ private slots:
         QCOMPARE(one.wires.at(0).points, QList<Point>({mm(0, 0), mm(15, 0)}));
     }
 
+    void crossingWiresAreJoinedAndSeparated()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        // A level and an upright wire crossing at (10, 0), not joined.
+        sheet.wires = {wire({mm(0, 0), mm(20, 0)}), wire({mm(10, -10), mm(10, 10)})};
+        const Point at = mm(10, 0);
+        QVERIFY(canJoinWiresAt(sheet, library, at));
+        QVERIFY(!canSeparateWiresAt(sheet, library, at));
+        QVERIFY(!canJoinWiresAt(sheet, library, mm(5, 0)));
+
+        // Joined: one of them cut there, so the point has its dot.
+        const Sheet joined = withWiresJoinedAt(sheet, library, at);
+        QCOMPARE(int(joined.wires.size()), 3);
+        QCOMPARE(junctions(joined, library), QList<Point>({at}));
+        QVERIFY(!canJoinWiresAt(joined, library, at));
+        QVERIFY(canSeparateWiresAt(joined, library, at));
+        // The document merges wires after every step; the cut stays.
+        QCOMPARE(int(withWiresMerged(joined).wires.size()), 3);
+
+        // Separated: the two halves one wire again, crossing with no dot.
+        const Sheet separated = withWiresSeparatedAt(joined, library, at);
+        QCOMPARE(int(separated.wires.size()), 2);
+        QVERIFY(junctions(separated, library).isEmpty());
+        QVERIFY(canJoinWiresAt(separated, library, at));
+
+        // Four wires ending at one point are two crossing lines.
+        Sheet cross;
+        cross.wires = {wire({mm(0, 0), mm(10, 0)}), wire({mm(10, 0), mm(10, 10)}),
+                       wire({mm(20, 0), mm(10, 0)}), wire({mm(10, -10), mm(10, 0)})};
+        const Sheet two = withWiresSeparatedAt(cross, library, at);
+        QCOMPARE(int(two.wires.size()), 2);
+        QVERIFY(junctions(two, library).isEmpty());
+
+        // A T has nothing to cross: it stays joined.
+        Sheet tee;
+        tee.wires = {wire({mm(0, 0), mm(20, 0)}), wire({mm(10, 0), mm(10, 10)})};
+        QVERIFY(!canSeparateWiresAt(tee, library, at));
+        QVERIFY(withWiresSeparatedAt(tee, library, at) == tee);
+        // Nor is a crossing on a pin taken apart or joined again.
+        Sheet onPin = joined;
+        onPin.components = {twoPin(mm(15, 0))};
+        QVERIFY(!canSeparateWiresAt(onPin, library, at));
+    }
+
     void aWireEndIsDraggedAlone()
     {
         const Library library = twoPinLibrary();

@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cmath>
+#include <functional>
 #include <numeric>
 #include <optional>
 #include <tuple>
@@ -1533,6 +1534,107 @@ QList<Point> junctions(const Sheet &sheet, const Library &library)
             found.append(point);
     }
     return found;
+}
+
+namespace {
+
+// The way the wire 'wire', which ends at 'point', leaves it: the offset of
+// the next point from there.
+Point legAt(const Wire &wire, const Point &point)
+{
+    const QList<Point> &p = wire.points;
+    return p.first() == point ? p.at(1) - point : p.at(p.size() - 2) - point;
+}
+
+// The wires of 'wires' that end at 'point', two by two, each pair going on
+// straight across it, the indices of each pair in their order in 'wires';
+// none when some wire ending there has no such partner, or ends there twice.
+QList<std::pair<int, int>> straightPairsAt(const QList<Wire> &wires, const Point &point)
+{
+    QList<int> ends;
+    for (int i = 0; i < wires.size(); ++i) {
+        const QList<Point> &p = wires.at(i).points;
+        if (p.size() < 2 || (p.first() != point && p.last() != point))
+            continue;
+        if (p.first() == point && p.last() == point)
+            return {};
+        ends.append(i);
+    }
+    QList<std::pair<int, int>> pairs;
+    while (!ends.isEmpty()) {
+        const int a = ends.takeFirst();
+        const Point leg = legAt(wires.at(a), point);
+        const auto partner = std::find_if(ends.cbegin(), ends.cend(), [&](int b) {
+            const Point other = legAt(wires.at(b), point);
+            return cross(leg, other) == 0 && dot(leg, other) < 0;
+        });
+        if (partner == ends.cend())
+            return {};
+        pairs.append({a, *partner});
+        ends.removeAt(int(partner - ends.cbegin()));
+    }
+    return pairs;
+}
+
+// The wires passing through 'point' of 'wires' without ending there.
+int wiresThrough(const QList<Wire> &wires, const Point &point)
+{
+    return int(std::count_if(wires.cbegin(), wires.cend(),
+                             [&point](const Wire &wire) { return passesThrough(wire, point); }));
+}
+
+} // namespace
+
+bool canJoinWiresAt(const Sheet &sheet, const Library &library, const Point &point)
+{
+    const bool endsThere = std::any_of(sheet.wires.cbegin(), sheet.wires.cend(),
+                                       [&point](const Wire &wire) {
+                                           return !wire.points.isEmpty()
+                                                  && (wire.points.first() == point
+                                                      || wire.points.last() == point);
+                                       });
+    return !endsThere && wiresThrough(sheet.wires, point) >= 2
+           && !pinPoints(sheet, library).contains(point);
+}
+
+Sheet withWiresJoinedAt(const Sheet &sheet, const Library &library, const Point &point)
+{
+    if (!canJoinWiresAt(sheet, library, point))
+        return sheet;
+    Sheet result = sheet;
+    cutAt(result.wires, point);
+    return result;
+}
+
+bool canSeparateWiresAt(const Sheet &sheet, const Library &library, const Point &point)
+{
+    const QList<std::pair<int, int>> pairs = straightPairsAt(sheet.wires, point);
+    return !pairs.isEmpty() && int(pairs.size()) + wiresThrough(sheet.wires, point) >= 2
+           && !isOnBus(sheet, point) && !pinPoints(sheet, library).contains(point);
+}
+
+Sheet withWiresSeparatedAt(const Sheet &sheet, const Library &library, const Point &point)
+{
+    if (!canSeparateWiresAt(sheet, library, point))
+        return sheet;
+    Sheet result = sheet;
+    QList<Wire> &wires = result.wires;
+    QList<int> gone;
+    for (const auto &[a, b] : straightPairsAt(wires, point)) {
+        // 'a' leads into the point, 'b' leads on from it; 'a' keeps its id.
+        QList<Point> into = wires.at(a).points;
+        if (into.last() != point)
+            std::reverse(into.begin(), into.end());
+        QList<Point> on = wires.at(b).points;
+        if (on.first() != point)
+            std::reverse(on.begin(), on.end());
+        wires[a].points = simplifiedWire(into + on.mid(1));
+        gone.append(b);
+    }
+    std::sort(gone.begin(), gone.end(), std::greater<int>());
+    for (const int index : gone)
+        wires.removeAt(index);
+    return result;
 }
 
 QList<Point> wireRoute(const Point &from, const Point &to, bool swapped, bool diagonal)

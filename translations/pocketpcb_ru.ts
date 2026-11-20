@@ -932,6 +932,14 @@
         <translation>Добавить имя</translation>
     </message>
     <message>
+        <source>Join wires</source>
+        <translation>Соединить провода</translation>
+    </message>
+    <message>
+        <source>Separate wires</source>
+        <translation>Разъединить провода</translation>
+    </message>
+    <message>
         <source>Change power</source>
         <translation>Изменить мощность</translation>
     </message>

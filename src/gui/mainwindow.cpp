@@ -665,6 +665,19 @@ void MainWindow::showSheetMenu(const QPoint &globalPos)
         if (QAction *action = findChild<QAction *>(QLatin1String(name)))
             menu.addAction(action);
     };
+    // Wires crossing at the point clicked, joined there or not.
+    if (m_sheetEditor->canJoinWiresAt(at)) {
+        QAction *join = menu.addAction(SheetEditor::actionName(SheetEditor::Action::JoinWires));
+        connect(join, &QAction::triggered, m_sheetEditor,
+                [this, at] { m_sheetEditor->joinWiresAt(at); });
+        menu.addSeparator();
+    } else if (m_sheetEditor->canSeparateWiresAt(at)) {
+        QAction *separate =
+            menu.addAction(SheetEditor::actionName(SheetEditor::Action::SeparateWires));
+        connect(separate, &QAction::triggered, m_sheetEditor,
+                [this, at] { m_sheetEditor->separateWiresAt(at); });
+        menu.addSeparator();
+    }
     if (m_sheetEditor->hasChosen()) {
         if (!editable.isNull()) {
             QAction *edit = menu.addAction(m_sheetEditor->editInPlaceName(editable));

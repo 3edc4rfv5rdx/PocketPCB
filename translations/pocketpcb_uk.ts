@@ -932,6 +932,14 @@
         <translation>Додати назву</translation>
     </message>
     <message>
+        <source>Join wires</source>
+        <translation>З'єднати дроти</translation>
+    </message>
+    <message>
+        <source>Separate wires</source>
+        <translation>Роз'єднати дроти</translation>
+    </message>
+    <message>
         <source>Change power</source>
         <translation>Змінити потужність</translation>
     </message>

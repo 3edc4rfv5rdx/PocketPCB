@@ -96,6 +96,20 @@ QList<Point> busJunctions(const Sheet &sheet);
 // the middle of another makes a dot, and so do three wire ends on one point.
 QList<Point> junctions(const Sheet &sheet, const Library &library);
 
+// Two or more wires crossing at 'point' without a dot: passing through it,
+// none ending there, no pin on it. Joining them there cuts one of them in
+// two at it, so it gets a dot; 'sheet' as it is when they cannot be joined.
+bool canJoinWiresAt(const Sheet &sheet, const Library &library, const Point &point);
+Sheet withWiresJoinedAt(const Sheet &sheet, const Library &library, const Point &point);
+
+// A dot at 'point' that can be taken away leaving wires crossing there:
+// the wires ending at it go on straight across it two by two, and there is
+// no pin and no bus on it. Separating them makes each such two one wire, so
+// at least two wires pass through the point and none ends there; 'sheet' as
+// it is when they cannot be separated.
+bool canSeparateWiresAt(const Sheet &sheet, const Library &library, const Point &point);
+Sheet withWiresSeparatedAt(const Sheet &sheet, const Library &library, const Point &point);
+
 // The points after 'from' that lead to 'to': a corner, then 'to', each
 // segment horizontal, vertical or at 45 degrees. 'diagonal' makes one of
 // the two segments slant; 'swapped' turns the corner the other way: the
