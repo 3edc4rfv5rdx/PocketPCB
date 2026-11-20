@@ -7,6 +7,7 @@
 #include <QPointF>
 #include <QPolygonF>
 #include <QRectF>
+#include <QTransform>
 
 class QPainter;
 
@@ -77,6 +78,25 @@ void paintFootprint(QPainter &painter, const Footprint &footprint);
 // The paper of a sheet: its top left corner is the origin, the long side
 // along X, or along Y on portrait paper.
 QRectF paperRect(const Sheet &sheet);
+
+// What maps 'paper' (millimetres) onto a page 'page' wide and high, in the
+// page's own units: turned a quarter clockwise when one stands upright and
+// the other lies, then as large as it fits without changing its shape,
+// centred. A paper the size of the page fills it exactly. Nothing for an
+// empty paper or page.
+QTransform paperOnPage(const QRectF &paper, const QSizeF &page);
+
+// While one lives, everything this file draws on this thread is black, but
+// for what is drawn in the background's colour over black: a sheet for
+// paper. Ones made inside another change nothing more.
+class MonochromeInk
+{
+public:
+    MonochromeInk();
+    ~MonochromeInk();
+    MonochromeInk(const MonochromeInk &) = delete;
+    MonochromeInk &operator=(const MonochromeInk &) = delete;
+};
 
 // How the rated power of a component is shown on a sheet: as GOST marks
 // inside its body, or as text after its value where it is not the power

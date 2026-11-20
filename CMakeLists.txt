@@ -24,7 +24,7 @@ elseif(MSVC)
     add_compile_options(/W4)
 endif()
 
-find_package(Qt6 6.4 REQUIRED COMPONENTS Core Gui Widgets LinguistTools Test)
+find_package(Qt6 6.4 REQUIRED COMPONENTS Core Gui Widgets PrintSupport LinguistTools Test)
 qt_standard_project_setup()
 # The install leaves the program's library path alone: the one Qt's setup asks
 # for does not fit into a binary built without one, and linuxdeploy writes its

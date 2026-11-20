@@ -22,6 +22,7 @@
 #include "stephistory.h"
 #include "libraryviewitem.h"
 #include "saveprojectdialog.h"
+#include "schematicprint.h"
 #include "screensizedialog.h"
 
 #include <QAction>
@@ -344,6 +345,23 @@ void MainWindow::createMenus()
     saveAsAction->setObjectName(QStringLiteral("actionSaveProjectAs"));
     saveAsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
     connect(saveAsAction, &QAction::triggered, this, &MainWindow::chooseProjectToSaveAs);
+    fileMenu->addSeparator();
+
+    QAction *printAction = fileMenu->addAction(printSchematicTitle() + QStringLiteral("…"));
+    printAction->setObjectName(QStringLiteral("actionPrintSchematic"));
+    printAction->setShortcut(QKeySequence::Print);
+    connect(printAction, &QAction::triggered, this, [this] {
+        const QString message = printSchematic(this, *m_document, m_sheetEditor->sheet());
+        if (!message.isEmpty())
+            showStatus(message);
+    });
+    QAction *pdfAction = fileMenu->addAction(exportSchematicPdfTitle());
+    pdfAction->setObjectName(QStringLiteral("actionExportSchematicPdf"));
+    connect(pdfAction, &QAction::triggered, this, [this] {
+        const QString message = exportSchematicPdf(this, *m_document, m_sheetEditor->sheet());
+        if (!message.isEmpty())
+            showStatus(message);
+    });
     fileMenu->addSeparator();
 
     QAction *propertiesAction =
@@ -1138,6 +1156,8 @@ void MainWindow::createToolBar()
     };
 
     put("actionSaveProject", ToolIcon::Save);
+    put("actionPrintSchematic", ToolIcon::Print);
+    put("actionExportSchematicPdf", ToolIcon::Pdf);
     bar->addSeparator();
     put("actionUndo", ToolIcon::Undo);
     put("actionRedo", ToolIcon::Redo);

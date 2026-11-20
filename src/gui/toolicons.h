@@ -10,6 +10,8 @@ namespace ppcb {
 enum class ToolIcon {
     Menu,
     Save,
+    Print,
+    Pdf,
     Undo,
     Redo,
     Select,

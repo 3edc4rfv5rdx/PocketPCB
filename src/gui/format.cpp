@@ -1,6 +1,10 @@
 #include "format.h"
 
+#include "project.h"
+
 #include <QCoreApplication>
+#include <QDir>
+#include <QFileInfo>
 #include <QLocale>
 
 #include <cmath>
@@ -52,6 +56,35 @@ QString symbolWord()
 QString footprintsWord()
 {
     return QCoreApplication::translate("ppcb::Format", "footprints");
+}
+
+QString projectOutputFile(const QString &projectPath, const QString &suffix,
+                          const QString &extension, QString &problem)
+{
+    if (projectPath.isEmpty()) {
+        problem = QCoreApplication::translate("ppcb::Format", "Save the project first");
+        return QString();
+    }
+    const QString folder = DesignFiles::outputPath(projectPath);
+    if (!QDir().mkpath(folder)) {
+        problem = QCoreApplication::translate("ppcb::Format", "Cannot make the folder")
+                  + QLatin1Char(' ') + QDir::toNativeSeparators(folder);
+        return QString();
+    }
+    return QDir(folder).filePath(QFileInfo(projectPath).completeBaseName() + suffix
+                                 + QLatin1Char('.') + extension);
+}
+
+QString writtenMessage(const QString &path)
+{
+    return QCoreApplication::translate("ppcb::Format", "Written") + QLatin1Char(' ')
+           + QDir::toNativeSeparators(path);
+}
+
+QString cannotWriteMessage(const QString &path)
+{
+    return QCoreApplication::translate("ppcb::Format", "Cannot write") + QLatin1Char(' ')
+           + QDir::toNativeSeparators(path);
 }
 
 } // namespace ppcb

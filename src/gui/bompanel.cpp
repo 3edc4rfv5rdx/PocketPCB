@@ -7,7 +7,6 @@
 #include "sheetedit.h"
 #include "sheeteditor.h"
 
-#include <QDir>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -223,18 +222,12 @@ QList<QStringList> BomPanel::table() const
 
 QString BomPanel::outputFile(const QString &extension)
 {
-    const QString project = m_document->projectPath();
-    if (project.isEmpty()) {
-        tell(tr("Save the project first"));
-        return QString();
-    }
-    const QString folder = DesignFiles::outputPath(project);
-    if (!QDir().mkpath(folder)) {
-        tell(tr("Cannot make the folder") + QLatin1Char(' ') + QDir::toNativeSeparators(folder));
-        return QString();
-    }
-    return QDir(folder).filePath(QFileInfo(project).completeBaseName()
-                                 + QLatin1String(FILE_SUFFIX) + QLatin1Char('.') + extension);
+    QString problem;
+    const QString path = projectOutputFile(m_document->projectPath(),
+                                           QLatin1String(FILE_SUFFIX), extension, problem);
+    if (path.isEmpty())
+        tell(problem);
+    return path;
 }
 
 void BomPanel::writeOutput(const QString &extension, const QByteArray &data)
@@ -244,10 +237,10 @@ void BomPanel::writeOutput(const QString &extension, const QByteArray &data)
         return;
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly) || file.write(data) < 0 || !file.commit()) {
-        tell(tr("Cannot write") + QLatin1Char(' ') + QDir::toNativeSeparators(path));
+        tell(cannotWriteMessage(path));
         return;
     }
-    tell(tr("Written") + QLatin1Char(' ') + QDir::toNativeSeparators(path));
+    tell(writtenMessage(path));
 }
 
 void BomPanel::exportText()
@@ -302,10 +295,10 @@ void BomPanel::exportPdf()
     text.setHtml(html);
     text.print(&writer);
     if (!QFileInfo(path).isFile()) {
-        tell(tr("Cannot write") + QLatin1Char(' ') + QDir::toNativeSeparators(path));
+        tell(cannotWriteMessage(path));
         return;
     }
-    tell(tr("Written") + QLatin1Char(' ') + QDir::toNativeSeparators(path));
+    tell(writtenMessage(path));
 }
 
 void BomPanel::tell(const QString &message)

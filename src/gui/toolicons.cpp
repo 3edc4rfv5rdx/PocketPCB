@@ -54,6 +54,19 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         painter.drawRect(QRectF(8, 4, 7, 5));
         painter.drawRect(QRectF(7, 13, 10, 7));
         break;
+    case ToolIcon::Print:
+        // A printer: the paper in, the body, the sheet out.
+        painter.drawPolyline(polygon({{7, 9}, {7, 4}, {17, 4}, {17, 9}}));
+        painter.drawRect(QRectF(4, 9, 16, 8));
+        painter.drawRect(QRectF(7, 14, 10, 6));
+        break;
+    case ToolIcon::Pdf:
+        // A page with its corner folded and an arrow down out of it.
+        painter.drawPolyline(polygon({{14, 4}, {6, 4}, {6, 20}, {18, 20}, {18, 8}, {14, 4}, {14, 8},
+                                      {18, 8}}));
+        painter.drawLine(QPointF(12, 9), QPointF(12, 17));
+        painter.drawPolyline(polygon({{9, 14}, {12, 17}, {15, 14}}));
+        break;
     case ToolIcon::Undo:
         drawUndoArrow(painter);
         break;

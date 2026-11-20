@@ -424,6 +424,65 @@ private slots:
         QVERIFY(!anyColor(left, -4.8, -7, -1, -3, paintcolor::symbol()));
     }
 
+    // A paper on a page of its own size fills it; on a page of the other
+    // way it is turned; on a smaller one it is shrunk and centred.
+    void paperFitsThePage()
+    {
+        const QRectF a4(0, 0, 297, 210);
+        QTransform t = paperOnPage(a4, QSizeF(297, 210));
+        QCOMPARE(t.map(QPointF(0, 0)), QPointF(0, 0));
+        QCOMPARE(t.map(QPointF(297, 210)), QPointF(297, 210));
+        // Upright A4: the paper's top left corner goes to the top right.
+        t = paperOnPage(a4, QSizeF(210, 297));
+        QCOMPARE(t.map(QPointF(0, 0)), QPointF(210, 0));
+        QCOMPARE(t.map(QPointF(297, 210)), QPointF(0, 297));
+        QCOMPARE(t.map(QPointF(297, 0)), QPointF(210, 297));
+        // A3 on A4, both lying: shrunk to fit and centred.
+        const QRectF a3(0, 0, 420, 297);
+        t = paperOnPage(a3, QSizeF(297, 210));
+        const QRectF placed = t.mapRect(a3);
+        QVERIFY(qAbs(placed.width() - 297) < 1e-9 || qAbs(placed.height() - 210) < 1e-9);
+        QVERIFY(placed.left() >= -1e-9 && placed.right() <= 297 + 1e-9);
+        QVERIFY(placed.top() >= -1e-9 && placed.bottom() <= 210 + 1e-9);
+        QVERIFY(qAbs(placed.center().x() - 148.5) < 1e-9);
+        QVERIFY(qAbs(placed.center().y() - 105) < 1e-9);
+        QVERIFY(paperOnPage(QRectF(), QSizeF(297, 210)).isIdentity());
+    }
+
+    // Under MonochromeInk a wire and a bus are black; white text on the
+    // plate of a loose label stays white.
+    void monochromeInkDrawsBlack()
+    {
+        Schematic schematic = emptySchematic();
+        Sheet &sheet = schematic.sheets[0];
+        Wire wire;
+        wire.points = {Point{-8000000, -8000000}, Point{-2000000, -8000000}};
+        sheet.wires.append(wire);
+        Bus bus;
+        bus.points = {Point{-8000000, -6000000}, Point{-2000000, -6000000}};
+        sheet.buses.append(bus);
+        Label loose;
+        loose.at = Point{-4000000, 6000000};
+        loose.text = QStringLiteral("A");
+        sheet.labels.append(loose);
+        QImage image;
+        {
+            const MonochromeInk ink;
+            {
+                const MonochromeInk inner;
+            }
+            image = render(schematic);
+        }
+        QVERIFY(isColor(colorAt(image, -5, -8), Qt::black));
+        QVERIFY(isColor(colorAt(image, -5, -6), Qt::black));
+        QVERIFY(anyColor(image, -4, 1, -2, 6, Qt::black));
+        QVERIFY(anyColor(image, -4, 1, -2, 6, paintcolor::background()));
+        QVERIFY(!anyColor(image, -4, 1, -2, 6, paintcolor::looseLabel()));
+        // Gone with it.
+        const QImage colored = render(schematic);
+        QVERIFY(isColor(colorAt(colored, -5, -8), paintcolor::wire()));
+    }
+
     void sheetObjectsAreDrawn()
     {
         Schematic schematic = emptySchematic();

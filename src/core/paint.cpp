@@ -111,9 +111,22 @@ const double MISSING_TEXT_SHARE = 0.6;
 const char REF_PLACEHOLDER[] = "REF";
 const char VALUE_PLACEHOLDER[] = "VALUE";
 
+// How many MonochromeInk live on this thread: while any does, inked()
+// makes every colour black.
+thread_local int monochromeDepth = 0;
+
+// 'color' as it is drawn: black under MonochromeInk, all but the
+// background's colour, which stays for what is drawn over black.
+QColor inked(const QColor &color)
+{
+    if (monochromeDepth == 0 || color == paintcolor::background())
+        return color;
+    return QColor(Qt::black);
+}
+
 QPen linePen(const QColor &color, double width)
 {
-    QPen pen(color, width);
+    QPen pen(inked(color), width);
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
     return pen;
@@ -189,7 +202,7 @@ QRectF textBounds(const QPointF &at, const QString &text, double height, TextAli
 // flat: round ends would eat into the gaps.
 QPen dashedPen(const QColor &color, double width)
 {
-    QPen pen(color, width);
+    QPen pen(inked(color), width);
     pen.setCapStyle(Qt::FlatCap);
     pen.setJoinStyle(Qt::RoundJoin);
     // QPen counts a dash pattern in line widths.
@@ -247,7 +260,7 @@ void paintGraphic(QPainter &painter, const Graphic &graphic, const QColor &color
         for (const Point &point : graphic.points)
             polygon.append(toMm(point));
         if (graphic.filled)
-            painter.setBrush(color);
+            painter.setBrush(inked(color));
         painter.drawPolygon(polygon);
         break;
     }
@@ -352,7 +365,7 @@ private:
 
 void paintOriginMark(QPainter &painter)
 {
-    painter.setPen(QPen(paintcolor::placeholder(), 0));
+    painter.setPen(QPen(inked(paintcolor::placeholder()), 0));
     painter.drawLine(QPointF(-ORIGIN_MARK_SIZE, 0), QPointF(ORIGIN_MARK_SIZE, 0));
     painter.drawLine(QPointF(0, -ORIGIN_MARK_SIZE), QPointF(0, ORIGIN_MARK_SIZE));
 }
@@ -667,7 +680,7 @@ void paintLabel(QPainter &painter, const Label &label, bool joined)
         const QRectF plate = textBounds(labelTextAt(), text, LABEL_TEXT_HEIGHT, TextAlign::Left);
         painter.fillRect(plate.adjusted(-LOOSE_LABEL_MARGIN, -LOOSE_LABEL_MARGIN,
                                         LOOSE_LABEL_MARGIN, LOOSE_LABEL_MARGIN),
-                         paintcolor::looseLabel());
+                         inked(paintcolor::looseLabel()));
         color = paintcolor::background();
     }
     drawText(painter, labelTextAt(), text, LABEL_TEXT_HEIGHT, TextAlign::Left, color, true);
@@ -766,7 +779,7 @@ void paintFrame(QPainter &painter, const Schematic &schematic, int index,
 
     // The paper's edge as a hairline, the frame and the block as real lines.
     painter.setBrush(Qt::NoBrush);
-    painter.setPen(QPen(paintcolor::sheetFrame(), 0));
+    painter.setPen(QPen(inked(paintcolor::sheetFrame()), 0));
     painter.drawRect(paper);
     painter.setPen(linePen(paintcolor::sheetFrame(), FRAME_LINE_WIDTH));
     painter.drawRect(frame);
@@ -1052,6 +1065,40 @@ void paintFootprint(QPainter &painter, const Footprint &footprint)
     painter.restore();
 }
 
+QTransform paperOnPage(const QRectF &paper, const QSizeF &page)
+{
+    if (paper.isEmpty() || page.isEmpty())
+        return QTransform();
+    const bool turned = (paper.width() > paper.height()) != (page.width() > page.height())
+                        && paper.width() != paper.height() && page.width() != page.height();
+    const QSizeF size = turned ? paper.size().transposed() : paper.size();
+    const double scale = qMin(page.width() / size.width(), page.height() / size.height());
+    QTransform transform;
+    // Last applied first: the paper's corner to the origin, turned, sized,
+    // then centred.
+    transform.translate((page.width() - size.width() * scale) / 2,
+                        (page.height() - size.height() * scale) / 2);
+    transform.scale(scale, scale);
+    if (turned) {
+        // A quarter clockwise takes the paper's left edge to the top, its
+        // height now along X from the origin.
+        transform.translate(size.width(), 0);
+        transform.rotate(90);
+    }
+    transform.translate(-paper.left(), -paper.top());
+    return transform;
+}
+
+MonochromeInk::MonochromeInk()
+{
+    ++monochromeDepth;
+}
+
+MonochromeInk::~MonochromeInk()
+{
+    --monochromeDepth;
+}
+
 QRectF paperRect(const Sheet &sheet)
 {
     double longSide = A4_LONG_SIDE;
@@ -1087,7 +1134,7 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const Library &li
                      paintcolor::bus());
     }
     painter.setPen(Qt::NoPen);
-    painter.setBrush(paintcolor::bus());
+    painter.setBrush(inked(paintcolor::bus()));
     for (const Point &dot : busJunctions(sheet))
         painter.drawEllipse(toMm(dot), BUS_JUNCTION_DIAMETER / 2, BUS_JUNCTION_DIAMETER / 2);
     painter.setBrush(Qt::NoBrush);
@@ -1096,7 +1143,7 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const Library &li
         painter.drawPolyline(toPolygon(wire.points));
     }
     painter.setPen(Qt::NoPen);
-    painter.setBrush(paintcolor::junction());
+    painter.setBrush(inked(paintcolor::junction()));
     for (const Point &dot : junctions(sheet, library))
         painter.drawEllipse(toMm(dot), JUNCTION_DIAMETER / 2, JUNCTION_DIAMETER / 2);
     painter.setBrush(Qt::NoBrush);

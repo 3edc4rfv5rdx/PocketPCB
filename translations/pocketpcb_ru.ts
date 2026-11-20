@@ -31,6 +31,9 @@
         <source>Export PDF</source>
         <translation>Сохранить PDF</translation>
     </message>
+</context>
+<context>
+    <name>ppcb::Format</name>
     <message>
         <source>Save the project first</source>
         <translation>Сначала сохраните проект</translation>
@@ -47,9 +50,6 @@
         <source>Written</source>
         <translation>Записано</translation>
     </message>
-</context>
-<context>
-    <name>ppcb::Format</name>
     <message>
         <source>symbol</source>
         <translation>символ</translation>
@@ -1251,6 +1251,37 @@
     <message>
         <source>Every part of the project is as in the library</source>
         <translation>Все детали проекта такие же, как в библиотеке</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::SchematicPrint</name>
+    <message>
+        <source>Print schematic</source>
+        <translation>Печать схемы</translation>
+    </message>
+    <message>
+        <source>Export schematic to PDF</source>
+        <translation>Сохранить схему в PDF</translation>
+    </message>
+    <message>
+        <source>Cannot print</source>
+        <translation>Не удаётся напечатать</translation>
+    </message>
+    <message>
+        <source>Sent to the printer</source>
+        <translation>Отправлено на принтер</translation>
+    </message>
+    <message>
+        <source>Which sheets to export</source>
+        <translation>Какие листы сохранить</translation>
+    </message>
+    <message>
+        <source>Current sheet</source>
+        <translation>Текущий лист</translation>
+    </message>
+    <message>
+        <source>All sheets</source>
+        <translation>Все листы</translation>
     </message>
 </context>
 </TS>

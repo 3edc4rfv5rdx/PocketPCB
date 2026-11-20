@@ -20,4 +20,14 @@ QString mmUnit();
 QString symbolWord();
 QString footprintsWord();
 
+// The file of the project's output, named after the project with 'suffix'
+// and 'extension' ("pdf"), in its output folder (DesignFiles::outputPath()),
+// the folder made when missing. Empty, with 'problem' set to what to tell
+// the user, when the project was never saved or the folder cannot be made.
+QString projectOutputFile(const QString &projectPath, const QString &suffix,
+                          const QString &extension, QString &problem);
+// What to tell after writing the file 'path', or failing to.
+QString writtenMessage(const QString &path);
+QString cannotWriteMessage(const QString &path);
+
 } // namespace ppcb

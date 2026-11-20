@@ -18,10 +18,11 @@ add_library(pocketpcb_gui STATIC
     toolicons.h toolicons.cpp
     updatepartsdialog.h updatepartsdialog.cpp
     saveprojectdialog.h saveprojectdialog.cpp
+    schematicprint.h schematicprint.cpp
     screensizedialog.h screensizedialog.cpp
 )
 target_include_directories(pocketpcb_gui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(pocketpcb_gui PUBLIC pocketpcb_core Qt6::Widgets)
+target_link_libraries(pocketpcb_gui PUBLIC pocketpcb_core Qt6::Widgets Qt6::PrintSupport)
 # Where the program finds the built-in library when it is not installed.
 target_compile_definitions(pocketpcb_gui PRIVATE
     PPCB_SOURCE_LIBRARY_DIR="${PROJECT_SOURCE_DIR}/library")
