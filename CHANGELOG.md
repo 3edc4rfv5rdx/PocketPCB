@@ -4,6 +4,7 @@
 
 ## Unreleased
 - N: Built-in NTC and PTC thermistors, a photoresistor, a varistor, a trimmer and a variable capacitor
+- F: The potentiometer and the variable capacitor get a row of pads for their wires on the board
 - I: library/README.md describes the three files of a part, with a template of each
 - F: The library panel groups the parts by what they are, in a fixed order with the rare groups last, instead of by designator prefix
 - F: The pictures of the power symbols on the Power button and in its menu are drawn sharp, their lines on whole pixels, without texts

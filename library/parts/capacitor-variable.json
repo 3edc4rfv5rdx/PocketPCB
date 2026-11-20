@@ -2,7 +2,7 @@
   "type": "pocketpcb-part",
   "format": 1,
   "symbol": "capacitor-variable",
-  "footprints": [],
+  "footprints": ["wire-pads-2"],
   "prefix": "C",
   "prefixGost": "C",
   "value": "",

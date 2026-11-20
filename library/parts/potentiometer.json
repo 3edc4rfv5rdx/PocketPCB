@@ -2,7 +2,7 @@
   "type": "pocketpcb-part",
   "format": 1,
   "symbol": "potentiometer",
-  "footprints": [],
+  "footprints": ["wire-pads-3"],
   "prefix": "RV",
   "prefixGost": "R",
   "value": "",
