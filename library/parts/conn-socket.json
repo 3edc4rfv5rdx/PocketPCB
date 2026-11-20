@@ -1,0 +1,13 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "conn-socket",
+  "footprints": ["wire-pad", "pin-header-1x01"],
+  "prefix": "J",
+  "prefixGost": "X",
+  "value": "",
+  "connector": true,
+  "noValue": true,
+  "group": "connectors",
+  "name": {"en": "Connector socket", "uk": "Гніздо роз’єму", "ru": "Гнездо разъёма"}
+}

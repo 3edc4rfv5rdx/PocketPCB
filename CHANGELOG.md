@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Connector pin (->) and socket (-<) parts, placed as a wire pad or a pin of a header
 ## v0.8.215 (2026-11-20)
 - N: A junction dot is dragged along the wire through it, the wires ending there following
 - N: Fit the drawing (Shift+Home, and its button) zooms to what is drawn on the sheet instead of the whole page
