@@ -279,7 +279,7 @@ void AppSettings::setLastProjectFolder(const QString &folder)
 QString AppSettings::projectsFolder()
 {
     const QString byDefault = QDir(programFolder()).filePath(QLatin1String(PROJECTS_FOLDER));
-    const QString folder = readValueOrWriteDefault(KEY_PROJECTS_FOLDER, byDefault).toString();
+    const QString folder = readValue(KEY_PROJECTS_FOLDER, QString()).toString();
     return folder.isEmpty() ? byDefault : folder;
 }
 

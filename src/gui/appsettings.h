@@ -82,8 +82,9 @@ public:
     static void setLastProjectFolder(const QString &folder);
     // The common folder of the project folders: "PocketPCB-Projects" beside the
     // program, or beside the AppImage file it runs from, unless another is
-    // chosen. The first read writes the default into the settings file; the
-    // program makes the folder when it starts.
+    // chosen. Only a chosen folder is written into the settings file, so the
+    // default follows the program when it is moved; the program makes the
+    // folder when it starts.
     static QString projectsFolder();
     static void setProjectsFolder(const QString &folder);
     // Where the dialogs that open and save projects start: the folder of the
