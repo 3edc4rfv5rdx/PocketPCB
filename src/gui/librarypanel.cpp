@@ -21,6 +21,8 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <cmath>
+#include <limits>
 #include <functional>
 
 namespace ppcb {
@@ -106,24 +108,114 @@ void paintFitted(QPainter &painter, const QRectF &area, const QRectF &bounds, Pa
 
 // The pixmaps of symbolIcon(): as many pixels per pixel of the icon.
 const int ICON_SCALES[] = {1, 2};
+// symbolIcon() draws lines two pixels wide on icons this large and larger,
+// one pixel wide on smaller ones.
+const int WIDE_LINE_ICON_SIZE = 20;
+// Qt's angles are in sixteenths of a degree.
+const int QT_ANGLE_UNITS = 16;
 
 } // namespace
 
 QIcon symbolIcon(const Symbol &symbol, int size, const QColor &color)
 {
+    // The lines and the pins alone, in millimetres: texts would be specks.
+    double left = std::numeric_limits<double>::max();
+    double top = left;
+    double right = std::numeric_limits<double>::lowest();
+    double bottom = right;
+    const auto take = [&](const QPointF &point) {
+        left = std::min(left, point.x());
+        top = std::min(top, point.y());
+        right = std::max(right, point.x());
+        bottom = std::max(bottom, point.y());
+    };
+    for (const Pin &pin : symbol.pins) {
+        take(toMm(pin.at));
+        take(toMm(pinBodyEnd(pin)));
+    }
+    for (const Graphic &graphic : symbol.graphics) {
+        const QPointF a = toMm(graphic.a);
+        const double radius = nmToMm(graphic.radius);
+        switch (graphic.kind) {
+        case GraphicKind::Line:
+        case GraphicKind::Rect:
+            take(a);
+            take(toMm(graphic.b));
+            break;
+        case GraphicKind::Circle:
+        case GraphicKind::Arc:
+            take(a - QPointF(radius, radius));
+            take(a + QPointF(radius, radius));
+            break;
+        case GraphicKind::Polygon:
+            for (const Point &point : graphic.points)
+                take(toMm(point));
+            break;
+        case GraphicKind::Text:
+            break;
+        }
+    }
     QIcon icon;
+    if (left > right)
+        return icon;
+
+    const QPointF middle((left + right) / 2, (top + bottom) / 2);
+    const double extent = std::max(right - left, bottom - top);
     for (const int scale : ICON_SCALES) {
-        QPixmap pixmap(size * scale, size * scale);
+        const int pixels = size * scale;
+        const int width = (size >= WIDE_LINE_ICON_SIZE ? 2 : 1) * scale;
+        // Room for half a line and a pixel on each side.
+        const double room = pixels - 2.0 * (width + scale);
+        const double perMm = extent > 0 ? room / extent : 0.0;
+        // Every point lands on a whole pixel, or on the middle of one under
+        // a line of an odd width, so that straight lines cover whole rows of
+        // pixels and stay sharp.
+        const double shift = width % 2 != 0 ? 0.5 : 0.0;
+        const auto map = [&](const QPointF &mm) {
+            const QPointF at = (mm - middle) * perMm + QPointF(pixels / 2.0, pixels / 2.0);
+            return QPointF(std::round(at.x() - shift) + shift, std::round(at.y() - shift) + shift);
+        };
+
+        QPixmap pixmap(pixels, pixels);
         pixmap.fill(Qt::transparent);
         QPainter painter(&pixmap);
         painter.setRenderHint(QPainter::Antialiasing);
-        painter.scale(scale, scale);
-        paintFitted(painter, QRectF(0, 0, size, size), symbolBounds(symbol),
-                    [&symbol](QPainter &p) { paintSymbol(p, symbol); });
-        // Whatever the colours of the drawing, the lines take 'color'.
-        painter.resetTransform();
-        painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-        painter.fillRect(pixmap.rect(), color);
+        painter.setPen(QPen(color, width, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
+        painter.setBrush(Qt::NoBrush);
+        for (const Pin &pin : symbol.pins)
+            painter.drawLine(map(toMm(pin.at)), map(toMm(pinBodyEnd(pin))));
+        for (const Graphic &graphic : symbol.graphics) {
+            const QPointF a = map(toMm(graphic.a));
+            const double radius = std::round(nmToMm(graphic.radius) * perMm);
+            const QRectF circle(a - QPointF(radius, radius), QSizeF(2 * radius, 2 * radius));
+            switch (graphic.kind) {
+            case GraphicKind::Line:
+                painter.drawLine(a, map(toMm(graphic.b)));
+                break;
+            case GraphicKind::Rect:
+                painter.drawRect(QRectF(a, map(toMm(graphic.b))).normalized());
+                break;
+            case GraphicKind::Circle:
+                painter.drawEllipse(circle);
+                break;
+            case GraphicKind::Arc:
+                // As on the sheet: the model's angles grow clockwise on screen.
+                painter.drawArc(circle, -graphic.startAngle * QT_ANGLE_UNITS,
+                                -graphic.spanAngle * QT_ANGLE_UNITS);
+                break;
+            case GraphicKind::Polygon: {
+                QPolygonF polygon;
+                for (const Point &point : graphic.points)
+                    polygon.append(map(toMm(point)));
+                painter.setBrush(graphic.filled ? QBrush(color) : QBrush(Qt::NoBrush));
+                painter.drawPolygon(polygon);
+                painter.setBrush(Qt::NoBrush);
+                break;
+            }
+            case GraphicKind::Text:
+                break;
+            }
+        }
         painter.end();
         pixmap.setDevicePixelRatio(scale);
         icon.addPixmap(pixmap);
