@@ -9,7 +9,7 @@
 - E: A moved block no longer loops a wire back to where it touched a wire laid again; its end slides along that wire instead
 - E: A wire segment dragged on the grid takes along every wire ending on it, also two ending at one point from both sides
 - F: Junction dots on the schematic are larger (1.2 mm) and drawn in the colour of the parts, so they stand out on the wires
-- F: Wires, pins and symbol lines on the schematic are drawn 0.4 mm thick instead of 0.25, buses 1 mm instead of 0.5
+- F: Wires, pins and symbol lines on the schematic are drawn 0.4 mm thick instead of 0.25, buses 1 mm instead of 0.5, with 2 mm junction dots
 - N: Built-in transformer with the starts of its windings marked by dots
 - N: Join wires and Separate wires in the menu of a crossing put a junction dot there or take it away
 - F: Qt's own buttons and dialogs (OK, Cancel, the file dialog) speak the interface language; the AppImage keeps only Qt's Ukrainian and Russian translations

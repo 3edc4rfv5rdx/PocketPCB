@@ -58,7 +58,7 @@ const double BUS_WIDTH = 1.0;
 // The dot where wires join.
 const double JUNCTION_DIAMETER = 1.2;
 // Where buses meet: larger, as a bus is wider than a wire.
-const double BUS_JUNCTION_DIAMETER = 1.4;
+const double BUS_JUNCTION_DIAMETER = 2.0;
 const double LABEL_TEXT_HEIGHT = 1.27;
 const double LABEL_GAP = 0.4;
 // The hollow diamond on a label's point, which it is taken by: from its
