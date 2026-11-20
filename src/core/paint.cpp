@@ -1096,7 +1096,7 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const Library &li
         painter.drawPolyline(toPolygon(wire.points));
     }
     painter.setPen(Qt::NoPen);
-    painter.setBrush(paintcolor::wire());
+    painter.setBrush(paintcolor::junction());
     for (const Point &dot : junctions(sheet, library))
         painter.drawEllipse(toMm(dot), JUNCTION_DIAMETER / 2, JUNCTION_DIAMETER / 2);
     painter.setBrush(Qt::NoBrush);

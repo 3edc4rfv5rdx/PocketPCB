@@ -30,6 +30,9 @@ inline QColor padBack() { return QColor(50, 90, 200); }
 inline QColor padText() { return QColor(255, 255, 255); }
 // The schematic.
 inline QColor wire() { return QColor(0, 132, 0); }
+// The dot where wires join: the colour of the parts, so that it stands out
+// on the wires.
+inline QColor junction() { return symbol(); }
 inline QColor bus() { return QColor(0, 0, 160); }
 inline QColor label() { return QColor(0, 100, 100); }
 // The plate under the text of a label that lies on no wire and no pin, and
