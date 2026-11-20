@@ -112,9 +112,9 @@ protected:
 
 private:
     void createMenus();
-    // The strip of tools left of the canvas (see updateTools()): the modes
-    // of the sheet, the actions on what is chosen, the scale, and at the
-    // bottom the switches of the panels.
+    // The strip of tools over the canvas (see updateTools()): the menu, save,
+    // undo and redo, the scale, the modes of the sheet in the middle and the
+    // switches of the panels on the right. F10 opens the menu.
     void createToolBar();
     // The mode buttons show what the sheet editor does now; the tools of
     // the sheet work only while a sheet is edited.
@@ -273,6 +273,9 @@ private:
     QDockWidget *m_ercDock = nullptr;
     // View > BOM.
     QAction *m_bomAction = nullptr;
+    // File, Edit, View and Settings, behind the menu button: there is no
+    // menu bar.
+    QMenu *m_mainMenu = nullptr;
     // The mode buttons of the strip of tools, by the tool each stands for.
     QHash<int, QAction *> m_toolActions;
     // The actions that work only while a sheet is edited.

@@ -5,8 +5,13 @@
 
 namespace ppcb {
 
-// The pictures of the buttons on the strip of tools left of the canvas.
+// The pictures of the buttons on the strip of tools over the canvas, and of
+// the menu items they stand for.
 enum class ToolIcon {
+    Menu,
+    Save,
+    Undo,
+    Redo,
     Select,
     Wire,
     Bus,

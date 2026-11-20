@@ -52,6 +52,8 @@
 #include <QToolButton>
 #include <QUndoStack>
 #include <QUrl>
+
+#include <functional>
 #include <QVBoxLayout>
 #include <QWidgetAction>
 
@@ -300,7 +302,8 @@ void MainWindow::showEvent(QShowEvent *event)
 
 void MainWindow::createMenus()
 {
-    QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+    m_mainMenu = new QMenu(this);
+    QMenu *fileMenu = m_mainMenu->addMenu(tr("&File"));
 
     QAction *newAction = fileMenu->addAction(tr("&New project"));
     newAction->setObjectName(QStringLiteral("actionNewProject"));
@@ -356,7 +359,7 @@ void MainWindow::createMenus()
 
     // The stack's own actions: they carry the name of the step ("Undo Move")
     // and switch themselves off when there is nothing to undo.
-    QMenu *editMenu = menuBar()->addMenu(tr("&Edit"));
+    QMenu *editMenu = m_mainMenu->addMenu(tr("&Edit"));
     QAction *undoAction = m_document->undoStack()->createUndoAction(this, tr("Undo"));
     undoAction->setObjectName(QStringLiteral("actionUndo"));
     undoAction->setShortcut(QKeySequence::Undo);
@@ -421,7 +424,7 @@ void MainWindow::createMenus()
     addEditAction(tr("Deselect"), "actionDeselect", QKeySequence(Qt::Key_Escape),
                   &SheetEditor::cancel);
 
-    QMenu *viewMenu = menuBar()->addMenu(tr("&View"));
+    QMenu *viewMenu = m_mainMenu->addMenu(tr("&View"));
 
     QAction *nextStepAction = viewMenu->addAction(tr("Next grid step"));
     nextStepAction->setObjectName(QStringLiteral("actionGridNext"));
@@ -549,7 +552,7 @@ void MainWindow::createMenus()
 
     // The language of the interface, each named in itself; it is taken at
     // the next start.
-    QMenu *settingsMenu = menuBar()->addMenu(tr("&Settings"));
+    QMenu *settingsMenu = m_mainMenu->addMenu(tr("&Settings"));
     QMenu *languageMenu = settingsMenu->addMenu(tr("Language"));
     QActionGroup *languageGroup = new QActionGroup(this);
     const QString language = AppSettings::language();
@@ -1059,15 +1062,44 @@ void MainWindow::rememberView()
 void MainWindow::createToolBar()
 {
     QToolBar *bar = new QToolBar(tr("Tools"), this);
-    bar->setObjectName(QStringLiteral("toolsBar"));
+    bar->setObjectName(QStringLiteral("mainBar"));
     bar->setMovable(false);
+    // The menu is on it: it cannot be hidden.
+    bar->toggleViewAction()->setVisible(false);
     bar->setIconSize(QSize(TOOL_ICON_SIZE, TOOL_ICON_SIZE));
     bar->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    addToolBar(Qt::LeftToolBarArea, bar);
+    addToolBar(Qt::TopToolBarArea, bar);
     const QColor color = bar->palette().color(QPalette::WindowText);
 
-    // An action of the menus, with its picture and its key in its tip.
-    const auto put = [this, bar, &color](const char *name, ToolIcon icon) {
+    // The menus hold the actions but are not on the window: the window
+    // takes their keys itself.
+    const std::function<void(const QMenu *)> takeKeys = [this, &takeKeys](const QMenu *menu) {
+        for (QAction *action : menu->actions()) {
+            if (action->menu() != nullptr)
+                takeKeys(action->menu());
+            else if (!action->shortcuts().isEmpty())
+                addAction(action);
+        }
+    };
+    takeKeys(m_mainMenu);
+
+    QToolButton *menuButton = new QToolButton(bar);
+    menuButton->setObjectName(QStringLiteral("mainMenuButton"));
+    menuButton->setIcon(toolIcon(ToolIcon::Menu, color));
+    menuButton->setMenu(m_mainMenu);
+    menuButton->setPopupMode(QToolButton::InstantPopup);
+    menuButton->setStyleSheet(QStringLiteral("QToolButton::menu-indicator { image: none; }"));
+    const QKeySequence menuKey(Qt::Key_F10);
+    menuButton->setToolTip(tr("Menu") + QStringLiteral(" (")
+                           + menuKey.toString(QKeySequence::NativeText) + QLatin1Char(')'));
+    bar->addWidget(menuButton);
+    QAction *menuKeyAction = new QAction(this);
+    menuKeyAction->setShortcut(menuKey);
+    connect(menuKeyAction, &QAction::triggered, menuButton, &QToolButton::showMenu);
+    addAction(menuKeyAction);
+
+    // An action of the menus with its picture, and its key in its tip.
+    const auto dress = [this, &color](const char *name, ToolIcon icon) {
         QAction *action = findChild<QAction *>(QLatin1String(name));
         Q_ASSERT(action != nullptr);
         action->setIcon(toolIcon(icon, color));
@@ -1077,9 +1109,32 @@ void MainWindow::createToolBar()
             tip += QStringLiteral(" (") + action->shortcut().toString(QKeySequence::NativeText)
                    + QLatin1Char(')');
         action->setToolTip(tip);
+        return action;
+    };
+    // The same, put on the strip.
+    const auto put = [bar, &dress](const char *name, ToolIcon icon) {
+        QAction *action = dress(name, icon);
         bar->addAction(action);
         return action;
     };
+    // A gap that grows with the window: the modes stay in the middle.
+    const auto stretch = [bar] {
+        QWidget *spacer = new QWidget(bar);
+        spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        bar->addWidget(spacer);
+    };
+
+    put("actionSaveProject", ToolIcon::Save);
+    bar->addSeparator();
+    put("actionUndo", ToolIcon::Undo);
+    put("actionRedo", ToolIcon::Redo);
+    bar->addSeparator();
+    put("actionZoomIn", ToolIcon::ZoomIn);
+    put("actionZoomOut", ToolIcon::ZoomOut);
+    put("actionZoomFit", ToolIcon::ZoomFit);
+    put("actionActualSize", ToolIcon::ActualSize);
+    stretch();
+
     // The modes, one pressed: the one the sheet editor is in.
     QAction *select = new QAction(tr("Select"), this);
     select->setObjectName(QStringLiteral("actionSelectTool"));
@@ -1102,20 +1157,13 @@ void MainWindow::createToolBar()
         // pressed while the mode goes on.
         connect(action, &QAction::triggered, this, &MainWindow::updateTools);
     }
-    bar->addSeparator();
-    m_sheetActions.append(put("actionRotate", ToolIcon::Rotate));
-    m_sheetActions.append(put("actionMirror", ToolIcon::Mirror));
-    m_sheetActions.append(put("actionDelete", ToolIcon::Delete));
-    bar->addSeparator();
-    put("actionZoomIn", ToolIcon::ZoomIn);
-    put("actionZoomOut", ToolIcon::ZoomOut);
-    put("actionZoomFit", ToolIcon::ZoomFit);
-    put("actionActualSize", ToolIcon::ActualSize);
+    // In the menu and the menu of the sheet only, with their pictures.
+    m_sheetActions.append(dress("actionRotate", ToolIcon::Rotate));
+    m_sheetActions.append(dress("actionMirror", ToolIcon::Mirror));
+    m_sheetActions.append(dress("actionDelete", ToolIcon::Delete));
 
-    // The switches of the panels, at the bottom.
-    QWidget *spacer = new QWidget(bar);
-    spacer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    bar->addWidget(spacer);
+    // The switches of the panels, on the right.
+    stretch();
     const QList<QPair<QAction *, ToolIcon>> panels = {
         {m_libraryDock->toggleViewAction(), ToolIcon::Library},
         {m_propertiesDock->toggleViewAction(), ToolIcon::Properties},

@@ -30,9 +30,38 @@ void dot(QPainter &painter, const QPointF &at, const QColor &color)
     painter.restore();
 }
 
+// A curved arrow going left and back: undo, and mirrored, redo.
+void drawUndoArrow(QPainter &painter)
+{
+    QPainterPath path;
+    path.moveTo(20, 19);
+    path.cubicTo(20, 11, 16, 9, 6, 9);
+    painter.drawPath(path);
+    painter.drawPolyline(polygon({{10, 5}, {6, 9}, {10, 13}}));
+}
+
 void draw(QPainter &painter, ToolIcon icon, const QColor &color)
 {
     switch (icon) {
+    case ToolIcon::Menu:
+        for (const qreal y : {6.0, 12.0, 18.0})
+            painter.drawLine(QPointF(4, y), QPointF(20, y));
+        break;
+    case ToolIcon::Save:
+        painter.drawPolygon(polygon({{4, 4}, {17, 4}, {20, 7}, {20, 20}, {4, 20}}));
+        painter.drawRect(QRectF(8, 4, 7, 5));
+        painter.drawRect(QRectF(7, 13, 10, 7));
+        break;
+    case ToolIcon::Undo:
+        drawUndoArrow(painter);
+        break;
+    case ToolIcon::Redo:
+        painter.save();
+        painter.translate(TOOL_ICON_SIZE, 0);
+        painter.scale(-1, 1);
+        drawUndoArrow(painter);
+        painter.restore();
+        break;
     case ToolIcon::Select:
         painter.drawPolygon(polygon({{6, 3}, {6, 19}, {10, 15.5}, {13, 21.5}, {15.5, 20.5},
                                      {12.5, 14.5}, {18, 14.5}}));

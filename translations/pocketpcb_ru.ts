@@ -513,6 +513,10 @@
 <context>
     <name>ppcb::MainWindow</name>
     <message>
+        <source>Menu</source>
+        <translation>Меню</translation>
+    </message>
+    <message>
         <source>Tools</source>
         <translation>Инструменты</translation>
     </message>
