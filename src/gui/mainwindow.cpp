@@ -20,6 +20,7 @@
 #include "sheettabs.h"
 #include "toolicons.h"
 #include "version.h"
+#include "updateboarddialog.h"
 #include "updatepartsdialog.h"
 #include "stephistory.h"
 #include "libraryviewitem.h"
@@ -392,6 +393,11 @@ void MainWindow::createMenus()
         fileMenu->addAction(UpdatePartsDialog::title() + QStringLiteral("…"));
     updatePartsAction->setObjectName(QStringLiteral("actionUpdateParts"));
     connect(updatePartsAction, &QAction::triggered, this, &MainWindow::updatePartsFromLibrary);
+    QAction *updateBoardAction =
+        fileMenu->addAction(UpdateBoardDialog::title() + QStringLiteral("…"));
+    updateBoardAction->setObjectName(QStringLiteral("actionUpdateBoard"));
+    updateBoardAction->setShortcut(QKeySequence(Qt::Key_F8));
+    connect(updateBoardAction, &QAction::triggered, this, &MainWindow::updateBoardFromSchematic);
     fileMenu->addSeparator();
 
     QAction *openLibraryAction = fileMenu->addAction(tr("Open library file") + QStringLiteral("…"));
@@ -1102,6 +1108,24 @@ void MainWindow::updatePartsFromLibrary()
         return;
     m_document->change(UpdatePartsDialog::title(),
                        withPartsUpdated(design, m_library.items, dialog.chosenParts()));
+}
+
+void MainWindow::updateBoardFromSchematic()
+{
+    const BoardUpdate update = boardUpdatedFromSchematic(m_document->design());
+    if (update.changes.isEmpty()) {
+        QMessageBox::information(this, UpdateBoardDialog::title(),
+                                 UpdateBoardDialog::nothingToUpdate() + QLatin1Char('.'));
+        return;
+    }
+    UpdateBoardDialog dialog(update.changes, this);
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    Design design = m_document->design();
+    design.board = update.board;
+    const int board = m_designItem->boardPage();
+    m_document->change(UpdateBoardDialog::title(), design, board);
+    showPage(board);
 }
 
 void MainWindow::editProjectProperties()

@@ -3,6 +3,7 @@ add_library(pocketpcb_core STATIC
     units.h units.cpp
     version.h version.cpp
     board.h board.cpp
+    boardupdate.h boardupdate.cpp
     bom.h bom.cpp
     document.h document.cpp
     footprint.h footprint.cpp

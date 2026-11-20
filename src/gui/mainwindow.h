@@ -192,6 +192,9 @@ private:
     // File > Update parts from library: the parts chosen in the dialog
     // (partDifferences(), withPartsUpdated()) as one step.
     void updatePartsFromLibrary();
+    // File > Update board from schematic (boardUpdatedFromSchematic()):
+    // the changes are shown first and made as one step, then the board.
+    void updateBoardFromSchematic();
     // File > Project properties: what the dialog gives is one step.
     void editProjectProperties();
     // Puts the project on the canvas in the place of a library file.

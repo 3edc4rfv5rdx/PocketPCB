@@ -1374,4 +1374,43 @@
         <translation>Высота</translation>
     </message>
 </context>
+<context>
+    <name>ppcb::UpdateBoardDialog</name>
+    <message>
+        <source>Update board from schematic</source>
+        <translation>Обновить плату из схемы</translation>
+    </message>
+    <message>
+        <source>The board matches the schematic</source>
+        <translation>Плата соответствует схеме</translation>
+    </message>
+    <message>
+        <source>These changes will be made on the board</source>
+        <translation>На плате будут сделаны такие изменения</translation>
+    </message>
+    <message>
+        <source>Add</source>
+        <translation>Добавить</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Удалить</translation>
+    </message>
+    <message>
+        <source>designator</source>
+        <translation>обозначение</translation>
+    </message>
+    <message>
+        <source>value</source>
+        <translation>номинал</translation>
+    </message>
+    <message>
+        <source>footprint</source>
+        <translation>посадочное место</translation>
+    </message>
+    <message>
+        <source>nets of the pads</source>
+        <translation>цепи площадок</translation>
+    </message>
+</context>
 </TS>
