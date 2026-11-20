@@ -652,6 +652,8 @@ private slots:
         QVERIFY(user.mkpath(QStringLiteral("parts")));
         const QString ownPath = user.filePath(QStringLiteral("parts/test-own.json"));
         const QString secondPath = user.filePath(QStringLiteral("parts/test-second.json"));
+        // Left by an earlier run: it is written again below.
+        QFile::remove(secondPath);
         LibraryItem own;
         own.kind = LibraryKind::Part;
         own.part.symbol = QStringLiteral("resistor");
@@ -665,51 +667,58 @@ private slots:
         LibraryPanel *panel = window.libraryPanel();
         QTreeWidget *tree = panel->tree();
         QCOMPARE(tree->topLevelItemCount(), 1);
-        // The group of a prefix in the first section, as it is now.
-        const auto group = [tree](const QString &prefix) -> QTreeWidgetItem * {
+        // A group of the first section by its name, as it is now; the own
+        // part has no group and goes under Other.
+        const auto group = [tree](const QString &name) -> QTreeWidgetItem * {
             QTreeWidgetItem *section = tree->topLevelItem(0);
             for (int i = 0; i < section->childCount(); ++i) {
-                if (section->child(i)->text(0) == prefix)
+                if (section->child(i)->text(0) == name)
                     return section->child(i);
             }
             return nullptr;
         };
-        QVERIFY(group(QStringLiteral("TST")) != nullptr);
-        QVERIFY(group(QStringLiteral("R")) != nullptr);
+        QVERIFY(group(QStringLiteral("Other")) != nullptr);
+        QVERIFY(group(QStringLiteral("Resistors")) != nullptr);
+        // Other parts of the user's may be under Other too.
+        const int othersBefore = group(QStringLiteral("Other"))->childCount();
 
         // Choosing a part draws it, with its first footprint.
-        tree->setCurrentItem(group(QStringLiteral("R"))->child(0));
+        QTreeWidgetItem *resistors = group(QStringLiteral("Resistors"));
+        for (int i = 0; i < resistors->childCount(); ++i) {
+            if (resistors->child(i)->data(0, Qt::ToolTipRole).toString() == QStringLiteral("resistor"))
+                tree->setCurrentItem(resistors->child(i));
+        }
         QCOMPARE(panel->currentPart(), QStringLiteral("resistor"));
         QCOMPARE(panel->footprintBox()->currentText(), QStringLiteral("resistor-10.16"));
 
         // A group the user opened stays open when the library is read again
         // with something new in it, and after a search.
-        tree->expandItem(group(QStringLiteral("R")));
+        tree->expandItem(group(QStringLiteral("Resistors")));
         LibraryItem second = own;
         second.part.name.insert(QStringLiteral("en"), QStringLiteral("Second part"));
         QVERIFY2(LibraryFile::write(secondPath, second, error), qPrintable(error));
         window.loadLibrary();
-        QCOMPARE(group(QStringLiteral("TST"))->childCount(), 2);
-        QVERIFY(group(QStringLiteral("R"))->isExpanded());
-        QVERIFY(!group(QStringLiteral("TST"))->isExpanded());
+        QCOMPARE(group(QStringLiteral("Other"))->childCount(), othersBefore + 1);
+        QVERIFY(group(QStringLiteral("Resistors"))->isExpanded());
+        QVERIFY(!group(QStringLiteral("Other"))->isExpanded());
         QCOMPARE(panel->currentPart(), QStringLiteral("resistor"));
         panel->setFilter(QStringLiteral("second"));
-        QVERIFY(group(QStringLiteral("TST"))->isExpanded());
-        QVERIFY(group(QStringLiteral("R"))->isHidden());
+        QVERIFY(group(QStringLiteral("Other"))->isExpanded());
+        QVERIFY(group(QStringLiteral("Resistors"))->isHidden());
         panel->setFilter(QString());
-        QVERIFY(group(QStringLiteral("R"))->isExpanded());
-        QVERIFY(!group(QStringLiteral("TST"))->isExpanded());
+        QVERIFY(group(QStringLiteral("Resistors"))->isExpanded());
+        QVERIFY(!group(QStringLiteral("Other"))->isExpanded());
 
         // The section of the chosen part opens whole, kept across a rebuild.
         panel->expandChosenSection();
-        QVERIFY(group(QStringLiteral("TST"))->isExpanded());
-        QVERIFY(group(QStringLiteral("R"))->isExpanded());
+        QVERIFY(group(QStringLiteral("Other"))->isExpanded());
+        QVERIFY(group(QStringLiteral("Resistors"))->isExpanded());
         window.loadLibrary();
-        QVERIFY(group(QStringLiteral("TST"))->isExpanded());
+        QVERIFY(group(QStringLiteral("Other"))->isExpanded());
         // Closing closes the sections too, and they stay closed after a
         // rebuild; a search opens what it finds, and its end closes it again.
         panel->collapseAll();
-        QVERIFY(!group(QStringLiteral("R"))->isExpanded());
+        QVERIFY(!group(QStringLiteral("Resistors"))->isExpanded());
         QVERIFY(!tree->topLevelItem(0)->isExpanded());
         window.loadLibrary();
         QVERIFY(!tree->topLevelItem(0)->isExpanded());
@@ -726,8 +735,8 @@ private slots:
 
         // The search goes by prefix too.
         panel->setFilter(QStringLiteral("tst"));
-        QVERIFY(!group(QStringLiteral("TST"))->isHidden());
-        QVERIFY(group(QStringLiteral("R"))->isHidden());
+        QVERIFY(!group(QStringLiteral("Other"))->isHidden());
+        QVERIFY(group(QStringLiteral("Resistors"))->isHidden());
         panel->setFilter(QString());
 
         // The power symbols come first, in a group of their own; one chosen
@@ -740,7 +749,7 @@ private slots:
         QCOMPARE(panel->footprintBox()->count(), 0);
         panel->setFilter(QStringLiteral("GND"));
         QVERIFY(!power->isHidden());
-        QVERIFY(group(QStringLiteral("R"))->isHidden());
+        QVERIFY(group(QStringLiteral("Resistors"))->isHidden());
         panel->setFilter(QString());
 
         QVERIFY(QFile::remove(ownPath));

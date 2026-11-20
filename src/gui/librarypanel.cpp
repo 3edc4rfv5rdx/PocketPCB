@@ -7,6 +7,7 @@
 #include <QApplication>
 #include <QComboBox>
 #include <QFont>
+#include <QHash>
 #include <QHBoxLayout>
 #include <QLineEdit>
 #include <QMouseEvent>
@@ -403,17 +404,14 @@ QString LibraryPanel::libraryTitle()
     return tr("Library");
 }
 
-void LibraryPanel::setLibraries(const MergedLibrary &library, const Library &project,
-                                DesignatorStyle style)
+void LibraryPanel::setLibraries(const MergedLibrary &library, const Library &project)
 {
     if (m_hasLibraries && library.items == m_library.items
-        && library.replacedParts == m_library.replacedParts && project == m_project
-        && style == m_style) {
+        && library.replacedParts == m_library.replacedParts && project == m_project) {
         return;
     }
     m_library = library;
     m_project = project;
-    m_style = style;
     m_hasLibraries = true;
     rebuild();
 }
@@ -609,19 +607,28 @@ void LibraryPanel::addSection(const QString &title, const Library &library, Sour
 
     addPowerGroup(section, library, source);
 
-    // Prefixes in order, parts by their shown name inside each.
-    QMap<QString, QList<QPair<QString, QString>>> groups;
+    // The groups of the parts in the program's order (see partGroupRank()),
+    // those it does not know by name; parts by their shown name inside each.
+    QHash<QString, QList<QPair<QString, QString>>> groups;
     for (auto it = library.parts.constBegin(); it != library.parts.constEnd(); ++it) {
-        groups[designatorPrefix(it.value(), m_style)].append(
-            {it.value().displayName(languages, it.key()), it.key()});
+        groups[it.value().group].append({it.value().displayName(languages, it.key()), it.key()});
     }
-    for (auto group = groups.begin(); group != groups.end(); ++group) {
-        QTreeWidgetItem *groupItem = new QTreeWidgetItem(section, {group.key()});
+    QStringList keys = groups.keys();
+    std::sort(keys.begin(), keys.end(), [](const QString &a, const QString &b) {
+        const int rankA = partGroupRank(a);
+        const int rankB = partGroupRank(b);
+        if (rankA != rankB)
+            return rankA < rankB;
+        return QString::localeAwareCompare(partGroupName(a), partGroupName(b)) < 0;
+    });
+    for (const QString &key : std::as_const(keys)) {
+        QList<QPair<QString, QString>> &group = groups[key];
+        QTreeWidgetItem *groupItem = new QTreeWidgetItem(section, {partGroupName(key)});
         groupItem->setFlags(HEADER_FLAGS);
-        std::sort(group->begin(), group->end(), [](const auto &a, const auto &b) {
+        std::sort(group.begin(), group.end(), [](const auto &a, const auto &b) {
             return QString::localeAwareCompare(a.first, b.first) < 0;
         });
-        for (const auto &entry : *group) {
+        for (const auto &entry : std::as_const(group)) {
             QTreeWidgetItem *partItem = new QTreeWidgetItem(groupItem, {entry.first});
             partItem->setData(0, PART_ROLE, entry.second);
             partItem->setData(0, SOURCE_ROLE, int(source));

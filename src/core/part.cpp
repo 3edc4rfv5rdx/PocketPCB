@@ -3,6 +3,8 @@
 #include <QCoreApplication>
 #include <QLocale>
 
+#include <iterator>
+
 namespace ppcb {
 
 namespace {
@@ -19,7 +21,9 @@ const char KEY_NAME[] = "name";
 const char KEY_GROUP[] = "group";
 
 const char GROUP_CONTEXT[] = "ppcb::Part";
-// The part groups the program names, by key.
+// The part groups the program names, by key, in the order of the library
+// panel: the common ones first, the rare ones (special semiconductors, RF
+// and microwave, vacuum tubes) last.
 const struct
 {
     const char *key;
@@ -28,17 +32,26 @@ const struct
     {"resistors", QT_TRANSLATE_NOOP("ppcb::Part", "Resistors")},
     {"capacitors", QT_TRANSLATE_NOOP("ppcb::Part", "Capacitors")},
     {"inductors", QT_TRANSLATE_NOOP("ppcb::Part", "Inductors")},
+    {"transformers", QT_TRANSLATE_NOOP("ppcb::Part", "Transformers")},
     {"diodes", QT_TRANSLATE_NOOP("ppcb::Part", "Diodes")},
     {"leds", QT_TRANSLATE_NOOP("ppcb::Part", "LEDs")},
-    {"thyristors", QT_TRANSLATE_NOOP("ppcb::Part", "Thyristors")},
+    {"optoelectronics", QT_TRANSLATE_NOOP("ppcb::Part", "Optoelectronics")},
     {"transistors", QT_TRANSLATE_NOOP("ppcb::Part", "Transistors")},
+    {"thyristors", QT_TRANSLATE_NOOP("ppcb::Part", "Thyristors")},
     {"chips", QT_TRANSLATE_NOOP("ppcb::Part", "Chips")},
     {"crystals", QT_TRANSLATE_NOOP("ppcb::Part", "Crystals")},
-    {"connectors", QT_TRANSLATE_NOOP("ppcb::Part", "Connectors")},
+    {"relays", QT_TRANSLATE_NOOP("ppcb::Part", "Relays")},
     {"switches", QT_TRANSLATE_NOOP("ppcb::Part", "Switches and buttons")},
-    {"fuses", QT_TRANSLATE_NOOP("ppcb::Part", "Fuses")},
-    {"batteries", QT_TRANSLATE_NOOP("ppcb::Part", "Batteries")},
+    {"connectors", QT_TRANSLATE_NOOP("ppcb::Part", "Connectors")},
+    {"fuses", QT_TRANSLATE_NOOP("ppcb::Part", "Fuses and protection")},
+    {"indicators", QT_TRANSLATE_NOOP("ppcb::Part", "Lamps and indicators")},
     {"sound", QT_TRANSLATE_NOOP("ppcb::Part", "Sound devices")},
+    {"sensors", QT_TRANSLATE_NOOP("ppcb::Part", "Sensors")},
+    {"electromechanics", QT_TRANSLATE_NOOP("ppcb::Part", "Motors and electromechanics")},
+    {"batteries", QT_TRANSLATE_NOOP("ppcb::Part", "Batteries")},
+    {"special", QT_TRANSLATE_NOOP("ppcb::Part", "Special semiconductors")},
+    {"rf", QT_TRANSLATE_NOOP("ppcb::Part", "RF and microwave")},
+    {"tubes", QT_TRANSLATE_NOOP("ppcb::Part", "Vacuum tubes")},
 };
 const char OTHER_GROUP_NAME[] = QT_TRANSLATE_NOOP("ppcb::Part", "Other");
 
@@ -60,6 +73,18 @@ QString partGroupName(const QString &key)
             return QCoreApplication::translate(GROUP_CONTEXT, group.name);
     }
     return key;
+}
+
+int partGroupRank(const QString &key)
+{
+    const int known = int(std::size(PART_GROUPS));
+    if (key.isEmpty())
+        return known + 1;
+    for (int i = 0; i < known; ++i) {
+        if (key == QLatin1String(PART_GROUPS[i].key))
+            return i;
+    }
+    return known;
 }
 
 QList<int> standardPowersMw()

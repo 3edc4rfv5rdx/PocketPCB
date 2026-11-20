@@ -1,7 +1,6 @@
 #pragma once
 
 #include "library.h"
-#include "project.h"
 
 #include <QIcon>
 #include <QWidget>
@@ -72,8 +71,8 @@ private:
 
 // The parts of the library to choose from: a search field, the parts of the
 // built-in and the user's library and those of the open project, each
-// grouped by designator prefix after a group of power symbols, and the
-// drawing of the chosen one.
+// grouped by what they are (see partGroupRank()) after a group of power
+// symbols, and the drawing of the chosen one.
 class LibraryPanel : public QWidget
 {
     Q_OBJECT
@@ -88,10 +87,9 @@ public:
     // "Library": the panel's title and that of its first section.
     static QString libraryTitle();
 
-    // Shows these libraries. 'style' picks the prefix the parts are grouped
-    // by. Nothing is rebuilt when nothing changed, so the choice stays.
-    void setLibraries(const MergedLibrary &library, const Library &project,
-                      DesignatorStyle style);
+    // Shows these libraries. Nothing is rebuilt when nothing changed, so
+    // the choice stays.
+    void setLibraries(const MergedLibrary &library, const Library &project);
 
     // Hides the parts whose name, file name or prefixes do not hold 'text'.
     void setFilter(const QString &text);
@@ -157,14 +155,13 @@ private:
     // Notes a section or a group the user opened or closed, while no search
     // is on.
     void noteExpanded(QTreeWidgetItem *item, bool expanded);
-    // The key a group is remembered by: its section and its prefix.
+    // The key a group is remembered by: its section and its name.
     static QString groupKey(const QTreeWidgetItem *group);
     // The key a section is remembered by: its source.
     static QString sectionKey(const QTreeWidgetItem *section);
 
     MergedLibrary m_library;
     Library m_project;
-    DesignatorStyle m_style = DesignatorStyle::International;
     bool m_hasLibraries = false;
     // The groups the user keeps open, by groupKey(); they stay open when
     // the list is built again and when a search ends.

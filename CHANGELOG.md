@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The library panel groups the parts by what they are, in a fixed order with the rare groups last, instead of by designator prefix
 - F: The pictures of the power symbols on the Power button and in its menu are drawn sharp, their lines on whole pixels, without texts
 - F: The pictures of the tool buttons are drawn sharp, their straight lines on whole pixels, and the bus stands upright
 - F: The chassis symbol no longer writes its net name beside it, as the ground does not

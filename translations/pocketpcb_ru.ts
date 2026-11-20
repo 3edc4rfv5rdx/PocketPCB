@@ -370,8 +370,44 @@
         <translation>Переключатели и кнопки</translation>
     </message>
     <message>
-        <source>Fuses</source>
-        <translation>Предохранители</translation>
+        <source>Fuses and protection</source>
+        <translation>Предохранители и защита</translation>
+    </message>
+    <message>
+        <source>Transformers</source>
+        <translation>Трансформаторы</translation>
+    </message>
+    <message>
+        <source>Optoelectronics</source>
+        <translation>Оптоэлектроника</translation>
+    </message>
+    <message>
+        <source>Relays</source>
+        <translation>Реле</translation>
+    </message>
+    <message>
+        <source>Lamps and indicators</source>
+        <translation>Лампы и индикаторы</translation>
+    </message>
+    <message>
+        <source>Sensors</source>
+        <translation>Датчики</translation>
+    </message>
+    <message>
+        <source>Motors and electromechanics</source>
+        <translation>Двигатели и электромеханика</translation>
+    </message>
+    <message>
+        <source>Special semiconductors</source>
+        <translation>Специальные полупроводники</translation>
+    </message>
+    <message>
+        <source>RF and microwave</source>
+        <translation>ВЧ и СВЧ</translation>
+    </message>
+    <message>
+        <source>Vacuum tubes</source>
+        <translation>Электронные лампы</translation>
     </message>
     <message>
         <source>Batteries</source>

@@ -1542,7 +1542,7 @@ const Library &MainWindow::sourceLibrary(LibraryPanel::Source source) const
 void MainWindow::updateLibraryPanel()
 {
     const Design &design = m_document->design();
-    m_libraryPanel->setLibraries(m_library, design.library, design.project.designatorStyle);
+    m_libraryPanel->setLibraries(m_library, design.library);
 }
 
 void MainWindow::openLibraryFolder()
