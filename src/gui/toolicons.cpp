@@ -9,10 +9,12 @@ namespace ppcb {
 
 namespace {
 
-// The pictures are drawn on a square of TOOL_ICON_SIZE units.
-const qreal LINE_WIDTH = 1.6;
-const qreal BUS_WIDTH = 3.5;
-const qreal DOT_RADIUS = 1.6;
+// The pictures are drawn on a square of TOOL_ICON_SIZE units, a unit a
+// pixel. Lines are two units wide and straight ones run on whole units, so
+// that each covers two whole rows of pixels and stays sharp; the bus four.
+const qreal LINE_WIDTH = 2.0;
+const qreal BUS_WIDTH = 4.0;
+const qreal DOT_RADIUS = 2.0;
 // Pixels per unit of the larger of the two pixmaps.
 const int SHARP_SCALE = 2;
 
@@ -72,14 +74,13 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         dot(painter, {21, 6}, color);
         break;
     case ToolIcon::Bus: {
-        painter.drawLine(QPointF(7, 21), QPointF(7, 13));
-        painter.drawLine(QPointF(7, 13), QPointF(10, 10));
-        painter.drawLine(QPointF(15, 21), QPointF(15, 13));
-        painter.drawLine(QPointF(15, 13), QPointF(18, 10));
+        // Upright, two wires coming in from the left with a slant.
+        painter.drawPolyline(polygon({{3, 7}, {10, 7}, {14, 11}}));
+        painter.drawPolyline(polygon({{3, 15}, {10, 15}, {14, 19}}));
         QPen bus = painter.pen();
         bus.setWidthF(BUS_WIDTH);
         painter.setPen(bus);
-        painter.drawLine(QPointF(3, 10), QPointF(21, 10));
+        painter.drawLine(QPointF(16, 3), QPointF(16, 21));
         break;
     }
     case ToolIcon::Label:
@@ -89,8 +90,8 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
     case ToolIcon::Power:
         painter.drawLine(QPointF(12, 3), QPointF(12, 12));
         painter.drawLine(QPointF(5, 12), QPointF(19, 12));
-        painter.drawLine(QPointF(8, 15.5), QPointF(16, 15.5));
-        painter.drawLine(QPointF(10.5, 19), QPointF(13.5, 19));
+        painter.drawLine(QPointF(8, 16), QPointF(16, 16));
+        painter.drawLine(QPointF(11, 20), QPointF(13, 20));
         break;
     case ToolIcon::NoConnect:
         painter.drawLine(QPointF(2, 12), QPointF(12, 12));
@@ -110,15 +111,14 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         painter.restore();
         QPen axis = painter.pen();
         axis.setStyle(Qt::DashLine);
-        axis.setWidthF(LINE_WIDTH / 2);
         painter.setPen(axis);
         painter.drawLine(QPointF(12, 2), QPointF(12, 22));
         break;
     }
     case ToolIcon::Delete:
         painter.drawLine(QPointF(4, 6), QPointF(20, 6));
-        painter.drawPolyline(polygon({{9.5, 6}, {9.5, 3.5}, {14.5, 3.5}, {14.5, 6}}));
-        painter.drawPolyline(polygon({{6, 6}, {7.5, 21}, {16.5, 21}, {18, 6}}));
+        painter.drawPolyline(polygon({{9, 6}, {9, 3}, {15, 3}, {15, 6}}));
+        painter.drawPolyline(polygon({{6, 6}, {7, 21}, {17, 21}, {18, 6}}));
         painter.drawLine(QPointF(10, 10), QPointF(10, 17));
         painter.drawLine(QPointF(14, 10), QPointF(14, 17));
         break;
@@ -136,8 +136,8 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
             // An arrow from the middle to the corner.
             const QPointF from = corner + (QPointF(12, 12) - corner) * 0.45;
             painter.drawLine(from, corner);
-            const QPointF along((corner.x() > 12 ? -3.5 : 3.5), 0);
-            const QPointF down(0, (corner.y() > 12 ? -3.5 : 3.5));
+            const QPointF along((corner.x() > 12 ? -4 : 4), 0);
+            const QPointF down(0, (corner.y() > 12 ? -4 : 4));
             painter.drawPolyline(polygon({corner + along, corner, corner + down}));
         }
         break;
@@ -152,8 +152,8 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
     }
     case ToolIcon::Library:
         painter.drawRect(QRectF(3, 5, 4, 15));
-        painter.drawRect(QRectF(8, 5, 4, 15));
-        painter.drawPolygon(polygon({{13, 6.5}, {16.8, 5.2}, {21, 19}, {17.2, 20.3}}));
+        painter.drawRect(QRectF(9, 5, 4, 15));
+        painter.drawPolygon(polygon({{15, 6}, {18, 5}, {21, 19}, {18, 20}}));
         break;
     case ToolIcon::Properties:
         for (const qreal y : {6.0, 12.0, 18.0}) {
@@ -190,7 +190,8 @@ QPixmap pixmap(ToolIcon icon, const QColor &color, int scale)
     QPainter painter(&result);
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.scale(scale, scale);
-    painter.setPen(QPen(color, LINE_WIDTH, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    // Square ends and corners: they end on whole units too.
+    painter.setPen(QPen(color, LINE_WIDTH, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
     painter.setBrush(Qt::NoBrush);
     draw(painter, icon, color);
     painter.end();

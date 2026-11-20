@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The pictures of the tool buttons are drawn sharp, their straight lines on whole pixels, and the bus stands upright
 - F: The chassis symbol no longer writes its net name beside it, as the ground does not
 - F: The Power button shows the symbol P places, the chassis at first, and its arrow chooses another
 - F: The BOM is a panel like the library instead of a tab, so the schematic stays in sight beside it
