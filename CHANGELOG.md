@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Fitting the page fills the view, leaving only a few pixels around it
 - N: Settings > Screen size sets the real size of the screen for Actual size, by its diagonal or by a line measured with a ruler
 - N: A strip of tools left of the canvas: the modes of the sheet, which one is on shown pressed, rotate, mirror and delete, the scale, and switches of the panels at the bottom
 - N: View > Zoom in, Zoom out, Fit the page (Home) and Actual size (Ctrl+0)

@@ -28,8 +28,9 @@ const double GRID_DOT_PIXELS = 2.0;
 const double SMALL_CROSS_HALF_PIXELS = 12.0;
 // Wheel angle of one notch, in the units of QWheelEvent::angleDelta().
 const double WHEEL_NOTCH = 120.0;
-// fitRect() leaves this share of the view to the rectangle; the rest is margin.
-const double FIT_SHARE = 0.8;
+// fitRect() leaves this many pixels of margin on each side of the rectangle,
+// so that its edge stays in sight.
+const int FIT_MARGIN = 4;
 
 const QColor GRID_LINE_COLOR(224, 224, 224);
 const QColor GRID_DOT_COLOR(150, 150, 150);
@@ -100,8 +101,8 @@ void CanvasView::fitRect(const QRectF &rect)
     if (rect.width() <= 0 || rect.height() <= 0)
         return;
     const QSize view = viewport()->size();
-    const double wanted = FIT_SHARE * std::min(view.width() / rect.width(),
-                                               view.height() / rect.height());
+    const double wanted = std::min((view.width() - 2 * FIT_MARGIN) / rect.width(),
+                                   (view.height() - 2 * FIT_MARGIN) / rect.height());
     const double target = qBound(MIN_PIXELS_PER_MM, wanted, MAX_PIXELS_PER_MM);
     const double current = pixelsPerMm();
     scale(target / current, target / current);
