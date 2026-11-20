@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The pads of the DIP footprints are pill-shaped, pin 1 square-ended, and their outline keeps clear of them
 - N: Built-in 78xx, 79xx and LM317 voltage regulators in TO-220 and TO-92, a single op amp and a 555 timer
 - N: Built-in optocoupler, relay with a changeover contact, transformer, choke with a core and ferrite bead
 - N: Built-in unijunction transistor in the KT117 case
