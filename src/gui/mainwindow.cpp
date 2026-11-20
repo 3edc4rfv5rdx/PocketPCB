@@ -68,6 +68,14 @@ const int DEFAULT_HEIGHT = 750;
 // Wait after a change of the watched file before reading it, milliseconds.
 const int RELOAD_DELAY_MS = 150;
 const int MS_PER_MINUTE = 60 * 1000;
+// The buttons of the strip of tools: how much of the colour of the text
+// shows behind one under the mouse and one held down, and how much of the
+// colour of a choice behind one that stays pressed, 0 to 255; a frame of
+// that colour goes round it. Every button has a frame, unseen unless
+// pressed, so that none grows when pressed and moves the others.
+const int HOVER_ALPHA = 30;
+const int HELD_ALPHA = 60;
+const int PRESSED_ALPHA = 90;
 // The table of the colours of the paper: its swatches, in pixels, and how
 // many stand in a row. The one chosen has a frame in the selection colour.
 const int SWATCH_WIDTH = 72;
@@ -1070,6 +1078,19 @@ void MainWindow::createToolBar()
     bar->setToolButtonStyle(Qt::ToolButtonIconOnly);
     addToolBar(Qt::TopToolBarArea, bar);
     const QColor color = bar->palette().color(QPalette::WindowText);
+    const QColor pressed = bar->palette().color(QPalette::Highlight);
+    const auto rgba = [](const QColor &c, int alpha) {
+        return QStringLiteral("rgba(%1, %2, %3, %4)").arg(c.red()).arg(c.green()).arg(c.blue()).arg(alpha);
+    };
+    bar->setStyleSheet(
+        QStringLiteral("QToolButton { border: 1px solid transparent; border-radius: 3px; "
+                       "padding: 2px; background: transparent; }"
+                       "QToolButton:hover { background-color: %1; }"
+                       "QToolButton:pressed { background-color: %2; }"
+                       "QToolButton:checked { background-color: %3; border-color: %4; }"
+                       "QToolButton::menu-indicator { image: none; }")
+            .arg(rgba(color, HOVER_ALPHA), rgba(color, HELD_ALPHA), rgba(pressed, PRESSED_ALPHA),
+                 pressed.name()));
 
     // The menus hold the actions but are not on the window: the window
     // takes their keys itself.
@@ -1088,7 +1109,6 @@ void MainWindow::createToolBar()
     menuButton->setIcon(toolIcon(ToolIcon::Menu, color));
     menuButton->setMenu(m_mainMenu);
     menuButton->setPopupMode(QToolButton::InstantPopup);
-    menuButton->setStyleSheet(QStringLiteral("QToolButton::menu-indicator { image: none; }"));
     const QKeySequence menuKey(Qt::Key_F10);
     menuButton->setToolTip(tr("Menu") + QStringLiteral(" (")
                            + menuKey.toString(QKeySequence::NativeText) + QLatin1Char(')'));
