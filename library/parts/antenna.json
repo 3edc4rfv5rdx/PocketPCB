@@ -1,0 +1,13 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "antenna",
+  "footprints": ["wire-pad"],
+  "prefix": "AE",
+  "prefixGost": "WA",
+  "value": "",
+  "connector": false,
+  "noValue": true,
+  "group": "rf",
+  "name": {"en": "Antenna", "uk": "Антена", "ru": "Антенна"}
+}

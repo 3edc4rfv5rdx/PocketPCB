@@ -1,0 +1,13 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "thermocouple",
+  "footprints": ["wire-pads-2"],
+  "prefix": "TC",
+  "prefixGost": "BK",
+  "value": "",
+  "connector": false,
+  "noValue": true,
+  "group": "sensors",
+  "name": {"en": "Thermocouple", "uk": "Термопара", "ru": "Термопара"}
+}

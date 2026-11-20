@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "hall-sensor",
+  "footprints": ["to92-vcc-gnd-out"],
+  "prefix": "U",
+  "prefixGost": "B",
+  "value": "A3144",
+  "connector": false,
+  "group": "sensors",
+  "name": {"en": "Hall sensor", "uk": "Датчик Холла", "ru": "Датчик Холла"}
+}

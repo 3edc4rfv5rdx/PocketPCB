@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "ptc-fuse",
+  "footprints": ["capacitor-5.08"],
+  "prefix": "F",
+  "prefixGost": "FU",
+  "value": "",
+  "connector": false,
+  "group": "fuses",
+  "name": {"en": "Resettable fuse PTC", "uk": "Самовідновний запобіжник PTC", "ru": "Самовосстанавливающийся предохранитель PTC"}
+}

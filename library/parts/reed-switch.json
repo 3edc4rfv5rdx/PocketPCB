@@ -1,0 +1,13 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "reed-switch",
+  "footprints": ["resistor-10.16", "link-15.24"],
+  "prefix": "SW",
+  "prefixGost": "SF",
+  "value": "",
+  "connector": false,
+  "noValue": true,
+  "group": "switches",
+  "name": {"en": "Reed switch", "uk": "Геркон", "ru": "Геркон"}
+}

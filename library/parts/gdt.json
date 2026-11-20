@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "gdt",
+  "footprints": ["capacitor-5.08"],
+  "prefix": "GDT",
+  "prefixGost": "F",
+  "value": "",
+  "connector": false,
+  "group": "fuses",
+  "name": {"en": "Gas discharge tube", "uk": "Газовий розрядник", "ru": "Газовый разрядник"}
+}
