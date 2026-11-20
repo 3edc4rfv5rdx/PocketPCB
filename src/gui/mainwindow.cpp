@@ -17,6 +17,7 @@
 #include "sheeteditor.h"
 #include "sheettabs.h"
 #include "toolicons.h"
+#include "version.h"
 #include "updatepartsdialog.h"
 #include "stephistory.h"
 #include "libraryviewitem.h"
@@ -29,6 +30,7 @@
 #include <QActionGroup>
 #include <QCloseEvent>
 #include <QComboBox>
+#include <QCoreApplication>
 #include <QDesktopServices>
 #include <QDockWidget>
 #include <QDir>
@@ -600,6 +602,11 @@ void MainWindow::createMenus()
     historyAction->setCheckable(true);
     historyAction->setChecked(AppSettings::keepStepHistory());
     connect(historyAction, &QAction::toggled, this, &AppSettings::setKeepStepHistory);
+
+    QMenu *helpMenu = m_mainMenu->addMenu(tr("&Help"));
+    QAction *aboutAction = helpMenu->addAction(aboutTitle() + QStringLiteral("…"));
+    aboutAction->setObjectName(QStringLiteral("actionAbout"));
+    connect(aboutAction, &QAction::triggered, this, &MainWindow::showAbout);
 }
 
 void MainWindow::setInterfaceLanguage(const QString &language)
@@ -1225,6 +1232,25 @@ void MainWindow::showActualSize()
     if (screen == nullptr || m_bomShown)
         return;
     m_canvas->setView(m_canvas->viewCenter(), screenPixelsPerMm(screen));
+}
+
+QString MainWindow::aboutTitle()
+{
+    return tr("About %1").arg(QCoreApplication::applicationName());
+}
+
+void MainWindow::showAbout()
+{
+    QString text = QStringLiteral("<h3>%1 %2</h3>").arg(QCoreApplication::applicationName(),
+                                                         QLatin1String(appVersion()));
+    const QString buildDate = QLatin1String(appBuildDate());
+    if (!buildDate.isEmpty())
+        text += QStringLiteral("<p>") + tr("Built on %1").arg(buildDate) + QStringLiteral("</p>");
+    text += QStringLiteral("<p>")
+            + tr("A small, simple editor for schematics and double-sided printed circuit boards")
+            + QStringLiteral(".</p><p>") + tr("License") + QStringLiteral(": GPL-3.0-or-later.<br>")
+            + tr("The Newstroke font is taken from KiCad") + QStringLiteral(".</p>");
+    QMessageBox::about(this, aboutTitle(), text);
 }
 
 void MainWindow::chooseScreenSize()

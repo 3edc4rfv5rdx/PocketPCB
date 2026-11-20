@@ -7,6 +7,8 @@ string(REGEX REPLACE "^version=" "" PPCB_VERSION "${PPCB_VERSION_LINE}")
 if(NOT PPCB_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$")
     message(FATAL_ERROR "build_number.txt: no valid 'version=X.Y.Z' line")
 endif()
+file(STRINGS "${PPCB_BUILD_FILE}" PPCB_BUILD_DATE_LINE REGEX "^build_date=")
+string(REGEX REPLACE "^build_date=" "" PPCB_BUILD_DATE "${PPCB_BUILD_DATE_LINE}")
 # Re-run configure when the build number changes.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PPCB_BUILD_FILE}")
 

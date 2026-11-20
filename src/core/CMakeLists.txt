@@ -30,5 +30,7 @@ add_library(pocketpcb_core STATIC
 )
 target_include_directories(pocketpcb_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(pocketpcb_core PUBLIC Qt6::Core Qt6::Gui)
-# The version is compiled into version.cpp only; everything else calls appVersion().
-target_compile_definitions(pocketpcb_core PRIVATE PPCB_VERSION="${PROJECT_VERSION}")
+# The version and the build date are compiled into version.cpp only;
+# everything else calls appVersion() and appBuildDate().
+target_compile_definitions(pocketpcb_core PRIVATE PPCB_VERSION="${PROJECT_VERSION}"
+    PPCB_BUILD_DATE="${PPCB_BUILD_DATE}")

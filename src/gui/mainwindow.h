@@ -124,6 +124,10 @@ private:
     // The canvas shows millimetres as millimetres on the screen, as far as
     // the screen tells its size.
     void showActualSize();
+    // Help > About: the name and version of the program, the day of its
+    // build, what it is, its license.
+    void showAbout();
+    static QString aboutTitle();
     void createStatusBar();
     // Adds a checkable, mutually exclusive item to a menu.
     QAction *addChoice(QMenu *menu, QActionGroup *group, const QString &text, bool checked);

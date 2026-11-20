@@ -513,6 +513,30 @@
 <context>
     <name>ppcb::MainWindow</name>
     <message>
+        <source>&amp;Help</source>
+        <translation>&amp;Довідка</translation>
+    </message>
+    <message>
+        <source>About %1</source>
+        <translation>Про програму %1</translation>
+    </message>
+    <message>
+        <source>A small, simple editor for schematics and double-sided printed circuit boards</source>
+        <translation>Невеликий простий редактор схем і двосторонніх друкованих плат</translation>
+    </message>
+    <message>
+        <source>Built on %1</source>
+        <translation>Зібрано %1</translation>
+    </message>
+    <message>
+        <source>License</source>
+        <translation>Ліцензія</translation>
+    </message>
+    <message>
+        <source>The Newstroke font is taken from KiCad</source>
+        <translation>Шрифт Newstroke узято з KiCad</translation>
+    </message>
+    <message>
         <source>Menu</source>
         <translation>Меню</translation>
     </message>
