@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "relay",
+  "footprints": ["relay-srd"],
+  "prefix": "K",
+  "prefixGost": "K",
+  "value": "",
+  "connector": false,
+  "group": "relays",
+  "name": {"en": "Relay, changeover", "uk": "Реле перемикаюче", "ru": "Реле с переключающим контактом"}
+}

@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "ferrite-bead",
+  "footprints": ["resistor-10.16", "resistor-vertical"],
+  "prefix": "FB",
+  "prefixGost": "L",
+  "value": "",
+  "connector": false,
+  "group": "inductors",
+  "name": {"en": "Ferrite bead", "uk": "Феритова намистина", "ru": "Ферритовая бусина"}
+}

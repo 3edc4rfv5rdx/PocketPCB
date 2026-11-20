@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "optocoupler",
+  "footprints": ["dip-4-7.62"],
+  "prefix": "U",
+  "prefixGost": "U",
+  "value": "",
+  "connector": false,
+  "group": "optoelectronics",
+  "name": {"en": "Optocoupler, transistor", "uk": "Оптопара транзисторна", "ru": "Оптопара транзисторная"}
+}

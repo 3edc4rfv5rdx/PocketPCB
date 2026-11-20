@@ -1,0 +1,35 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "rect", "from": [-5.08, -3.81], "to": [5.08, 3.81]},
+    {"kind": "line", "from": [-5.08, -2.54], "to": [-2.54, -2.54]},
+    {"kind": "line", "from": [-2.54, -2.54], "to": [-2.54, -0.762]},
+    {"kind": "line", "from": [-5.08, 2.54], "to": [-2.54, 2.54]},
+    {"kind": "line", "from": [-2.54, 2.54], "to": [-2.54, 0.762]},
+    {"kind": "polygon", "points": [[-3.81, -0.762], [-1.27, -0.762], [-2.54, 0.762]]},
+    {"kind": "line", "from": [-3.81, 0.762], "to": [-1.27, 0.762]},
+    {"kind": "line", "from": [-0.889, -0.508], "to": [0.254, -0.508]},
+    {"kind": "polygon", "points": [[1.016, -0.508], [0.254, -0.889], [0.254, -0.127]], "filled": true},
+    {"kind": "line", "from": [-0.889, 0.508], "to": [0.254, 0.508]},
+    {"kind": "polygon", "points": [[1.016, 0.508], [0.254, 0.127], [0.254, 0.889]], "filled": true},
+    {"kind": "line", "from": [1.905, -1.524], "to": [1.905, 1.524], "width": 0.3},
+    {"kind": "line", "from": [1.905, -0.635], "to": [3.175, -1.905]},
+    {"kind": "line", "from": [3.175, -1.905], "to": [3.175, -2.54]},
+    {"kind": "line", "from": [3.175, -2.54], "to": [5.08, -2.54]},
+    {"kind": "line", "from": [1.905, 0.635], "to": [3.175, 1.905]},
+    {"kind": "polygon", "points": [[3.0, 1.73], [2.32, 1.57], [2.84, 1.05]], "filled": true},
+    {"kind": "line", "from": [3.175, 1.905], "to": [3.175, 2.54]},
+    {"kind": "line", "from": [3.175, 2.54], "to": [5.08, 2.54]}
+  ],
+  "pins": [
+    {"number": "1", "name": "A", "at": [-7.62, -2.54], "side": "left"},
+    {"number": "2", "name": "K", "at": [-7.62, 2.54], "side": "left"},
+    {"number": "3", "name": "E", "at": [7.62, 2.54], "side": "right"},
+    {"number": "4", "name": "C", "at": [7.62, -2.54], "side": "right"}
+  ],
+  "refAt": [0, -5.08],
+  "valueAt": [0, 5.08],
+  "showPinNumbers": true,
+  "showPinNames": false
+}

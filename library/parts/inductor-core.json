@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "inductor-core",
+  "footprints": ["capacitor-5.08", "resistor-10.16", "resistor-vertical"],
+  "prefix": "L",
+  "prefixGost": "L",
+  "value": "",
+  "connector": false,
+  "group": "inductors",
+  "name": {"en": "Choke with a core", "uk": "Дросель з осердям", "ru": "Дроссель с сердечником"}
+}
