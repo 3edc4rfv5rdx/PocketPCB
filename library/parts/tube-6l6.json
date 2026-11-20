@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "tube-6l6",
+  "footprints": ["socket-octal"],
+  "prefix": "V",
+  "prefixGost": "VL",
+  "value": "6L6",
+  "connector": false,
+  "group": "tubes",
+  "name": {"en": "Beam tetrode 6L6 / 6P3S", "uk": "Променевий тетрод 6L6 / 6П3С", "ru": "Лучевой тетрод 6L6 / 6П3С"}
+}

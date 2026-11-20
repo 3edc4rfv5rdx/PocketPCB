@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Built-in vacuum tubes ECC83 / 6N2P, EL84 / 6P14P and 6L6 / 6P3S with noval and octal sockets
 - N: Built-in changeover reed switch with three leads
 - N: Built-in Hall sensor, thermocouple, reed switch, gas discharge tube, resettable PTC fuse and antenna
 - N: Built-in microphone, motor, incandescent and neon lamps, test point and wire link

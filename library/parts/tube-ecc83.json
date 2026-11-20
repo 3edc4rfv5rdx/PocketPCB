@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "tube-ecc83",
+  "footprints": ["socket-noval"],
+  "prefix": "V",
+  "prefixGost": "VL",
+  "value": "ECC83",
+  "connector": false,
+  "group": "tubes",
+  "name": {"en": "Double triode ECC83 / 6N2P", "uk": "Подвійний тріод ECC83 / 6Н2П", "ru": "Двойной триод ECC83 / 6Н2П"}
+}

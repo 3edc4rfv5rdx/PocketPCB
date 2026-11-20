@@ -1,0 +1,21 @@
+{
+  "type": "pocketpcb-footprint",
+  "format": 1,
+  "pads": [
+    {"number": "1", "at": [-3.494, -4.810], "shape": "rect", "size": [2.0, 2.0], "hole": 1.2},
+    {"number": "2", "at": [-5.654, -1.837], "shape": "circle", "size": [2.0, 2.0], "hole": 1.2},
+    {"number": "3", "at": [-5.654, 1.837], "shape": "circle", "size": [2.0, 2.0], "hole": 1.2},
+    {"number": "4", "at": [-3.494, 4.810], "shape": "circle", "size": [2.0, 2.0], "hole": 1.2},
+    {"number": "5", "at": [-0.000, 5.945], "shape": "circle", "size": [2.0, 2.0], "hole": 1.2},
+    {"number": "6", "at": [3.494, 4.810], "shape": "circle", "size": [2.0, 2.0], "hole": 1.2},
+    {"number": "7", "at": [5.654, 1.837], "shape": "circle", "size": [2.0, 2.0], "hole": 1.2},
+    {"number": "8", "at": [5.654, -1.837], "shape": "circle", "size": [2.0, 2.0], "hole": 1.2},
+    {"number": "9", "at": [3.494, -4.810], "shape": "circle", "size": [2.0, 2.0], "hole": 1.2}
+  ],
+  "graphics": [
+    {"kind": "circle", "center": [0, 0], "radius": 9.5},
+    {"kind": "line", "from": [0, -9.5], "to": [0, -8]}
+  ],
+  "refAt": [0, -11],
+  "valueAt": [0, 11]
+}

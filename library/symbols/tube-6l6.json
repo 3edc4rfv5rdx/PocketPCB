@@ -1,0 +1,30 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "circle", "center": [0, -1.27], "radius": 8.89},
+    {"kind": "line", "from": [-1.524, -7.62], "to": [1.524, -7.62], "width": 0.3},
+    {"kind": "line", "from": [-1.524, -2.54], "to": [1.524, -2.54], "dashed": true},
+    {"kind": "line", "from": [-1.524, 0], "to": [1.524, 0], "dashed": true},
+    {"kind": "line", "from": [-1.524, 2.54], "to": [1.524, 2.54]},
+    {"kind": "line", "from": [-1.524, 2.54], "to": [-1.524, 3.175]},
+    {"kind": "line", "from": [-1.524, -5.08], "to": [-0.508, -5.08], "width": 0.3},
+    {"kind": "line", "from": [0.508, -5.08], "to": [2.54, -5.08], "width": 0.3},
+    {"kind": "line", "from": [2.54, -5.08], "to": [2.54, 2.54]},
+    {"kind": "line", "from": [1.524, 2.54], "to": [2.54, 2.54]},
+    {"kind": "line", "from": [-2.54, 5.08], "to": [0, 3.81]},
+    {"kind": "line", "from": [0, 3.81], "to": [2.54, 5.08]}
+  ],
+  "pins": [
+    {"number": "3", "name": "A", "at": [0, -12.7], "side": "up", "length": 5.08},
+    {"number": "4", "name": "G2", "at": [-10.16, -2.54], "side": "left", "length": 8.636},
+    {"number": "5", "name": "G1", "at": [-10.16, 0], "side": "left", "length": 8.636},
+    {"number": "8", "name": "K", "at": [-10.16, 2.54], "side": "left", "length": 8.636},
+    {"number": "2", "name": "F", "at": [-2.54, 10.16], "side": "down", "length": 5.08},
+    {"number": "7", "name": "F", "at": [2.54, 10.16], "side": "down", "length": 5.08}
+  ],
+  "refAt": [10.16, -8.89],
+  "valueAt": [10.16, 6.35],
+  "showPinNumbers": true,
+  "showPinNames": false
+}

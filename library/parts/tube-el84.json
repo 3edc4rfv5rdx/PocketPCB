@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "tube-el84",
+  "footprints": ["socket-noval"],
+  "prefix": "V",
+  "prefixGost": "VL",
+  "value": "EL84",
+  "connector": false,
+  "group": "tubes",
+  "name": {"en": "Pentode EL84 / 6P14P", "uk": "Пентод EL84 / 6П14П", "ru": "Пентод EL84 / 6П14П"}
+}
