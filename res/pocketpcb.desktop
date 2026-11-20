@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=PocketPCB
+Comment=A small editor for schematics and printed circuit boards
+Comment[uk]=Невеликий редактор схем і друкованих плат
+Comment[ru]=Небольшой редактор схем и печатных плат
+Exec=pocketpcb
+Icon=pocketpcb
+Categories=Development;Electronics;
+Terminal=false

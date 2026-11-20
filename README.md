@@ -36,7 +36,7 @@ Early development. What works now:
 - BOM panel, beside the others, shown by View > BOM or its button on the strip of tools: the parts of the schematic, those alike (part, value, footprint, rated power and comment) in one row, with their designators and how many, under a heading for each group of parts (resistors, capacitors and so on; parts without a group last, under Other); the rated power most resistors have is said once below the list, another one follows the value; the value and the comment are typed in the table for the whole row, a double click on the designators shows those parts, and the buttons write the list as `out/<project>-bom.txt`, `.csv` or `.pdf`.
 - ERC panel: the schematic is checked after every change; each problem is listed under its sheet and ringed in red there: a missing value, a repeated designator, a pin joined to nothing, a no-connect mark on no pin or on a joined one, a label or a wire end joining nothing, a wire lying along another, wires closing a loop, a two-pin part with both pins on one net, a net with two names, a name of the nets table with no pins left or given to another net. The rings show while the panel is open. A problem chosen shows its sheet, centred on it, and an object chosen on the sheet chooses its problem in the list; a missing value opens for typing at once.
 
-Planned next: nets, ERC; then the board editor with ratsnest, tracks and DRC; Gerber and Excellon export; 1:1 printing for toner transfer; schematic printing with a title block and a BOM; an AppImage.
+Planned next: nets, ERC; then the board editor with ratsnest, tracks and DRC; Gerber and Excellon export; 1:1 printing for toner transfer; schematic printing with a title block and a BOM.
 
 The full specification is in [`tz.md`](tz.md) (English) and [`tz.ru.md`](tz.ru.md) (Russian original).
 
@@ -50,6 +50,8 @@ sudo apt install build-essential cmake ninja-build qt6-base-dev qt6-tools-dev qt
 ```
 
 `00-Make.sh` configures, builds and runs the tests; a build that passed them is copied to `OUT/pocketpcb`. Open `examples/demo/demo.ppcb` to see a small project.
+
+`14-MakeAppImage.sh` then packs that build into `OUT/pocketpcb-<version>-x86_64.AppImage`, one file with Qt and the built-in library inside, keeping the last three. It needs `linuxdeploy` and `linuxdeploy-plugin-qt` in `tools/` (kept out of git) and says how to get them when they are missing.
 
 ## License
 

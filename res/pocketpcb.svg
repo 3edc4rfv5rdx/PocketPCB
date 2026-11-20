@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- The board -->
+  <rect x="12" y="12" width="232" height="232" rx="28" fill="#013895"/>
+  <!-- Tracks -->
+  <g fill="none" stroke="#f2c230" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M112 76 H156 L180 52 H204"/>
+    <path d="M112 108 H204"/>
+    <path d="M112 140 H156 L180 164 H204"/>
+    <path d="M56 172 V204 H120"/>
+    <path d="M88 172 V188 L104 204"/>
+  </g>
+  <!-- Pads with their holes -->
+  <g fill="#f2c230">
+    <circle cx="204" cy="52" r="16"/>
+    <circle cx="204" cy="108" r="16"/>
+    <circle cx="204" cy="164" r="16"/>
+    <circle cx="140" cy="204" r="16"/>
+  </g>
+  <g fill="#013895">
+    <circle cx="204" cy="52" r="6"/>
+    <circle cx="204" cy="108" r="6"/>
+    <circle cx="204" cy="164" r="6"/>
+    <circle cx="140" cy="204" r="6"/>
+  </g>
+  <!-- The chip and its legs -->
+  <g fill="#c8ced8">
+    <rect x="104" y="68" width="14" height="16" rx="2"/>
+    <rect x="104" y="100" width="14" height="16" rx="2"/>
+    <rect x="104" y="132" width="14" height="16" rx="2"/>
+    <rect x="34" y="68" width="14" height="16" rx="2"/>
+    <rect x="34" y="100" width="14" height="16" rx="2"/>
+    <rect x="34" y="132" width="14" height="16" rx="2"/>
+  </g>
+  <rect x="44" y="52" width="64" height="112" rx="6" fill="#1b1d22"/>
+  <circle cx="76" cy="64" r="6" fill="#3a3e47"/>
+  <!-- Legs of the chip down to the tracks below -->
+  <g fill="none" stroke="#f2c230" stroke-width="10" stroke-linecap="round">
+    <path d="M56 164 V172"/>
+    <path d="M88 164 V172"/>
+  </g>
+</svg>

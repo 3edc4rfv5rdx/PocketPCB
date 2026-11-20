@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- I: 14-MakeAppImage.sh packs the build into an AppImage in OUT, with a desktop entry and an icon of its own
 ## v0.7.199 (2026-11-20)
 - N: Built-in one-digit 0.56" seven-segment displays with a common cathode and a common anode
 - E: The op amp, EL84 and 6L6 symbols have a pin for every pad of their footprints: offset and NC pins, unused tube pins

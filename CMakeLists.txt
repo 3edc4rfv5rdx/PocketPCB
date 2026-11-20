@@ -26,8 +26,20 @@ endif()
 
 find_package(Qt6 6.4 REQUIRED COMPONENTS Core Gui Widgets LinguistTools Test)
 qt_standard_project_setup()
+# The install leaves the program's library path alone: the one Qt's setup asks
+# for does not fit into a binary built without one, and linuxdeploy writes its
+# own into the AppImage.
+set(CMAKE_SKIP_INSTALL_RPATH ON)
 
 enable_testing()
+
+# The installed layout, as the AppImage carries it: the program in bin/, the
+# built-in library where it looks for it (../share/pocketpcb/library), the
+# desktop entry and the icon.
+include(GNUInstallDirs)
+install(DIRECTORY library/ DESTINATION ${CMAKE_INSTALL_DATADIR}/pocketpcb/library)
+install(FILES res/pocketpcb.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+install(FILES res/pocketpcb.svg DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
 
 add_subdirectory(src/core)
 add_subdirectory(src/gui)
