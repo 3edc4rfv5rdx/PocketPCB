@@ -4,6 +4,7 @@
 
 ## Unreleased
 - N: Built-in optocoupler, relay with a changeover contact, transformer, choke with a core and ferrite bead
+- N: Built-in unijunction transistor in the KT117 case
 - N: Built-in IGBT and Darlington transistors, a triac and a diac
 - N: Built-in Zener, Schottky, varicap and TVS diodes, a diode bridge and a photodiode
 - N: Built-in NTC and PTC thermistors, a photoresistor, a varistor, a trimmer and a variable capacitor

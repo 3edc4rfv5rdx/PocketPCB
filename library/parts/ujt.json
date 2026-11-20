@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "ujt",
+  "footprints": ["to18-kt117"],
+  "prefix": "Q",
+  "prefixGost": "VT",
+  "value": "",
+  "connector": false,
+  "group": "transistors",
+  "name": {"en": "Unijunction transistor", "uk": "Одноперехідний транзистор", "ru": "Однопереходный транзистор"}
+}
