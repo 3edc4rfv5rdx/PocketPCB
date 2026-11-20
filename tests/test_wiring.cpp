@@ -1367,6 +1367,46 @@ private slots:
         }
     }
 
+    // A joint slides along the wire through it, round its corner too; the
+    // wires ending there follow from their far ends, which stay.
+    void aJointSlidesAlongItsWire()
+    {
+        for (const WireRouting routing : {WireRouting::Hand, WireRouting::Grid}) {
+            Sheet sheet;
+            sheet.wires = {wire({h(0, 0), h(20, 0), h(20, 10)}), wire({h(10, 10), h(10, 0)}),
+                           wire({h(10, -10), h(10, 0)})};
+            QCOMPARE(jointWire(sheet, Library(), h(10, 0)), sheet.wires.at(0).id);
+            for (const auto &[to, at] : {qMakePair(h(14, 1), h(14, 0)),
+                                         qMakePair(h(25, 5), h(20, 5))}) {
+                const QList<Wire> wires = withJointMoved(sheet, Library(), h(10, 0), to,
+                                                         routing).wires;
+                QCOMPARE(wires.size(), 3);
+                QCOMPARE(wires.at(0).points, sheet.wires.at(0).points);
+                QCOMPARE(wires.at(1).points.first(), h(10, 10));
+                QCOMPARE(wires.at(1).points.last(), at);
+                QCOMPARE(wires.at(2).points.first(), h(10, -10));
+                QCOMPARE(wires.at(2).points.last(), at);
+            }
+            // Onto where it is: nothing changes.
+            QCOMPARE(withJointMoved(sheet, Library(), h(10, 0), h(10, 3), routing).wires,
+                     sheet.wires);
+        }
+    }
+
+    // No joint where no wire passes through, nothing ends, or a pin is.
+    void aJointNeedsAWireThroughAndAnEnd()
+    {
+        Sheet sheet;
+        sheet.wires = {wire({h(0, 0), h(20, 0)}), wire({h(10, 10), h(10, 0)})};
+        QVERIFY(jointWire(sheet, Library(), h(5, 0)).isNull());
+        QVERIFY(jointWire(sheet, Library(), h(0, 0)).isNull());
+        const Library library = gridLibrary();
+        sheet.components = {gridPart(h(14, 0))};
+        sheet.wires = {wire({h(0, 0), h(20, 0)}), wire({h(10, 10), h(10, 0)})};
+        QVERIFY(jointWire(sheet, library, h(10, 0)).isNull());
+        QCOMPARE(withJointMoved(sheet, library, h(10, 0), h(4, 0)).wires, sheet.wires);
+    }
+
     // A part dragged down: its wire, of the ways as cheap, keeps its run and
     // comes down into the pin.
     void gridWiresFollowAMovedPart()

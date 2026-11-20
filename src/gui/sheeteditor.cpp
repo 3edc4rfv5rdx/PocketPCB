@@ -169,6 +169,7 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
     m_pressAt = at;
     m_pressAdding = adding;
     m_endLine = ObjectId();
+    m_joint.reset();
     m_chosenText = TextHit();
     m_narrowTo = ObjectId();
     dropSegment();
@@ -246,6 +247,23 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
             } else {
                 m_dragAnchor = line.at(m_segmentIndex);
             }
+            // Near a joint the drag slides the joint along the wire through
+            // it instead; a click still chooses the segment.
+            if (!isBus) {
+                const Library &library = m_document->design().library;
+                double nearest = pixelsToMm(END_PIXELS);
+                for (const Point &dot : junctions(*sheet, library)) {
+                    const double distance = QLineF(at, toMm(dot)).length();
+                    if (distance <= nearest && !jointWire(*sheet, library, dot).isNull()) {
+                        nearest = distance;
+                        m_joint = dot;
+                    }
+                }
+                if (m_joint) {
+                    m_endLine = ObjectId();
+                    m_dragAnchor = *m_joint;
+                }
+            }
         } else if (!m_selection.contains(hit)) {
             m_selection = {hit};
         } else {
@@ -295,7 +313,7 @@ QLineF SheetEditor::textGuide() const
 
 bool SheetEditor::dragsWhole() const
 {
-    return m_endLine.isNull() && !hasText() && !hasSegment();
+    return m_endLine.isNull() && !m_joint && !hasText() && !hasSegment();
 }
 
 QSet<ObjectId> SheetEditor::chosenIds() const
@@ -358,6 +376,7 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
         if (wire || bus) {
             dropSegment();
             m_endLine = ObjectId();
+            m_joint.reset();
             m_selection = {hit};
             emit changed();
         }
@@ -863,6 +882,11 @@ void SheetEditor::updateDrag()
         return std::any_of(m_dragStart.buses.cbegin(), m_dragStart.buses.cend(),
                            [&id](const Bus &bus) { return bus.id == id; });
     };
+    if (m_joint) {
+        m_preview = withJointMoved(m_dragStart, library, *m_joint, *m_joint + m_dragDelta,
+                                   m_wireRouting);
+        return;
+    }
     if (!m_endLine.isNull()) {
         const QList<Point> line = linePoints(m_dragStart, m_endLine);
         if (!line.isEmpty()) {

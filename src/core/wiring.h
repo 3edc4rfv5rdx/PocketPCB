@@ -219,4 +219,17 @@ Sheet withBusEndAt(const Sheet &sheet, const Library &library, const ObjectId &b
 Sheet withBusSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &bus,
                           int index, const Point &delta, WireRouting routing = WireRouting::Hand);
 
+// A joint of 'sheet' at 'point': the one wire passing through it, with the
+// end of one other wire or more there. Its id; null when no wire or more
+// than one passes through, no wire ends there, or a pin or a bus is there.
+ObjectId jointWire(const Sheet &sheet, const Library &library, const Point &point);
+
+// 'sheet' with the joint at 'from' (jointWire()) slid along the wire passing
+// through it to the point of that wire nearest 'to', on whatever segment:
+// that wire stays as it is, and each wire ending at the joint has that end
+// led there as withWireEndAt() leads it. 'sheet' as it is when 'from' is no
+// joint or the point is 'from'.
+Sheet withJointMoved(const Sheet &sheet, const Library &library, const Point &from,
+                     const Point &to, WireRouting routing = WireRouting::Hand);
+
 } // namespace ppcb

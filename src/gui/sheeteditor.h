@@ -15,6 +15,8 @@
 #include <QSet>
 #include <QTimer>
 
+#include <optional>
+
 class QLineEdit;
 
 namespace ppcb {
@@ -382,6 +384,9 @@ private:
     // end or its first. Set by every press.
     ObjectId m_endLine;
     bool m_endIsLast = false;
+    // The press took a joint of a wire (jointWire()), which a drag slides
+    // along the wire through it. Set by every press.
+    std::optional<Point> m_joint;
     // The text chosen alone by a click on it, which a drag moves: of a
     // component or of a label. It counts only while 'm_selection' is empty
     // (hasText()).

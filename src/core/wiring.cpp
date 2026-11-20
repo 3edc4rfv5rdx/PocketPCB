@@ -736,11 +736,12 @@ QList<Point> joinedWireAt(const QList<Point> &points, const Point &point,
 // instead. With 'branch', a wire with a point of 'kept' on it may instead
 // end at the last of them, and a new wire, put into 'branch', go to 'to'
 // from any point of what it keeps or of the wires joined to that: when
-// going on from its end means a way round. The wire may end on any point
-// of the wires already reaching 'to', or joined to them, instead of at 'to'
-// itself. Empty when gridLaid() finds no way.
+// going on from its end means a way round. Unless 'exact', the wire may end
+// on any point of the wires already reaching 'to', or joined to them,
+// instead of at 'to' itself. Empty when gridLaid() finds no way.
 QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QList<Point> &kept,
-                       bool rejoin, const Obstacles &obstacles, QList<Point> *branch)
+                       bool rejoin, const Obstacles &obstacles, QList<Point> *branch,
+                       bool exact)
 {
     const QList<Point> points = withJoints(wirePoints, kept);
     int from = 0;
@@ -825,7 +826,7 @@ QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QL
     // The wires already reaching 'to', and those joined to them: the wire
     // may end on any of their points instead, joining the net there.
     QList<Point> alsoTo;
-    {
+    if (!exact) {
         const WireGroups groups = wireGroupsOf(obstacles);
         QSet<int> nets;
         for (int i = 0; i < groups.wires.size(); ++i) {
@@ -866,12 +867,14 @@ QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QL
 // points of 'kept' inside its segments count as its points for this. When
 // nothing comes clear, the least bad of all; when no candidate keeps
 // 'kept', the least bad of those that do not. On the grid, gridLedTo()
-// with 'rejoin' when it finds a way.
+// with 'rejoin' and 'exact' when it finds a way.
 QList<Point> ledTo(const QList<Point> &wirePoints, const Point &to, const QList<Point> &kept,
-                   bool rejoin, const Obstacles &obstacles, QList<Point> *branch = nullptr)
+                   bool rejoin, const Obstacles &obstacles, QList<Point> *branch = nullptr,
+                   bool exact = false)
 {
     if (obstacles.routing == WireRouting::Grid) {
-        const QList<Point> laid = gridLedTo(wirePoints, to, kept, rejoin, obstacles, branch);
+        const QList<Point> laid =
+            gridLedTo(wirePoints, to, kept, rejoin, obstacles, branch, exact);
         if (!laid.isEmpty())
             return laid;
     }
@@ -2065,8 +2068,10 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
     return result;
 }
 
+// withWireEndAt() without the labels; with 'exact' the end goes to 'to'
+// itself, not to a wire already reaching it (gridLedTo()).
 static Sheet wireEndAt(const Sheet &sheet, const Library &library, const ObjectId &wire,
-                       bool last, const Point &to, WireRouting routing)
+                       bool last, const Point &to, WireRouting routing, bool exact = false)
 {
     Sheet result = sheet;
     for (int i = 0; i < result.wires.size(); ++i) {
@@ -2081,7 +2086,7 @@ static Sheet wireEndAt(const Sheet &sheet, const Library &library, const ObjectI
         const QList<Point> kept = jointsOn(sheet, dragged, {}, {points.last()});
         // The wire dragged keeps its other end where it is.
         points = ledTo(points, to, kept, false,
-                       obstaclesOf(sheet, library, routing).without(wire));
+                       obstaclesOf(sheet, library, routing).without(wire), nullptr, exact);
         if (!last)
             std::reverse(points.begin(), points.end());
         if (points.size() < 2)
@@ -2568,6 +2573,53 @@ Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectI
         sheet, segmentMoved(sheet, library, wire, index, delta, routing), library, wire, routing);
     const Sheet moved = withBusEntriesKept(sheet, laid);
     return withMarksCarried(sheet, moved, QSet<ObjectId>(), library);
+}
+
+ObjectId jointWire(const Sheet &sheet, const Library &library, const Point &point)
+{
+    if (isOnBus(sheet, point) || pinPoints(sheet, library).contains(point))
+        return ObjectId();
+    ObjectId through;
+    bool ending = false;
+    for (const Wire &wire : sheet.wires) {
+        if (wire.points.size() < 2 || !isOnWire(wire, point))
+            continue;
+        if (wire.points.first() == point || wire.points.last() == point) {
+            ending = true;
+        } else {
+            if (!through.isNull())
+                return ObjectId();
+            through = wire.id;
+        }
+    }
+    return ending ? through : ObjectId();
+}
+
+Sheet withJointMoved(const Sheet &sheet, const Library &library, const Point &from,
+                     const Point &to, WireRouting routing)
+{
+    const ObjectId through = jointWire(sheet, library, from);
+    if (through.isNull())
+        return sheet;
+    const auto wire = std::find_if(sheet.wires.cbegin(), sheet.wires.cend(),
+                                   [&through](const Wire &w) { return w.id == through; });
+    const Point target = nearestOnWire(*wire, to);
+    if (target == from)
+        return sheet;
+    // The wires ending at the joint, with which of their ends is there.
+    QList<QPair<ObjectId, bool>> ending;
+    for (const Wire &other : sheet.wires) {
+        if (other.id == through || other.points.size() < 2)
+            continue;
+        if (other.points.last() == from)
+            ending.append(qMakePair(other.id, true));
+        else if (other.points.first() == from)
+            ending.append(qMakePair(other.id, false));
+    }
+    Sheet result = sheet;
+    for (const auto &[id, last] : ending)
+        result = wireEndAt(result, library, id, last, target, routing, true);
+    return withMarksCarried(sheet, result, QSet<ObjectId>(), library);
 }
 
 } // namespace ppcb

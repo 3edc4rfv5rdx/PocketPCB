@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: A junction dot is dragged along the wire through it, the wires ending there following
 - N: Fit the drawing (Shift+Home, and its button) zooms to what is drawn on the sheet instead of the whole page
 - F: On the strip of tools Undo and Redo stand a gap away from the file buttons, the zoom buttons a gap before the modes
 - N: A Recent projects button on the strip of tools opens one of the projects opened lately

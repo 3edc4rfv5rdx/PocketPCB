@@ -950,6 +950,39 @@ private slots:
                             [&pin](const Point &p) { return p.y == pin.y + 5080000; }));
     }
 
+    // The demo's OUT wire starts at the corner of the wire from R1 to R2: a
+    // joint. Taken there and dragged down, it slides along that wire, and
+    // the OUT wire follows, its far end staying.
+    void aJointIsDraggedAlongItsWire()
+    {
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QVERIFY(window.openProject(QStringLiteral(PPCB_SOURCE_DIR "/examples/demo/demo.ppcb")));
+        SheetEditor *editor = window.sheetEditor();
+        const auto wires = [&window]() {
+            return window.document()->design().schematic.sheets.at(0).wires;
+        };
+        const Wire through = wires().at(1);
+        const Wire out = wires().at(2);
+        const Point joint = out.points.first();
+        QCOMPARE(through.points.at(1), joint);
+        editor->press(toMm(joint) + QPointF(0.3, 0), false);
+        editor->move(toMm(joint) + QPointF(0.3, 5.2), false);
+        editor->release(toMm(joint) + QPointF(0.3, 5.2), false);
+        const auto now = [&wires](const ObjectId &id) {
+            const QList<Wire> list = wires();
+            return *std::find_if(list.cbegin(), list.cend(),
+                                 [&id](const Wire &w) { return w.id == id; });
+        };
+        QCOMPARE(now(through.id).points, through.points);
+        QCOMPARE(now(out.id).points.first(), joint + Point({0, 5080000}));
+        QCOMPARE(now(out.id).points.last(), out.points.last());
+        // Its label stays on it.
+        const Label label = window.document()->design().schematic.sheets.at(0).labels.at(0);
+        QVERIFY(isOnWire(now(out.id), label.at));
+    }
+
     void partsArePlacedUntilEsc()
     {
         MainWindow window;
