@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "darlington-npn",
+  "footprints": ["to92-cbe", "to92-ebc", "to220-bce"],
+  "prefix": "Q",
+  "prefixGost": "VT",
+  "value": "",
+  "connector": false,
+  "group": "transistors",
+  "name": {"en": "Darlington transistor NPN", "uk": "Складений транзистор NPN", "ru": "Составной транзистор NPN"}
+}

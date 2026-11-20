@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "diac",
+  "footprints": ["diode-7.62", "diode-10.16"],
+  "prefix": "D",
+  "prefixGost": "VS",
+  "value": "",
+  "connector": false,
+  "group": "thyristors",
+  "name": {"en": "Diac", "uk": "Диністор симетричний", "ru": "Динистор симметричный"}
+}

@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "igbt",
+  "footprints": ["to220-gce"],
+  "prefix": "Q",
+  "prefixGost": "VT",
+  "value": "",
+  "connector": false,
+  "group": "transistors",
+  "name": {"en": "IGBT, N-channel", "uk": "IGBT, канал N", "ru": "IGBT, канал N"}
+}

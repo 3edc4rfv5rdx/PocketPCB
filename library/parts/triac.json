@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "triac",
+  "footprints": ["to220-t1t2g"],
+  "prefix": "Q",
+  "prefixGost": "VS",
+  "value": "",
+  "connector": false,
+  "group": "thyristors",
+  "name": {"en": "Triac", "uk": "Симістор", "ru": "Симистор"}
+}

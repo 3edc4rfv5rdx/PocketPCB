@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Built-in IGBT and Darlington transistors, a triac and a diac
 - N: Built-in Zener, Schottky, varicap and TVS diodes, a diode bridge and a photodiode
 - N: Built-in NTC and PTC thermistors, a photoresistor, a varistor, a trimmer and a variable capacitor
 - F: The potentiometer and the variable capacitor get a row of pads for their wires on the board
