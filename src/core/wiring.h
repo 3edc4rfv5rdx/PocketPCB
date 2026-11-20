@@ -151,7 +151,9 @@ enum class WireRouting { Hand, Grid };
 // whose end lay on a pin of a component left in place or on a bus left in
 // place keeps that end there; an end that lay on a wire left as it is, even
 // at such a pin, slides along the wires left as they are towards where it
-// goes, as the end of a moved segment does (withSegmentMoved()). A bend
+// goes, as the end of a moved segment does (withSegmentMoved()); an end that
+// lay on a wire laid again slides the same way along where that wire was,
+// and the wire keeps passing through the point it gets to. A bend
 // leads back to where the end is held, the least bad way, and a wire led
 // after a pin keeps passing through it. An end on a pin
 // that is moved as well just goes, whatever else lay there.

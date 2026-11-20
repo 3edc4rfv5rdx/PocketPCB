@@ -1311,6 +1311,29 @@ private slots:
         QCOMPARE(wires.at(2).points, QList<Point>({h(0, -2), h(0, 4)}));
     }
 
+    // A block moved up with a wire of it whose end lay on the middle of a
+    // wire laid again, its other end going with a part: the end slides
+    // along that wire and the wire still passes through it, no loop back to
+    // where the end was.
+    void aMovedWireEndSlidesAlongAWireLaidAgain()
+    {
+        const Library library = gridLibrary();
+        Sheet sheet;
+        sheet.components = {gridPart(h(12, 0)), gridPart(h(16, 10))};
+        sheet.wires = {wire({h(0, -20), h(0, 10), h(12, 10)}), wire({h(0, 0), h(8, 0)})};
+        const QSet<ObjectId> block = {sheet.components.at(0).id, sheet.components.at(1).id,
+                                      sheet.wires.at(1).id};
+        const QList<Wire> wires = withWiresFollowing(sheet, movedObjects(sheet, block, h(0, -4)),
+                                                     block, library, WireRouting::Grid)
+                                      .wires;
+        const auto byId = [&wires](const ObjectId &id) {
+            return *std::find_if(wires.cbegin(), wires.cend(),
+                                 [&id](const Wire &w) { return w.id == id; });
+        };
+        QCOMPARE(byId(sheet.wires.at(1).id).points, QList<Point>({h(0, -4), h(8, -4)}));
+        QVERIFY(isOnWire(byId(sheet.wires.at(0).id), h(0, -4)));
+    }
+
     // A part dragged down: its wire, of the ways as cheap, keeps its run and
     // comes down into the pin.
     void gridWiresFollowAMovedPart()

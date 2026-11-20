@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A moved block no longer loops a wire back to where it touched a wire laid again; its end slides along that wire instead
 - E: A wire segment dragged on the grid takes along every wire ending on it, also two ending at one point from both sides
 - F: Junction dots on the schematic are drawn in the colour of the parts, so they stand out on the wires
 - F: Wires, pins and symbol lines on the schematic are drawn 0.33 mm thick instead of 0.25

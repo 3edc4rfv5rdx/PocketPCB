@@ -1800,8 +1800,10 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
     // by what is not moved with it: on a pin or a bus left in place, there;
     // on a wire that stays as it is, even on such a pin, slid along the
     // wires that stay towards 'goneTo', as the end of a moved segment
-    // slides; on a wire laid again, there; where a wire that goes whole
-    // takes it. Nothing when it is free, or on a pin that goes as well.
+    // slides; on a wire laid again, slid along the wires not moved, where
+    // they were, towards 'goneTo', and that wire keeps passing through the
+    // point it gets to; where a wire that goes whole takes it. Nothing when
+    // it is free, or on a pin that goes as well.
     // 'still', when given, tells whether it is held by what stays.
     const auto heldAt = [&](const Point &end, const Point &goneTo,
                             bool *still = nullptr) -> std::optional<Point> {
@@ -1828,7 +1830,9 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
         }
         if (onStillWire)
             return slidAlongWires(before.wires, changing, end, goneTo);
-        return onWireOf(end, moved) ? std::optional<Point>(end) : std::nullopt;
+        if (!onWireOf(end, moved))
+            return std::nullopt;
+        return slidAlongWires(before.wires, moved, end, goneTo);
     };
     // Where the moved wire 'was' has taken its last end, or its first: its
     // end itself when it is not laid the same.
