@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The BOM tab closes by a small cross that keeps the tabs their height and turns over under the mouse
 - F: A pressed button of the strip of tools stands out in the colour of a choice, framed, and no button moves when another is pressed
 - N: Help > About names the program, its version, the day of its build and its license
 - F: The menu bar is gone: the menus open from a button on the strip of tools, now over the canvas with save, undo and redo, the modes in the middle and the panels on the right

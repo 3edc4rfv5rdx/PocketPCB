@@ -5,10 +5,10 @@
 
 #include <QWidget>
 
+class QAbstractButton;
 class QLineEdit;
 class QMenu;
 class QTabBar;
-class QToolButton;
 
 namespace ppcb {
 
@@ -95,7 +95,7 @@ private:
     bool m_bomTab = false;
     // On the tab of the BOM while it is there; taken off before tabs are
     // removed, which deletes their buttons.
-    QToolButton *m_bomClose = nullptr;
+    QAbstractButton *m_bomClose = nullptr;
     // The line of a sheet being renamed, and the sheet; null when none is.
     QLineEdit *m_renameEdit = nullptr;
     ObjectId m_renamedSheet;

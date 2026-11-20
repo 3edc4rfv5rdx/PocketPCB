@@ -4,6 +4,7 @@
 #include "document.h"
 #include "sheeteditor.h"
 
+#include <QAbstractButton>
 #include <QActionGroup>
 #include <QEvent>
 #include <QGuiApplication>
@@ -12,8 +13,8 @@
 #include <QLineEdit>
 #include <QMenu>
 #include <QMessageBox>
+#include <QPainter>
 #include <QSignalBlocker>
-#include <QStyle>
 #include <QTabBar>
 #include <QTimer>
 #include <QToolButton>
@@ -30,6 +31,49 @@ ObjectId tabId(const QTabBar *bar, int tab)
 
 // What the tab of the BOM keeps besides its null id.
 const char BOM_TAB_MARK[] = "bom";
+
+// The close button of the BOM tab, as a share of the height of a line of
+// text, so that the tab keeps the height of the others; its cross, as a
+// share of the button.
+const double CLOSE_SIZE = 0.8;
+const double CROSS_SIZE = 0.4;
+const qreal CROSS_WIDTH = 1.3;
+
+// A small cross on the tab; under the mouse it turns over: a round spot of
+// the colour of the text, the cross in the colour of the paper.
+class TabCloseButton : public QAbstractButton
+{
+public:
+    explicit TabCloseButton(QWidget *parent)
+        : QAbstractButton(parent)
+    {
+        setAttribute(Qt::WA_Hover);
+        setCursor(Qt::ArrowCursor);
+        setFocusPolicy(Qt::NoFocus);
+        const int size = qRound(fontMetrics().height() * CLOSE_SIZE);
+        setFixedSize(size, size);
+    }
+
+protected:
+    void paintEvent(QPaintEvent *) override
+    {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        const QRectF box = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
+        const bool turned = underMouse() || isDown();
+        if (turned) {
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(palette().color(QPalette::WindowText));
+            painter.drawEllipse(box);
+        }
+        const QColor cross = palette().color(turned ? QPalette::Window : QPalette::WindowText);
+        painter.setPen(QPen(cross, CROSS_WIDTH, Qt::SolidLine, Qt::RoundCap));
+        const double half = box.width() * CROSS_SIZE / 2;
+        const QPointF middle = box.center();
+        painter.drawLine(middle + QPointF(-half, -half), middle + QPointF(half, half));
+        painter.drawLine(middle + QPointF(-half, half), middle + QPointF(half, -half));
+    }
+};
 
 } // namespace
 
@@ -57,19 +101,11 @@ SheetTabs::SheetTabs(Document *document, SheetEditor *editor, QWidget *parent)
     layout->addWidget(addButton);
     layout->addStretch();
 
-    m_bomClose = new QToolButton(m_bar);
+    m_bomClose = new TabCloseButton(m_bar);
     m_bomClose->setObjectName(QStringLiteral("bomTabClose"));
-    m_bomClose->setIcon(style()->standardIcon(QStyle::SP_TitleBarCloseButton));
     m_bomClose->setToolTip(tr("Close"));
-    m_bomClose->setAutoRaise(true);
-    // No padding: as large as the close button the style draws on a tab,
-    // so that the tabs keep the height of their text.
-    const QSize closeSize(style()->pixelMetric(QStyle::PM_TabCloseIndicatorWidth, nullptr, m_bar),
-                          style()->pixelMetric(QStyle::PM_TabCloseIndicatorHeight, nullptr, m_bar));
-    m_bomClose->setIconSize(closeSize);
-    m_bomClose->setFixedSize(closeSize);
     m_bomClose->hide();
-    connect(m_bomClose, &QToolButton::clicked, this, &SheetTabs::bomClosed);
+    connect(m_bomClose, &QAbstractButton::clicked, this, &SheetTabs::bomClosed);
 
     connect(addButton, &QToolButton::clicked, this,
             [this] { addSheet(int(m_document->design().schematic.sheets.size())); });

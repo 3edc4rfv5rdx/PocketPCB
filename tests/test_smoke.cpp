@@ -265,7 +265,7 @@ private slots:
                                                 QStringLiteral("BOM")}));
         QCOMPARE(window.findChild<QTabBar *>()->currentIndex(), 2);
         QVERIFY(AppSettings::bomTabShown());
-        QToolButton *close = window.findChild<QToolButton *>(QStringLiteral("bomTabClose"));
+        QAbstractButton *close = window.findChild<QAbstractButton *>(QStringLiteral("bomTabClose"));
         QVERIFY(close != nullptr && !close->isHidden());
         close->click();
         QVERIFY(!bom->isChecked());
