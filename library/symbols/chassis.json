@@ -12,5 +12,6 @@
   "showPinNumbers": false,
   "showPinNames": false,
   "power": "CHASSIS",
+  "hidePowerName": true,
   "name": {"en": "Chassis", "uk": "Корпус", "ru": "Корпус"}
 }
