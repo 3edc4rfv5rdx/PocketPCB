@@ -63,8 +63,16 @@ public:
     bool placePart(LibraryPanel::Source source, const QString &part, const QString &footprint);
     // The same for a power symbol; it becomes the one P places.
     bool placePower(LibraryPanel::Source source, const QString &symbol);
-    // Places again the power symbol placed last, the ground at first.
+    // P and the Power button: places again the power symbol placed last,
+    // the chassis at first.
     bool placeLastPower();
+    // The menu of the Power button's arrow, filled as it opens: the power
+    // symbols with their drawings, the one P places ticked; the one chosen
+    // is placed and becomes it.
+    void fillPowerMenu(QMenu *menu);
+    // The Power button shows the power symbol P places; its own picture
+    // while that symbol cannot be found.
+    void updatePowerIcon();
     // Starts placing labels (see SheetEditor::startPlacingLabel()).
     bool placeLabel();
     // Starts placing no-connect marks (see SheetEditor::startPlacingNoConnect()).
@@ -253,7 +261,7 @@ private:
     MergedLibrary m_library;
     // The power symbol P places: where it was taken from, and its name.
     LibraryPanel::Source m_lastPowerSource = LibraryPanel::Source::Library;
-    QString m_lastPowerSymbol = QStringLiteral("ground");
+    QString m_lastPowerSymbol = QStringLiteral("chassis");
     LibraryPanel *m_libraryPanel = nullptr;
     QDockWidget *m_libraryDock = nullptr;
     PropertiesPanel *m_propertiesPanel = nullptr;

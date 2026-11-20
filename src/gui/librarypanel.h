@@ -3,6 +3,7 @@
 #include "library.h"
 #include "project.h"
 
+#include <QIcon>
 #include <QWidget>
 
 #include <functional>
@@ -39,6 +40,10 @@ private:
     bool m_pressed = false;
     bool m_dragging = false;
 };
+
+// The drawing of 'symbol' in 'color' alone, fitted into an icon of 'size'
+// pixels, sharp on screens of twice the pixels too.
+QIcon symbolIcon(const Symbol &symbol, int size, const QColor &color);
 
 // The drawing of one part: its symbol above, one of its footprints below.
 class PartPreview : public QWidget

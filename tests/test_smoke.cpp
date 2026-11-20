@@ -990,7 +990,7 @@ private slots:
                                   QStringLiteral("capacitor-5.08")));
     }
 
-    // P places the ground first, then the power symbol placed last; each
+    // P places the chassis first, then the power symbol placed last; each
     // one gets the net name of its symbol, which is copied into the project.
     void powerSymbolsArePlacedWithP()
     {
@@ -1012,8 +1012,8 @@ private slots:
         editor->press(QPointF(50.8, 50.8), false);
         window.findChild<QAction *>(QStringLiteral("actionDeselect"))->trigger();
         QCOMPARE(int(powers().size()), before + 1);
-        QCOMPARE(powers().last().symbol, QStringLiteral("ground"));
-        QCOMPARE(powers().last().name, QStringLiteral("GND"));
+        QCOMPARE(powers().last().symbol, QStringLiteral("chassis"));
+        QCOMPARE(powers().last().name, QStringLiteral("CHASSIS"));
         QCOMPARE(powers().last().at, Point({mmToNm(50.8), mmToNm(50.8)}));
 
         QVERIFY(window.placePower(LibraryPanel::Source::Library, QStringLiteral("power-arrow")));

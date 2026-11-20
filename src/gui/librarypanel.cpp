@@ -11,6 +11,7 @@
 #include <QLineEdit>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPixmap>
 #include <QScrollBar>
 #include <QSignalBlocker>
 #include <QSplitter>
@@ -103,7 +104,32 @@ void paintFitted(QPainter &painter, const QRectF &area, const QRectF &bounds, Pa
     painter.restore();
 }
 
+// The pixmaps of symbolIcon(): as many pixels per pixel of the icon.
+const int ICON_SCALES[] = {1, 2};
+
 } // namespace
+
+QIcon symbolIcon(const Symbol &symbol, int size, const QColor &color)
+{
+    QIcon icon;
+    for (const int scale : ICON_SCALES) {
+        QPixmap pixmap(size * scale, size * scale);
+        pixmap.fill(Qt::transparent);
+        QPainter painter(&pixmap);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.scale(scale, scale);
+        paintFitted(painter, QRectF(0, 0, size, size), symbolBounds(symbol),
+                    [&symbol](QPainter &p) { paintSymbol(p, symbol); });
+        // Whatever the colours of the drawing, the lines take 'color'.
+        painter.resetTransform();
+        painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        painter.fillRect(pixmap.rect(), color);
+        painter.end();
+        pixmap.setDevicePixelRatio(scale);
+        icon.addPixmap(pixmap);
+    }
+    return icon;
+}
 
 PartPreview::PartPreview(QWidget *parent)
     : QWidget(parent)

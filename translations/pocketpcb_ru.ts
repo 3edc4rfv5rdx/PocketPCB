@@ -513,6 +513,10 @@
 <context>
     <name>ppcb::MainWindow</name>
     <message>
+        <source>The library has no power symbols</source>
+        <translation>В библиотеке нет символов питания</translation>
+    </message>
+    <message>
         <source>&amp;Help</source>
         <translation>&amp;Справка</translation>
     </message>

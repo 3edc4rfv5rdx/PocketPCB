@@ -49,6 +49,7 @@
 #include <QPushButton>
 #include <QShowEvent>
 #include <QStatusBar>
+#include <QStyle>
 #include <QTimer>
 #include <QToolButton>
 #include <QUndoStack>
@@ -77,6 +78,8 @@ const int MS_PER_MINUTE = 60 * 1000;
 const int HOVER_ALPHA = 30;
 const int HELD_ALPHA = 60;
 const int PRESSED_ALPHA = 90;
+// The arrow beside a button that has a menu, in pixels.
+const int MENU_ARROW_WIDTH = 12;
 // The table of the colours of the paper: its swatches, in pixels, and how
 // many stand in a row. The one chosen has a frame in the selection colour.
 const int SWATCH_WIDTH = 72;
@@ -1063,9 +1066,11 @@ void MainWindow::createToolBar()
                        "QToolButton:hover { background-color: %1; }"
                        "QToolButton:pressed { background-color: %2; }"
                        "QToolButton:checked { background-color: %3; border-color: %4; }"
-                       "QToolButton::menu-indicator { image: none; }")
+                       "QToolButton::menu-indicator { image: none; }"
+                       "QToolButton[popupMode=\"1\"] { padding-right: %5px; }"
+                       "QToolButton::menu-button { border: none; width: %5px; }")
             .arg(rgba(color, HOVER_ALPHA), rgba(color, HELD_ALPHA), rgba(pressed, PRESSED_ALPHA),
-                 pressed.name()));
+                 pressed.name(), QString::number(MENU_ARROW_WIDTH)));
 
     // The menus hold the actions but are not on the window: the window
     // takes their keys itself.
@@ -1152,6 +1157,14 @@ void MainWindow::createToolBar()
         // pressed while the mode goes on.
         connect(action, &QAction::triggered, this, &MainWindow::updateTools);
     }
+    // The arrow of the Power button chooses the symbol it places.
+    QMenu *powerMenu = new QMenu(this);
+    connect(powerMenu, &QMenu::aboutToShow, this, [this, powerMenu] { fillPowerMenu(powerMenu); });
+    auto *powerButton = qobject_cast<QToolButton *>(
+        bar->widgetForAction(m_toolActions.value(int(SheetEditor::Tool::Power))));
+    Q_ASSERT(powerButton != nullptr);
+    powerButton->setMenu(powerMenu);
+    powerButton->setPopupMode(QToolButton::MenuButtonPopup);
     // In the menu and the menu of the sheet only, with their pictures.
     m_sheetActions.append(dress("actionRotate", ToolIcon::Rotate));
     m_sheetActions.append(dress("actionMirror", ToolIcon::Mirror));
@@ -1400,6 +1413,7 @@ void MainWindow::loadLibrary()
     const Library user = LibraryFolder::read(AppSettings::userLibraryFolder(), problems);
     m_library = mergeLibraries(builtIn, user);
     updateLibraryPanel();
+    updatePowerIcon();
     if (!problems.isEmpty())
         showStatus(problems.first());
 }
@@ -1424,6 +1438,7 @@ bool MainWindow::placePower(LibraryPanel::Source source, const QString &symbol)
         return false;
     m_lastPowerSource = source;
     m_lastPowerSymbol = symbol;
+    updatePowerIcon();
     return true;
 }
 
@@ -1445,9 +1460,69 @@ bool MainWindow::placeNoConnect()
     return m_sheetEditor->isPlacing();
 }
 
+void MainWindow::updatePowerIcon()
+{
+    QAction *action = findChild<QAction *>(QStringLiteral("actionPlacePower"));
+    if (action == nullptr)
+        return;
+    const QColor color = palette().color(QPalette::WindowText);
+    const Symbol *symbol = sourceLibrary(m_lastPowerSource).findSymbol(m_lastPowerSymbol);
+    action->setIcon(symbol != nullptr ? symbolIcon(*symbol, TOOL_ICON_SIZE, color)
+                                      : toolIcon(ToolIcon::Power, color));
+}
+
 bool MainWindow::placeLastPower()
 {
     return placePower(m_lastPowerSource, m_lastPowerSymbol);
+}
+
+void MainWindow::fillPowerMenu(QMenu *menu)
+{
+    menu->clear();
+    // The library's power symbols, then those only the project has, each
+    // by name.
+    struct Choice
+    {
+        LibraryPanel::Source source;
+        QString symbol;
+        QString name;
+    };
+    QList<Choice> choices;
+    const QStringList languages = nameLanguages();
+    const auto collect = [&choices, &languages](LibraryPanel::Source source, const Library &library,
+                                                const Library *skipped) {
+        QList<Choice> found;
+        for (auto it = library.symbols.constBegin(); it != library.symbols.constEnd(); ++it) {
+            if (it.value().isPower()
+                && (skipped == nullptr || !skipped->symbols.contains(it.key())))
+                found.append({source, it.key(), it.value().displayName(languages, it.key())});
+        }
+        std::sort(found.begin(), found.end(), [](const Choice &a, const Choice &b) {
+            return QString::localeAwareCompare(a.name, b.name) < 0;
+        });
+        choices += found;
+    };
+    collect(LibraryPanel::Source::Library, m_library.items, nullptr);
+    collect(LibraryPanel::Source::Project, m_document->design().library, &m_library.items);
+
+    const int iconSize = style()->pixelMetric(QStyle::PM_SmallIconSize);
+    const QColor color = palette().color(QPalette::WindowText);
+    for (const Choice &choice : std::as_const(choices)) {
+        const Symbol &symbol = *sourceLibrary(choice.source).findSymbol(choice.symbol);
+        QAction *action = menu->addAction(symbolIcon(symbol, iconSize, color),
+                                          choice.name + QStringLiteral(" (") + symbol.power
+                                              + QLatin1Char(')'));
+        // The one the button places now is ticked.
+        action->setCheckable(true);
+        action->setChecked(choice.source == m_lastPowerSource
+                           && choice.symbol == m_lastPowerSymbol);
+        const LibraryPanel::Source source = choice.source;
+        const QString name = choice.symbol;
+        connect(action, &QAction::triggered, this,
+                [this, source, name] { placePower(source, name); });
+    }
+    if (choices.isEmpty())
+        menu->addAction(tr("The library has no power symbols"))->setEnabled(false);
 }
 
 bool MainWindow::canPlace()
