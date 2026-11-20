@@ -201,8 +201,10 @@ Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &
 // a wire or a bus stays, and a bend leads to it. The ends of other wires on the segment
 // go along with it; those on a segment next to it that shrinks away from
 // them go to the corner it leaves them for; labels on the wire go with it as
-// in withWiresFollowing(). 'sheet' as it is when it has no such segment or
-// the move is nothing.
+// in withWiresFollowing(). A pin the wire passed through, at a corner or
+// along a segment, that it no longer reaches and that no wire joined to it
+// does, gets a wire of its own to the nearest point of it. 'sheet' as it is
+// when it has no such segment or the move is nothing.
 Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &wire,
                        int index, const Point &delta, WireRouting routing = WireRouting::Hand);
 

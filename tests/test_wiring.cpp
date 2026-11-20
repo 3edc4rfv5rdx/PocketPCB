@@ -1334,6 +1334,39 @@ private slots:
         QVERIFY(isOnWire(byId(sheet.wires.at(0).id), h(0, -4)));
     }
 
+    // A segment dragged away from a pin the wire passed through, at its
+    // corner or along it: the pin keeps a wire of its own to the moved one.
+    void aPinOnAMovedSegmentStaysJoined()
+    {
+        const Library library = gridLibrary();
+        for (const WireRouting routing : {WireRouting::Hand, WireRouting::Grid}) {
+            // At the corner: the left pin of a part at (14, 0).
+            Sheet corner;
+            corner.components = {gridPart(h(14, 0))};
+            corner.wires = {wire({h(0, 0), h(10, 0), h(10, 10)})};
+            QList<Wire> wires =
+                withSegmentMoved(corner, library, corner.wires.first().id, 1, h(-4, 0), routing)
+                    .wires;
+            QCOMPARE(wires.size(), 2);
+            QCOMPARE(wires.at(0).points, QList<Point>({h(0, 0), h(6, 0), h(6, 10)}));
+            QCOMPARE(wires.at(1).points, QList<Point>({h(10, 0), h(6, 0)}));
+            // Along it: the upper pin of an upright part under it.
+            Sheet along;
+            along.components = {gridPart(h(10, 4))};
+            along.components[0].rotation = 90;
+            along.wires = {wire({h(0, 0), h(20, 0)})};
+            wires = withSegmentMoved(along, library, along.wires.first().id, 0, h(0, -2), routing)
+                        .wires;
+            QCOMPARE(wires.size(), 2);
+            QCOMPARE(wires.at(0).points, QList<Point>({h(0, -2), h(20, -2)}));
+            QCOMPARE(wires.at(1).points, QList<Point>({h(10, 0), h(10, -2)}));
+            // Still on it after the move: nothing is added.
+            wires = withSegmentMoved(corner, library, corner.wires.first().id, 1, h(2, 0), routing)
+                        .wires;
+            QCOMPARE(wires.size(), 1);
+        }
+    }
+
     // A part dragged down: its wire, of the ways as cheap, keeps its run and
     // comes down into the pin.
     void gridWiresFollowAMovedPart()

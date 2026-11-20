@@ -2515,11 +2515,58 @@ Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &
                             QSet<ObjectId>(), library);
 }
 
+namespace {
+
+// 'after', where a segment of the wire 'wire' of 'before' has been moved,
+// with a wire of its own for each pin the wire passed through, at a corner
+// or along a segment, that it no longer reaches and that no wire joined to
+// it does: to the nearest point of the wire.
+Sheet withPinsKept(const Sheet &before, const Sheet &after, const Library &library,
+                   const ObjectId &wire, WireRouting routing)
+{
+    const auto find = [&wire](const Sheet &sheet) -> const Wire * {
+        const auto it = std::find_if(sheet.wires.cbegin(), sheet.wires.cend(),
+                                     [&wire](const Wire &w) { return w.id == wire; });
+        return it == sheet.wires.cend() ? nullptr : &*it;
+    };
+    const Wire *was = find(before);
+    const Wire *now = find(after);
+    if (was == nullptr || now == nullptr || was->points.size() < 2)
+        return after;
+    const Wire moved = *now;
+    Sheet result = after;
+    Obstacles around = obstaclesOf(result, library, routing);
+    for (const Point &pin : pinPoints(before, library)) {
+        if (pin == was->points.first() || pin == was->points.last() || !isOnWire(*was, pin)
+            || isOnWire(moved, pin))
+            continue;
+        const QSet<ObjectId> net = joinedWires(result, wire);
+        const bool joined = std::any_of(result.wires.cbegin(), result.wires.cend(),
+                                        [&](const Wire &w) {
+                                            return net.contains(w.id) && isOnWire(w, pin);
+                                        });
+        if (joined)
+            continue;
+        const Point to = nearestOnWire(moved, pin);
+        Wire stub;
+        stub.id = newObjectId();
+        stub.points = laidBetween(pin, to, pin.x == to.x, around.without(wire));
+        if (stub.points.size() >= 2) {
+            around.add(stub);
+            result.wires.append(stub);
+        }
+    }
+    return result;
+}
+
+} // namespace
+
 Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &wire,
                        int index, const Point &delta, WireRouting routing)
 {
-    const Sheet moved =
-        withBusEntriesKept(sheet, segmentMoved(sheet, library, wire, index, delta, routing));
+    const Sheet laid = withPinsKept(
+        sheet, segmentMoved(sheet, library, wire, index, delta, routing), library, wire, routing);
+    const Sheet moved = withBusEntriesKept(sheet, laid);
     return withMarksCarried(sheet, moved, QSet<ObjectId>(), library);
 }
 
