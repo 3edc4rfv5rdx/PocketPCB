@@ -483,6 +483,27 @@ private slots:
         QVERIFY(isColor(colorAt(colored, -5, -8), paintcolor::wire()));
     }
 
+    // The drawing's bounds hold a level wire and a named bus with its
+    // name, and nothing of the empty paper; an empty sheet has none.
+    void drawingBoundsHoldWhatIsPlaced()
+    {
+        Sheet sheet;
+        QVERIFY(sheetDrawingBounds(sheet, Library(), PowerShown()).isNull());
+        Wire wire;
+        wire.points = {Point{10000000, 20000000}, Point{30000000, 20000000}};
+        sheet.wires.append(wire);
+        QRectF bounds = sheetDrawingBounds(sheet, Library(), PowerShown());
+        QCOMPARE(bounds, QRectF(10, 20, 20, 0));
+        Bus bus;
+        bus.name = QStringLiteral("D[0..7]");
+        bus.points = {Point{10000000, 40000000}, Point{30000000, 40000000}};
+        sheet.buses.append(bus);
+        bounds = sheetDrawingBounds(sheet, Library(), PowerShown());
+        QVERIFY(bounds.contains(busNameRect(bus, 0)));
+        QVERIFY(bounds.bottom() >= 40);
+        QVERIFY(bounds.width() < 40 && bounds.height() < 40);
+    }
+
     void sheetObjectsAreDrawn()
     {
         Schematic schematic = emptySchematic();

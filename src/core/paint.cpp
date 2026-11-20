@@ -1259,6 +1259,20 @@ Point busNamePoint(const Bus &bus, int index)
     return bus.points.value(0) + bus.namesAt.value(index);
 }
 
+QRectF sheetDrawingBounds(const Sheet &sheet, const Library &library, const PowerShown &power)
+{
+    Bounds bounds;
+    for (const SheetObjectShape &shape : sheetObjectShapes(sheet, library, power))
+        bounds.add(shape.rect);
+    for (const Bus &bus : sheet.buses) {
+        if (bus.name.isEmpty())
+            continue;
+        for (int i = 0; i < bus.namesAt.size(); ++i)
+            bounds.add(busNameRect(bus, i));
+    }
+    return bounds.isEmpty() ? QRectF() : bounds.rect();
+}
+
 QRectF busNameRect(const Bus &bus, int index)
 {
     return textBounds(busNameAt(bus, index), bus.name, LABEL_TEXT_HEIGHT, TextAlign::Left);

@@ -128,6 +128,9 @@ private:
     void updateTools();
     // The whole page, or the library file, fills the canvas.
     void fitView();
+    // What is drawn on the page, without the empty paper round it, or the
+    // library file, fills the canvas.
+    void fitDrawing();
     // The canvas shows millimetres as millimetres on the screen, as far as
     // the screen tells its size.
     void showActualSize();

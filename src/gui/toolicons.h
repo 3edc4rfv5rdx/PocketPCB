@@ -27,6 +27,7 @@ enum class ToolIcon {
     ZoomIn,
     ZoomOut,
     ZoomFit,
+    ZoomFitDrawing,
     ActualSize,
     Library,
     Properties,

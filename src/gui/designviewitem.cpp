@@ -18,6 +18,9 @@ const double SELECTED_LINE_WIDTH = 0.8;
 const int LIT_NET_ALPHA = 110;
 // The radius of the dot on a pin of the net lit, in millimetres.
 const double LIT_PIN_RADIUS = 0.6;
+// The least width and height of what a view fitted to the drawing holds,
+// in millimetres: a lone straight wire has none across it.
+const double FIT_DRAWING_MIN_SIZE = 10.0;
 
 } // namespace
 
@@ -49,6 +52,21 @@ QRectF DesignViewItem::pageBounds() const
     if (m_page == boardPage())
         return boardBounds(design.board, design.library);
     return paperRect(design.schematic.sheets.at(m_page));
+}
+
+QRectF DesignViewItem::drawingBounds() const
+{
+    const Design &design = m_document->design();
+    if (m_page == boardPage())
+        return boardBounds(design.board, design.library);
+    const Sheet &sheet = design.schematic.sheets.at(m_page);
+    QRectF bounds =
+        sheetDrawingBounds(sheet, design.library, powerShown(design.project, design.schematic));
+    if (bounds.isNull())
+        return paperRect(sheet);
+    const double growX = qMax(0.0, FIT_DRAWING_MIN_SIZE - bounds.width()) / 2;
+    const double growY = qMax(0.0, FIT_DRAWING_MIN_SIZE - bounds.height()) / 2;
+    return bounds.adjusted(-growX, -growY, growX, growY);
 }
 
 void DesignViewItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,

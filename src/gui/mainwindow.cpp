@@ -566,6 +566,10 @@ void MainWindow::createMenus()
     fitAction->setObjectName(QStringLiteral("actionZoomFit"));
     fitAction->setShortcut(QKeySequence(Qt::Key_Home));
     connect(fitAction, &QAction::triggered, this, &MainWindow::fitView);
+    QAction *fitDrawingAction = viewMenu->addAction(tr("Fit the drawing"));
+    fitDrawingAction->setObjectName(QStringLiteral("actionZoomFitDrawing"));
+    fitDrawingAction->setShortcut(QKeySequence(Qt::SHIFT | Qt::Key_Home));
+    connect(fitDrawingAction, &QAction::triggered, this, &MainWindow::fitDrawing);
     QAction *actualSizeAction = viewMenu->addAction(tr("Actual size"));
     actualSizeAction->setObjectName(QStringLiteral("actionActualSize"));
     actualSizeAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_0));
@@ -1198,6 +1202,7 @@ void MainWindow::createToolBar()
     put("actionZoomIn", ToolIcon::ZoomIn);
     put("actionZoomOut", ToolIcon::ZoomOut);
     put("actionZoomFit", ToolIcon::ZoomFit);
+    put("actionZoomFitDrawing", ToolIcon::ZoomFitDrawing);
     put("actionActualSize", ToolIcon::ActualSize);
     gap();
 
@@ -1269,6 +1274,14 @@ void MainWindow::fitView()
         m_canvas->fitRect(m_libraryItem->boundingRect());
     else
         m_canvas->fitRect(m_designItem->pageBounds());
+}
+
+void MainWindow::fitDrawing()
+{
+    if (m_libraryItem != nullptr && m_libraryItem->isVisible())
+        m_canvas->fitRect(m_libraryItem->boundingRect());
+    else
+        m_canvas->fitRect(m_designItem->drawingBounds());
 }
 
 void MainWindow::showActualSize()

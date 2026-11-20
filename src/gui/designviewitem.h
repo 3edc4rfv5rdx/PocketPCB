@@ -30,6 +30,10 @@ public:
     // What a view fitted to the shown page should hold: the paper of a
     // sheet, or everything on the board.
     QRectF pageBounds() const;
+    // What a view fitted to the drawing should hold: everything placed on
+    // a sheet, at least FIT_DRAWING_MIN_SIZE across, or its paper when
+    // nothing is; everything on the board.
+    QRectF drawingBounds() const;
 
     // Sheets are edited through 'editor': the item hands it the left mouse
     // button and the hovering mouse, and draws what it holds (the

@@ -138,6 +138,10 @@ struct SheetObjectShape
 QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &library,
                                           const PowerShown &power);
 
+// What holds everything placed on 'sheet', texts and bus names included:
+// what a view fitted to the drawing shows. Null when nothing is placed.
+QRectF sheetDrawingBounds(const Sheet &sheet, const Library &library, const PowerShown &power);
+
 // The texts a component shows beside its symbol.
 enum class ComponentText { Designator, Value };
 // What is drawn for the text: the designator, or the value; a grey "VALUE"

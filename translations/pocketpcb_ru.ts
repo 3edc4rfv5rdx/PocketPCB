@@ -601,6 +601,10 @@
         <translation>Вписать лист</translation>
     </message>
     <message>
+        <source>Fit the drawing</source>
+        <translation>Вписать схему</translation>
+    </message>
+    <message>
         <source>Actual size</source>
         <translation>Реальный размер</translation>
     </message>

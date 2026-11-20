@@ -601,6 +601,10 @@
         <translation>Вписати аркуш</translation>
     </message>
     <message>
+        <source>Fit the drawing</source>
+        <translation>Вписати схему</translation>
+    </message>
+    <message>
         <source>Actual size</source>
         <translation>Справжній розмір</translation>
     </message>

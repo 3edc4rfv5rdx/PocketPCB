@@ -149,7 +149,12 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
             painter.drawLine(QPointF(10, 7), QPointF(10, 13));
         break;
     case ToolIcon::ZoomFit:
-        painter.drawRect(QRectF(8, 8, 8, 8));
+    case ToolIcon::ZoomFitDrawing:
+        // The page, or a zigzag for what is drawn on it, and arrows out.
+        if (icon == ToolIcon::ZoomFit)
+            painter.drawRect(QRectF(8, 8, 8, 8));
+        else
+            painter.drawPolyline(polygon({{8, 12}, {9, 9}, {11, 15}, {13, 9}, {15, 15}, {16, 12}}));
         for (const QPointF &corner : {QPointF(3, 3), QPointF(21, 3), QPointF(21, 21), QPointF(3, 21)}) {
             // An arrow from the middle to the corner.
             const QPointF from = corner + (QPointF(12, 12) - corner) * 0.45;
