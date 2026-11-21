@@ -33,11 +33,12 @@ struct Net
 {
     // The name of a power symbol on it, else the text of a label on it, the
     // first in alphabetical order among them; else its 'tableName'; else
-    // "N" and a number, given in the order of the nets' first pins.
+    // "ppcbautoN" and a number, given in the order of the nets' first pins,
+    // a number giving a name another net has skipped.
     QString name;
     // True when the name is given by a power symbol, a label or the table
-    // of nets: it stays when the schematic is edited, where "N" and a
-    // number may not.
+    // of nets: it stays when the schematic is edited, where an automatic
+    // name may not.
     bool named = false;
     // The name given to it by its pins in the table of nets (see
     // NetByPins); empty when none is.

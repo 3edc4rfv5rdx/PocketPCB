@@ -14,6 +14,9 @@ namespace {
 
 // What a net's table name starts with, a number after it.
 const char TABLE_NAME_PREFIX[] = "NN";
+// What the name of a net with no name of its own starts with, a number
+// after it.
+const char AUTO_NAME_PREFIX[] = "ppcbautoN";
 
 // What a node of the nets stands for.
 struct Node
@@ -344,8 +347,20 @@ QList<Net> nets(const Schematic &schematic, const Library &library, const Projec
             return pinLess(a.pins.first(), b.pins.first());
         return a.objects.firstKey() < b.objects.firstKey();
     });
-    for (int i = 0; i < unnamed.size(); ++i)
-        unnamed[i].name = QStringLiteral("N") + QString::number(i + 1);
+    // A label or a power symbol may give a name like one of these: the
+    // number goes on past it, so that no two nets have one name.
+    QSet<QString> given;
+    for (const Net &net : std::as_const(named)) {
+        given.insert(net.name);
+        for (const QString &name : net.otherNames)
+            given.insert(name);
+    }
+    int number = 0;
+    for (Net &net : unnamed) {
+        do
+            net.name = QLatin1String(AUTO_NAME_PREFIX) + QString::number(++number);
+        while (given.contains(net.name));
+    }
     return named + unnamed;
 }
 
@@ -396,7 +411,7 @@ QString netClassOf(const Net &net, const Project &project, const Schematic &sche
         }
         return result;
     };
-    // A name of "N" and a number belongs to no net for good.
+    // An automatic name ("ppcbautoN" and a number) belongs to no net for good.
     QStringList keys{net.tableName};
     if (net.named)
         keys += QStringList{net.name} + net.otherNames;

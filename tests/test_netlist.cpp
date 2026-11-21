@@ -144,7 +144,7 @@ private slots:
         const QList<Net> all = nets(schematic, twoPinLibrary());
         // The free pins make no nets.
         QCOMPARE(int(all.size()), 1);
-        QCOMPARE(all.first().name, QStringLiteral("N1"));
+        QCOMPARE(all.first().name, QStringLiteral("ppcbautoN1"));
         QVERIFY(!all.first().named);
         QCOMPARE(pinsOf(all.first()), QStringLiteral("R1.2, R2.1"));
         QCOMPARE(all.first().objects.value(0), QSet<ObjectId>({sheet.wires.first().id}));
@@ -166,8 +166,21 @@ private slots:
         QCOMPARE(pinsOf(all.at(0)), QStringLiteral("R1.2, R2.1"));
         QCOMPARE(int(all.at(0).objects.value(0).size()), 2);
         // The crossing wire is a net of its own, with no pins, numbered last.
-        QCOMPARE(all.at(1).name, QStringLiteral("N2"));
+        QCOMPARE(all.at(1).name, QStringLiteral("ppcbautoN2"));
         QVERIFY(all.at(1).pins.isEmpty());
+    }
+
+    void anAutomaticNameSkipsANameALabelGives()
+    {
+        Schematic schematic = twoUnnamedNets();
+        // A label on the first net named like the first automatic name.
+        schematic.sheets[0].labels = {label(QStringLiteral("ppcbautoN1"), mm(10, 0))};
+        const QList<Net> all = nets(schematic, twoPinLibrary());
+        QCOMPARE(int(all.size()), 2);
+        QCOMPARE(all.at(0).name, QStringLiteral("ppcbautoN1"));
+        QVERIFY(all.at(0).named);
+        QCOMPARE(all.at(1).name, QStringLiteral("ppcbautoN2"));
+        QVERIFY(!all.at(1).named);
     }
 
     void pinsAtOnePointAreJoined()
@@ -240,9 +253,9 @@ private slots:
         schematic.sheets = {sheet};
         const QList<Net> all = nets(schematic, twoPinLibrary());
         QCOMPARE(int(all.size()), 2);
-        QCOMPARE(all.at(0).name, QStringLiteral("N1"));
+        QCOMPARE(all.at(0).name, QStringLiteral("ppcbautoN1"));
         QCOMPARE(pinsOf(all.at(0)), QStringLiteral("R2.2"));
-        QCOMPARE(all.at(1).name, QStringLiteral("N2"));
+        QCOMPARE(all.at(1).name, QStringLiteral("ppcbautoN2"));
         QCOMPARE(pinsOf(all.at(1)), QStringLiteral("R10.2"));
         // Built again, the same.
         const QList<Net> again = nets(schematic, twoPinLibrary());
@@ -345,7 +358,7 @@ private slots:
         QCOMPARE(all.at(0).tableName, QStringLiteral("NN1"));
         QCOMPARE(pinsOf(all.at(0)), QStringLiteral("R1.2, R2.1"));
         // The other is numbered as if alone.
-        QCOMPARE(all.at(1).name, QStringLiteral("N1"));
+        QCOMPARE(all.at(1).name, QStringLiteral("ppcbautoN1"));
         QVERIFY(all.at(1).tableName.isEmpty());
 
         // Renumbered parts keep it: the ids are the same.
@@ -463,9 +476,9 @@ private slots:
         project.classOfNet.insert(QStringLiteral("NN1"), powerClass);
 
         QList<Net> all = nets(schematic, library, project);
-        QCOMPARE(all.at(1).name, QStringLiteral("N2"));
-        // An old class by "N" and a number counts for nothing.
-        project.classOfNet.insert(QStringLiteral("N2"), powerClass);
+        QCOMPARE(all.at(1).name, QStringLiteral("ppcbautoN2"));
+        // A class by an automatic name counts for nothing.
+        project.classOfNet.insert(QStringLiteral("ppcbautoN2"), powerClass);
         QCOMPARE(netClassOf(all.at(1), project, schematic), project.defaultClass);
 
         project = withNetClass(project, all, all.at(1), powerClass);

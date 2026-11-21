@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: Nets with no name are named ppcbautoN1, ppcbautoN2 and so on, skipping a name a label or a power symbol already gives another net
 - E: Dropping the autosaved copy removes only its own files, no longer the whole autosave folder with other projects' copies and files put there by hand
 - E: Rectangular board goes back to Select, and the outline button shows the drawing mode while it is on, so the edges are dragged and not drawn over
 - N: Update board from schematic (F8) adds, removes and updates the footprints on the board after a list of the changes
