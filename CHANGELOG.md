@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: Moving parts together no longer shifts a wire off a pin left in place on its middle
 - I: Fix the build broken by the autosave cleanup
 - F: The nets panel shows a passing net name (TempN1) grey, its tip saying it may change and how to give a lasting one
 - F: Update board from schematic gives every net with no name a lasting name (NN1, NN2 …), so the nets of the pads stay when other parts are added

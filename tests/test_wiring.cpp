@@ -584,6 +584,36 @@ private slots:
         QCOMPARE(moved.wires.at(1).points, QList<Point>({mm(5, -4), mm(15, -4)}));
     }
 
+    // One wire from the right pin of a part at the origin through the left
+    // pin of a part at (15, 10), at (10, 10), to the right pin of a part at
+    // (0, 20). The two outer parts go left together: the wire is not shifted
+    // whole off the pin left in place but stays joined to it.
+    void aPinLeftInPlaceHoldsAWireWhoseEndsGoTogether()
+    {
+        const Library library = twoPinLibrary();
+        for (const WireRouting routing : {WireRouting::Hand, WireRouting::Grid}) {
+            Sheet sheet;
+            sheet.components = {twoPin(mm(0, 0)), twoPin(mm(0, 20)), twoPin(mm(15, 10))};
+            sheet.wires = {wire({mm(5, 0), mm(10, 0), mm(10, 20), mm(5, 20)})};
+            const QSet<ObjectId> outer = {sheet.components.at(0).id, sheet.components.at(1).id};
+            const Sheet moved = withWiresFollowing(
+                sheet, movedObjects(sheet, outer, mm(-4, 0)), outer, library, routing);
+            // The pin left in place and the two moved pins are on one net.
+            ObjectId held;
+            for (const Wire &w : moved.wires) {
+                if (isOnWire(w, mm(10, 10)))
+                    held = w.id;
+            }
+            QVERIFY(!held.isNull());
+            const QSet<ObjectId> net = joinedWires(moved, held);
+            for (const Point &pin : {mm(1, 0), mm(1, 20)}) {
+                QVERIFY(std::any_of(moved.wires.cbegin(), moved.wires.cend(), [&](const Wire &w) {
+                    return net.contains(w.id) && isOnWire(w, pin);
+                }));
+            }
+        }
+    }
+
     // Two wires end on the right pin of a part at the origin, one going
     // right and one going down. The part goes up: the first is led to the
     // pin through the old junction, and the second stays joined there.

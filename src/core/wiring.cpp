@@ -946,6 +946,14 @@ bool passesThrough(const Wire &wire, const Point &point)
     return p.size() >= 2 && p.first() != point && p.last() != point && isOnWire(wire, point);
 }
 
+// True when one of 'points' lies on 'wire' other than at its ends: what
+// holds the wire there, so that it cannot be shifted whole.
+bool passesThroughAny(const Wire &wire, const QList<Point> &points)
+{
+    return std::any_of(points.cbegin(), points.cend(),
+                       [&wire](const Point &point) { return passesThrough(wire, point); });
+}
+
 // The wire 'index' of 'wires', which passes through 'point', cut in two at
 // it: the first part keeps the wire's id, the second, put after it, gets
 // 'restId'. Both then end at 'point', and so are joined to a pin there.
@@ -1072,11 +1080,13 @@ public:
                 m_wires.append(qMakePair(&wire, now));
         }
         // A wire left alone whose two ends go the same way goes whole, and
-        // so does what lies on it: found one through another.
+        // so does what lies on it: found one through another. A pin left in
+        // place on its middle holds it.
         for (bool found = true; found;) {
             found = false;
             for (const Wire &wire : before.wires) {
-                if (moved.contains(wire.id) || wire.points.size() < 2 || isShifted(wire))
+                if (moved.contains(wire.id) || wire.points.size() < 2 || isShifted(wire)
+                    || passesThroughAny(wire, m_stillPins))
                     continue;
                 const std::optional<Point> first = follow(wire.points.first());
                 const std::optional<Point> last = follow(wire.points.last());
@@ -1923,7 +1933,9 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
         std::optional<Point> newFirst = follower.follow(first);
         std::optional<Point> newLast = follower.follow(last);
         // A wire that goes whole has other ends following it: it is not held.
-        const bool whole = newFirst && newLast && *newFirst - first == *newLast - last;
+        // A pin left in place on its middle holds it: it is laid again.
+        const bool whole = newFirst && newLast && *newFirst - first == *newLast - last
+                           && !passesThroughAny(wire, follower.stillPins());
         if (!whole && newFirst && onLed(first, wire.points.at(1)))
             newFirst.reset();
         if (!whole && newLast && onLed(last, wire.points.at(wire.points.size() - 2)))
