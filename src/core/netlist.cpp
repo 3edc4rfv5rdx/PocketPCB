@@ -16,7 +16,7 @@ namespace {
 const char TABLE_NAME_PREFIX[] = "NN";
 // What the name of a net with no name of its own starts with, a number
 // after it.
-const char AUTO_NAME_PREFIX[] = "ppcbautoN";
+const char AUTO_NAME_PREFIX[] = "TempN";
 
 // What a node of the nets stands for.
 struct Node
@@ -411,7 +411,7 @@ QString netClassOf(const Net &net, const Project &project, const Schematic &sche
         }
         return result;
     };
-    // An automatic name ("ppcbautoN" and a number) belongs to no net for good.
+    // An automatic name ("TempN" and a number) belongs to no net for good.
     QStringList keys{net.tableName};
     if (net.named)
         keys += QStringList{net.name} + net.otherNames;

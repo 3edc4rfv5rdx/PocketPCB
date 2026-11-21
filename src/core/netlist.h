@@ -33,7 +33,7 @@ struct Net
 {
     // The name of a power symbol on it, else the text of a label on it, the
     // first in alphabetical order among them; else its 'tableName'; else
-    // "ppcbautoN" and a number, given in the order of the nets' first pins,
+    // "TempN" and a number, given in the order of the nets' first pins,
     // a number giving a name another net has skipped.
     QString name;
     // True when the name is given by a power symbol, a label or the table
