@@ -972,33 +972,34 @@ void paintPlacementPads(QPainter &painter, const Library &library, const Placeme
 // A text of the placement's silkscreen at 'at' on the board; mirrored on
 // the bottom side.
 void paintPlacementText(QPainter &painter, const Placement &placement, const Point &at,
-                        const QString &text)
+                        const QString &text, const QColor &color)
 {
     painter.save();
     painter.translate(toMm(at));
     if (placement.side == BoardSide::Bottom)
         painter.scale(-1, 1);
-    drawText(painter, QPointF(0, 0), text, PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center,
-             silkscreenColor(placement.side));
+    drawText(painter, QPointF(0, 0), text, PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center, color);
     painter.restore();
 }
 
+// The placement's silkscreen in 'color'.
 void paintPlacementSilkscreen(QPainter &painter, const Library &library,
-                              const Placement &placement)
+                              const Placement &placement, const QColor &color)
 {
     const Footprint *footprint = library.findFootprint(placement.footprint);
     if (footprint != nullptr) {
         painter.save();
         painter.setTransform(placementTransform(placement), true);
         for (const Graphic &graphic : footprint->graphics)
-            paintGraphic(painter, graphic, silkscreenColor(placement.side));
+            paintGraphic(painter, graphic, color);
         painter.restore();
     }
 
     for (const ComponentText text : {ComponentText::Designator, ComponentText::Value}) {
         const QString shown = placementTextShown(placement, text);
         if (!shown.isEmpty())
-            paintPlacementText(painter, placement, placementTextPoint(placement, text), shown);
+            paintPlacementText(painter, placement, placementTextPoint(placement, text), shown,
+                               color);
     }
 }
 
@@ -1469,7 +1470,7 @@ QColor boardLayerColor(BoardLayer layer)
 }
 
 void paintBoard(QPainter &painter, const Board &board, const Library &library,
-                const BoardLayerSet &shown)
+                const BoardLayerSet &shown, bool lockedMarked)
 {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -1496,7 +1497,10 @@ void paintBoard(QPainter &painter, const Board &board, const Library &library,
 
     for (const Placement &placement : board.placements) {
         if (shown.contains(silkscreenLayer(placement.side)))
-            paintPlacementSilkscreen(painter, library, placement);
+            paintPlacementSilkscreen(painter, library, placement,
+                                     lockedMarked && placement.locked
+                                         ? paintcolor::lockedPart()
+                                         : silkscreenColor(placement.side));
     }
     for (const BoardGraphic &item : board.graphics) {
         if (shown.contains(silkscreenLayer(item.side)))

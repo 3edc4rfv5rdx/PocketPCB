@@ -165,7 +165,7 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     const Design &design = m_document->design();
     const BoardEditor *editor = activeBoardEditor();
     const Board board = editor == nullptr ? design.board : editor->shownBoard();
-    paintBoard(painter, board, design.library, m_boardLayers);
+    paintBoard(painter, board, design.library, m_boardLayers, true);
     // The origin, which coordinates count from: a corner of two arms along
     // +X and +Y, the same size at any zoom; on the screen only.
     const double pixel = 1.0 / painter.worldTransform().m11();

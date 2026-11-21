@@ -58,6 +58,8 @@ inline QColor pasteTop() { return QColor(180, 180, 180); }
 inline QColor pasteBottom() { return QColor(120, 120, 120); }
 // Lilac, so that yellow is left to the locked parts.
 inline QColor boardOutline() { return QColor(200, 162, 200); }
+// The silkscreen of a locked part on the board, on the screen only.
+inline QColor lockedPart() { return QColor(230, 200, 0); }
 // The mark of the origin, which coordinates on the board count from.
 inline QColor boardOrigin() { return QColor(0, 200, 220); }
 inline QColor bareHole() { return QColor(100, 100, 100); }
@@ -211,8 +213,10 @@ QRectF boardBounds(const Board &board, const Library &library);
 // mirrored, texts included, as it is on the real board. Footprints come
 // from 'library'; one it lacks is drawn as a red square with a question mark.
 // Only the layers in 'shown' are drawn; a pad or a via through the board
-// shows while either copper layer does, and holes always show.
+// shows while either copper layer does, and holes always show. With
+// 'lockedMarked', for the screen, the silkscreen of a locked part is drawn
+// yellow instead of its side's colour.
 void paintBoard(QPainter &painter, const Board &board, const Library &library,
-                const BoardLayerSet &shown = BoardLayerSet::all());
+                const BoardLayerSet &shown = BoardLayerSet::all(), bool lockedMarked = false);
 
 } // namespace ppcb
