@@ -1086,6 +1086,51 @@ private slots:
         QCOMPARE(withWireEndAt(sheet, library, newObjectId(), true, mm(3, 3)).wires.size(), 2);
     }
 
+    // A wire from the right pin of a part at the origin, (4, 0), through the
+    // lower pin of an upright part at (12, 0), to (20, 0) and down to
+    // (20, 20). Its end dragged back to (8, 20) leaves the pin behind the
+    // corner, which keeps it joined by a wire of its own. A wire carried by
+    // a dragged segment keeps the pin on its middle the same way.
+    void aDraggedWireKeepsThePinsItPassedThrough()
+    {
+        const Library library = gridLibrary();
+        const auto joined = [](const Sheet &sheet, const Point &a, const Point &b) {
+            for (const Wire &w : sheet.wires) {
+                if (!isOnWire(w, a))
+                    continue;
+                const QSet<ObjectId> net = joinedWires(sheet, w.id);
+                for (const Wire &other : sheet.wires) {
+                    if (net.contains(other.id) && isOnWire(other, b))
+                        return true;
+                }
+            }
+            return false;
+        };
+        for (const WireRouting routing : {WireRouting::Hand, WireRouting::Grid}) {
+            Sheet sheet;
+            Component upright = gridPart(h(12, -4));
+            upright.rotation = 90;
+            sheet.components = {gridPart(h(0, 0)), upright};
+            sheet.wires = {wire({h(4, 0), h(20, 0), h(20, 20)})};
+            const Sheet ended =
+                withWireEndAt(sheet, library, sheet.wires.first().id, true, h(8, 20), routing);
+            QVERIFY(joined(ended, h(4, 0), h(12, 0)));
+            QVERIFY(joined(ended, h(4, 0), h(8, 20)));
+
+            // A wire from the right pin of a part at (0, 24) through the
+            // lower pin of an upright part at (20, 24) onto an upright wire
+            // at x = 60, which is dragged left by 50.
+            Sheet carried;
+            Component lower = gridPart(h(20, 20));
+            lower.rotation = 90;
+            carried.components = {gridPart(h(0, 24)), lower};
+            carried.wires = {wire({h(4, 24), h(60, 24)}), wire({h(60, 8), h(60, 40)})};
+            const Sheet moved = withSegmentMoved(carried, library, carried.wires.at(1).id, 0,
+                                                 h(-50, 0), routing);
+            QVERIFY(joined(moved, h(4, 24), h(20, 24)));
+        }
+    }
+
     // A wire from the right pin of a part at the origin, (5, 0), right to
     // (15, 0), down to (15, 10) and right to a free end at (25, 10); another
     // wire ends on its middle segment at (15, 5).

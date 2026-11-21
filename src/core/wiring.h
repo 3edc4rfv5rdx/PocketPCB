@@ -188,7 +188,8 @@ Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<Obj
 // 'last', else the first. The wire is led there the way withWiresFollowing()
 // leads a wire end, keeping the other wires joined to it; it is removed when
 // left with no length; labels on it go with it as in withWiresFollowing().
-// 'sheet' as it is when it has no such wire.
+// A pin it passed through and no longer reaches is kept joined as in
+// withSegmentMoved(). 'sheet' as it is when it has no such wire.
 Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &wire, bool last,
                     const Point &to, WireRouting routing = WireRouting::Hand);
 
@@ -201,9 +202,10 @@ Sheet withWireEndAt(const Sheet &sheet, const Library &library, const ObjectId &
 // a wire or a bus stays, and a bend leads to it. The ends of other wires on the segment
 // go along with it; those on a segment next to it that shrinks away from
 // them go to the corner it leaves them for; labels on the wire go with it as
-// in withWiresFollowing(). A pin the wire passed through, at a corner or
-// along a segment, that it no longer reaches and that no wire joined to it
-// does, gets a wire of its own to the nearest point of it. 'sheet' as it is
+// in withWiresFollowing(). A pin the wire, or a wire going with it, passed
+// through, at a corner or along a segment, that it no longer reaches and
+// that no wire joined to it does, gets a wire of its own to the nearest
+// point of it. 'sheet' as it is
 // when it has no such segment or the move is nothing.
 Sheet withSegmentMoved(const Sheet &sheet, const Library &library, const ObjectId &wire,
                        int index, const Point &delta, WireRouting routing = WireRouting::Hand);
@@ -227,7 +229,7 @@ ObjectId jointWire(const Sheet &sheet, const Library &library, const Point &poin
 // 'sheet' with the joint at 'from' (jointWire()) slid along the wire passing
 // through it to the point of that wire nearest 'to', on whatever segment:
 // that wire stays as it is, and each wire ending at the joint has that end
-// led there as withWireEndAt() leads it. 'sheet' as it is when 'from' is no
+// led there as withWireEndAt() leads it, keeping the pins it passed through. 'sheet' as it is when 'from' is no
 // joint or the point is 'from'.
 Sheet withJointMoved(const Sheet &sheet, const Library &library, const Point &from,
                      const Point &to, WireRouting routing = WireRouting::Hand);

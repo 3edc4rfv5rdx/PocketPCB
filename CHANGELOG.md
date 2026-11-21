@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: Dragging a wire end, a joint or a segment keeps the pins the wires passed through joined by a wire of their own
 - E: A part dragged back to where it was, or a pin that stays where it is, no longer lays its wires again
 - E: Moving parts together no longer shifts a wire off a pin left in place on its middle
 - I: Fix the build broken by the autosave cleanup
