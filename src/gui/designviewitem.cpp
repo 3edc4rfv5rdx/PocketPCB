@@ -233,6 +233,9 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     const PlacementText text = editor->chosenText();
     if (const Placement *owner = findById(board.placements, text.owner))
         painter.drawRect(placementTextRect(*owner, text.text));
+    const QLineF guide = editor->textGuide();
+    if (!guide.isNull())
+        painter.drawLine(guide);
     const QRectF frame = editor->chooserFrame();
     if (!frame.isEmpty()) {
         painter.setPen(QPen(paintcolor::selection(), 0, Qt::DashLine));

@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A designator or a value chosen on the board shows a line to its part
 - F: A locked part on the board is drawn yellow on the screen
 - F: The board outline is lilac instead of yellow
 - N: Parts and power symbols on the schematic are locked with the Lock button, the menu of the sheet or the Locked field, and then are not moved, turned, deleted or cut

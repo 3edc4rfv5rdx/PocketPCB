@@ -1442,6 +1442,8 @@ private slots:
         editor->press(QPointF(0, -3));
         QCOMPARE(editor->chosenText().owner, r1);
         QVERIFY(editor->chosenPlacements().isEmpty());
+        // A line from R1's point to its designator shows whose it is.
+        QCOMPARE(editor->textGuide(), QLineF(QPointF(0, 0), QPointF(0, -3)));
         editor->move(QPointF(0, -6));
         editor->release(QPointF(0, -6));
         QCOMPARE(placements().at(0).refAt, (Point{0, -6 * NM_PER_MM}));

@@ -193,6 +193,16 @@ void BoardEditor::rotateChosen()
     applyBoard(Action::RotateParts, withPlacementsRotated(board, ids, center), ids);
 }
 
+QLineF BoardEditor::textGuide() const
+{
+    const PlacementText text = chosenText();
+    const Board board = shownBoard();
+    const Placement *placement = findById(board.placements, text.owner);
+    if (placement == nullptr)
+        return QLineF();
+    return QLineF(toMm(placement->at), toMm(placementTextPoint(*placement, text.text)));
+}
+
 Board BoardEditor::shownBoard() const
 {
     if (m_movedBoard)

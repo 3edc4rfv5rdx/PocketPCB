@@ -5,6 +5,7 @@
 #include "document.h"
 #include "inplaceedit.h"
 
+#include <QLineF>
 #include <QObject>
 #include <QPolygonF>
 #include <QRectF>
@@ -85,6 +86,9 @@ public:
     QSet<ObjectId> chosenPlacements() const;
     // The text chosen alone; null when none is.
     PlacementText chosenText() const { return m_active ? m_chosenText : PlacementText(); }
+    // While a text is chosen or dragged, the line from its placement's point
+    // to where the text stands, to show whose it is; null otherwise.
+    QLineF textGuide() const;
     // Something is chosen that may be locked: the outline or placements.
     bool hasChosen() const { return outlineChosen() || !chosenPlacements().isEmpty(); }
     // The outline and every placement.
