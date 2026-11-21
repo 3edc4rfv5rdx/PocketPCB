@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- R: One function tells whether two wires are joined, for the nets and for the editing of wires
 - I: A test edits random sheets and checks that wires keep their joins and their shape
 - E: With simple wire routing, a part moved along its wire past a joint keeps that joint on the wire
 - R: The wiring header states that a pin joins a wire anywhere on it

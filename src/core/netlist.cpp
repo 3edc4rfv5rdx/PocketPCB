@@ -210,12 +210,8 @@ QList<Net> nets(const Schematic &schematic, const Library &library, const Projec
             }
         }
         for (int i = 0; i < sheet.wires.size(); ++i) {
-            const Wire &a = sheet.wires.at(i);
-            if (a.points.isEmpty())
-                continue;
-            for (int j = 0; j < sheet.wires.size(); ++j) {
-                const Wire &b = sheet.wires.at(j);
-                if (i != j && (isOnWire(b, a.points.first()) || isOnWire(b, a.points.last())))
+            for (int j = i + 1; j < sheet.wires.size(); ++j) {
+                if (wiresJoined(sheet.wires.at(i).points, sheet.wires.at(j).points))
                     joins.join(wireNodes.at(i), wireNodes.at(j));
             }
         }

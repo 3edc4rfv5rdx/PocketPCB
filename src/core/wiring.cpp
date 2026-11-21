@@ -653,16 +653,25 @@ WireGroups wireGroupsOf(const Obstacles &obstacles)
     }
     for (int a = 0; a < wires.size(); ++a) {
         for (int b = a + 1; b < wires.size(); ++b) {
-            const QList<Point> &p = wires.at(a);
-            const QList<Point> &q = wires.at(b);
-            if (liesOn(q, p.first()) || liesOn(q, p.last()) || liesOn(p, q.first())
-                || liesOn(p, q.last()))
+            if (wiresJoined(wires.at(a), wires.at(b)))
                 join(a, b);
         }
     }
     for (int i = 0; i < wires.size(); ++i)
         group[i] = root(i);
     return WireGroups{wires, group};
+}
+
+// The groups of 'groups' (wireGroupsOf()) with a wire joined to the line
+// 'points'.
+QSet<int> groupsJoinedTo(const WireGroups &groups, const QList<Point> &points)
+{
+    QSet<int> nets;
+    for (int i = 0; i < groups.wires.size(); ++i) {
+        if (wiresJoined(points, groups.wires.at(i)))
+            nets.insert(groups.group.at(i));
+    }
+    return nets;
 }
 
 // The wires of 'obstacles' joined to the point 'at' and those joined to
@@ -712,13 +721,7 @@ QList<Point> joinedWireAt(const QList<Point> &points, const Point &point,
                           const Obstacles &obstacles)
 {
     const WireGroups groups = wireGroupsOf(obstacles);
-    QSet<int> nets;
-    for (int i = 0; i < groups.wires.size(); ++i) {
-        const QList<Point> &wire = groups.wires.at(i);
-        if (liesOn(points, wire.first()) || liesOn(points, wire.last())
-            || liesOn(wire, points.first()) || liesOn(wire, points.last()))
-            nets.insert(groups.group.at(i));
-    }
+    const QSet<int> nets = groupsJoinedTo(groups, points);
     for (int i = 0; i < groups.wires.size(); ++i) {
         if (nets.contains(groups.group.at(i)) && liesOn(groups.wires.at(i), point))
             return groups.wires.at(i);
@@ -816,13 +819,7 @@ QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QL
     if (branch != nullptr && from > 0) {
         const int branchCost = keptCost(keptPart) + GRID_BRANCH_COST;
         const WireGroups groups = wireGroupsOf(obstacles);
-        QSet<int> nets;
-        for (int i = 0; i < groups.wires.size(); ++i) {
-            const QList<Point> &wire = groups.wires.at(i);
-            if (liesOn(keptPart, wire.first()) || liesOn(keptPart, wire.last())
-                || liesOn(wire, keptPart.first()) || liesOn(wire, keptPart.last()))
-                nets.insert(groups.group.at(i));
-        }
+        const QSet<int> nets = groupsJoinedTo(groups, keptPart);
         QList<QList<Point>> lines = {keptPart};
         for (int i = 0; i < groups.wires.size(); ++i) {
             if (nets.contains(groups.group.at(i)))
@@ -1433,6 +1430,14 @@ bool isOnWire(const Wire &wire, const Point &point)
     return false;
 }
 
+bool wiresJoined(const QList<Point> &a, const QList<Point> &b)
+{
+    if (a.isEmpty() || b.isEmpty())
+        return false;
+    return liesOn(b, a.first()) || liesOn(b, a.last()) || liesOn(a, b.first())
+           || liesOn(a, b.last());
+}
+
 bool isConnectionPoint(const Sheet &sheet, const Library &library, const Point &point)
 {
     if (pinPoints(sheet, library).contains(point))
@@ -1446,12 +1451,6 @@ bool isConnectionPoint(const Sheet &sheet, const Library &library, const Point &
 
 QSet<ObjectId> joinedWires(const Sheet &sheet, const ObjectId &wire)
 {
-    const auto joined = [](const Wire &a, const Wire &b) {
-        if (a.points.isEmpty() || b.points.isEmpty())
-            return false;
-        return isOnWire(b, a.points.first()) || isOnWire(b, a.points.last())
-               || isOnWire(a, b.points.first()) || isOnWire(a, b.points.last());
-    };
     QSet<ObjectId> found;
     QList<const Wire *> waiting;
     for (const Wire &candidate : sheet.wires) {
@@ -1463,7 +1462,7 @@ QSet<ObjectId> joinedWires(const Sheet &sheet, const ObjectId &wire)
     while (!waiting.isEmpty()) {
         const Wire *current = waiting.takeLast();
         for (const Wire &other : sheet.wires) {
-            if (!found.contains(other.id) && joined(*current, other)) {
+            if (!found.contains(other.id) && wiresJoined(current->points, other.points)) {
                 found.insert(other.id);
                 waiting.append(&other);
             }
