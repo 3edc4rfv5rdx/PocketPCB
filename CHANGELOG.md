@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Update board from schematic has a button on the strip of the board
 - F: A designator or a value chosen on the board shows a line to its part
 - F: A locked part on the board is drawn yellow on the screen
 - F: The board outline is lilac instead of yellow

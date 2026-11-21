@@ -1365,6 +1365,19 @@ void MainWindow::createToolBar()
     outlineButton->setMenu(outlineMenu);
     outlineButton->setPopupMode(QToolButton::MenuButtonPopup);
     connect(outlineMenu, &QMenu::triggered, outlineButton, &QToolButton::setDefaultAction);
+    // Update board from schematic, on the strip of the board beside the
+    // outline: an action of its own, so that the File menu keeps its item.
+    QAction *updateBoardTool = new QAction(
+        findChild<QAction *>(QStringLiteral("actionUpdateBoard"))->text(), this);
+    updateBoardTool->setObjectName(QStringLiteral("actionUpdateBoardTool"));
+    updateBoardTool->setIcon(toolIcon(ToolIcon::UpdateBoard, color));
+    QString updateTip = updateBoardTool->text();
+    updateTip.remove(QStringLiteral("…"));
+    updateBoardTool->setToolTip(updateTip + QStringLiteral(" (")
+                                + QKeySequence(Qt::Key_F8).toString(QKeySequence::NativeText)
+                                + QLatin1Char(')'));
+    connect(updateBoardTool, &QAction::triggered, this, &MainWindow::updateBoardFromSchematic);
+    bar->addAction(updateBoardTool);
     // The arrow of the Power button chooses the symbol it places.
     QMenu *powerMenu = new QMenu(this);
     connect(powerMenu, &QMenu::aboutToShow, this, [this, powerMenu] { fillPowerMenu(powerMenu); });
@@ -1426,6 +1439,10 @@ void MainWindow::updateTools()
             action->setEnabled(false);
     }
     findChild<QAction *>(QStringLiteral("actionRotate"))->setEnabled(sheet || board);
+    if (QAction *updateBoardTool = findChild<QAction *>(QStringLiteral("actionUpdateBoardTool"))) {
+        updateBoardTool->setVisible(board);
+        updateBoardTool->setEnabled(board);
+    }
     QAction *lock = findChild<QAction *>(QStringLiteral("actionLock"));
     lock->setEnabled(board ? m_boardEditor->hasChosen() : sheet && m_sheetEditor->canLockChosen());
     lock->setChecked(board ? m_boardEditor->chosenLocked()

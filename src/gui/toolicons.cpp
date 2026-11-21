@@ -139,6 +139,15 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         painter.drawLine(QPointF(4, 3), QPointF(4, 7));
         painter.drawLine(QPointF(20, 3), QPointF(20, 7));
         break;
+    case ToolIcon::UpdateBoard:
+        // A sheet, an arrow down and right from it, and a board with two pads.
+        painter.drawRect(QRectF(3, 3, 9, 7));
+        painter.drawPolyline(polygon({{7, 10}, {7, 16}, {12, 16}}));
+        painter.drawPolyline(polygon({{10, 14}, {12, 16}, {10, 18}}));
+        painter.drawRect(QRectF(13, 11, 8, 10));
+        painter.drawEllipse(QPointF(15.5, 16), 1, 1);
+        painter.drawEllipse(QPointF(18.5, 16), 1, 1);
+        break;
     case ToolIcon::Lock:
         // A padlock: its body and the shackle over it.
         painter.drawRect(QRectF(6, 11, 12, 9));

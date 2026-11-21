@@ -24,6 +24,7 @@ enum class ToolIcon {
     Outline,
     CutOut,
     RectangleBoard,
+    UpdateBoard,
     Lock,
     Rotate,
     Mirror,

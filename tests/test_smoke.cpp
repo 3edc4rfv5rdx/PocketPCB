@@ -1466,6 +1466,8 @@ private slots:
         QVERIFY(!wire->isVisible());
         QVERIFY(cutOut->isVisible());
         QVERIFY(select->isChecked());
+        // Update board from schematic shows on the strip of the board only.
+        QVERIFY(window.findChild<QAction *>(QStringLiteral("actionUpdateBoardTool"))->isVisible());
 
         window.canvas()->setGridStep(NM_PER_MM);
         // Corners and edges are found within a few pixels: a close view.
@@ -1552,6 +1554,7 @@ private slots:
         QVERIFY(!editor->isActive());
         QVERIFY(wire->isVisible());
         QVERIFY(!cutOut->isVisible());
+        QVERIFY(!window.findChild<QAction *>(QStringLiteral("actionUpdateBoardTool"))->isVisible());
     }
 
     void undoActionsAndTitleFollowTheDocument()
