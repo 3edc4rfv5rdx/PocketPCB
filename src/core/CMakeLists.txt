@@ -28,7 +28,7 @@ add_library(pocketpcb_core STATIC
     stephistory.h stephistory.cpp
     strokefont.h strokefont.cpp strokefont_data.cpp
     symbol.h symbol.cpp
-    wiring.h wiring.cpp
+    wiring.h wiringdetail.h wiregeometry.cpp wireroute.cpp wirefollow.cpp wireedit.cpp
 )
 target_include_directories(pocketpcb_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(pocketpcb_core PUBLIC Qt6::Core Qt6::Gui)

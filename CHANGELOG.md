@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- R: The wiring code is split into geometry, routing, following and editing files
 - R: One template finds an object by its id, used by the wiring code
 - E: With wires laid round obstacles, a wire cut at a moved pin stays joined to it, with a dot where it crosses the wire led to the pin
 - R: Whether a point lies on a line of points is asked of the points themselves, with no wire made up for it
