@@ -1371,6 +1371,30 @@
         <translation>Відкріпити контур плати</translation>
     </message>
     <message>
+        <source>Move parts</source>
+        <translation>Перемістити деталі</translation>
+    </message>
+    <message>
+        <source>Rotate parts</source>
+        <translation>Повернути деталі</translation>
+    </message>
+    <message>
+        <source>Move part text</source>
+        <translation>Перемістити напис деталі</translation>
+    </message>
+    <message>
+        <source>Lock parts</source>
+        <translation>Закріпити деталі</translation>
+    </message>
+    <message>
+        <source>Unlock parts</source>
+        <translation>Відкріпити деталі</translation>
+    </message>
+    <message>
+        <source>The part is locked</source>
+        <translation>Деталь закріплено</translation>
+    </message>
+    <message>
         <source>The board outline is locked</source>
         <translation>Контур плати закріплено</translation>
     </message>

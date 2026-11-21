@@ -1371,6 +1371,30 @@
         <translation>Открепить контур платы</translation>
     </message>
     <message>
+        <source>Move parts</source>
+        <translation>Переместить детали</translation>
+    </message>
+    <message>
+        <source>Rotate parts</source>
+        <translation>Повернуть детали</translation>
+    </message>
+    <message>
+        <source>Move part text</source>
+        <translation>Переместить надпись детали</translation>
+    </message>
+    <message>
+        <source>Lock parts</source>
+        <translation>Закрепить детали</translation>
+    </message>
+    <message>
+        <source>Unlock parts</source>
+        <translation>Открепить детали</translation>
+    </message>
+    <message>
+        <source>The part is locked</source>
+        <translation>Деталь закреплена</translation>
+    </message>
+    <message>
         <source>The board outline is locked</source>
         <translation>Контур платы закреплён</translation>
     </message>

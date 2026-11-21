@@ -41,6 +41,7 @@ Board fullBoard()
     placement.valueAt = Point{635000, 2 * MM};
     placement.showRef = false;
     placement.showValue = true;
+    placement.locked = true;
     placement.padNets.insert(QStringLiteral("1"), QStringLiteral("GND"));
     placement.padNets.insert(QStringLiteral("2"), QStringLiteral("Вход"));
     board.placements.append(placement);
@@ -206,6 +207,7 @@ private slots:
         CHANGED(other.placements[0].valueAt.y += 1);
         CHANGED(other.placements[0].showRef = true);
         CHANGED(other.placements[0].showValue = false);
+        CHANGED(other.placements[0].locked = false);
         CHANGED(other.placements[0].padNets[QStringLiteral("1")] = QStringLiteral("+5V"));
         CHANGED(other.placements[0].padNets.remove(QStringLiteral("2")));
         CHANGED(other.placements.removeLast());
@@ -305,6 +307,21 @@ private slots:
         root.insert(QStringLiteral("outlineLocked"), QStringLiteral("yes"));
         error = errorOf(root);
         QVERIFY2(error.startsWith(QStringLiteral("outlineLocked: ")), qPrintable(error));
+    }
+
+    // Files written before placements were locked have them unlocked.
+    void placementLockIsOptional()
+    {
+        QJsonObject root = boardToJson(fullBoard());
+        QJsonArray placements = root.value(QStringLiteral("placements")).toArray();
+        QJsonObject first = placements.at(0).toObject();
+        first.remove(QStringLiteral("locked"));
+        placements[0] = first;
+        root.insert(QStringLiteral("placements"), placements);
+        QString error;
+        const Board back = readBack(root, error);
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+        QVERIFY(!back.placements.at(0).locked);
     }
 
     void everyListMustBePresent()

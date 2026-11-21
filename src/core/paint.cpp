@@ -995,12 +995,11 @@ void paintPlacementSilkscreen(QPainter &painter, const Library &library,
         painter.restore();
     }
 
-    const Point refAt = placement.at + placement.refAt;
-    const Point valueAt = placement.at + placement.valueAt;
-    if (placement.showRef)
-        paintPlacementText(painter, placement, refAt, placement.designator);
-    if (placement.showValue && !placement.value.isEmpty())
-        paintPlacementText(painter, placement, valueAt, placement.value);
+    for (const ComponentText text : {ComponentText::Designator, ComponentText::Value}) {
+        const QString shown = placementTextShown(placement, text);
+        if (!shown.isEmpty())
+            paintPlacementText(painter, placement, placementTextPoint(placement, text), shown);
+    }
 }
 
 // The author's drawing on the silkscreen; mirrored on the bottom side.
@@ -1384,18 +1383,41 @@ QRectF componentTextRect(const Component &component, ComponentText text,
                       TextAlign::Center);
 }
 
+QRectF placementRect(const Placement &placement, const Library &library)
+{
+    const Footprint *footprint = library.findFootprint(placement.footprint);
+    if (footprint == nullptr)
+        return missingRect(toMm(placement.at), MISSING_FOOTPRINT_SIZE);
+    return placementTransform(placement).mapRect(footprintBounds(*footprint));
+}
+
+QString placementTextShown(const Placement &placement, ComponentText text)
+{
+    if (text == ComponentText::Designator)
+        return placement.showRef ? placement.designator : QString();
+    return placement.showValue ? placement.value : QString();
+}
+
+Point placementTextPoint(const Placement &placement, ComponentText text)
+{
+    return placement.at
+           + (text == ComponentText::Designator ? placement.refAt : placement.valueAt);
+}
+
+QRectF placementTextRect(const Placement &placement, ComponentText text)
+{
+    return textBounds(toMm(placementTextPoint(placement, text)),
+                      placementTextShown(placement, text), PLACEHOLDER_TEXT_HEIGHT,
+                      TextAlign::Center);
+}
+
 QRectF boardBounds(const Board &board, const Library &library)
 {
     Bounds bounds;
     for (const OutlineCorner &corner : board.outline)
         bounds.add(QRectF(toMm(corner.at), QSizeF(0, 0)));
-    for (const Placement &placement : board.placements) {
-        const Footprint *footprint = library.findFootprint(placement.footprint);
-        if (footprint == nullptr)
-            bounds.add(missingRect(toMm(placement.at), MISSING_FOOTPRINT_SIZE));
-        else
-            bounds.add(placementTransform(placement).mapRect(footprintBounds(*footprint)));
-    }
+    for (const Placement &placement : board.placements)
+        bounds.add(placementRect(placement, library));
     for (const Track &track : board.tracks) {
         const double half = nmToMm(track.width) / 2;
         bounds.add(QRectF(toMm(track.from), toMm(track.to))

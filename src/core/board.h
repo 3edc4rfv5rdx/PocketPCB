@@ -88,6 +88,8 @@ struct Placement
     Point valueAt;
     bool showRef = true;
     bool showValue = false;
+    // It may not be moved or turned until this is taken off.
+    bool locked = false;
 
     // Net of every connected pad, by pad number. A pad that is not here
     // belongs to no net.

@@ -58,6 +58,16 @@ QString BoardEditor::actionName(Action action)
         return tr("Unlock board outline");
     case Action::RoundCorner:
         return tr("Round board corner");
+    case Action::MoveParts:
+        return tr("Move parts");
+    case Action::RotateParts:
+        return tr("Rotate parts");
+    case Action::MovePartText:
+        return tr("Move part text");
+    case Action::LockParts:
+        return tr("Lock parts");
+    case Action::UnlockParts:
+        return tr("Unlock parts");
     }
     return QString();
 }
@@ -67,7 +77,7 @@ void BoardEditor::setActive(bool active)
     m_radiusEdit.close(true);
     m_active = active;
     m_tool = Tool::Select;
-    m_outlineChosen = false;
+    dropChosen();
     m_outlinePoints.clear();
     m_cutting = false;
     dropDrag();
@@ -87,7 +97,7 @@ void BoardEditor::startDrawingOutline()
     if (!m_active || refuseLocked())
         return;
     chooseSelectTool();
-    m_outlineChosen = false;
+    dropChosen();
     m_tool = Tool::Outline;
     // Where the cursor is now, before it moves.
     m_cursor = Point{m_canvas->cursorX(), m_canvas->cursorY()};
@@ -99,7 +109,7 @@ void BoardEditor::startCuttingOut()
     if (!m_active || refuseLocked())
         return;
     chooseSelectTool();
-    m_outlineChosen = false;
+    dropChosen();
     m_tool = Tool::CutOut;
     // Where the cursor is now, before it moves.
     m_cursor = Point{m_canvas->cursorX(), m_canvas->cursorY()};
@@ -136,7 +146,124 @@ void BoardEditor::apply(Action action, const QList<OutlineCorner> &edited)
     m_document->change(actionName(action), design, boardPage());
 }
 
-void BoardEditor::press(const QPointF &at)
+void BoardEditor::applyBoard(Action action, const Board &board, const QSet<ObjectId> &ids)
+{
+    Design design = m_document->design();
+    design.board = board;
+    m_document->change(actionName(action), design, boardPage(), ids);
+}
+
+QSet<ObjectId> BoardEditor::chosenPlacements() const
+{
+    QSet<ObjectId> chosen;
+    if (!m_active)
+        return chosen;
+    for (const Placement &placement : m_document->design().board.placements) {
+        if (m_chosen.contains(placement.id))
+            chosen.insert(placement.id);
+    }
+    return chosen;
+}
+
+bool BoardEditor::chosenLocked() const
+{
+    if (!hasChosen())
+        return false;
+    if (outlineChosen() && !isOutlineLocked())
+        return false;
+    const QSet<ObjectId> placements = chosenPlacements();
+    return placements.isEmpty() || arePlacementsLocked(m_document->design().board, placements);
+}
+
+void BoardEditor::rotateChosen()
+{
+    const QSet<ObjectId> ids = chosenPlacements();
+    if (ids.isEmpty() || m_dragging)
+        return;
+    const Board &board = m_document->design().board;
+    if (arePlacementsLocked(board, ids)) {
+        emit message(tr("The part is locked"));
+        return;
+    }
+    const Placement *one = ids.size() == 1 ? findById(board.placements, *ids.cbegin()) : nullptr;
+    const Point center =
+        one != nullptr
+            ? one->at
+            : m_canvas->snapped(placementsBounds(board, m_document->design().library, ids).center());
+    applyBoard(Action::RotateParts, withPlacementsRotated(board, ids, center), ids);
+}
+
+Board BoardEditor::shownBoard() const
+{
+    if (m_movedBoard)
+        return *m_movedBoard;
+    Board board = m_document->design().board;
+    if (m_preview)
+        board.outline = *m_preview;
+    return board;
+}
+
+bool BoardEditor::pressPlacement(const QPointF &at, bool adding)
+{
+    const Design &design = m_document->design();
+    const PlacementText text = placementTextAt(design.board, at);
+    if (!text.isNull() && !adding) {
+        m_chosen.clear();
+        m_outlineChosen = false;
+        m_chosenText = text;
+        m_dragText = true;
+        m_dragAnchor = placementTextPoint(design.board, text);
+        return true;
+    }
+    const ObjectId hit = placementAt(design.board, design.library, at);
+    if (hit.isNull())
+        return false;
+    m_chosenText = PlacementText();
+    if (adding) {
+        if (m_chosen.contains(hit))
+            m_chosen.remove(hit);
+        else
+            m_chosen.insert(hit);
+        return true;
+    }
+    if (!m_chosen.contains(hit)) {
+        m_chosen = {hit};
+        m_outlineChosen = false;
+    }
+    m_dragPlacements = true;
+    m_dragAnchor = findById(design.board.placements, hit)->at;
+    return true;
+}
+
+Board BoardEditor::draggedBoard(const QPointF &at) const
+{
+    const Board &board = m_document->design().board;
+    // What was taken lands on the grid, wherever it stood before.
+    const Point delta = m_canvas->snapped(toMm(m_dragAnchor) + (at - m_pressAt)) - m_dragAnchor;
+    if (m_dragText)
+        return withPlacementTextMoved(board, m_chosenText, delta);
+    Board moved = withPlacementsMoved(board, chosenPlacements(), delta);
+    if (outlineChosen() && !isOutlineLocked())
+        moved.outline = outlineMoved(board.outline, delta);
+    return moved;
+}
+
+void BoardEditor::dropChosen()
+{
+    m_outlineChosen = false;
+    m_chosen.clear();
+    m_chosenText = PlacementText();
+}
+
+void BoardEditor::chooseOutline()
+{
+    chooseSelectTool();
+    dropChosen();
+    m_outlineChosen = !outline().isEmpty();
+    emit changed();
+}
+
+void BoardEditor::press(const QPointF &at, bool adding)
 {
     if (!m_active)
         return;
@@ -160,6 +287,11 @@ void BoardEditor::press(const QPointF &at)
     m_pressAt = at;
     m_pressGrid = m_canvas->snapped(at);
     m_dragCorner = outlineCornerAt(outline(), at, m_canvas->pixelsToMm(CanvasView::END_PIXELS));
+    // A placement or its text lies over the sides of the outline.
+    if (m_dragCorner < 0 && pressPlacement(at, adding)) {
+        emit changed();
+        return;
+    }
     if (m_dragCorner < 0)
         m_dragSide = outlineSideAt(outline(), at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
     if (m_dragSide >= 0) {
@@ -169,9 +301,19 @@ void BoardEditor::press(const QPointF &at)
         m_dragSideEnd = QLineF(at, end).length() < QLineF(at, start).length();
     }
     const bool onOutline = m_dragCorner >= 0 || m_dragSide >= 0;
-    if (!onOutline)
+    m_dragWhole = onOutline && outlineChosen();
+    m_chosenText = PlacementText();
+    if (m_dragWhole) {
+        // The outline chosen whole goes with the placements chosen.
+        m_dragPlacements = true;
+        m_dragAnchor = m_pressGrid;
+    } else if (!adding) {
         m_outlineChosen = false;
-    m_dragWhole = onOutline && hasChosen();
+        m_chosen.clear();
+    }
+    // On the empty board a drag draws a frame.
+    m_pressEmpty = !onOutline;
+    m_frameAdding = adding;
     setLit(m_dragCorner, m_dragSide);
     emit changed();
 }
@@ -188,27 +330,59 @@ void BoardEditor::move(const QPointF &at)
         }
         return;
     }
-    if (!m_pressed || (m_dragCorner < 0 && m_dragSide < 0))
+    const bool takes = m_dragPlacements || m_dragText;
+    if (!m_pressed || (!takes && !m_pressEmpty && m_dragCorner < 0 && m_dragSide < 0))
         return;
     if (!m_dragging) {
         if (QLineF(at, m_pressAt).length()
             < m_canvas->pixelsToMm(QApplication::startDragDistance()))
             return;
-        if (isOutlineLocked()) {
+        if (m_pressEmpty) {
+            m_dragging = true;
+            m_framing = true;
+        } else if (takes) {
+            // Nothing taken may move: say why, once.
+            const bool outlineGoes = outlineChosen() && !isOutlineLocked();
+            const QSet<ObjectId> placements = chosenPlacements();
+            const bool placementsGo =
+                !placements.isEmpty()
+                && !arePlacementsLocked(m_document->design().board, placements);
+            if (!m_dragText && !outlineGoes && !placementsGo) {
+                if (!m_lockTold)
+                    emit message(placements.isEmpty() ? tr("The board outline is locked")
+                                                      : tr("The part is locked"));
+                m_lockTold = true;
+                return;
+            }
+            m_dragging = true;
+        } else if (isOutlineLocked()) {
             if (!m_lockTold)
                 refuseLocked();
             m_lockTold = true;
             return;
         }
-        m_dragging = true;
-        m_preview = outline();
+        if (!takes && !m_pressEmpty) {
+            m_dragging = true;
+            m_preview = outline();
+        }
+    }
+    if (m_framing) {
+        m_frame = QRectF(m_pressAt, at).normalized();
+        emit changed();
+        return;
+    }
+    if (takes) {
+        const Board moved = draggedBoard(at);
+        if (!m_movedBoard || *m_movedBoard != moved) {
+            m_movedBoard = moved;
+            emit changed();
+        }
+        return;
     }
     // Where the outline would go wrong, it stays as it was last right.
     const Point cursor = m_canvas->snapped(at);
     std::optional<QList<OutlineCorner>> moved;
-    if (m_dragWhole)
-        moved = outlineMoved(outline(), cursor - m_pressGrid);
-    else if (m_dragCorner >= 0)
+    if (m_dragCorner >= 0)
         moved = withOutlineCornerMoved(outline(), m_dragCorner, cursor);
     else
         moved = withOutlineSideMoved(outline(), m_dragSide, cursor - m_pressGrid);
@@ -228,10 +402,33 @@ void BoardEditor::release(const QPointF &at)
         emit changed();
         return;
     }
+    if (m_framing) {
+        const Design &design = m_document->design();
+        const QSet<ObjectId> inside = placementsInside(design.board, design.library, m_frame);
+        if (m_frameAdding)
+            m_chosen.unite(inside);
+        else
+            m_chosen = inside;
+        dropDrag();
+        emit changed();
+        return;
+    }
+    if (m_movedBoard) {
+        const Board moved = *m_movedBoard;
+        const QSet<ObjectId> ids = chosenPlacements();
+        const Action action = m_dragText        ? Action::MovePartText
+                              : !ids.isEmpty() ? Action::MoveParts
+                                               : Action::MoveOutline;
+        const QSet<ObjectId> touched =
+            m_dragText ? QSet<ObjectId>{m_chosenText.owner} : ids;
+        dropDrag();
+        if (moved != m_document->design().board)
+            applyBoard(action, moved, touched);
+        emit changed();
+        return;
+    }
     const std::optional<QList<OutlineCorner>> moved = m_dragging ? m_preview : std::nullopt;
-    const Action action = m_dragWhole            ? Action::MoveOutline
-                          : m_dragCorner >= 0    ? Action::MoveCorner
-                                                 : Action::MoveSide;
+    const Action action = m_dragCorner >= 0 ? Action::MoveCorner : Action::MoveSide;
     dropDrag();
     if (moved && *moved != outline())
         apply(action, *moved);
@@ -254,26 +451,41 @@ void BoardEditor::doubleClick(const QPointF &at)
         return;
     }
     if (outlineSideAt(outline(), at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS)) >= 0)
-        chooseAll();
+        chooseOutline();
 }
 
 void BoardEditor::chooseAll()
 {
-    if (!m_active || outline().isEmpty())
+    if (!m_active)
         return;
     chooseSelectTool();
-    m_outlineChosen = true;
+    dropChosen();
+    m_outlineChosen = !outline().isEmpty();
+    for (const Placement &placement : m_document->design().board.placements)
+        m_chosen.insert(placement.id);
+    emit changed();
+}
+
+void BoardEditor::setChosen(const QSet<ObjectId> &ids)
+{
+    dropChosen();
+    m_chosen = ids;
     emit changed();
 }
 
 void BoardEditor::setChosenLocked(bool locked)
 {
-    if (!hasChosen() || locked == isOutlineLocked())
+    if (!hasChosen() || locked == chosenLocked())
         return;
     Design design = m_document->design();
-    design.board.outlineLocked = locked;
-    m_document->change(actionName(locked ? Action::LockOutline : Action::UnlockOutline), design,
-                       boardPage());
+    const QSet<ObjectId> placements = chosenPlacements();
+    if (outlineChosen())
+        design.board.outlineLocked = locked;
+    design.board = withPlacementsLocked(design.board, placements, locked);
+    const Action action = !placements.isEmpty() ? (locked ? Action::LockParts : Action::UnlockParts)
+                                                : (locked ? Action::LockOutline
+                                                          : Action::UnlockOutline);
+    m_document->change(actionName(action), design, boardPage(), placements);
 }
 
 bool BoardEditor::refuseLocked()
@@ -319,8 +531,9 @@ void BoardEditor::cancel()
         m_outlinePoints.clear();
     } else if (m_cutting) {
         m_cutting = false;
-    } else if (m_tool == Tool::Select && m_outlineChosen) {
-        m_outlineChosen = false;
+    } else if (m_tool == Tool::Select
+               && (m_outlineChosen || !m_chosen.isEmpty() || !m_chosenText.isNull())) {
+        dropChosen();
     } else {
         chooseSelectTool();
         setLit(-1, -1);
@@ -347,13 +560,15 @@ std::optional<Point> BoardEditor::drawnPoint() const
         return m_cutTo;
     // A corner dragged, or the corner of a dragged side nearer to where it
     // was taken.
-    if (m_dragging && m_preview) {
-        const int count = int(m_preview->size());
+    const QList<OutlineCorner> *dragged =
+        m_preview ? &*m_preview : (m_movedBoard && m_dragWhole ? &m_movedBoard->outline : nullptr);
+    if (m_dragging && dragged != nullptr) {
+        const int count = int(dragged->size());
         int corner = m_dragCorner;
         if (corner < 0 && m_dragSide >= 0 && m_dragSide < count)
             corner = m_dragSideEnd ? (m_dragSide + 1) % count : m_dragSide;
         if (corner >= 0 && corner < count)
-            return m_preview->at(corner).at;
+            return dragged->at(corner).at;
     }
     if (m_tool == Tool::Outline || m_tool == Tool::CutOut)
         return m_cursor;
@@ -452,6 +667,11 @@ void BoardEditor::dropDrag()
     m_dragSide = -1;
     m_dragWhole = false;
     m_preview.reset();
+    m_dragPlacements = false;
+    m_dragText = false;
+    m_movedBoard.reset();
+    m_framing = false;
+    m_pressEmpty = false;
     m_litCorner = -1;
     m_litSide = -1;
 }

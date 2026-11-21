@@ -1359,6 +1359,95 @@ private slots:
         QCOMPARE(window.canvas()->gridStep(), mmToNm(2.54));
     }
 
+    // Two parts on the board, R1 at (0, 0) and R2 at (20, 0), pads 5 mm
+    // either side: chosen by a click, with Ctrl and by a frame, dragged,
+    // turned and locked, and a designator dragged alone.
+    void boardPartsAreChosenMovedAndTurned()
+    {
+        MainWindow window;
+        BoardEditor *editor = window.boardEditor();
+        window.showPage(window.designItem()->boardPage());
+        window.canvas()->setGridStep(NM_PER_MM);
+        window.canvas()->setView(QPointF(10, 0), 20);
+        Design design = window.document()->design();
+        Footprint footprint;
+        Pad pad;
+        pad.number = QStringLiteral("1");
+        pad.at = Point{-5 * NM_PER_MM, 0};
+        pad.sizeX = 2 * NM_PER_MM;
+        pad.sizeY = 2 * NM_PER_MM;
+        pad.hole = NM_PER_MM;
+        footprint.pads = {pad};
+        pad.number = QStringLiteral("2");
+        pad.at = Point{5 * NM_PER_MM, 0};
+        footprint.pads.append(pad);
+        design.library.footprints.insert(QStringLiteral("fp"), footprint);
+        for (const int x : {0, 20}) {
+            Placement placement;
+            placement.id = newObjectId();
+            placement.component = newObjectId();
+            placement.footprint = QStringLiteral("fp");
+            placement.designator = x == 0 ? QStringLiteral("R1") : QStringLiteral("R2");
+            placement.at = Point{x * NM_PER_MM, 0};
+            placement.refAt = Point{0, -3 * NM_PER_MM};
+            design.board.placements.append(placement);
+        }
+        window.document()->change(QStringLiteral("parts"), design, window.designItem()->boardPage());
+        const auto placements = [&window] { return window.document()->design().board.placements; };
+        const ObjectId r1 = placements().at(0).id;
+        const ObjectId r2 = placements().at(1).id;
+
+        editor->press(QPointF(5, 0));
+        editor->release(QPointF(5, 0));
+        QCOMPARE(editor->chosenPlacements(), QSet<ObjectId>{r1});
+        editor->press(QPointF(25, 0), true);
+        editor->release(QPointF(25, 0));
+        QCOMPARE(editor->chosenPlacements(), (QSet<ObjectId>{r1, r2}));
+        // A click on the empty board drops them, a frame chooses R2.
+        editor->press(QPointF(10, 10));
+        editor->release(QPointF(10, 10));
+        QVERIFY(editor->chosenPlacements().isEmpty());
+        editor->press(QPointF(12, -4));
+        editor->move(QPointF(28, 4));
+        QVERIFY(!editor->chooserFrame().isEmpty());
+        editor->release(QPointF(28, 4));
+        QCOMPARE(editor->chosenPlacements(), QSet<ObjectId>{r2});
+
+        // Dragged along the grid, as one step.
+        editor->press(QPointF(25, 0));
+        editor->move(QPointF(27.2, 3.1));
+        editor->release(QPointF(27.2, 3.1));
+        QCOMPARE(placements().at(1).at, (Point{22 * NM_PER_MM, 3 * NM_PER_MM}));
+        // R turns it about its own point.
+        window.findChild<QAction *>(QStringLiteral("actionRotate"))->trigger();
+        QCOMPARE(placements().at(1).rotation, 90);
+        QCOMPARE(placements().at(1).at, (Point{22 * NM_PER_MM, 3 * NM_PER_MM}));
+        // Locked, it stays.
+        QAction *lock = window.findChild<QAction *>(QStringLiteral("actionLock"));
+        QVERIFY(lock->isEnabled());
+        lock->trigger();
+        QVERIFY(placements().at(1).locked);
+        QVERIFY(lock->isChecked());
+        editor->press(QPointF(22, 3));
+        editor->move(QPointF(30, 3));
+        editor->release(QPointF(30, 3));
+        QCOMPARE(placements().at(1).at, (Point{22 * NM_PER_MM, 3 * NM_PER_MM}));
+        QVERIFY(!window.statusText().isEmpty());
+        // Undo unlocks it and chooses it again.
+        window.document()->undoStack()->undo();
+        QVERIFY(!placements().at(1).locked);
+        QCOMPARE(editor->chosenPlacements(), QSet<ObjectId>{r2});
+
+        // R1's designator, at (0, -3), taken alone: R1 stays.
+        editor->press(QPointF(0, -3));
+        QCOMPARE(editor->chosenText().owner, r1);
+        QVERIFY(editor->chosenPlacements().isEmpty());
+        editor->move(QPointF(0, -6));
+        editor->release(QPointF(0, -6));
+        QCOMPARE(placements().at(0).refAt, (Point{0, -6 * NM_PER_MM}));
+        QCOMPARE(placements().at(0).at, Point());
+    }
+
     void boardOutlineIsEditedOnTheBoard()
     {
         MainWindow window;
@@ -1404,7 +1493,7 @@ private slots:
         QVERIFY(select->isChecked());
         editor->press(QPointF(25, 10));
         editor->move(QPointF(25, 15));
-        QVERIFY(editor->previewOutline() != nullptr);
+        QVERIFY(editor->shownBoard().outline != outline());
         editor->release(QPointF(25, 15));
         QCOMPARE(outline().at(2).at, (Point{20 * NM_PER_MM, 15 * NM_PER_MM}));
         QCOMPARE(outline().at(3).at, (Point{30 * NM_PER_MM, 15 * NM_PER_MM}));

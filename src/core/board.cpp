@@ -49,6 +49,7 @@ const char KEY_REF_AT[] = "refAt";
 const char KEY_VALUE_AT[] = "valueAt";
 const char KEY_SHOW_REF[] = "showRef";
 const char KEY_SHOW_VALUE[] = "showValue";
+const char KEY_LOCKED[] = "locked";
 const char KEY_NETS[] = "nets";
 
 const char KEY_WIDTH[] = "width";
@@ -146,6 +147,7 @@ QJsonObject placementToJson(const Placement &placement)
     object.insert(QLatin1String(KEY_VALUE_AT), pointToJson(placement.valueAt));
     object.insert(QLatin1String(KEY_SHOW_REF), placement.showRef);
     object.insert(QLatin1String(KEY_SHOW_VALUE), placement.showValue);
+    object.insert(QLatin1String(KEY_LOCKED), placement.locked);
     object.insert(QLatin1String(KEY_NETS), nets);
     return object;
 }
@@ -183,6 +185,8 @@ Placement placementFromJson(const QJsonObject &object, const QString &where, Rea
     placement.valueAt = reader.point(object, KEY_VALUE_AT, where);
     placement.showRef = reader.boolean(object, KEY_SHOW_REF, where);
     placement.showValue = reader.boolean(object, KEY_SHOW_VALUE, where);
+    if (object.contains(QLatin1String(KEY_LOCKED)))
+        placement.locked = reader.boolean(object, KEY_LOCKED, where);
     placement.padNets = padNetsFromJson(object, where, reader);
     return placement;
 }
@@ -342,7 +346,7 @@ bool operator==(const Placement &a, const Placement &b)
            && a.designator == b.designator && a.value == b.value && a.at == b.at
            && a.rotation == b.rotation && a.side == b.side && a.refAt == b.refAt
            && a.valueAt == b.valueAt && a.showRef == b.showRef && a.showValue == b.showValue
-           && a.padNets == b.padNets;
+           && a.locked == b.locked && a.padNets == b.padNets;
 }
 
 bool operator==(const Track &a, const Track &b)

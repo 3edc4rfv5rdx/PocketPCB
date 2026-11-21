@@ -469,8 +469,14 @@ void MainWindow::createMenus()
     // for '/' as it takes Latin letters for the shortcuts on other layouts.
     slantAction->setShortcuts({QKeySequence(Qt::Key_Slash), QKeySequence(Qt::Key_Period)});
     editMenu->addSeparator();
-    addEditAction(SheetEditor::actionName(SheetEditor::Action::Rotate), "actionRotate",
-                  QKeySequence(Qt::Key_R), &SheetEditor::rotateSelection);
+    QAction *rotateAction =
+        addEditAction(SheetEditor::actionName(SheetEditor::Action::Rotate), "actionRotate",
+                      QKeySequence(Qt::Key_R), &SheetEditor::rotateSelection);
+    // On the board the placements chosen turn; the sheet editor has no sheet then.
+    connect(rotateAction, &QAction::triggered, this, [this] {
+        if (m_boardEditor->isActive())
+            m_boardEditor->rotateChosen();
+    });
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Mirror), "actionMirror",
                   QKeySequence(Qt::Key_M), &SheetEditor::mirrorSelection);
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Delete), "actionDelete",
@@ -1356,7 +1362,8 @@ void MainWindow::createToolBar()
     powerButton->setMenu(powerMenu);
     powerButton->setPopupMode(QToolButton::MenuButtonPopup);
     // In the menu and the menu of the sheet only, with their pictures.
-    m_sheetActions.append(dress("actionRotate", ToolIcon::Rotate));
+    // Turning serves the board as well.
+    dress("actionRotate", ToolIcon::Rotate);
     m_sheetActions.append(dress("actionMirror", ToolIcon::Mirror));
     m_sheetActions.append(dress("actionDelete", ToolIcon::Delete));
 
@@ -1406,6 +1413,7 @@ void MainWindow::updateTools()
         for (QAction *action : std::as_const(m_boardActions))
             action->setEnabled(false);
     }
+    findChild<QAction *>(QStringLiteral("actionRotate"))->setEnabled(sheet || board);
     QAction *lock = findChild<QAction *>(QStringLiteral("actionLock"));
     lock->setEnabled(board && m_boardEditor->hasChosen());
     lock->setChecked(board && m_boardEditor->chosenLocked());
@@ -1545,7 +1553,10 @@ void MainWindow::showStep(int page, const QSet<ObjectId> &ids)
         return;
     if (page != m_designItem->page() || !m_designItem->isVisible())
         showPage(page, false);
-    m_sheetEditor->setSelection(ids);
+    if (m_boardEditor->isActive())
+        m_boardEditor->setChosen(ids);
+    else
+        m_sheetEditor->setSelection(ids);
 }
 
 void MainWindow::applyProjectGrid()

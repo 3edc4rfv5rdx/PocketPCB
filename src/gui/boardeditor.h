@@ -1,6 +1,7 @@
 #pragma once
 
 #include "board.h"
+#include "boardedit.h"
 #include "document.h"
 #include "inplaceedit.h"
 
@@ -14,14 +15,18 @@ namespace ppcb {
 
 class CanvasView;
 
-// Editing of the board shown on the canvas, so far its outline (see
-// outline.h). Choosing: a corner of the outline is dragged along the grid,
-// and so is a side, the sides beside it stretching after it; a
-// double click on a corner types its radius in place. Drawing the outline:
-// every click sets a corner on the grid; a click on the first corner closes
-// it. Cutting out: a
-// rectangle drawn across the edge is taken off the board. Each change is
-// one step. Positions come in scene millimetres.
+// Editing of the board shown on the canvas: its outline (see outline.h)
+// and its placements (see boardedit.h). Choosing: a corner of the outline is
+// dragged along the grid, and so is a side, the sides beside it stretching
+// after it; a double click on a corner types its radius in place. A click
+// on a placement chooses it, with Ctrl adds it to what is chosen or takes
+// it away, and a drag moves what is chosen along the grid; a frame drawn
+// on the empty board chooses the placements wholly inside it. A click on a
+// placement's designator or value chooses that text alone, and a drag
+// moves it away from the placement. Drawing the outline: every click sets
+// a corner on the grid; a click on the first corner closes it. Cutting
+// out: a rectangle drawn across the edge is taken off the board. Each
+// change is one step. Positions come in scene millimetres.
 class BoardEditor : public QObject
 {
     Q_OBJECT
@@ -40,6 +45,11 @@ public:
         RoundCorner,
         LockOutline,
         UnlockOutline,
+        MoveParts,
+        RotateParts,
+        MovePartText,
+        LockParts,
+        UnlockParts,
     };
     static QString actionName(Action action);
 
@@ -68,19 +78,35 @@ public:
     bool isOutlineLocked() const { return m_document->design().board.outlineLocked; }
 
     // The outline is chosen whole: by a double click on a side or by
-    // chooseAll(); a drag on any of its sides or corners then moves it all.
-    // Esc or a click off it drops it.
-    bool hasChosen() const { return m_active && m_outlineChosen && !outline().isEmpty(); }
+    // chooseAll(); a drag on any of its sides or corners then moves it all,
+    // with the placements chosen. Esc or a click off it drops it.
+    bool outlineChosen() const { return m_active && m_outlineChosen && !outline().isEmpty(); }
+    // The placements chosen, of those the board has.
+    QSet<ObjectId> chosenPlacements() const;
+    // The text chosen alone; null when none is.
+    PlacementText chosenText() const { return m_active ? m_chosenText : PlacementText(); }
+    // Something is chosen that may be locked: the outline or placements.
+    bool hasChosen() const { return outlineChosen() || !chosenPlacements().isEmpty(); }
+    // The outline and every placement.
     void chooseAll();
-    // What is chosen is locked (the lock button is pressed); locking or
+    // The placements 'ids' and nothing else, as after an Undo of a step
+    // that touched them.
+    void setChosen(const QSet<ObjectId> &ids);
+    // Everything chosen is locked (the lock button is pressed); locking or
     // unlocking it is one step.
-    bool chosenLocked() const { return hasChosen() && isOutlineLocked(); }
+    bool chosenLocked() const;
     void setChosenLocked(bool locked);
+    // The placements chosen turned by 90 degrees clockwise as one step:
+    // one about its own point, several about the middle of them on the grid.
+    // Locked ones stay.
+    void rotateChosen();
 
-    // The left mouse button. A second click in a row is a press as well;
-    // in choosing, a corner under it gets its radius typed and a side
-    // under it chooses the outline whole.
-    void press(const QPointF &at);
+    // The left mouse button; with 'adding' (Ctrl) a placement clicked is
+    // added to what is chosen or taken away, and a frame adds what it holds.
+    // A second click in a row is a press as well; in choosing, a corner
+    // under it gets its radius typed and a side under it chooses the
+    // outline whole.
+    void press(const QPointF &at, bool adding = false);
     void move(const QPointF &at);
     void release(const QPointF &at);
     void doubleClick(const QPointF &at);
@@ -94,12 +120,10 @@ public:
     // choosing comes back.
     void cancel();
 
-    // What the canvas shows: the outline as a drag would leave it, or null
-    // for the board's own.
-    const QList<OutlineCorner> *previewOutline() const
-    {
-        return m_preview ? &*m_preview : nullptr;
-    }
+    // What the canvas shows: the board as a drag would leave it.
+    Board shownBoard() const;
+    // The frame drawn to choose placements; empty when none is.
+    QRectF chooserFrame() const { return m_framing ? m_frame : QRectF(); }
     // The outline being drawn up to the cursor; empty when none is.
     QPolygonF drawnOutline() const;
     // The cut-out being drawn; empty when none is.
@@ -116,7 +140,6 @@ public:
     {
         return m_active && m_tool == Tool::Select && !isOutlineLocked();
     }
-    bool outlineChosen() const { return hasChosen(); }
     int litCorner() const { return m_litCorner; }
     int litSide() const { return m_litSide; }
 
@@ -139,6 +162,18 @@ private:
     void radiusTyped(const QString &text);
     // Says in the status bar that the outline is locked; true when it is.
     bool refuseLocked();
+    // Makes 'board' the board as one step named after 'action', with the
+    // placements 'ids' as those it touched.
+    void applyBoard(Action action, const Board &board, const QSet<ObjectId> &ids);
+    // A press in choosing on a placement's text or on a placement; false
+    // when there is neither under 'at'.
+    bool pressPlacement(const QPointF &at, bool adding);
+    // The board as a drag of placements or of a text to 'at' leaves it.
+    Board draggedBoard(const QPointF &at) const;
+    // Drops what is chosen: the outline, the placements, the text.
+    void dropChosen();
+    // Chooses the outline whole, and nothing else.
+    void chooseOutline();
     // Drops a drag and what is lit: the board changed under them.
     void dropDrag();
     void setLit(int corner, int side);
@@ -172,6 +207,22 @@ private:
     bool m_lockTold = false;
     bool m_outlineChosen = false;
     std::optional<QList<OutlineCorner>> m_preview;
+
+    // The placements chosen, and a text chosen alone.
+    QSet<ObjectId> m_chosen;
+    PlacementText m_chosenText;
+    // The press took a placement chosen, or a text: a drag moves them from
+    // 'm_dragAnchor', the point of the one taken, which lands on the grid.
+    bool m_dragPlacements = false;
+    bool m_dragText = false;
+    Point m_dragAnchor;
+    std::optional<Board> m_movedBoard;
+    // The press was on the empty board: a drag draws a frame choosing the
+    // placements inside it, added to those chosen with 'm_frameAdding'.
+    bool m_framing = false;
+    bool m_frameAdding = false;
+    QRectF m_frame;
+    bool m_pressEmpty = false;
 
     int m_litCorner = -1;
     int m_litSide = -1;

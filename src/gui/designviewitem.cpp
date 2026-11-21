@@ -164,14 +164,8 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
 {
     const Design &design = m_document->design();
     const BoardEditor *editor = activeBoardEditor();
-    const QList<OutlineCorner> *preview = editor == nullptr ? nullptr : editor->previewOutline();
-    if (preview == nullptr) {
-        paintBoard(painter, design.board, design.library, m_boardLayers);
-    } else {
-        Board board = design.board;
-        board.outline = *preview;
-        paintBoard(painter, board, design.library, m_boardLayers);
-    }
+    const Board board = editor == nullptr ? design.board : editor->shownBoard();
+    paintBoard(painter, board, design.library, m_boardLayers);
     // The origin, which coordinates count from: a corner of two arms along
     // +X and +Y, the same size at any zoom; on the screen only.
     const double pixel = 1.0 / painter.worldTransform().m11();
@@ -183,7 +177,7 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     if (editor == nullptr)
         return;
 
-    const QList<OutlineCorner> &outline = preview != nullptr ? *preview : design.board.outline;
+    const QList<OutlineCorner> &outline = board.outline;
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
     QColor fill = paintcolor::selection();
@@ -227,6 +221,22 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
         painter.setBrush(fill);
         for (const QPointF &point : drawn)
             painter.drawRect(QRectF(point - QPointF(half, half), QSizeF(2 * half, 2 * half)));
+    }
+    // The placements chosen, a text chosen alone, the frame choosing them.
+    const QSet<ObjectId> chosen = editor->chosenPlacements();
+    painter.setPen(pen);
+    painter.setBrush(fill);
+    for (const Placement &placement : board.placements) {
+        if (chosen.contains(placement.id))
+            painter.drawRect(placementRect(placement, design.library));
+    }
+    const PlacementText text = editor->chosenText();
+    if (const Placement *owner = findById(board.placements, text.owner))
+        painter.drawRect(placementTextRect(*owner, text.text));
+    const QRectF frame = editor->chooserFrame();
+    if (!frame.isEmpty()) {
+        painter.setPen(QPen(paintcolor::selection(), 0, Qt::DashLine));
+        painter.drawRect(frame);
     }
     const QRectF cut = editor->cutRect();
     if (!cut.isNull()) {
@@ -342,7 +352,7 @@ void DesignViewItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     BoardEditor *board = activeBoardEditor();
     if (board != nullptr && event->button() == Qt::LeftButton) {
-        board->press(event->scenePos());
+        board->press(event->scenePos(), event->modifiers().testFlag(Qt::ControlModifier));
         event->accept();
         return;
     }

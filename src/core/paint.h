@@ -189,6 +189,20 @@ QRectF powerNameRect(const PowerSymbol &power, const Library &library);
 // The colour 'layer' is drawn in on the board.
 QColor boardLayerColor(BoardLayer layer);
 
+// The rectangle a placement covers on the board, in millimetres: its
+// footprint turned and flipped with it, or the mark of a missing one when
+// 'library' lacks the footprint.
+QRectF placementRect(const Placement &placement, const Library &library);
+// The designator or the value a placement shows on the silkscreen; empty
+// when it shows none.
+QString placementTextShown(const Placement &placement, ComponentText text);
+// Where that text stands on the board: the placement's point and the
+// text's offset.
+Point placementTextPoint(const Placement &placement, ComponentText text);
+// A rectangle surely holding that text as it is drawn, in millimetres;
+// one of no size when it is not shown.
+QRectF placementTextRect(const Placement &placement, ComponentText text);
+
 // A rectangle that holds everything paintBoard() draws; never empty.
 QRectF boardBounds(const Board &board, const Library &library);
 // The board as seen from the top: bottom copper under top copper, the
