@@ -27,7 +27,7 @@ const double CORNER_MARK_PIXELS = 7.0;
 // The edge of the board lit under the mouse, in pixels.
 const double LIT_EDGE_PIXELS = 4.0;
 // The width of a ratsnest line of a net lit, in pixels.
-const double LIT_LINE_PIXELS = 2.0;
+const double LIT_LINE_PIXELS = 3.0;
 // The arms of the origin mark on the board, in pixels.
 const double ORIGIN_ARM_PIXELS = 30.0;
 // Where the coordinates of the corner being drawn stand from it, in pixels.
@@ -174,7 +174,8 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     const QSet<QString> lit = editor == nullptr ? QSet<QString>() : editor->litNets();
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
-    QColor litColor = paintcolor::litNet();
+    // Lit in the colour of the ratsnest, bolder.
+    QColor litColor = paintcolor::ratsnest();
     litColor.setAlpha(LIT_NET_ALPHA);
     painter.setPen(Qt::NoPen);
     painter.setBrush(litColor);
@@ -188,7 +189,7 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     const double litWidth = LIT_LINE_PIXELS / painter.worldTransform().m11();
     for (const RatsnestLine &line : ratsnest(board, design.library)) {
         if (lit.contains(line.net))
-            painter.setPen(QPen(paintcolor::litNet(), litWidth));
+            painter.setPen(QPen(paintcolor::ratsnest(), litWidth));
         else
             painter.setPen(QPen(paintcolor::ratsnest(), 0));
         painter.drawLine(toMm(line.from), toMm(line.to));
