@@ -889,6 +889,27 @@ private slots:
         QCOMPARE(window.document()->undoStack()->count(), steps + 1);
         window.document()->undoStack()->undo();
 
+        // An Undo while dragging ends the drag: the drop brings back
+        // neither the step undone nor the drag.
+        {
+            const Sheet current = sheet();
+            window.document()->undoStack()->undo();
+            const Sheet afterUndo = sheet();
+            window.document()->undoStack()->redo();
+            QVERIFY(sheet() == current);
+            const QPointF from = toMm(sheet().components.at(0).at);
+            editor->press(from, false);
+            editor->move(from + QPointF(5.2, 0), false);
+            QVERIFY(editor->preview() != nullptr);
+            window.document()->undoStack()->undo();
+            QVERIFY(editor->preview() == nullptr);
+            editor->release(from + QPointF(5.2, 0), false);
+            QVERIFY(sheet() == afterUndo);
+            QVERIFY(window.document()->undoStack()->canRedo());
+            window.document()->undoStack()->redo();
+            QVERIFY(sheet() == current);
+        }
+
         // Undo puts it back and chooses it again.
         editor->cancel();
         QVERIFY(editor->selection().isEmpty());

@@ -1359,6 +1359,16 @@ void SheetEditor::updateWire()
 
 void SheetEditor::refreshPreview()
 {
+    // A change while dragging (Undo, Delete) leaves the copy of the sheet the
+    // drag was begun on behind: the drag ends, as Esc ends it, so that the
+    // drop does not bring that copy back. The drop's own step comes after
+    // the drag has ended.
+    if (m_dragging) {
+        m_dragging = false;
+        m_pressed = false;
+        emit changed();
+        return;
+    }
     if (m_wiring)
         updateWire();
     else if (m_placing)
