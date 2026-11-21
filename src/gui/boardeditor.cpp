@@ -64,6 +64,12 @@ QString BoardEditor::actionName(Action action)
         return tr("Rotate parts");
     case Action::MovePartText:
         return tr("Move part text");
+    case Action::ShowValue:
+        return tr("Show value");
+    case Action::HideValue:
+        return tr("Hide value");
+    case Action::LineToPart:
+        return tr("Line to part");
     case Action::LockParts:
         return lockPartsName(true);
     case Action::UnlockParts:
@@ -506,6 +512,85 @@ void BoardEditor::chooseAll()
     for (const Placement &placement : m_document->design().board.placements)
         m_chosen.insert(placement.id);
     emit changed();
+}
+
+BoardEditor::MenuTarget BoardEditor::chooseForMenu(const QPointF &at)
+{
+    m_menuCorner = -1;
+    if (!m_active || m_tool != Tool::Select)
+        return MenuTarget::None;
+    const Design &design = m_document->design();
+    const PlacementText text = placementTextAt(design.board, at);
+    if (!text.isNull()) {
+        if (!(m_chosenText == text)) {
+            dropChosen();
+            m_chosenText = text;
+        }
+        emit changed();
+        return MenuTarget::Text;
+    }
+    const ObjectId hit = placementAt(design.board, design.library, at);
+    if (!hit.isNull()) {
+        if (!m_chosen.contains(hit)) {
+            dropChosen();
+            m_chosen = {hit};
+        }
+        emit changed();
+        return MenuTarget::Placement;
+    }
+    m_menuCorner = outlineCornerAt(outline(), at, m_canvas->pixelsToMm(CanvasView::END_PIXELS));
+    const bool side =
+        m_menuCorner < 0
+        && outlineSideAt(outline(), at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS)) >= 0;
+    if (m_menuCorner < 0 && !side)
+        return MenuTarget::None;
+    if (!outlineChosen())
+        chooseOutline();
+    return m_menuCorner >= 0 ? MenuTarget::Corner : MenuTarget::Side;
+}
+
+bool BoardEditor::chosenValuesShown() const
+{
+    const QSet<ObjectId> ids = chosenPlacements();
+    const QList<Placement> &placements = m_document->design().board.placements;
+    return !ids.isEmpty()
+           && std::all_of(placements.cbegin(), placements.cend(), [&ids](const Placement &p) {
+                  return !ids.contains(p.id) || p.showValue;
+              });
+}
+
+void BoardEditor::setChosenValuesShown(bool shown)
+{
+    const QSet<ObjectId> ids = chosenPlacements();
+    Board board = m_document->design().board;
+    for (Placement &placement : board.placements) {
+        if (ids.contains(placement.id))
+            placement.showValue = shown;
+    }
+    if (board != m_document->design().board)
+        applyBoard(shown ? Action::ShowValue : Action::HideValue, board, ids);
+}
+
+bool BoardEditor::chosenTextLined() const
+{
+    const PlacementText text = chosenText();
+    const Placement *placement = findById(m_document->design().board.placements, text.owner);
+    if (placement == nullptr)
+        return false;
+    return text.text == ComponentText::Designator ? placement->refLine : placement->valueLine;
+}
+
+void BoardEditor::setChosenTextLined(bool lined)
+{
+    const PlacementText text = chosenText();
+    Board board = m_document->design().board;
+    for (Placement &placement : board.placements) {
+        if (placement.id != text.owner)
+            continue;
+        (text.text == ComponentText::Designator ? placement.refLine : placement.valueLine) = lined;
+    }
+    if (board != m_document->design().board)
+        applyBoard(Action::LineToPart, board, {text.owner});
 }
 
 void BoardEditor::setChosen(const QSet<ObjectId> &ids)

@@ -50,6 +50,8 @@ const char KEY_VALUE_AT[] = "valueAt";
 const char KEY_SHOW_REF[] = "showRef";
 const char KEY_SHOW_VALUE[] = "showValue";
 const char KEY_LOCKED[] = "locked";
+const char KEY_REF_LINE[] = "refLine";
+const char KEY_VALUE_LINE[] = "valueLine";
 const char KEY_NETS[] = "nets";
 
 const char KEY_WIDTH[] = "width";
@@ -147,6 +149,8 @@ QJsonObject placementToJson(const Placement &placement)
     object.insert(QLatin1String(KEY_VALUE_AT), pointToJson(placement.valueAt));
     object.insert(QLatin1String(KEY_SHOW_REF), placement.showRef);
     object.insert(QLatin1String(KEY_SHOW_VALUE), placement.showValue);
+    object.insert(QLatin1String(KEY_REF_LINE), placement.refLine);
+    object.insert(QLatin1String(KEY_VALUE_LINE), placement.valueLine);
     object.insert(QLatin1String(KEY_LOCKED), placement.locked);
     object.insert(QLatin1String(KEY_NETS), nets);
     return object;
@@ -187,6 +191,11 @@ Placement placementFromJson(const QJsonObject &object, const QString &where, Rea
     placement.showValue = reader.boolean(object, KEY_SHOW_VALUE, where);
     if (object.contains(QLatin1String(KEY_LOCKED)))
         placement.locked = reader.boolean(object, KEY_LOCKED, where);
+    // Optional: files written before them have no lines.
+    if (object.contains(QLatin1String(KEY_REF_LINE)))
+        placement.refLine = reader.boolean(object, KEY_REF_LINE, where);
+    if (object.contains(QLatin1String(KEY_VALUE_LINE)))
+        placement.valueLine = reader.boolean(object, KEY_VALUE_LINE, where);
     placement.padNets = padNetsFromJson(object, where, reader);
     return placement;
 }
@@ -346,7 +355,8 @@ bool operator==(const Placement &a, const Placement &b)
            && a.designator == b.designator && a.value == b.value && a.at == b.at
            && a.rotation == b.rotation && a.side == b.side && a.refAt == b.refAt
            && a.valueAt == b.valueAt && a.showRef == b.showRef && a.showValue == b.showValue
-           && a.locked == b.locked && a.padNets == b.padNets;
+           && a.refLine == b.refLine && a.valueLine == b.valueLine && a.locked == b.locked
+           && a.padNets == b.padNets;
 }
 
 bool operator==(const Track &a, const Track &b)

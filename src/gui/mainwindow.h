@@ -88,6 +88,9 @@ public:
     // duplicated, and the text of what is under the cursor edited in place;
     // with nothing chosen, things are pasted, drawn and placed.
     void showSheetMenu(const QPoint &globalPos);
+    // The menu of the board at 'globalPos': for a part, a text or the
+    // outline; none on the empty board yet.
+    void showBoardMenu(const QPoint &globalPos);
 
     // Shows a symbol or footprint file of the library on the canvas in the
     // place of the project and keeps watching it: the drawing follows every

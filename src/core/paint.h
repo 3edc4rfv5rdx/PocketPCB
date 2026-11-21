@@ -4,6 +4,7 @@
 #include "project.h"
 
 #include <QColor>
+#include <QLineF>
 #include <QPointF>
 #include <QPolygonF>
 #include <QRectF>
@@ -207,6 +208,12 @@ Point placementTextPoint(const Placement &placement, ComponentText text);
 // A rectangle surely holding that text as it is drawn, in millimetres;
 // one of no size when it is not shown.
 QRectF placementTextRect(const Placement &placement, ComponentText text);
+
+// The line on the silkscreen from a placement's text to the part, when
+// the text is shown and has its line (Placement::refLine, valueLine) and
+// stands off the part: from the edge of the text to the edge of the part's
+// rectangle (placementRect()), in millimetres. Null otherwise.
+QLineF leaderLine(const Placement &placement, ComponentText text, const Library &library);
 
 // A rectangle that holds everything paintBoard() draws; never empty.
 QRectF boardBounds(const Board &board, const Library &library);

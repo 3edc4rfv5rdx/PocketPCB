@@ -88,6 +88,10 @@ struct Placement
     Point valueAt;
     bool showRef = true;
     bool showValue = false;
+    // A line on the silkscreen joins the designator, or the value, to the
+    // part, when that text is shown (see leaderLine() in paint.h).
+    bool refLine = false;
+    bool valueLine = false;
     // It may not be moved or turned until this is taken off.
     bool locked = false;
 

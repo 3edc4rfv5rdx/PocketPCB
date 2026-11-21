@@ -569,6 +569,10 @@
 <context>
     <name>ppcb::MainWindow</name>
     <message>
+        <source>Show on schematic</source>
+        <translation>Показать на схеме</translation>
+    </message>
+    <message>
         <source>The library has no power symbols</source>
         <translation>В библиотеке нет символов питания</translation>
     </message>
@@ -1401,6 +1405,18 @@
     <message>
         <source>Move part text</source>
         <translation>Переместить надпись детали</translation>
+    </message>
+    <message>
+        <source>Show value</source>
+        <translation>Показать номинал</translation>
+    </message>
+    <message>
+        <source>Hide value</source>
+        <translation>Скрыть номинал</translation>
+    </message>
+    <message>
+        <source>Line to part</source>
+        <translation>Линия к детали</translation>
     </message>
     <message>
         <source>The board outline is locked</source>

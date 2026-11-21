@@ -114,6 +114,27 @@ private slots:
         QCOMPARE(round, board);
     }
 
+    // R1's designator, at (0, -3), moved up to (0, -8): with its line, the
+    // silkscreen joins the bottom of the text to the top of the part.
+    void aTextWithItsLineIsJoinedToThePart()
+    {
+        Placement r1 = twoPlacements().placements.at(0);
+        r1.refAt = mm(0, -8);
+        QVERIFY(leaderLine(r1, ComponentText::Designator, library()).isNull());
+        r1.refLine = true;
+        const QLineF line = leaderLine(r1, ComponentText::Designator, library());
+        QVERIFY(!line.isNull());
+        const QRectF part = placementRect(r1, library());
+        QCOMPARE(line.p2().y(), part.top());
+        QCOMPARE(line.p1().y(), placementTextRect(r1, ComponentText::Designator).bottom());
+        // On the part, or hidden: no line.
+        r1.refAt = mm(0, 0);
+        QVERIFY(leaderLine(r1, ComponentText::Designator, library()).isNull());
+        r1.refAt = mm(0, -8);
+        r1.showRef = false;
+        QVERIFY(leaderLine(r1, ComponentText::Designator, library()).isNull());
+    }
+
     void aLockedPlacementStaysButItsTextMoves()
     {
         const Board board = twoPlacements();

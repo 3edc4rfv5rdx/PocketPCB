@@ -195,6 +195,8 @@ MainWindow::MainWindow(QWidget *parent)
         if (m_boardEditor->isActive()) {
             if (m_boardEditor->isDrawing())
                 m_boardEditor->cancel();
+            else
+                showBoardMenu(globalPos);
         } else if (m_sheetEditor->isPlacing() || m_sheetEditor->isWiring()) {
             m_sheetEditor->cancel();
         } else {
@@ -836,6 +838,73 @@ void MainWindow::showSheetMenu(const QPoint &globalPos)
         add("actionPlacePower");
         menu.addSeparator();
         add("actionSelectAll");
+    }
+    menu.exec(globalPos);
+}
+
+void MainWindow::showBoardMenu(const QPoint &globalPos)
+{
+    QPointF at;
+    if (!m_canvas->sceneAtGlobal(globalPos, at))
+        return;
+    const BoardEditor::MenuTarget target = m_boardEditor->chooseForMenu(at);
+    QMenu menu(this);
+    menu.setStyleSheet(
+        QString::fromLatin1(SHEET_MENU_STYLE).arg(paintcolor::selection().name()));
+    const auto add = [this, &menu](const char *name) {
+        if (QAction *action = findChild<QAction *>(QLatin1String(name)))
+            menu.addAction(action);
+    };
+    // Locking what is chosen, or unlocking it when all of it is locked.
+    const auto addLock = [this, &menu] {
+        const bool locked = m_boardEditor->chosenLocked();
+        QAction *lock = menu.addAction(lockName(!locked));
+        connect(lock, &QAction::triggered, this, [this, locked] {
+            m_boardEditor->setChosenLocked(!locked);
+            updateTools();
+        });
+    };
+    switch (target) {
+    case BoardEditor::MenuTarget::Placement: {
+        add("actionRotate");
+        addLock();
+        const bool shown = m_boardEditor->chosenValuesShown();
+        QAction *value = menu.addAction(BoardEditor::actionName(
+            shown ? BoardEditor::Action::HideValue : BoardEditor::Action::ShowValue));
+        connect(value, &QAction::triggered, m_boardEditor,
+                [this, shown] { m_boardEditor->setChosenValuesShown(!shown); });
+        // The components of the parts chosen, on their sheet.
+        QSet<ObjectId> components;
+        for (const Placement &placement : m_document->design().board.placements) {
+            if (m_boardEditor->chosenPlacements().contains(placement.id))
+                components.insert(placement.component);
+        }
+        QAction *show = menu.addAction(tr("Show on schematic"));
+        connect(show, &QAction::triggered, this,
+                [this, components] { showComponents(components); });
+        break;
+    }
+    case BoardEditor::MenuTarget::Text: {
+        QAction *line =
+            menu.addAction(BoardEditor::actionName(BoardEditor::Action::LineToPart));
+        line->setCheckable(true);
+        line->setChecked(m_boardEditor->chosenTextLined());
+        connect(line, &QAction::triggered, m_boardEditor, &BoardEditor::setChosenTextLined);
+        break;
+    }
+    case BoardEditor::MenuTarget::Corner:
+    case BoardEditor::MenuTarget::Side:
+        addLock();
+        if (target == BoardEditor::MenuTarget::Corner && !m_boardEditor->isOutlineLocked()) {
+            QAction *round =
+                menu.addAction(BoardEditor::actionName(BoardEditor::Action::RoundCorner));
+            connect(round, &QAction::triggered, m_boardEditor,
+                    &BoardEditor::editMenuCornerRadius);
+        }
+        break;
+    case BoardEditor::MenuTarget::None:
+        // Nothing on the empty board yet.
+        return;
     }
     menu.exec(globalPos);
 }

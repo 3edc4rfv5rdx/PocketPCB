@@ -4,6 +4,8 @@
 
 ## Unreleased
 - N: Choosing a part on the board lights its nets, their pads and ratsnest lines
+- N: A designator or a value on the board may have a bold silkscreen line to its part
+- N: The board has a menu on a short right click
 - F: A part chosen on the board shows its designator and value chosen with it, joined to it by lines
 - N: R turns the parts being dragged on the board
 - N: Light green lines on the board join the pads of each net still to be joined

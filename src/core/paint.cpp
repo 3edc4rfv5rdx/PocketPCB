@@ -25,6 +25,9 @@ const double PIN_TEXT_HEIGHT = 1.0;
 const double PIN_TEXT_GAP = 0.4;
 const double PIN_POINT_RADIUS = 0.3;
 const double PLACEHOLDER_TEXT_HEIGHT = 1.27;
+// The line from a placement's text to the part on the silkscreen, in
+// millimetres: bolder than the drawings of the footprints.
+const double LEADER_LINE_WIDTH = 0.3;
 const double ORIGIN_MARK_SIZE = 0.8;
 // The pad number takes this share of the pad's smaller side.
 const double PAD_TEXT_SHARE = 0.45;
@@ -1000,6 +1003,11 @@ void paintPlacementSilkscreen(QPainter &painter, const Library &library,
         if (!shown.isEmpty())
             paintPlacementText(painter, placement, placementTextPoint(placement, text), shown,
                                color);
+        const QLineF leader = leaderLine(placement, text, library);
+        if (!leader.isNull()) {
+            painter.setPen(linePen(color, LEADER_LINE_WIDTH));
+            painter.drawLine(leader);
+        }
     }
 }
 
@@ -1410,6 +1418,26 @@ QRectF placementTextRect(const Placement &placement, ComponentText text)
     return textBounds(toMm(placementTextPoint(placement, text)),
                       placementTextShown(placement, text), PLACEHOLDER_TEXT_HEIGHT,
                       TextAlign::Center);
+}
+
+QLineF leaderLine(const Placement &placement, ComponentText text, const Library &library)
+{
+    const bool wanted =
+        text == ComponentText::Designator ? placement.refLine : placement.valueLine;
+    if (!wanted || placementTextShown(placement, text).isEmpty())
+        return QLineF();
+    const QRectF part = placementRect(placement, library);
+    const QRectF label = placementTextRect(placement, text);
+    const auto clamped = [](const QPointF &p, const QRectF &r) {
+        return QPointF(qBound(r.left(), p.x(), r.right()), qBound(r.top(), p.y(), r.bottom()));
+    };
+    // The point of the part nearest the text's middle, and the point of the
+    // text nearest that.
+    const QPointF onPart = clamped(label.center(), part);
+    const QPointF onText = clamped(onPart, label);
+    if (onPart == onText)
+        return QLineF();
+    return QLineF(onText, onPart);
 }
 
 QRectF boardBounds(const Board &board, const Library &library)

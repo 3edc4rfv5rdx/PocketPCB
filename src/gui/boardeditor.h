@@ -51,6 +51,9 @@ public:
         MovePartText,
         LockParts,
         UnlockParts,
+        ShowValue,
+        HideValue,
+        LineToPart,
     };
     static QString actionName(Action action);
 
@@ -108,6 +111,27 @@ public:
     // While they are dragged, they turn about the point of the one taken,
     // and the drag goes on. Locked ones stay.
     void rotateChosen();
+
+    // What a short right click at 'at' is on, choosing it as a click
+    // would, unless it is chosen already: a text, a placement, a corner or a
+    // side of the outline, or nothing (what is chosen then stays).
+    enum class MenuTarget { None, Text, Placement, Corner, Side };
+    MenuTarget chooseForMenu(const QPointF &at);
+    // The corner of the outline the menu was opened on; -1 for none.
+    int menuCorner() const { return m_menuCorner; }
+    // Types the radius of that corner in place.
+    void editMenuCornerRadius()
+    {
+        if (m_menuCorner >= 0)
+            editRadius(m_menuCorner);
+    }
+    // Every placement chosen shows its value; shown or hidden as one step.
+    bool chosenValuesShown() const;
+    void setChosenValuesShown(bool shown);
+    // The text chosen alone has its line to the part (Placement::refLine,
+    // valueLine); set as one step.
+    bool chosenTextLined() const;
+    void setChosenTextLined(bool lined);
 
     // The left mouse button; with 'adding' (Ctrl) a placement clicked is
     // added to what is chosen or taken away, and a frame adds what it holds.
@@ -241,6 +265,7 @@ private:
 
     InPlaceEdit m_radiusEdit;
     int m_radiusCorner = -1;
+    int m_menuCorner = -1;
 };
 
 } // namespace ppcb
