@@ -56,7 +56,8 @@ inline QColor maskTop() { return QColor(40, 150, 70); }
 inline QColor maskBottom() { return QColor(40, 110, 150); }
 inline QColor pasteTop() { return QColor(180, 180, 180); }
 inline QColor pasteBottom() { return QColor(120, 120, 120); }
-inline QColor boardOutline() { return QColor(230, 200, 0); }
+// Lilac, so that yellow is left to the locked parts.
+inline QColor boardOutline() { return QColor(200, 162, 200); }
 // The mark of the origin, which coordinates on the board count from.
 inline QColor boardOrigin() { return QColor(0, 200, 220); }
 inline QColor bareHole() { return QColor(100, 100, 100); }
