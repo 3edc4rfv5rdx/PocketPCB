@@ -1,6 +1,7 @@
 #include "sheeteditor.h"
 
 #include "canvasview.h"
+#include "format.h"
 #include "sheetedit.h"
 #include "wiring.h"
 
@@ -610,6 +611,13 @@ void SheetEditor::setComponentFootprint(const QSet<ObjectId> &ids, const QString
         applyToComponents(Action::Footprint, ids, withComponentFootprint(*sheet, ids, footprint));
 }
 
+void SheetEditor::setComponentsLocked(const QSet<ObjectId> &ids, bool locked)
+{
+    if (const Sheet *sheet = currentSheet())
+        applyToComponents(locked ? Action::Lock : Action::Unlock, ids,
+                          withObjectsLocked(*sheet, ids, locked));
+}
+
 void SheetEditor::setComponentOffBoard(const QSet<ObjectId> &ids, bool offBoard)
 {
     if (const Sheet *sheet = currentSheet())
@@ -658,6 +666,13 @@ void SheetEditor::move(const QPointF &at, bool detached)
             < m_canvas->pixelsToMm(QApplication::startDragDistance()))
             return;
         if (m_pressOnSelection) {
+            // Nothing chosen may move: said once, nothing dragged.
+            if (!hasText() && !hasSegment() && m_endLine.isNull() && !m_joint
+                && hasLockable(*sheet, m_selection) && movableIds(*sheet, m_selection).isEmpty()) {
+                m_pressed = false;
+                emit message(partLockedMessage());
+                return;
+            }
             m_dragging = true;
             m_dragStart = *sheet;
             m_dragBase = *sheet;
@@ -801,7 +816,8 @@ void SheetEditor::updateDrag()
     }
     const Sheet moved = movedObjects(m_dragBase, m_selection, m_dragDelta);
     m_preview = m_dragDetached ? moved
-                               : withWiresFollowing(m_dragStart, moved, m_selection,
+                               : withWiresFollowing(m_dragStart, moved,
+                                                    movableIds(m_dragStart, m_selection),
                                                     m_document->design().library, m_wireRouting);
 }
 
@@ -818,11 +834,12 @@ void SheetEditor::rotateSelection()
         return;
     }
     const Sheet *sheet = currentSheet();
-    if (sheet == nullptr || m_selection.isEmpty())
+    if (sheet == nullptr || m_selection.isEmpty() || refuseLocked(*sheet))
         return;
     apply(actionName(Action::Rotate),
           withWiresFollowing(*sheet, rotatedObjects(*sheet, m_selection, selectionCenter(*sheet)),
-                             m_selection, m_document->design().library, m_wireRouting));
+                             movableIds(*sheet, m_selection), m_document->design().library,
+                             m_wireRouting));
 }
 
 void SheetEditor::mirrorSelection()
@@ -838,11 +855,41 @@ void SheetEditor::mirrorSelection()
         return;
     }
     const Sheet *sheet = currentSheet();
-    if (sheet == nullptr || m_selection.isEmpty())
+    if (sheet == nullptr || m_selection.isEmpty() || refuseLocked(*sheet))
         return;
     apply(actionName(Action::Mirror),
           withWiresFollowing(*sheet, mirroredObjects(*sheet, m_selection, selectionCenter(*sheet)),
-                             m_selection, m_document->design().library, m_wireRouting));
+                             movableIds(*sheet, m_selection), m_document->design().library,
+                             m_wireRouting));
+}
+
+bool SheetEditor::refuseLocked(const Sheet &sheet)
+{
+    if (!hasLockable(sheet, m_selection) || !movableIds(sheet, m_selection).isEmpty())
+        return false;
+    emit message(partLockedMessage());
+    return true;
+}
+
+bool SheetEditor::canLockChosen() const
+{
+    const Sheet *sheet = currentSheet();
+    return sheet != nullptr && hasLockable(*sheet, m_selection);
+}
+
+bool SheetEditor::chosenLocked() const
+{
+    const Sheet *sheet = currentSheet();
+    return sheet != nullptr && areObjectsLocked(*sheet, m_selection);
+}
+
+void SheetEditor::setChosenLocked(bool locked)
+{
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr || !canLockChosen() || locked == chosenLocked())
+        return;
+    apply(actionName(locked ? Action::Lock : Action::Unlock),
+          withObjectsLocked(*sheet, m_selection, locked));
 }
 
 void SheetEditor::deleteSelection()
@@ -873,8 +920,10 @@ void SheetEditor::removeSelection(Action action)
         emit changed();
         return;
     }
-    if (sheet == nullptr || m_selection.isEmpty())
+    if (sheet == nullptr || m_selection.isEmpty() || refuseLocked(*sheet))
         return;
+    // What is locked stays.
+    m_selection = movableIds(*sheet, m_selection);
     // Named before the objects are gone.
     const QString name = stepName(actionName(action));
     Design design = m_document->design();
@@ -962,6 +1011,12 @@ void SheetEditor::cutSelection()
 {
     if (m_placing)
         return;
+    // What is locked is neither cut nor copied: it stays where it is.
+    if (const Sheet *sheet = currentSheet(); !hasSegment() && !hasText() && sheet != nullptr) {
+        if (refuseLocked(*sheet))
+            return;
+        m_selection = movableIds(*sheet, m_selection);
+    }
     copySelection();
     removeSelection(Action::Cut);
 }
@@ -1473,6 +1528,10 @@ QString SheetEditor::actionName(Action action)
         return tr("Change power");
     case Action::Comment:
         return tr("Change comment");
+    case Action::Lock:
+        return lockPartsName(true);
+    case Action::Unlock:
+        return lockPartsName(false);
     case Action::JoinWires:
         return tr("Join wires");
     case Action::SeparateWires:

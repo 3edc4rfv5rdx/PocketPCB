@@ -35,6 +35,26 @@
 <context>
     <name>ppcb::Format</name>
     <message>
+        <source>Lock</source>
+        <translation>Закріпити</translation>
+    </message>
+    <message>
+        <source>Unlock</source>
+        <translation>Відкріпити</translation>
+    </message>
+    <message>
+        <source>Lock parts</source>
+        <translation>Закріпити деталі</translation>
+    </message>
+    <message>
+        <source>Unlock parts</source>
+        <translation>Відкріпити деталі</translation>
+    </message>
+    <message>
+        <source>The part is locked</source>
+        <translation>Деталь закріплено</translation>
+    </message>
+    <message>
         <source>Save the project first</source>
         <translation>Спершу збережіть проєкт</translation>
     </message>
@@ -864,10 +884,6 @@
         <source>Coordinates while drawing the board</source>
         <translation>Координати під час малювання плати</translation>
     </message>
-    <message>
-        <source>Lock</source>
-        <translation>Закріпити</translation>
-    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>
@@ -1192,6 +1208,10 @@
         <translation>Не на платі</translation>
     </message>
     <message>
+        <source>Locked</source>
+        <translation>Закріплено</translation>
+    </message>
+    <message>
         <source>different</source>
         <translation>різні</translation>
     </message>
@@ -1381,18 +1401,6 @@
     <message>
         <source>Move part text</source>
         <translation>Перемістити напис деталі</translation>
-    </message>
-    <message>
-        <source>Lock parts</source>
-        <translation>Закріпити деталі</translation>
-    </message>
-    <message>
-        <source>Unlock parts</source>
-        <translation>Відкріпити деталі</translation>
-    </message>
-    <message>
-        <source>The part is locked</source>
-        <translation>Деталь закріплено</translation>
     </message>
     <message>
         <source>The board outline is locked</source>

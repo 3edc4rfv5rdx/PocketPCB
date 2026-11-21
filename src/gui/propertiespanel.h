@@ -20,8 +20,8 @@ class Document;
 class SheetEditor;
 
 // The properties of the components chosen on the sheet: designator, value,
-// footprint, whether the part is off the board, the rated power of a
-// resistor and a comment. With several chosen, a
+// footprint, whether the part is off the board, whether it is locked, the
+// rated power of a resistor and a comment. With several chosen, a
 // field shows what they all have, or stays empty saying they differ, and
 // what is set there goes to them all as one step. The designator is set one
 // component at a time; one another component has is shown in red. Enter or
@@ -59,6 +59,7 @@ private:
     void commitValue();
     void commitFootprint(int index);
     void commitOffBoard();
+    void commitLocked();
     void commitPower(int index);
     void commitComment();
     // Red when the designator typed is another component's.
@@ -75,6 +76,7 @@ private:
     QLineEdit *m_value = nullptr;
     QComboBox *m_footprint = nullptr;
     QCheckBox *m_offBoard = nullptr;
+    QCheckBox *m_locked = nullptr;
     QComboBox *m_power = nullptr;
     QLineEdit *m_comment = nullptr;
     // The value, the comment differs between the components shown.

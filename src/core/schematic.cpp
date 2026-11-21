@@ -31,6 +31,7 @@ const char KEY_OFF_BOARD[] = "offBoard";
 const char KEY_POWER_MW[] = "powerMw";
 const char KEY_COMMENT[] = "comment";
 const char KEY_MIRRORED[] = "mirrored";
+const char KEY_LOCKED[] = "locked";
 const char KEY_REF_AT[] = "refAt";
 const char KEY_VALUE_AT[] = "valueAt";
 
@@ -85,6 +86,7 @@ QJsonObject componentToJson(const Component &component)
     object.insert(QLatin1String(KEY_AT), pointToJson(component.at));
     object.insert(QLatin1String(KEY_ROTATION), component.rotation);
     object.insert(QLatin1String(KEY_MIRRORED), component.mirrored);
+    object.insert(QLatin1String(KEY_LOCKED), component.locked);
     object.insert(QLatin1String(KEY_REF_AT), pointToJson(component.refAt));
     object.insert(QLatin1String(KEY_VALUE_AT), pointToJson(component.valueAt));
     return object;
@@ -111,6 +113,9 @@ Component componentFromJson(const QJsonObject &object, const QString &where, Rea
     component.mirrored = reader.boolean(object, KEY_MIRRORED, where);
     component.refAt = reader.point(object, KEY_REF_AT, where);
     component.valueAt = reader.point(object, KEY_VALUE_AT, where);
+    // Optional: files written before locking have it off.
+    if (object.contains(QLatin1String(KEY_LOCKED)))
+        component.locked = reader.boolean(object, KEY_LOCKED, where);
     return component;
 }
 
@@ -226,6 +231,7 @@ QJsonObject powerSymbolToJson(const PowerSymbol &power)
     object.insert(QLatin1String(KEY_NAME), power.name);
     object.insert(QLatin1String(KEY_ROTATION), power.rotation);
     object.insert(QLatin1String(KEY_SYMBOL), power.symbol);
+    object.insert(QLatin1String(KEY_LOCKED), power.locked);
     return object;
 }
 
@@ -239,6 +245,8 @@ PowerSymbol powerSymbolFromJson(const QJsonObject &object, const QString &where,
     power.name = reader.nonEmptyString(object, KEY_NAME, where);
     power.rotation = reader.rightAngle(object, KEY_ROTATION, where);
     power.symbol = reader.nonEmptyString(object, KEY_SYMBOL, where);
+    if (object.contains(QLatin1String(KEY_LOCKED)))
+        power.locked = reader.boolean(object, KEY_LOCKED, where);
     return power;
 }
 
@@ -334,7 +342,8 @@ bool operator==(const Component &a, const Component &b)
 {
     return a.id == b.id && a.part == b.part && a.footprint == b.footprint
            && a.designator == b.designator && a.value == b.value && a.offBoard == b.offBoard && a.powerMw == b.powerMw && a.comment == b.comment && a.at == b.at && a.rotation == b.rotation
-           && a.mirrored == b.mirrored && a.refAt == b.refAt && a.valueAt == b.valueAt;
+           && a.mirrored == b.mirrored && a.refAt == b.refAt && a.valueAt == b.valueAt
+           && a.locked == b.locked;
 }
 
 bool operator==(const Wire &a, const Wire &b)
@@ -357,7 +366,7 @@ bool operator==(const Label &a, const Label &b)
 bool operator==(const PowerSymbol &a, const PowerSymbol &b)
 {
     return a.id == b.id && a.at == b.at && a.name == b.name && a.rotation == b.rotation
-           && a.symbol == b.symbol;
+           && a.symbol == b.symbol && a.locked == b.locked;
 }
 
 bool operator==(const NoConnect &a, const NoConnect &b)

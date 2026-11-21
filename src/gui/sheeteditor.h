@@ -69,6 +69,8 @@ public:
         Comment,
         JoinWires,
         SeparateWires,
+        Lock,
+        Unlock,
     };
     static QString actionName(Action action);
 
@@ -207,6 +209,13 @@ public:
     ObjectId chooseForMenu(const QPointF &at);
     // Something is chosen: objects, or a segment or a text alone.
     bool hasChosen() const { return !m_selection.isEmpty() || hasSegment() || hasText(); }
+    // Something chosen may be locked: a component or a power symbol.
+    bool canLockChosen() const;
+    // Everything chosen that may be locked is (the lock button is pressed);
+    // locking or unlocking it is one step. Locked, it is not moved, turned,
+    // mirrored, deleted or cut; its texts still move, and it is copied.
+    bool chosenLocked() const;
+    void setChosenLocked(bool locked);
     // The text of 'id' edited in place, as a double click does.
     void editInPlace(const ObjectId &id) { editText(id); }
     // True when 'id' is a bus of the sheet shown.
@@ -238,6 +247,7 @@ public:
     void setComponentDesignator(const ObjectId &id, const QString &designator);
     void setComponentFootprint(const QSet<ObjectId> &ids, const QString &footprint);
     void setComponentOffBoard(const QSet<ObjectId> &ids, bool offBoard);
+    void setComponentsLocked(const QSet<ObjectId> &ids, bool locked);
     void setComponentPower(const QSet<ObjectId> &ids, int powerMw);
     void setComponentComment(const QSet<ObjectId> &ids, const QString &comment);
     // The net name of the power symbols 'ids', as one step; nothing happens
@@ -257,6 +267,8 @@ public:
 signals:
     // The selection, the preview or the rubber band changed: redraw.
     void changed();
+    // Why something could not be done, for the status bar.
+    void message(const QString &text);
     // A component was double-clicked: its part and its footprint.
     void componentOpened(const QString &part, const QString &footprint);
     // The design changed: nets() and problems() are made anew when next
@@ -337,6 +349,9 @@ private:
     void removeSelection(Action action);
     // Makes 'edited' the sheet as one step of the history named 'action'.
     void apply(const QString &action, const Sheet &edited);
+    // Says in the status bar that what is chosen is locked when all of it
+    // that may be is, and nothing else would move; true then.
+    bool refuseLocked(const Sheet &sheet);
     // The same for a change of the components or power symbols 'ids', named
     // after them as they were.
     void applyToComponents(Action action, const QSet<ObjectId> &ids, const Sheet &edited);

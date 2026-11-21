@@ -41,6 +41,8 @@ PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidge
     m_footprint->setObjectName(QStringLiteral("propertiesFootprint"));
     m_offBoard = new QCheckBox(this);
     m_offBoard->setObjectName(QStringLiteral("propertiesOffBoard"));
+    m_locked = new QCheckBox(this);
+    m_locked->setObjectName(QStringLiteral("propertiesLocked"));
     m_power = new QComboBox(this);
     m_power->setObjectName(QStringLiteral("propertiesPower"));
     m_comment = new QLineEdit(this);
@@ -51,6 +53,7 @@ PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidge
     form->addRow(valueTitle(), m_value);
     form->addRow(footprintTitle(), m_footprint);
     form->addRow(tr("Off board"), m_offBoard);
+    form->addRow(tr("Locked"), m_locked);
     form->addRow(powerTitle(), m_power);
     form->addRow(commentTitle(), m_comment);
     QVBoxLayout *layout = new QVBoxLayout(this);
@@ -67,6 +70,7 @@ PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidge
     connect(m_value, &QLineEdit::editingFinished, this, &PropertiesPanel::commitValue);
     connect(m_footprint, &QComboBox::activated, this, &PropertiesPanel::commitFootprint);
     connect(m_offBoard, &QCheckBox::clicked, this, &PropertiesPanel::commitOffBoard);
+    connect(m_locked, &QCheckBox::clicked, this, &PropertiesPanel::commitLocked);
     connect(m_power, &QComboBox::activated, this, &PropertiesPanel::commitPower);
     connect(m_comment, &QLineEdit::editingFinished, this, &PropertiesPanel::commitComment);
     connect(m_editor, &SheetEditor::changed, this, [this] { refresh(); });
@@ -212,6 +216,17 @@ void PropertiesPanel::refresh(bool force)
                               : offBoard > 0              ? Qt::Checked
                                                           : Qt::Unchecked);
 
+    // Locked: the same way.
+    int locked = 0;
+    for (const Component &component : chosen)
+        locked += component.locked ? 1 : 0;
+    m_locked->setEnabled(!chosen.isEmpty());
+    const bool lockMixed = locked > 0 && locked < chosen.size();
+    m_locked->setTristate(lockMixed);
+    m_locked->setCheckState(lockMixed ? Qt::PartiallyChecked
+                            : locked > 0 ? Qt::Checked
+                                         : Qt::Unchecked);
+
     // The rated power: of resistors only; the one they all have, or none.
     m_power->clear();
     m_power->setEnabled(havePower(chosen, m_document->design().library));
@@ -270,6 +285,14 @@ void PropertiesPanel::commitOffBoard()
     if (m_ids.isEmpty())
         return;
     m_editor->setComponentOffBoard(m_ids, m_offBoard->checkState() == Qt::Checked);
+    refresh(true);
+}
+
+void PropertiesPanel::commitLocked()
+{
+    if (m_ids.isEmpty())
+        return;
+    m_editor->setComponentsLocked(m_ids, m_locked->checkState() == Qt::Checked);
     refresh(true);
 }
 

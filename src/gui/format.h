@@ -43,6 +43,13 @@ QString footprintsWord();
 // the user, when the project was never saved or the folder cannot be made.
 QString projectOutputFile(const QString &projectPath, const QString &suffix,
                           const QString &extension, QString &problem);
+// The name of the step that locks parts, or unlocks them, on the sheet
+// and on the board; and what is said when a locked part would move.
+QString lockPartsName(bool locked);
+// "Lock" or "Unlock": the menu item that does it to what is chosen.
+QString lockName(bool locked);
+QString partLockedMessage();
+
 // What to tell after writing the file 'path', or failing to.
 QString writtenMessage(const QString &path);
 QString cannotWriteMessage(const QString &path);

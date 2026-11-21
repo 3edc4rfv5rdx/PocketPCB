@@ -120,6 +120,20 @@ Sheet withComponentPower(const Sheet &sheet, const QSet<ObjectId> &ids, int powe
 bool isDesignatorTaken(const Schematic &schematic, const QString &designator,
                        const ObjectId &except);
 
+// Locking (Component::locked, PowerSymbol::locked): the components and the
+// power symbols may be locked; the transforms below leave those as they are.
+
+// 'ids' without the locked objects of 'sheet': what a move, a turn, a
+// delete or a cut takes.
+QSet<ObjectId> movableIds(const Sheet &sheet, const QSet<ObjectId> &ids);
+// True when 'ids' hold a component or a power symbol of 'sheet': something
+// that may be locked.
+bool hasLockable(const Sheet &sheet, const QSet<ObjectId> &ids);
+// True when 'ids' hold something that may be locked and all such are.
+bool areObjectsLocked(const Sheet &sheet, const QSet<ObjectId> &ids);
+// The components and power symbols among 'ids' locked or unlocked.
+Sheet withObjectsLocked(const Sheet &sheet, const QSet<ObjectId> &ids, bool locked);
+
 // The selected objects moved by 'delta'.
 Sheet movedObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point &delta);
 // The selected objects turned by 90 degrees clockwise on screen about
@@ -155,7 +169,7 @@ Sheet segmentOf(const Sheet &sheet, const ObjectId &line, int index);
 // Copying and pasting. A piece of a sheet is a Sheet that holds only some
 // objects; its id, title and paper mean nothing.
 
-// The selected objects of 'sheet'.
+// The selected objects of 'sheet', none of them locked: a piece to copy.
 Sheet objectsOf(const Sheet &sheet, const QSet<ObjectId> &ids);
 // The ids of every object of 'sheet'.
 QSet<ObjectId> objectIds(const Sheet &sheet);

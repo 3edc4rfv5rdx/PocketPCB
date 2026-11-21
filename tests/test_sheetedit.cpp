@@ -367,6 +367,27 @@ private slots:
         QCOMPARE(all.graphics.at(0).graphic.a, sheet.graphics.at(0).graphic.a + delta);
     }
 
+    // A locked component is not moved, turned or mirrored, its texts are;
+    // a piece copied of it is not locked.
+    void lockedObjectsStay()
+    {
+        const Sheet sheet = withObjectsLocked(fullSheet(), {id(1)}, true);
+        QVERIFY(sheet.components.at(0).locked);
+        QVERIFY(areObjectsLocked(sheet, {id(1), id(2)}));
+        QVERIFY(!areObjectsLocked(sheet, {id(2)}));
+        QVERIFY(hasLockable(sheet, {id(1)}));
+        QVERIFY(!hasLockable(sheet, {id(2)}));
+        QCOMPARE(movableIds(sheet, {id(1), id(2)}), QSet<ObjectId>{id(2)});
+        const Point delta{5 * MM, -10 * MM};
+        const Sheet moved = movedObjects(sheet, {id(1), id(2)}, delta);
+        QCOMPARE(moved.components.at(0).at, sheet.components.at(0).at);
+        QCOMPARE(moved.wires.at(0).points.at(0), sheet.wires.at(0).points.at(0) + delta);
+        QVERIFY(rotatedObjects(sheet, {id(1)}, Point()) == sheet);
+        QVERIFY(mirroredObjects(sheet, {id(1)}, Point()) == sheet);
+        QVERIFY(!objectsOf(sheet, {id(1)}).components.at(0).locked);
+        QVERIFY(withObjectsLocked(sheet, {id(1)}, false) == fullSheet());
+    }
+
     void componentTextsAreFoundAndMovedAlone()
     {
         Library library = resistorLibrary();

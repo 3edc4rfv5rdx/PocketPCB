@@ -52,8 +52,10 @@ struct Transform
     std::function<void(Graphic &)> graphic;
 };
 
-Sheet transformed(const Sheet &sheet, const QSet<ObjectId> &ids, const Transform &transform)
+Sheet transformed(const Sheet &sheet, const QSet<ObjectId> &chosen, const Transform &transform)
 {
+    // What is locked stays.
+    const QSet<ObjectId> ids = movableIds(sheet, chosen);
     Sheet result = sheet;
     for (Component &component : result.components) {
         if (!ids.contains(component.id))
@@ -452,6 +454,52 @@ bool isDesignatorTaken(const Schematic &schematic, const QString &designator,
         }
     }
     return false;
+}
+
+QSet<ObjectId> movableIds(const Sheet &sheet, const QSet<ObjectId> &ids)
+{
+    QSet<ObjectId> movable = ids;
+    for (const Component &component : sheet.components) {
+        if (component.locked)
+            movable.remove(component.id);
+    }
+    for (const PowerSymbol &power : sheet.powerSymbols) {
+        if (power.locked)
+            movable.remove(power.id);
+    }
+    return movable;
+}
+
+bool hasLockable(const Sheet &sheet, const QSet<ObjectId> &ids)
+{
+    return std::any_of(sheet.components.cbegin(), sheet.components.cend(),
+                       [&ids](const Component &c) { return ids.contains(c.id); })
+           || std::any_of(sheet.powerSymbols.cbegin(), sheet.powerSymbols.cend(),
+                          [&ids](const PowerSymbol &p) { return ids.contains(p.id); });
+}
+
+bool areObjectsLocked(const Sheet &sheet, const QSet<ObjectId> &ids)
+{
+    if (!hasLockable(sheet, ids))
+        return false;
+    return std::all_of(sheet.components.cbegin(), sheet.components.cend(),
+                       [&ids](const Component &c) { return !ids.contains(c.id) || c.locked; })
+           && std::all_of(sheet.powerSymbols.cbegin(), sheet.powerSymbols.cend(),
+                          [&ids](const PowerSymbol &p) { return !ids.contains(p.id) || p.locked; });
+}
+
+Sheet withObjectsLocked(const Sheet &sheet, const QSet<ObjectId> &ids, bool locked)
+{
+    Sheet result = sheet;
+    for (Component &component : result.components) {
+        if (ids.contains(component.id))
+            component.locked = locked;
+    }
+    for (PowerSymbol &power : result.powerSymbols) {
+        if (ids.contains(power.id))
+            power.locked = locked;
+    }
+    return result;
 }
 
 Sheet movedObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point &delta)
@@ -880,7 +928,9 @@ Sheet segmentOf(const Sheet &sheet, const ObjectId &line, int index)
 
 Sheet objectsOf(const Sheet &sheet, const QSet<ObjectId> &ids)
 {
-    return withoutObjects(sheet, objectIds(withoutObjects(sheet, ids)));
+    const Sheet piece = withoutObjects(sheet, objectIds(withoutObjects(sheet, ids)));
+    // A piece is copied to be put elsewhere: nothing of it is locked.
+    return withObjectsLocked(piece, objectIds(piece), false);
 }
 
 QSet<ObjectId> objectIds(const Sheet &sheet)

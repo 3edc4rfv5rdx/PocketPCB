@@ -179,6 +179,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_sheetEditor, &SheetEditor::changed, this, [this] { m_designItem->update(); });
     connect(m_boardEditor, &BoardEditor::changed, this, [this] { m_designItem->update(); });
     connect(m_boardEditor, &BoardEditor::message, this, &MainWindow::showStatus);
+    connect(m_sheetEditor, &SheetEditor::message, this, &MainWindow::showStatus);
     connect(m_document, &Document::stepApplied, this, &MainWindow::showStep);
     connect(m_document, &Document::stepMade, this, &MainWindow::recordStep);
     // The part being placed follows the cursor.
@@ -493,12 +494,14 @@ void MainWindow::createMenus()
     });
     // Locks or unlocks what is chosen, whatever it is; pressed while it is
     // locked.
-    QAction *lockAction = editMenu->addAction(tr("Lock"));
+    QAction *lockAction = editMenu->addAction(lockName(true));
     lockAction->setObjectName(QStringLiteral("actionLock"));
     lockAction->setCheckable(true);
     connect(lockAction, &QAction::triggered, this, [this](bool locked) {
         if (m_boardEditor->isActive())
             m_boardEditor->setChosenLocked(locked);
+        else
+            m_sheetEditor->setChosenLocked(locked);
         updateTools();
     });
     QAction *deselectAction = editMenu->addAction(tr("Deselect"));
@@ -811,6 +814,15 @@ void MainWindow::showSheetMenu(const QPoint &globalPos)
         add("actionRotate");
         add("actionMirror");
         add("actionDelete");
+        // Locking what is chosen, or unlocking it when all of it is locked.
+        if (m_sheetEditor->canLockChosen()) {
+            const bool locked = m_sheetEditor->chosenLocked();
+            QAction *lock = menu.addAction(lockName(!locked));
+            connect(lock, &QAction::triggered, this, [this, locked] {
+                m_sheetEditor->setChosenLocked(!locked);
+                updateTools();
+            });
+        }
         menu.addSeparator();
         add("actionCopy");
         add("actionCut");
@@ -1415,8 +1427,9 @@ void MainWindow::updateTools()
     }
     findChild<QAction *>(QStringLiteral("actionRotate"))->setEnabled(sheet || board);
     QAction *lock = findChild<QAction *>(QStringLiteral("actionLock"));
-    lock->setEnabled(board && m_boardEditor->hasChosen());
-    lock->setChecked(board && m_boardEditor->chosenLocked());
+    lock->setEnabled(board ? m_boardEditor->hasChosen() : sheet && m_sheetEditor->canLockChosen());
+    lock->setChecked(board ? m_boardEditor->chosenLocked()
+                           : sheet && m_sheetEditor->chosenLocked());
     QAction *select = findChild<QAction *>(QStringLiteral("actionSelectTool"));
     select->setEnabled(sheet || board);
     select->setChecked((sheet && m_sheetEditor->tool() == SheetEditor::Tool::Select)

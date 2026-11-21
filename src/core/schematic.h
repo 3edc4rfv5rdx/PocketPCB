@@ -35,6 +35,8 @@ struct Component
     // Where the designator and the value are drawn, relative to 'at'.
     Point refAt;
     Point valueAt;
+    // It may not be moved, turned or mirrored until this is taken off.
+    bool locked = false;
 };
 
 // A wire: a chain of points; every segment is horizontal, vertical or at 45 degrees.
@@ -88,6 +90,8 @@ struct PowerSymbol
     int rotation = 0;
     // Library name of the symbol it is drawn with.
     QString symbol;
+    // It may not be moved, turned or mirrored until this is taken off.
+    bool locked = false;
 };
 
 // The cross on a pin that is left unconnected on purpose.

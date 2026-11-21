@@ -65,9 +65,9 @@ QString BoardEditor::actionName(Action action)
     case Action::MovePartText:
         return tr("Move part text");
     case Action::LockParts:
-        return tr("Lock parts");
+        return lockPartsName(true);
     case Action::UnlockParts:
-        return tr("Unlock parts");
+        return lockPartsName(false);
     }
     return QString();
 }
@@ -182,7 +182,7 @@ void BoardEditor::rotateChosen()
         return;
     const Board &board = m_document->design().board;
     if (arePlacementsLocked(board, ids)) {
-        emit message(tr("The part is locked"));
+        emit message(partLockedMessage());
         return;
     }
     const Placement *one = ids.size() == 1 ? findById(board.placements, *ids.cbegin()) : nullptr;
@@ -350,7 +350,7 @@ void BoardEditor::move(const QPointF &at)
             if (!m_dragText && !outlineGoes && !placementsGo) {
                 if (!m_lockTold)
                     emit message(placements.isEmpty() ? tr("The board outline is locked")
-                                                      : tr("The part is locked"));
+                                                      : partLockedMessage());
                 m_lockTold = true;
                 return;
             }

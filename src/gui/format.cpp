@@ -121,6 +121,23 @@ QString projectOutputFile(const QString &projectPath, const QString &suffix,
                                  + QLatin1Char('.') + extension);
 }
 
+QString lockPartsName(bool locked)
+{
+    return locked ? QCoreApplication::translate("ppcb::Format", "Lock parts")
+                  : QCoreApplication::translate("ppcb::Format", "Unlock parts");
+}
+
+QString lockName(bool locked)
+{
+    return locked ? QCoreApplication::translate("ppcb::Format", "Lock")
+                  : QCoreApplication::translate("ppcb::Format", "Unlock");
+}
+
+QString partLockedMessage()
+{
+    return QCoreApplication::translate("ppcb::Format", "The part is locked");
+}
+
 QString writtenMessage(const QString &path)
 {
     return QCoreApplication::translate("ppcb::Format", "Written") + QLatin1Char(' ')

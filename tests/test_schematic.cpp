@@ -38,6 +38,7 @@ Schematic fullSchematic()
     component.at = Point{10 * PIN_GRID, 20 * PIN_GRID};
     component.rotation = 270;
     component.mirrored = true;
+    component.locked = true;
     component.refAt = Point{0, -PIN_GRID};
     component.valueAt = Point{635000, PIN_GRID};
     first.components.append(component);
@@ -187,6 +188,7 @@ private slots:
         CHANGED(other.sheets[0].components[0].at.x += 1);
         CHANGED(other.sheets[0].components[0].rotation = 0);
         CHANGED(other.sheets[0].components[0].mirrored = false);
+        CHANGED(other.sheets[0].components[0].locked = false);
         CHANGED(other.sheets[0].components[0].refAt.y += 1);
         CHANGED(other.sheets[0].components[0].valueAt.x += 1);
         CHANGED(other.sheets[0].components.clear());
@@ -212,6 +214,7 @@ private slots:
         CHANGED(other.sheets[0].powerSymbols[0].id = id(1));
         CHANGED(other.sheets[0].powerSymbols[0].at.y += 1);
         CHANGED(other.sheets[0].powerSymbols[0].name = QStringLiteral("GND"));
+        CHANGED(other.sheets[0].powerSymbols[0].locked = true);
         CHANGED(other.sheets[0].powerSymbols[0].rotation = 0);
         CHANGED(other.sheets[0].powerSymbols[0].symbol = QStringLiteral("ground"));
 
