@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: With wires laid round obstacles, a wire cut at a moved pin stays joined to it, with a dot where it crosses the wire led to the pin
 - R: Whether a point lies on a line of points is asked of the points themselves, with no wire made up for it
 - R: One function tells whether two wires are joined, for the nets and for the editing of wires
 - I: A test edits random sheets and checks that wires keep their joins and their shape

@@ -244,9 +244,41 @@ private slots:
         QVERIFY2(sheets > 1000, qPrintable(QString::number(sheets)));
         QCOMPARE(badShapes, 0);
         QCOMPARE(lost.value(WireRouting::Hand), 0);
-        // Remove once tofix2 finding 9 is fixed: it then passes unexpectedly.
-        QEXPECT_FAIL("", "tofix2 finding 9: wires laid on the grid lose a few joins", Continue);
         QCOMPARE(lost.value(WireRouting::Grid), 0);
+    }
+
+    // One case the edits above found, in half pin steps: a wire from the
+    // left pin of a part at (0, 60) up and right to the upper pin of an
+    // upright part at (48, 12), on to the lower pin of an upright part at
+    // (48, 0) and on down to (10, 26). The first part goes by (-8, 2) on the
+    // grid: the wire is cut at the pin it leaves, its first part is led to
+    // the pin, and the rest, keeping the pin left in place, is joined to it
+    // where the two cross, at (10, 10).
+    void aWireCutAtAMovedPinStaysJoinedOnTheGrid()
+    {
+        const Library library = twoPinLibrary();
+        const Coord u = G / 2;
+        const auto at = [u](Coord x, Coord y) { return Point{x * u, y * u}; };
+        const auto part = [&](Coord x, Coord y, int rotation) {
+            Component component;
+            component.id = newObjectId();
+            component.part = QStringLiteral("two");
+            component.at = at(x, y);
+            component.rotation = rotation;
+            return component;
+        };
+        Sheet sheet;
+        sheet.components = {part(48, 12, 90), part(36, 12, 0), part(0, 60, 0), part(48, 0, 90)};
+        Wire wire;
+        wire.id = newObjectId();
+        wire.points = {at(-4, 60), at(-4, 8), at(48, 8), at(48, 4), at(10, 4), at(10, 26)};
+        sheet.wires = {wire};
+        const QSet<ObjectId> moved = {sheet.components.first().id};
+        const auto netsBefore = pinNets(sheet, library);
+        const Sheet after = withWiresFollowing(sheet, movedObjects(sheet, moved, at(-8, 2)),
+                                               moved, library, WireRouting::Grid);
+        QCOMPARE(lostJoins(netsBefore, pinNets(after, library)), 0);
+        QVERIFY(junctions(after, library).contains(at(10, 10)));
     }
 };
 

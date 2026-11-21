@@ -1947,6 +1947,9 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
     // point. Another end at the same point stays there when one of them still
     // passes through it, joined to it, instead of going the same way beside it.
     QList<QPair<Point, Wire>> led;
+    // Where a branch of no length was taken: the net already crosses the
+    // wire there, and is joined to it below.
+    QList<Point> crossingsToJoin;
     // 'next' is the point of the wire after that end: a wire that would
     // run along the led one from there does not stay, but goes too.
     const auto onLed = [&led](const Point &point, const Point &next) {
@@ -2059,6 +2062,8 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
                 branchWire.id = newObjectId();
                 branchWire.points = branch;
                 led.append(qMakePair(newFirst ? first : last, branchWire));
+            } else if (branch.size() == 1) {
+                crossingsToJoin.append(branch.first());
             }
             if (wire.points.size() < 2)
                 continue;
@@ -2125,14 +2130,21 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
             wires.append(wire);
     }
 
-    // A pin that was joined to something and has come to lie on the middle
-    // of a wire, with no wire ending there, cuts that wire, so that it is
-    // joined to it.
+    // True when a wire ends at 'point'.
     const auto endsAt = [&wires](const Point &point) {
         return std::any_of(wires.cbegin(), wires.cend(), [&point](const Wire &w) {
             return w.points.size() >= 2 && (w.points.first() == point || w.points.last() == point);
         });
     };
+    // A branch of no length ends where the wire it starts on crosses a wire
+    // already reaching the pin: they are joined there, one cut on the other.
+    for (const Point &point : crossingsToJoin) {
+        if (!endsAt(point) && wiresThrough(wires, point) >= 2)
+            cutAt(wires, point);
+    }
+    // A pin that was joined to something and has come to lie on the middle
+    // of a wire, with no wire ending there, cuts that wire, so that it is
+    // joined to it.
     for (const PointFollower::MovedPin &pin : follower.movedPins()) {
         const bool wasJoined =
             follower.isStillPin(pin.from)
