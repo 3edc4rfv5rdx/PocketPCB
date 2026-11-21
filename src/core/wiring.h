@@ -7,10 +7,10 @@
 
 namespace ppcb {
 
-// Wires on a sheet: where they connect and how a new one is laid. A wire
-// connects to a pin or to another wire only where one of its ends lies
-// exactly on the pin's point or on the other wire; wires that only cross
-// are not connected.
+// Wires on a sheet: where they connect and how a new one is laid. A pin
+// whose point lies anywhere on a wire, at an end or on its middle, is
+// connected to it; a wire connects to another only where one of its ends
+// lies on the other, so wires that only cross are not connected.
 
 // Where 'point', given in a symbol's own coordinates, lies on the sheet for
 // a symbol placed at 'at': mirrored first, then turned 'rotation' degrees

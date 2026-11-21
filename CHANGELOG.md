@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- R: The wiring header states that a pin joins a wire anywhere on it
 - E: A wire drawn back over itself, or merged with one going back along it, no longer runs over itself
 - E: Cutting a wire that crosses itself at the cut point no longer drops its later corner there
 - E: Dragging a wire end, a joint or a segment keeps the pins the wires passed through joined by a wire of their own
