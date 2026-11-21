@@ -105,8 +105,9 @@ public:
     // project's own files are not touched. Nothing is written for a project
     // that has no file yet, without changes, or when the copy is up to date.
     bool autosave(QString &error);
-    // Removes the autosaved copy of the open project, if there is one. A
-    // successful save() or saveAs() does it too.
+    // Removes the autosaved copy of the open project, if there is one: only
+    // the files an autosave writes, the autosave folder itself when that
+    // leaves it empty. A successful save() or saveAs() does it too.
     void dropAutosave();
     // Whether 'projectPath' has an autosaved copy no older than its file:
     // changes of a session that did not end with a save or a "don't save".

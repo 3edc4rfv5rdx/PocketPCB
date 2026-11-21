@@ -50,6 +50,53 @@ bool backUp(const QString &path, const QString &folder, int count, QString &erro
     return true;
 }
 
+// Removes the file 'name' from 'folder'; a name with a folder in it is left
+// alone, since the names come from a file.
+void removeFileIn(const QDir &folder, const QString &name)
+{
+    if (!name.isEmpty() && QFileInfo(name).fileName() == name)
+        folder.remove(name);
+}
+
+// Removes what an autosave wrote for the project whose copy is 'copyPath':
+// the copy's project file and the schematic and board files it names (else
+// 'fallback' names them), and the library files of the copies when no
+// other project's copy is left beside it. Folders go only when left empty,
+// so whatever else lies in them stays.
+void removeAutosaveCopy(const QString &copyPath, const Project &fallback)
+{
+    const QFileInfo copy(copyPath);
+    const QDir folder = copy.dir();
+    if (!folder.exists())
+        return;
+    Project names = fallback;
+    QString error;
+    ProjectFile::read(copyPath, names, error);
+    removeFileIn(folder, copy.fileName());
+    removeFileIn(folder, names.schematicFile);
+    removeFileIn(folder, names.boardFile);
+
+    // The library folder is one for every project in the folder.
+    const QStringList otherCopies = folder.entryList(
+        {QStringLiteral("*") + QLatin1String(FILE_EXT_PROJECT)}, QDir::Files);
+    if (otherCopies.isEmpty()) {
+        const QDir library(folder.filePath(QLatin1String(PROJECT_LIBRARY_FOLDER)));
+        for (const char *kind :
+             {LIBRARY_SYMBOLS_FOLDER, LIBRARY_FOOTPRINTS_FOLDER, LIBRARY_PARTS_FOLDER}) {
+            const QDir items(library.filePath(QLatin1String(kind)));
+            const QStringList files = items.entryList(
+                {QStringLiteral("*") + QLatin1String(LIBRARY_FILE_EXT)}, QDir::Files);
+            for (const QString &file : files)
+                items.remove(file);
+            library.rmdir(QLatin1String(kind));
+        }
+        folder.rmdir(QLatin1String(PROJECT_LIBRARY_FOLDER));
+    }
+    QDir parent = folder;
+    if (parent.cdUp())
+        parent.rmdir(folder.dirName());
+}
+
 } // namespace
 
 // One step of the history: the whole content before and after it.
@@ -210,8 +257,7 @@ void Document::dropAutosave()
     m_autosaved = Design();
     if (m_projectPath.isEmpty())
         return;
-    QDir(QFileInfo(DesignFiles::autosaveProjectPath(m_projectPath)).absolutePath())
-        .removeRecursively();
+    removeAutosaveCopy(DesignFiles::autosaveProjectPath(m_projectPath), m_design.project);
 }
 
 bool Document::hasAutosave(const QString &projectPath)

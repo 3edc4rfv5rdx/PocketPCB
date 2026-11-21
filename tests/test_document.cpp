@@ -489,6 +489,54 @@ private slots:
         QVERIFY(!error.isEmpty());
     }
 
+    void droppingTheAutosaveKeepsWhatItDidNotWrite()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("amp.ppcb"));
+        const QString foreign = dir.filePath(QStringLiteral("autosave/notes.txt"));
+        QString error;
+        Document document;
+        QVERIFY2(document.saveAs(path, error), qPrintable(error));
+        QVERIFY(QDir(dir.path()).mkpath(QStringLiteral("autosave")));
+        QVERIFY(writeGarbage(foreign));
+
+        document.change(QStringLiteral("A"), withSheetTitle(document, QStringLiteral("A")));
+        QVERIFY2(document.autosave(error), qPrintable(error));
+        QVERIFY(Document::hasAutosave(path));
+        QVERIFY2(document.save(error), qPrintable(error));
+
+        QVERIFY(!Document::hasAutosave(path));
+        QVERIFY(!QFileInfo::exists(dir.filePath(QStringLiteral("autosave/amp.ppsch"))));
+        QVERIFY(!QFileInfo::exists(dir.filePath(QStringLiteral("autosave/amp.ppbrd"))));
+        QVERIFY(isGarbage(foreign));
+    }
+
+    void droppingOneAutosaveKeepsAnotherProjects()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString pathA = dir.filePath(QStringLiteral("a.ppcb"));
+        const QString pathB = dir.filePath(QStringLiteral("b.ppcb"));
+        QString error;
+        Document a;
+        Document b;
+        QVERIFY2(a.saveAs(pathA, error), qPrintable(error));
+        QVERIFY2(b.saveAs(pathB, error), qPrintable(error));
+        a.change(QStringLiteral("A"), withSheetTitle(a, QStringLiteral("A")));
+        b.change(QStringLiteral("B"), withSheetTitle(b, QStringLiteral("B")));
+        QVERIFY2(a.autosave(error), qPrintable(error));
+        QVERIFY2(b.autosave(error), qPrintable(error));
+
+        a.dropAutosave();
+        QVERIFY(!Document::hasAutosave(pathA));
+        QVERIFY(Document::hasAutosave(pathB));
+        Design copied;
+        QVERIFY2(DesignFiles::read(DesignFiles::autosaveProjectPath(pathB), copied, error),
+                 qPrintable(error));
+        QVERIFY(copied == b.design());
+    }
+
     void saveWritesAMissingFileAgain()
     {
         QTemporaryDir dir;
