@@ -1400,6 +1400,8 @@ private slots:
         editor->press(QPointF(5, 0));
         editor->release(QPointF(5, 0));
         QCOMPARE(editor->chosenPlacements(), QSet<ObjectId>{r1});
+        // Its designator is shown chosen with it, a line joining them.
+        QCOMPARE(editor->textGuides(), QList<QLineF>{QLineF(QPointF(0, 0), QPointF(0, -3))});
         editor->press(QPointF(25, 0), true);
         editor->release(QPointF(25, 0));
         QCOMPARE(editor->chosenPlacements(), (QSet<ObjectId>{r1, r2}));
@@ -1419,9 +1421,20 @@ private slots:
         editor->release(QPointF(27.2, 3.1));
         QCOMPARE(placements().at(1).at, (Point{22 * NM_PER_MM, 3 * NM_PER_MM}));
         // R turns it about its own point.
-        window.findChild<QAction *>(QStringLiteral("actionRotate"))->trigger();
+        QAction *rotate = window.findChild<QAction *>(QStringLiteral("actionRotate"));
+        rotate->trigger();
         QCOMPARE(placements().at(1).rotation, 90);
         QCOMPARE(placements().at(1).at, (Point{22 * NM_PER_MM, 3 * NM_PER_MM}));
+        // And while it is dragged: turned and moved as one step.
+        editor->press(QPointF(22, 3));
+        editor->move(QPointF(24, 3));
+        rotate->trigger();
+        editor->move(QPointF(26, 3));
+        editor->release(QPointF(26, 3));
+        QCOMPARE(placements().at(1).rotation, 180);
+        QCOMPARE(placements().at(1).at, (Point{26 * NM_PER_MM, 3 * NM_PER_MM}));
+        window.document()->undoStack()->undo();
+        QCOMPARE(placements().at(1).rotation, 90);
         // Locked, it stays.
         QAction *lock = window.findChild<QAction *>(QStringLiteral("actionLock"));
         QVERIFY(lock->isEnabled());
@@ -1443,7 +1456,7 @@ private slots:
         QCOMPARE(editor->chosenText().owner, r1);
         QVERIFY(editor->chosenPlacements().isEmpty());
         // A line from R1's point to its designator shows whose it is.
-        QCOMPARE(editor->textGuide(), QLineF(QPointF(0, 0), QPointF(0, -3)));
+        QCOMPARE(editor->textGuides(), QList<QLineF>{QLineF(QPointF(0, 0), QPointF(0, -3))});
         editor->move(QPointF(0, -6));
         editor->release(QPointF(0, -6));
         QCOMPARE(placements().at(0).refAt, (Point{0, -6 * NM_PER_MM}));

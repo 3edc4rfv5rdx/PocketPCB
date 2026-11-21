@@ -235,14 +235,19 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     painter.setPen(pen);
     painter.setBrush(fill);
     for (const Placement &placement : board.placements) {
-        if (chosen.contains(placement.id))
-            painter.drawRect(placementRect(placement, design.library));
+        if (!chosen.contains(placement.id))
+            continue;
+        // A placement chosen with its texts.
+        painter.drawRect(placementRect(placement, design.library));
+        for (const ComponentText text : {ComponentText::Designator, ComponentText::Value}) {
+            if (!placementTextShown(placement, text).isEmpty())
+                painter.drawRect(placementTextRect(placement, text));
+        }
     }
     const PlacementText text = editor->chosenText();
     if (const Placement *owner = findById(board.placements, text.owner))
         painter.drawRect(placementTextRect(*owner, text.text));
-    const QLineF guide = editor->textGuide();
-    if (!guide.isNull())
+    for (const QLineF &guide : editor->textGuides())
         painter.drawLine(guide);
     const QRectF frame = editor->chooserFrame();
     if (!frame.isEmpty()) {

@@ -86,9 +86,10 @@ public:
     QSet<ObjectId> chosenPlacements() const;
     // The text chosen alone; null when none is.
     PlacementText chosenText() const { return m_active ? m_chosenText : PlacementText(); }
-    // While a text is chosen or dragged, the line from its placement's point
-    // to where the text stands, to show whose it is; null otherwise.
-    QLineF textGuide() const;
+    // The lines from a placement's point to where its texts stand, to show
+    // whose they are: for the text chosen alone, and for both shown texts of
+    // every placement chosen, as the board stands while dragged.
+    QList<QLineF> textGuides() const;
     // Something is chosen that may be locked: the outline or placements.
     bool hasChosen() const { return outlineChosen() || !chosenPlacements().isEmpty(); }
     // The outline and every placement.
@@ -102,7 +103,8 @@ public:
     void setChosenLocked(bool locked);
     // The placements chosen turned by 90 degrees clockwise as one step:
     // one about its own point, several about the middle of them on the grid.
-    // Locked ones stay.
+    // While they are dragged, they turn about the point of the one taken,
+    // and the drag goes on. Locked ones stay.
     void rotateChosen();
 
     // The left mouse button; with 'adding' (Ctrl) a placement clicked is
@@ -221,6 +223,10 @@ private:
     bool m_dragText = false;
     Point m_dragAnchor;
     std::optional<Board> m_movedBoard;
+    // The board the drag starts from, with the turns made while dragging,
+    // and where the mouse was last.
+    Board m_dragBase;
+    QPointF m_lastAt;
     // The press was on the empty board: a drag draws a frame choosing the
     // placements inside it, added to those chosen with 'm_frameAdding'.
     bool m_framing = false;

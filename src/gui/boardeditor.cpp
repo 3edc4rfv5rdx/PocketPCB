@@ -178,8 +178,16 @@ bool BoardEditor::chosenLocked() const
 void BoardEditor::rotateChosen()
 {
     const QSet<ObjectId> ids = chosenPlacements();
-    if (ids.isEmpty() || m_dragging)
+    if (ids.isEmpty())
         return;
+    if (m_dragging) {
+        if (m_dragPlacements && !m_dragWhole) {
+            m_dragBase = withPlacementsRotated(m_dragBase, ids, m_dragAnchor);
+            m_movedBoard = draggedBoard(m_lastAt);
+            emit changed();
+        }
+        return;
+    }
     const Board &board = m_document->design().board;
     if (arePlacementsLocked(board, ids)) {
         emit message(partLockedMessage());
@@ -193,14 +201,22 @@ void BoardEditor::rotateChosen()
     applyBoard(Action::RotateParts, withPlacementsRotated(board, ids, center), ids);
 }
 
-QLineF BoardEditor::textGuide() const
+QList<QLineF> BoardEditor::textGuides() const
 {
-    const PlacementText text = chosenText();
+    QList<QLineF> guides;
     const Board board = shownBoard();
-    const Placement *placement = findById(board.placements, text.owner);
-    if (placement == nullptr)
-        return QLineF();
-    return QLineF(toMm(placement->at), toMm(placementTextPoint(*placement, text.text)));
+    const QSet<ObjectId> chosen = chosenPlacements();
+    const PlacementText alone = chosenText();
+    for (const Placement &placement : board.placements) {
+        for (const ComponentText text : {ComponentText::Designator, ComponentText::Value}) {
+            const bool wanted = chosen.contains(placement.id)
+                                || (alone.owner == placement.id && alone.text == text);
+            if (wanted && !placementTextShown(placement, text).isEmpty())
+                guides.append(QLineF(toMm(placement.at),
+                                     toMm(placementTextPoint(placement, text))));
+        }
+    }
+    return guides;
 }
 
 Board BoardEditor::shownBoard() const
@@ -247,7 +263,7 @@ bool BoardEditor::pressPlacement(const QPointF &at, bool adding)
 
 Board BoardEditor::draggedBoard(const QPointF &at) const
 {
-    const Board &board = m_document->design().board;
+    const Board &board = m_dragBase;
     // What was taken lands on the grid, wherever it stood before.
     const Point delta = m_canvas->snapped(toMm(m_dragAnchor) + (at - m_pressAt)) - m_dragAnchor;
     if (m_dragText)
@@ -295,7 +311,9 @@ void BoardEditor::press(const QPointF &at, bool adding)
     m_lockTold = false;
     m_pressed = true;
     m_pressAt = at;
+    m_lastAt = at;
     m_pressGrid = m_canvas->snapped(at);
+    m_dragBase = m_document->design().board;
     m_dragCorner = outlineCornerAt(outline(), at, m_canvas->pixelsToMm(CanvasView::END_PIXELS));
     // A placement or its text lies over the sides of the outline.
     if (m_dragCorner < 0 && pressPlacement(at, adding)) {
@@ -382,6 +400,7 @@ void BoardEditor::move(const QPointF &at)
         return;
     }
     if (takes) {
+        m_lastAt = at;
         const Board moved = draggedBoard(at);
         if (!m_movedBoard || *m_movedBoard != moved) {
             m_movedBoard = moved;

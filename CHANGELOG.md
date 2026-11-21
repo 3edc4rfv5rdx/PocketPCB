@@ -3,6 +3,8 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A part chosen on the board shows its designator and value chosen with it, joined to it by lines
+- N: R turns the parts being dragged on the board
 - N: Light green lines on the board join the pads of each net still to be joined
 - F: New parts on the board are packed in a block, closer together
 - F: The menu of the outline button lists Rectangular board first, then Cut-out, then Outline
