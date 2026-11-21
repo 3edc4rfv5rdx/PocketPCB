@@ -1361,7 +1361,7 @@ void MainWindow::createToolBar()
     Q_ASSERT(outlineButton != nullptr);
     m_outlineButton = outlineButton;
     QMenu *outlineMenu = new QMenu(this);
-    outlineMenu->addActions({drawOutline, cutOut, rectangleBoard});
+    outlineMenu->addActions({rectangleBoard, cutOut, drawOutline});
     outlineButton->setMenu(outlineMenu);
     outlineButton->setPopupMode(QToolButton::MenuButtonPopup);
     connect(outlineMenu, &QMenu::triggered, outlineButton, &QToolButton::setDefaultAction);
