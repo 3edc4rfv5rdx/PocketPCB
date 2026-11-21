@@ -43,7 +43,9 @@ QList<Point> pinPoints(const Sheet &sheet, const Library &library);
 QList<Point> partPinPoints(const Sheet &sheet, const Library &library);
 
 // True when 'point' lies on 'wire': on one of its segments, ends included.
+// The same for a line of 'points', a wire's or a bus's.
 bool isOnWire(const Wire &wire, const Point &point);
+bool isOnWire(const QList<Point> &points, const Point &point);
 
 // True when the wires 'a' and 'b' are joined: an end of one lies on the
 // other. How nets() and the editing of wires join them.

@@ -101,22 +101,13 @@ Component gridPart(const Point &at)
 // left out, lies on the wire 'points'.
 bool passesInside(const QList<Point> &points, const Point &a, const Point &b)
 {
-    Wire line;
-    line.points = points;
     for (Coord x = a.x + H; x < b.x; x += H) {
         for (Coord y = a.y + H; y < b.y; y += H) {
-            if (isOnWire(line, Point{x, y}))
+            if (isOnWire(points, Point{x, y}))
                 return true;
         }
     }
     return false;
-}
-
-bool liesOnWire(const QList<Point> &points, const Point &point)
-{
-    Wire line;
-    line.points = points;
-    return isOnWire(line, point);
 }
 
 } // namespace
@@ -1386,8 +1377,8 @@ private slots:
         QCOMPARE(points.size(), 4);
         // The body with its edges, and the lines of both pins.
         QVERIFY(!passesInside(points, h(7, -2), h(13, 2)));
-        QVERIFY(!liesOnWire(points, h(6, 0)));
-        QVERIFY(!liesOnWire(points, h(14, 0)));
+        QVERIFY(!isOnWire(points, h(6, 0)));
+        QVERIFY(!isOnWire(points, h(14, 0)));
     }
 
     // A pin dragged aside: the last segment slides with it, as it does by
@@ -1596,9 +1587,9 @@ private slots:
         sheet.wires[1].points = {h(5, 0), h(5, 5)};
         const QList<Point> round = dragged();
         QCOMPARE(round.last(), h(10, 0));
-        QVERIFY(!liesOnWire(round, h(5, 0)));
+        QVERIFY(!isOnWire(round, h(5, 0)));
         for (Coord y = 1; y <= 5; ++y)
-            QVERIFY(!liesOnWire(round, h(5, y)));
+            QVERIFY(!isOnWire(round, h(5, y)));
     }
 
     // A wire dragged onto a bus from below its end comes to it square,
@@ -1619,7 +1610,7 @@ private slots:
         QCOMPARE(points.first(), h(5, 8));
         QCOMPARE(points.last(), h(5, -3));
         for (Coord y = -2; y <= 5; ++y)
-            QVERIFY(!liesOnWire(points, h(5, y)));
+            QVERIFY(!isOnWire(points, h(5, y)));
     }
 
     // A junction at the origin: one wire from the left, one going up, and
@@ -1755,9 +1746,9 @@ private slots:
         const Sheet moved = withWiresFollowing(sheet, movedObjects(sheet, part, h(-6, 0)), part,
                                                library, WireRouting::Grid);
         QVERIFY(std::any_of(moved.wires.cbegin(), moved.wires.cend(),
-                            [](const Wire &w) { return liesOnWire(w.points, h(6, 8)); }));
+                            [](const Wire &w) { return isOnWire(w.points, h(6, 8)); }));
         QVERIFY(std::any_of(moved.wires.cbegin(), moved.wires.cend(),
-                            [](const Wire &w) { return liesOnWire(w.points, h(4, 8)); }));
+                            [](const Wire &w) { return isOnWire(w.points, h(4, 8)); }));
     }
 
     // An upright part whose top pin a wire comes to down an upright, with

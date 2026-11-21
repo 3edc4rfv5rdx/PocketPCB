@@ -1306,9 +1306,7 @@ void SheetEditor::finishWire()
         // Begun or ended on another bus, it is a branch of it, with its
         // name, which it does not show until asked.
         for (const Bus &other : sheet.buses) {
-            Wire line;
-            line.points = other.points;
-            if (isOnWire(line, points.first()) || isOnWire(line, points.last())) {
+            if (isOnWire(other.points, points.first()) || isOnWire(other.points, points.last())) {
                 bus.name = other.name;
                 bus.namesAt.clear();
                 break;

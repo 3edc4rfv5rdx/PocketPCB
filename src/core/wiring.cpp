@@ -268,14 +268,6 @@ QList<QList<Point>> routesBetween(const Point &from, const Point &to, bool uprig
     return result;
 }
 
-// True when 'point' lies on the wire 'points'.
-bool liesOn(const QList<Point> &points, const Point &point)
-{
-    Wire wire;
-    wire.points = points;
-    return isOnWire(wire, point);
-}
-
 // 'points' with every point of 'joints' that lies inside one of its
 // segments made a point of the wire too, so that it can be laid again from
 // there.
@@ -693,14 +685,14 @@ QList<QList<Point>> netWiresAt(const Point &at, const Obstacles &obstacles)
     for (const QList<Point> &wire : wires) {
         if (wire.first() == at || wire.last() == at)
             stay += (wire.first() == at) + (wire.last() == at);
-        else if (liesOn(wire, at))
+        else if (isOnWire(wire, at))
             stay += 2;
     }
     if (stay < 2)
         return {};
     int net = -1;
     for (int i = 0; i < wires.size(); ++i) {
-        if (!liesOn(wires.at(i), at))
+        if (!isOnWire(wires.at(i), at))
             continue;
         if (net >= 0 && groups.group.at(i) != net)
             return {};
@@ -723,7 +715,7 @@ QList<Point> joinedWireAt(const QList<Point> &points, const Point &point,
     const WireGroups groups = wireGroupsOf(obstacles);
     const QSet<int> nets = groupsJoinedTo(groups, points);
     for (int i = 0; i < groups.wires.size(); ++i) {
-        if (nets.contains(groups.group.at(i)) && liesOn(groups.wires.at(i), point))
+        if (nets.contains(groups.group.at(i)) && isOnWire(groups.wires.at(i), point))
             return groups.wires.at(i);
     }
     return {};
@@ -754,7 +746,7 @@ bool isPinJoinedOnKeptPart(const QList<Point> &keptPart, const Point &to,
         if (tip != to)
             continue;
         const QList<Point> under =
-            liesOn(keptPart, to) ? keptPart : joinedWireAt(keptPart, to, obstacles);
+            isOnWire(keptPart, to) ? keptPart : joinedWireAt(keptPart, to, obstacles);
         if (under.isEmpty())
             continue;
         bool along = false;
@@ -842,7 +834,7 @@ QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QL
         const WireGroups groups = wireGroupsOf(obstacles);
         QSet<int> nets;
         for (int i = 0; i < groups.wires.size(); ++i) {
-            if (liesOn(groups.wires.at(i), to))
+            if (isOnWire(groups.wires.at(i), to))
                 nets.insert(groups.group.at(i));
         }
         for (int i = 0; i < groups.wires.size(); ++i) {
@@ -900,7 +892,7 @@ QList<Point> ledTo(const QList<Point> &wirePoints, const Point &to, const QList<
         return keptPart;
     const auto keepsAll = [&](const QList<Point> &candidate) {
         return std::all_of(kept.cbegin(), kept.cend(),
-                           [&](const Point &point) { return liesOn(candidate, point); });
+                           [&](const Point &point) { return isOnWire(candidate, point); });
     };
     const int n = points.size();
     QList<Point> best;
@@ -945,7 +937,7 @@ QList<Point> ledTo(const QList<Point> &wirePoints, const Point &to, const QList<
     // No way there keeps the joints: an end come back onto what the wire
     // keeps, short of its other end, ends at its last joint, the point it
     // came to lying on it. Onto the other end, it is left with no length.
-    if (keptPart.size() >= 2 && to != keptPart.first() && liesOn(keptPart, to))
+    if (keptPart.size() >= 2 && to != keptPart.first() && isOnWire(keptPart, to))
         return keptPart;
     return bestWire(unkept, obstacles);
 }
@@ -1326,11 +1318,8 @@ QList<Point> pinPoints(const Sheet &sheet, const Library &library)
 
 bool isOnBus(const Sheet &sheet, const Point &point)
 {
-    return std::any_of(sheet.buses.cbegin(), sheet.buses.cend(), [&point](const Bus &bus) {
-        Wire line;
-        line.points = bus.points;
-        return isOnWire(line, point);
-    });
+    return std::any_of(sheet.buses.cbegin(), sheet.buses.cend(),
+                       [&point](const Bus &bus) { return isOnWire(bus.points, point); });
 }
 
 QList<Point> withBusEntry(const QList<Point> &points, const Sheet &sheet, Coord step)
@@ -1419,23 +1408,28 @@ QList<Point> partPinPoints(const Sheet &sheet, const Library &library)
     return points;
 }
 
-bool isOnWire(const Wire &wire, const Point &point)
+bool isOnWire(const QList<Point> &points, const Point &point)
 {
-    if (wire.points.size() == 1)
-        return wire.points.first() == point;
-    for (int i = 1; i < wire.points.size(); ++i) {
-        if (isOnSegment(wire.points.at(i - 1), wire.points.at(i), point))
+    if (points.size() == 1)
+        return points.first() == point;
+    for (int i = 1; i < points.size(); ++i) {
+        if (isOnSegment(points.at(i - 1), points.at(i), point))
             return true;
     }
     return false;
+}
+
+bool isOnWire(const Wire &wire, const Point &point)
+{
+    return isOnWire(wire.points, point);
 }
 
 bool wiresJoined(const QList<Point> &a, const QList<Point> &b)
 {
     if (a.isEmpty() || b.isEmpty())
         return false;
-    return liesOn(b, a.first()) || liesOn(b, a.last()) || liesOn(a, b.first())
-           || liesOn(a, b.last());
+    return isOnWire(b, a.first()) || isOnWire(b, a.last()) || isOnWire(a, b.first())
+           || isOnWire(a, b.last());
 }
 
 bool isConnectionPoint(const Sheet &sheet, const Library &library, const Point &point)
@@ -1903,9 +1897,7 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
         // A bus left in place keeps the end of a wire that enters it.
         const bool onStillBus =
             std::any_of(before.buses.cbegin(), before.buses.cend(), [&](const Bus &bus) {
-                Wire line;
-                line.points = bus.points;
-                return !moved.contains(bus.id) && isOnWire(line, end);
+                return !moved.contains(bus.id) && isOnWire(bus.points, end);
             });
         if (onStillBus)
             return end;
@@ -2267,7 +2259,7 @@ static Sheet segmentMoved(const Sheet &sheet, const Library &library, const Obje
             return std::nullopt;
         if (isOnWire(segment, end))
             return end + d;
-        if (isOnWire(was, end) && !liesOn(now, end))
+        if (isOnWire(was, end) && !isOnWire(now, end))
             return isOnWire(upToSegment, end) ? na : nb;
         return std::nullopt;
     };
