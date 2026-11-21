@@ -60,6 +60,8 @@ inline QColor pasteBottom() { return QColor(120, 120, 120); }
 inline QColor boardOutline() { return QColor(200, 162, 200); }
 // The silkscreen of a locked part on the board, on the screen only.
 inline QColor lockedPart() { return QColor(230, 200, 0); }
+// The lines of the pads still to be joined (ratsnest()), on the screen only.
+inline QColor ratsnest() { return QColor(150, 240, 150); }
 // The mark of the origin, which coordinates on the board count from.
 inline QColor boardOrigin() { return QColor(0, 200, 220); }
 inline QColor bareHole() { return QColor(100, 100, 100); }

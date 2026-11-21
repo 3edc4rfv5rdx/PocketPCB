@@ -3,6 +3,7 @@
 #include "boardeditor.h"
 #include "format.h"
 #include "paint.h"
+#include "ratsnest.h"
 #include "sheeteditor.h"
 #include "wiring.h"
 
@@ -166,6 +167,13 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     const BoardEditor *editor = activeBoardEditor();
     const Board board = editor == nullptr ? design.board : editor->shownBoard();
     paintBoard(painter, board, design.library, m_boardLayers, true);
+    // The pads still to be joined, as the board stands now.
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(QPen(paintcolor::ratsnest(), 0));
+    for (const auto &[from, to] : ratsnest(board, design.library))
+        painter.drawLine(toMm(from), toMm(to));
+    painter.restore();
     // The origin, which coordinates count from: a corner of two arms along
     // +X and +Y, the same size at any zoom; on the screen only.
     const double pixel = 1.0 / painter.worldTransform().m11();
