@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Choosing a part on the board lights its nets, their pads and ratsnest lines
 - F: A part chosen on the board shows its designator and value chosen with it, joined to it by lines
 - N: R turns the parts being dragged on the board
 - N: Light green lines on the board join the pads of each net still to be joined

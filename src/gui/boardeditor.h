@@ -84,6 +84,8 @@ public:
     bool outlineChosen() const { return m_active && m_outlineChosen && !outline().isEmpty(); }
     // The placements chosen, of those the board has.
     QSet<ObjectId> chosenPlacements() const;
+    // The nets of the pads of the placements chosen, lit on the board.
+    QSet<QString> litNets() const;
     // The text chosen alone; null when none is.
     PlacementText chosenText() const { return m_active ? m_chosenText : PlacementText(); }
     // The lines from a placement's point to where its texts stand, to show

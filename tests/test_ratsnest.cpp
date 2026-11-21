@@ -47,7 +47,7 @@ Placement placement(const Point &at, const QString &net1, const QString &net2)
     return result;
 }
 
-using Lines = QList<QPair<Point, Point>>;
+using Lines = QList<RatsnestLine>;
 
 } // namespace
 
@@ -77,10 +77,12 @@ private slots:
                             placement(mm(40, 0), QStringLiteral("A"), QString())};
         // A: (5, 0), (15, 0), (35, 0); B alone at (25, 0).
         QCOMPARE(ratsnest(board, library()),
-                 (Lines{{mm(5, 0), mm(15, 0)}, {mm(15, 0), mm(35, 0)}}));
+                 (Lines{{mm(5, 0), mm(15, 0), QStringLiteral("A")},
+                        {mm(15, 0), mm(35, 0), QStringLiteral("A")}}));
         // A footprint missing from the library adds nothing.
         board.placements[2].footprint = QStringLiteral("gone");
-        QCOMPARE(ratsnest(board, library()), (Lines{{mm(5, 0), mm(15, 0)}}));
+        QCOMPARE(ratsnest(board, library()), (Lines{{mm(5, 0), mm(15, 0), QStringLiteral("A")}}));
+        QCOMPARE(netPads(board, library()).size(), 3);
     }
 };
 

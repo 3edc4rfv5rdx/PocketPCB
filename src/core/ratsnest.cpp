@@ -14,11 +14,14 @@ Point placedPadPoint(const Placement &placement, const Point &padAt)
                        padAt);
 }
 
-QList<QPair<Point, Point>> ratsnest(const Board &board, const Library &library)
+bool operator==(const RatsnestLine &a, const RatsnestLine &b)
 {
-    // The centres of the pads of every net, in the order of the placements.
-    QHash<QString, QList<Point>> padsOfNet;
-    QStringList netOrder;
+    return a.from == b.from && a.to == b.to && a.net == b.net;
+}
+
+QList<NetPad> netPads(const Board &board, const Library &library)
+{
+    QList<NetPad> pads;
     for (const Placement &placement : board.placements) {
         const Footprint *footprint = library.findFootprint(placement.footprint);
         if (footprint == nullptr)
@@ -27,17 +30,28 @@ QList<QPair<Point, Point>> ratsnest(const Board &board, const Library &library)
             const auto net = placement.padNets.constFind(pad.number);
             if (pad.number.isEmpty() || net == placement.padNets.constEnd() || net->isEmpty())
                 continue;
-            if (!padsOfNet.contains(*net))
-                netOrder.append(*net);
-            padsOfNet[*net].append(placedPadPoint(placement, pad.at));
+            pads.append(NetPad{placedPadPoint(placement, pad.at), pad.sizeX, pad.sizeY, *net});
         }
+    }
+    return pads;
+}
+
+QList<RatsnestLine> ratsnest(const Board &board, const Library &library)
+{
+    // The centres of the pads of every net, in the order of the placements.
+    QHash<QString, QList<Point>> padsOfNet;
+    QStringList netOrder;
+    for (const NetPad &pad : netPads(board, library)) {
+        if (!padsOfNet.contains(pad.net))
+            netOrder.append(pad.net);
+        padsOfNet[pad.net].append(pad.at);
     }
     const auto distance = [](const Point &a, const Point &b) {
         const double dx = double(a.x - b.x);
         const double dy = double(a.y - b.y);
         return dx * dx + dy * dy;
     };
-    QList<QPair<Point, Point>> lines;
+    QList<RatsnestLine> lines;
     for (const QString &net : std::as_const(netOrder)) {
         const QList<Point> &pads = padsOfNet.value(net);
         const int count = int(pads.size());
@@ -62,7 +76,7 @@ QList<QPair<Point, Point>> ratsnest(const Board &board, const Library &library)
             inTree[next] = true;
             // Pads on one point need no line.
             if (pads.at(next) != pads.at(from.at(next)))
-                lines.append(qMakePair(pads.at(from.at(next)), pads.at(next)));
+                lines.append(RatsnestLine{pads.at(from.at(next)), pads.at(next), net});
             for (int i = 0; i < count; ++i) {
                 const double d = distance(pads.at(next), pads.at(i));
                 if (!inTree.at(i) && d < nearest.at(i)) {

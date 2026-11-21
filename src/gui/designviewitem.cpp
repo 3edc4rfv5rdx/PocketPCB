@@ -26,6 +26,8 @@ const double LIT_PIN_RADIUS = 0.6;
 const double CORNER_MARK_PIXELS = 7.0;
 // The edge of the board lit under the mouse, in pixels.
 const double LIT_EDGE_PIXELS = 4.0;
+// The width of a ratsnest line of a net lit, in pixels.
+const double LIT_LINE_PIXELS = 2.0;
 // The arms of the origin mark on the board, in pixels.
 const double ORIGIN_ARM_PIXELS = 30.0;
 // Where the coordinates of the corner being drawn stand from it, in pixels.
@@ -167,12 +169,30 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     const BoardEditor *editor = activeBoardEditor();
     const Board board = editor == nullptr ? design.board : editor->shownBoard();
     paintBoard(painter, board, design.library, m_boardLayers, true);
-    // The pads still to be joined, as the board stands now.
+    // The pads still to be joined, as the board stands now; the nets of the
+    // parts chosen are lit, their pads and their lines.
+    const QSet<QString> lit = editor == nullptr ? QSet<QString>() : editor->litNets();
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(QPen(paintcolor::ratsnest(), 0));
-    for (const auto &[from, to] : ratsnest(board, design.library))
-        painter.drawLine(toMm(from), toMm(to));
+    QColor litColor = paintcolor::litNet();
+    litColor.setAlpha(LIT_NET_ALPHA);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(litColor);
+    for (const NetPad &pad : netPads(board, design.library)) {
+        if (lit.contains(pad.net)) {
+            const double radius = nmToMm(std::max(pad.sizeX, pad.sizeY)) / 2;
+            painter.drawEllipse(toMm(pad.at), radius, radius);
+        }
+    }
+    painter.setBrush(Qt::NoBrush);
+    const double litWidth = LIT_LINE_PIXELS / painter.worldTransform().m11();
+    for (const RatsnestLine &line : ratsnest(board, design.library)) {
+        if (lit.contains(line.net))
+            painter.setPen(QPen(paintcolor::litNet(), litWidth));
+        else
+            painter.setPen(QPen(paintcolor::ratsnest(), 0));
+        painter.drawLine(toMm(line.from), toMm(line.to));
+    }
     painter.restore();
     // The origin, which coordinates count from: a corner of two arms along
     // +X and +Y, the same size at any zoom; on the screen only.

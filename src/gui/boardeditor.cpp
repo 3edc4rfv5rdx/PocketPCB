@@ -201,6 +201,19 @@ void BoardEditor::rotateChosen()
     applyBoard(Action::RotateParts, withPlacementsRotated(board, ids, center), ids);
 }
 
+QSet<QString> BoardEditor::litNets() const
+{
+    QSet<QString> nets;
+    const QSet<ObjectId> chosen = chosenPlacements();
+    for (const Placement &placement : m_document->design().board.placements) {
+        if (!chosen.contains(placement.id))
+            continue;
+        for (const QString &net : placement.padNets)
+            nets.insert(net);
+    }
+    return nets;
+}
+
 QList<QLineF> BoardEditor::textGuides() const
 {
     QList<QLineF> guides;
