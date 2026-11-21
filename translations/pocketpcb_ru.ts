@@ -1037,6 +1037,18 @@
         <source>Net class</source>
         <translation>Класс цепи</translation>
     </message>
+    <message>
+        <source>A passing name</source>
+        <translation>Временное имя</translation>
+    </message>
+    <message>
+        <source>it may change when the schematic is edited</source>
+        <translation>оно может измениться при правках схемы</translation>
+    </message>
+    <message>
+        <source>A lasting one is given by choosing a class or updating the board</source>
+        <translation>Постоянное даётся выбором класса или обновлением платы</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::ProjectPropertiesDialog</name>

@@ -93,7 +93,20 @@ void NetsPanel::refresh()
     int chosenRow = -1;
     for (int row = 0; row < all.size(); ++row) {
         const Net &net = all.at(row);
-        m_table->setItem(row, NameColumn, new QTableWidgetItem(net.name));
+        QTableWidgetItem *nameItem = new QTableWidgetItem(net.name);
+        // A passing name (TempN1) is grey and says so.
+        if (!net.named) {
+            nameItem->setForeground(m_table->palette().color(QPalette::PlaceholderText));
+            QString tip = tr("A passing name") + QStringLiteral(": ")
+                          + tr("it may change when the schematic is edited") + QLatin1Char('.');
+            if (!net.pins.isEmpty()) {
+                tip += QLatin1Char('\n')
+                       + tr("A lasting one is given by choosing a class or updating the board")
+                       + QLatin1Char('.');
+            }
+            nameItem->setToolTip(tip);
+        }
+        m_table->setItem(row, NameColumn, nameItem);
         const QString pins = pinsText(net.pins);
         QTableWidgetItem *pinsItem = new QTableWidgetItem(pins);
         // As rich text, so that a long list wraps.

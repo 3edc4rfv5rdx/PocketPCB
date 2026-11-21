@@ -1037,6 +1037,18 @@
         <source>Net class</source>
         <translation>Клас кола</translation>
     </message>
+    <message>
+        <source>A passing name</source>
+        <translation>Тимчасове імʼя</translation>
+    </message>
+    <message>
+        <source>it may change when the schematic is edited</source>
+        <translation>воно може змінитися під час правок схеми</translation>
+    </message>
+    <message>
+        <source>A lasting one is given by choosing a class or updating the board</source>
+        <translation>Постійне дається вибором класу або оновленням плати</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::ProjectPropertiesDialog</name>
