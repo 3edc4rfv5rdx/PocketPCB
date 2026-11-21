@@ -726,6 +726,43 @@ QList<Point> joinedWireAt(const QList<Point> &points, const Point &point,
     return {};
 }
 
+// The index of the last point of 'points' (with its joints, withJoints())
+// that is one of 'kept'; 0 when none after the first is: the wire up to
+// there is what it keeps.
+int lastKeptIndex(const QList<Point> &points, const QList<Point> &kept)
+{
+    for (int i = points.size() - 1; i > 0; --i) {
+        if (kept.contains(points.at(i)))
+            return i;
+    }
+    return 0;
+}
+
+// True when a pin come to 'to' lies on 'keptPart', the part a wire keeps up
+// to its last joint, or on a wire joined to it, and its line does not run
+// along that wire: it is joined there, so the wire ends at its last joint
+// and the pin cuts the wire it lies on.
+bool isPinJoinedOnKeptPart(const QList<Point> &keptPart, const Point &to,
+                           const Obstacles &obstacles)
+{
+    if (keptPart.size() < 2)
+        return false;
+    for (const auto &[tip, end] : obstacles.pins) {
+        if (tip != to)
+            continue;
+        const QList<Point> under =
+            liesOn(keptPart, to) ? keptPart : joinedWireAt(keptPart, to, obstacles);
+        if (under.isEmpty())
+            continue;
+        bool along = false;
+        for (int i = 1; i < under.size(); ++i)
+            along = along || overlap(tip, end, under.at(i - 1), under.at(i));
+        if (!along)
+            return true;
+    }
+    return false;
+}
+
 // ledTo() on the grid: the cheapest wire that keeps the wire up to the last
 // point of 'kept' on it (its first point when 'kept' has none), laid again
 // from there or from a point after it, keeping it up to that point; of
@@ -744,32 +781,10 @@ QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QL
                        bool exact)
 {
     const QList<Point> points = withJoints(wirePoints, kept);
-    int from = 0;
-    for (int i = points.size() - 1; i > 0; --i) {
-        if (kept.contains(points.at(i))) {
-            from = i;
-            break;
-        }
-    }
-    // A pin come onto the part the wire keeps, or onto a wire joined to
-    // it, is joined there: the wire ends at its last joint, and the pin cuts
-    // the wire it lies on, unless the pin's line runs along that wire.
+    const int from = lastKeptIndex(points, kept);
     const QList<Point> keptPart = points.mid(0, from + 1);
-    if (from > 0) {
-        for (const auto &[tip, end] : obstacles.pins) {
-            if (tip != to)
-                continue;
-            const QList<Point> under =
-                liesOn(keptPart, to) ? keptPart : joinedWireAt(keptPart, to, obstacles);
-            if (under.isEmpty())
-                continue;
-            bool along = false;
-            for (int i = 1; i < under.size(); ++i)
-                along = along || overlap(tip, end, under.at(i - 1), under.at(i));
-            if (!along)
-                return keptPart;
-        }
-    }
+    if (isPinJoinedOnKeptPart(keptPart, to, obstacles))
+        return keptPart;
     // From the far end back: of starts as cheap, the one that keeps more.
     QList<GridStart> starts;
     for (int i = points.size() - 1; i >= from; --i) {
@@ -866,8 +881,11 @@ QList<Point> gridLedTo(const QList<Point> &wirePoints, const Point &to, const QL
 // a wire is laid again only as far back as needed to keep it clear. The
 // points of 'kept' inside its segments count as its points for this. When
 // nothing comes clear, the least bad of all; when no candidate keeps
-// 'kept', the least bad of those that do not. On the grid, gridLedTo()
-// with 'rejoin' and 'exact' when it finds a way.
+// 'kept', the wire up to its last joint when 'to' lies on it short of its
+// other end, else the least
+// bad of those that do not. A pin come onto what the wire keeps is joined
+// there first (isPinJoinedOnKeptPart()). On the grid, gridLedTo() with
+// 'rejoin' and 'exact' when it finds a way.
 QList<Point> ledTo(const QList<Point> &wirePoints, const Point &to, const QList<Point> &kept,
                    bool rejoin, const Obstacles &obstacles, QList<Point> *branch = nullptr,
                    bool exact = false)
@@ -879,6 +897,10 @@ QList<Point> ledTo(const QList<Point> &wirePoints, const Point &to, const QList<
             return laid;
     }
     const QList<Point> points = withJoints(wirePoints, kept);
+    // A pin come onto what the wire keeps is joined there, as on the grid.
+    const QList<Point> keptPart = points.mid(0, lastKeptIndex(points, kept) + 1);
+    if (isPinJoinedOnKeptPart(keptPart, to, obstacles))
+        return keptPart;
     const auto keepsAll = [&](const QList<Point> &candidate) {
         return std::all_of(kept.cbegin(), kept.cend(),
                            [&](const Point &point) { return liesOn(candidate, point); });
@@ -923,6 +945,11 @@ QList<Point> ledTo(const QList<Point> &wirePoints, const Point &to, const QList<
     }
     if (!best.isEmpty())
         return best;
+    // No way there keeps the joints: an end come back onto what the wire
+    // keeps, short of its other end, ends at its last joint, the point it
+    // came to lying on it. Onto the other end, it is left with no length.
+    if (keptPart.size() >= 2 && to != keptPart.first() && liesOn(keptPart, to))
+        return keptPart;
     return bestWire(unkept, obstacles);
 }
 

@@ -1535,6 +1535,29 @@ private slots:
         QCOMPARE(moved.wires.first().points, QList<Point>({h(-20, 0), h(-4, 0), h(-4, 10)}));
     }
 
+    // A wire from the right pin of a part at (8, 20) to a part at (60, 20),
+    // with a wire going down from (14, 20). The part goes right by 8, along
+    // its wire past that joint: the wire keeps reaching it, the pin landing
+    // on it, whatever way wires are laid.
+    void aPinMovedAlongItsWirePastAJointKeepsTheJoint()
+    {
+        const Library library = gridLibrary();
+        for (const WireRouting routing : {WireRouting::Hand, WireRouting::Grid}) {
+            Sheet sheet;
+            sheet.components = {gridPart(h(8, 20)), gridPart(h(60, 20))};
+            sheet.wires = {wire({h(12, 20), h(56, 20)}), wire({h(14, 20), h(14, 36)})};
+            const QSet<ObjectId> part = {sheet.components.first().id};
+            const Sheet moved = withWiresFollowing(sheet, movedObjects(sheet, part, h(8, 0)),
+                                                   part, library, routing);
+            const QSet<ObjectId> net = joinedWires(moved, moved.wires.last().id);
+            for (const Point &point : {h(20, 20), h(56, 20)}) {
+                QVERIFY(std::any_of(moved.wires.cbegin(), moved.wires.cend(), [&](const Wire &w) {
+                    return net.contains(w.id) && isOnWire(w, point);
+                }));
+            }
+        }
+    }
+
     // A part whose wire crosses the body of another part, and a part on the
     // middle of a wire across its own pins, moved by nothing: no wire is
     // laid again, whatever way wires are laid.

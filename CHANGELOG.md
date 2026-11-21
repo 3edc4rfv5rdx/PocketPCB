@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: With simple wire routing, a part moved along its wire past a joint keeps that joint on the wire
 - R: The wiring header states that a pin joins a wire anywhere on it
 - E: A wire drawn back over itself, or merged with one going back along it, no longer runs over itself
 - E: Cutting a wire that crosses itself at the cut point no longer drops its later corner there
