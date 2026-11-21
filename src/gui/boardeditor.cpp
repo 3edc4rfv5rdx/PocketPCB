@@ -520,16 +520,10 @@ BoardEditor::MenuTarget BoardEditor::chooseForMenu(const QPointF &at)
     if (!m_active || m_tool != Tool::Select)
         return MenuTarget::None;
     const Design &design = m_document->design();
+    // A text stands for its placement.
     const PlacementText text = placementTextAt(design.board, at);
-    if (!text.isNull()) {
-        if (!(m_chosenText == text)) {
-            dropChosen();
-            m_chosenText = text;
-        }
-        emit changed();
-        return MenuTarget::Text;
-    }
-    const ObjectId hit = placementAt(design.board, design.library, at);
+    const ObjectId hit =
+        text.isNull() ? placementAt(design.board, design.library, at) : text.owner;
     if (!hit.isNull()) {
         if (!m_chosen.contains(hit)) {
             dropChosen();
@@ -571,26 +565,28 @@ void BoardEditor::setChosenValuesShown(bool shown)
         applyBoard(shown ? Action::ShowValue : Action::HideValue, board, ids);
 }
 
-bool BoardEditor::chosenTextLined() const
+bool BoardEditor::chosenLined() const
 {
-    const PlacementText text = chosenText();
-    const Placement *placement = findById(m_document->design().board.placements, text.owner);
-    if (placement == nullptr)
-        return false;
-    return text.text == ComponentText::Designator ? placement->refLine : placement->valueLine;
+    const QSet<ObjectId> ids = chosenPlacements();
+    const QList<Placement> &placements = m_document->design().board.placements;
+    return !ids.isEmpty()
+           && std::all_of(placements.cbegin(), placements.cend(), [&ids](const Placement &p) {
+                  return !ids.contains(p.id) || (p.refLine && p.valueLine);
+              });
 }
 
-void BoardEditor::setChosenTextLined(bool lined)
+void BoardEditor::setChosenLined(bool lined)
 {
-    const PlacementText text = chosenText();
+    const QSet<ObjectId> ids = chosenPlacements();
     Board board = m_document->design().board;
     for (Placement &placement : board.placements) {
-        if (placement.id != text.owner)
-            continue;
-        (text.text == ComponentText::Designator ? placement.refLine : placement.valueLine) = lined;
+        if (ids.contains(placement.id)) {
+            placement.refLine = lined;
+            placement.valueLine = lined;
+        }
     }
     if (board != m_document->design().board)
-        applyBoard(Action::LineToPart, board, {text.owner});
+        applyBoard(Action::LineToPart, board, ids);
 }
 
 void BoardEditor::setChosen(const QSet<ObjectId> &ids)

@@ -1003,7 +1003,7 @@ void paintPlacementSilkscreen(QPainter &painter, const Library &library,
         if (!shown.isEmpty())
             paintPlacementText(painter, placement, placementTextPoint(placement, text), shown,
                                color);
-        const QLineF leader = leaderLine(placement, text, library);
+        const QLineF leader = leaderLine(placement, text);
         if (!leader.isNull()) {
             painter.setPen(linePen(color, LEADER_LINE_WIDTH));
             painter.drawLine(leader);
@@ -1420,24 +1420,19 @@ QRectF placementTextRect(const Placement &placement, ComponentText text)
                       TextAlign::Center);
 }
 
-QLineF leaderLine(const Placement &placement, ComponentText text, const Library &library)
+QLineF leaderLine(const Placement &placement, ComponentText text)
 {
     const bool wanted =
         text == ComponentText::Designator ? placement.refLine : placement.valueLine;
     if (!wanted || placementTextShown(placement, text).isEmpty())
         return QLineF();
-    const QRectF part = placementRect(placement, library);
     const QRectF label = placementTextRect(placement, text);
-    const auto clamped = [](const QPointF &p, const QRectF &r) {
-        return QPointF(qBound(r.left(), p.x(), r.right()), qBound(r.top(), p.y(), r.bottom()));
-    };
-    // The point of the part nearest the text's middle, and the point of the
-    // text nearest that.
-    const QPointF onPart = clamped(label.center(), part);
-    const QPointF onText = clamped(onPart, label);
-    if (onPart == onText)
+    const QPointF part = toMm(placement.at);
+    const QPointF onText(qBound(label.left(), part.x(), label.right()),
+                         qBound(label.top(), part.y(), label.bottom()));
+    if (onText == part)
         return QLineF();
-    return QLineF(onText, onPart);
+    return QLineF(onText, part);
 }
 
 QRectF boardBounds(const Board &board, const Library &library)

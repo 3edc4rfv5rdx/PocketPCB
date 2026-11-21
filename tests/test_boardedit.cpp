@@ -115,24 +115,23 @@ private slots:
     }
 
     // R1's designator, at (0, -3), moved up to (0, -8): with its line, the
-    // silkscreen joins the bottom of the text to the top of the part.
+    // silkscreen joins the bottom of the text to the part's point.
     void aTextWithItsLineIsJoinedToThePart()
     {
         Placement r1 = twoPlacements().placements.at(0);
         r1.refAt = mm(0, -8);
-        QVERIFY(leaderLine(r1, ComponentText::Designator, library()).isNull());
+        QVERIFY(leaderLine(r1, ComponentText::Designator).isNull());
         r1.refLine = true;
-        const QLineF line = leaderLine(r1, ComponentText::Designator, library());
+        const QLineF line = leaderLine(r1, ComponentText::Designator);
         QVERIFY(!line.isNull());
-        const QRectF part = placementRect(r1, library());
-        QCOMPARE(line.p2().y(), part.top());
-        QCOMPARE(line.p1().y(), placementTextRect(r1, ComponentText::Designator).bottom());
+        QCOMPARE(line.p2(), QPointF(0, 0));
+        QCOMPARE(line.p1(), QPointF(0, placementTextRect(r1, ComponentText::Designator).bottom()));
         // On the part, or hidden: no line.
         r1.refAt = mm(0, 0);
-        QVERIFY(leaderLine(r1, ComponentText::Designator, library()).isNull());
+        QVERIFY(leaderLine(r1, ComponentText::Designator).isNull());
         r1.refAt = mm(0, -8);
         r1.showRef = false;
-        QVERIFY(leaderLine(r1, ComponentText::Designator, library()).isNull());
+        QVERIFY(leaderLine(r1, ComponentText::Designator).isNull());
     }
 
     void aLockedPlacementStaysButItsTextMoves()

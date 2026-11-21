@@ -113,9 +113,10 @@ public:
     void rotateChosen();
 
     // What a short right click at 'at' is on, choosing it as a click
-    // would, unless it is chosen already: a text, a placement, a corner or a
-    // side of the outline, or nothing (what is chosen then stays).
-    enum class MenuTarget { None, Text, Placement, Corner, Side };
+    // would, unless it is chosen already: a placement (also by one of its
+    // texts), a corner or a side of the outline, or nothing (what is chosen
+    // then stays).
+    enum class MenuTarget { None, Placement, Corner, Side };
     MenuTarget chooseForMenu(const QPointF &at);
     // The corner of the outline the menu was opened on; -1 for none.
     int menuCorner() const { return m_menuCorner; }
@@ -128,10 +129,10 @@ public:
     // Every placement chosen shows its value; shown or hidden as one step.
     bool chosenValuesShown() const;
     void setChosenValuesShown(bool shown);
-    // The text chosen alone has its line to the part (Placement::refLine,
-    // valueLine); set as one step.
-    bool chosenTextLined() const;
-    void setChosenTextLined(bool lined);
+    // Every placement chosen has the lines from its texts to it
+    // (Placement::refLine, valueLine); set or taken off as one step.
+    bool chosenLined() const;
+    void setChosenLined(bool lined);
 
     // The left mouse button; with 'adding' (Ctrl) a placement clicked is
     // added to what is chosen or taken away, and a frame adds what it holds.

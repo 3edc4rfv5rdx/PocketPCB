@@ -879,17 +879,15 @@ void MainWindow::showBoardMenu(const QPoint &globalPos)
             if (m_boardEditor->chosenPlacements().contains(placement.id))
                 components.insert(placement.component);
         }
-        QAction *show = menu.addAction(tr("Show on schematic"));
-        connect(show, &QAction::triggered, this,
-                [this, components] { showComponents(components); });
-        break;
-    }
-    case BoardEditor::MenuTarget::Text: {
+        // Silkscreen lines from the texts to the parts.
         QAction *line =
             menu.addAction(BoardEditor::actionName(BoardEditor::Action::LineToPart));
         line->setCheckable(true);
-        line->setChecked(m_boardEditor->chosenTextLined());
-        connect(line, &QAction::triggered, m_boardEditor, &BoardEditor::setChosenTextLined);
+        line->setChecked(m_boardEditor->chosenLined());
+        connect(line, &QAction::triggered, m_boardEditor, &BoardEditor::setChosenLined);
+        QAction *show = menu.addAction(tr("Show on schematic"));
+        connect(show, &QAction::triggered, this,
+                [this, components] { showComponents(components); });
         break;
     }
     case BoardEditor::MenuTarget::Corner:

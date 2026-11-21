@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Line to part is in the menu of a part and runs from the part's point to the text
 - F: The nets of a part chosen on the board are lit light green, bolder than the ratsnest
 - N: Choosing a part on the board lights its nets, their pads and ratsnest lines
 - N: A designator or a value on the board may have a bold silkscreen line to its part
