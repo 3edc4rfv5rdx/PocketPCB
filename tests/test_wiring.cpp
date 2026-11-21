@@ -1019,6 +1019,23 @@ private slots:
         QCOMPARE(one.wires.at(0).points, QList<Point>({mm(0, 0), mm(15, 0)}));
     }
 
+    // A wire that passes (5, 0) and later turns there, crossed there by
+    // another: joining them cuts the first at its pass, and its part after
+    // the cut keeps the corner it turns at there.
+    void aWireCutWhereItTurnsLaterKeepsThatCorner()
+    {
+        const Library library = twoPinLibrary();
+        Sheet sheet;
+        sheet.wires = {
+            wire({mm(0, 0), mm(10, 0), mm(10, 5), mm(5, 5), mm(5, 0), mm(10, -5)}),
+            wire({mm(2, -3), mm(8, 3)})};
+        const Sheet joined = withWiresJoinedAt(sheet, library, mm(5, 0));
+        QCOMPARE(joined.wires.size(), 3);
+        QCOMPARE(joined.wires.at(0).points, QList<Point>({mm(0, 0), mm(5, 0)}));
+        QCOMPARE(joined.wires.at(1).points,
+                 QList<Point>({mm(5, 0), mm(10, 0), mm(10, 5), mm(5, 5), mm(5, 0), mm(10, -5)}));
+    }
+
     void crossingWiresAreJoinedAndSeparated()
     {
         const Library library = twoPinLibrary();

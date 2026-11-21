@@ -972,7 +972,7 @@ void splitAt(QList<Wire> &wires, int index, const Point &point, const ObjectId &
                     before.append(point);
                 passed = true;
             }
-        } else if (p.at(j) != point) {
+        } else if (p.at(j) != after.last()) {
             after.append(p.at(j));
         }
     }
