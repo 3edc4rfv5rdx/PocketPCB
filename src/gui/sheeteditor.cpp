@@ -1296,6 +1296,7 @@ void SheetEditor::finishWire()
     Design design = m_document->design();
     Sheet &sheet = design.schematic.sheets[m_sheet];
     ObjectId id = newObjectId();
+    QSet<ObjectId> ids = {id};
     QString name;
     if (m_drawingBus) {
         Bus bus;
@@ -1316,15 +1317,34 @@ void SheetEditor::finishWire()
         sheet.buses.append(bus);
         name = actionName(Action::Bus) + QLatin1Char(' ') + bus.name;
     } else {
-        Wire wire;
-        wire.id = id;
-        // Its ends on buses enter them at 45 degrees, the first as well.
-        wire.points = withBusEntries(points, sheet, design.library, m_canvas->gridStep());
-        sheet.wires.append(wire);
+        // Drawn back over itself, it is laid as wires that cover each
+        // stretch once.
+        QList<Wire> pieces;
+        for (const QList<Point> &piece : wiresNotTurningBack(points)) {
+            Wire wire;
+            wire.id = pieces.isEmpty() ? id : newObjectId();
+            wire.points = piece;
+            pieces.append(wire);
+        }
+        // Their ends on buses enter them at 45 degrees, the first as well;
+        // where one ends on another, it joins it.
+        const Sheet without = sheet;
+        for (int i = 0; i < pieces.size(); ++i) {
+            Sheet others = without;
+            for (int j = 0; j < pieces.size(); ++j) {
+                if (j != i)
+                    others.wires.append(pieces.at(j));
+            }
+            Wire wire = pieces.at(i);
+            wire.points = withBusEntries(wire.points, others, design.library,
+                                         m_canvas->gridStep());
+            sheet.wires.append(wire);
+            ids.insert(wire.id);
+        }
         name = actionName(Action::Wire);
     }
     name += QStringLiteral(" (") + sheetName(sheet, m_sheet) + QLatin1Char(')');
-    m_document->change(name, design, m_sheet, {id});
+    m_document->change(name, design, m_sheet, ids);
     emit changed();
 }
 

@@ -517,6 +517,28 @@ private slots:
                  QList<Point>({mm(0, 0), mm(10, 0), mm(5, 0)}));
     }
 
+    // A wire drawn back over itself is laid as wires covering each stretch
+    // once: one going back short of where it came from goes on from there;
+    // one going back past it takes the stretch over from the corner.
+    void wiresTurningBackAreCut()
+    {
+        using Pieces = QList<QList<Point>>;
+        QCOMPARE(wiresNotTurningBack({mm(0, 0), mm(10, 0), mm(10, 5)}),
+                 Pieces({{mm(0, 0), mm(10, 0), mm(10, 5)}}));
+        QCOMPARE(wiresNotTurningBack({mm(0, 0), mm(10, 0), mm(5, 0)}),
+                 Pieces({{mm(0, 0), mm(10, 0)}}));
+        QCOMPARE(wiresNotTurningBack({mm(0, 5), mm(0, 0), mm(10, 0), mm(5, 0), mm(5, 5)}),
+                 Pieces({{mm(0, 5), mm(0, 0), mm(10, 0)}, {mm(5, 0), mm(5, 5)}}));
+        QCOMPARE(wiresNotTurningBack({mm(0, 5), mm(0, 0), mm(10, 0), mm(-5, 0)}),
+                 Pieces({{mm(0, 5), mm(0, 0)}, {mm(10, 0), mm(-5, 0)}}));
+        QCOMPARE(wiresNotTurningBack({mm(0, 0), mm(10, 0), mm(-5, 0), mm(-5, 5)}),
+                 Pieces({{mm(10, 0), mm(-5, 0), mm(-5, 5)}}));
+        // Wires that would go back along each other are not merged.
+        Sheet sheet;
+        sheet.wires = {wire({mm(0, 0), mm(10, 0)}), wire({mm(10, 0), mm(5, 0), mm(5, 5)})};
+        QCOMPARE(withWiresMerged(sheet).wires.size(), 2);
+    }
+
     // A wire from (-20, 0) to the left pin of a part at the origin.
     void wiresFollowAMovedPart()
     {

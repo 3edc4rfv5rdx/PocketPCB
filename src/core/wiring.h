@@ -75,8 +75,9 @@ bool isConnectionPoint(const Sheet &sheet, const Library &library, const Point &
 QSet<ObjectId> joinedWires(const Sheet &sheet, const ObjectId &wire);
 
 // 'sheet' with every two wires that end where the other begins made one,
-// where just their two ends meet: no other wire on the point and no bus; a
-// pin there stays on the wire, as on any wire passing it. The wire first in
+// where just their two ends meet: no other wire on the point and no bus,
+// and the second does not go straight back along the first; a pin there
+// stays on the wire, as on any wire passing it. The wire first in
 // the list keeps its id and place; corners going on straight are dropped
 // (simplifiedWire()). So a line between forks and buses is one wire however
 // it was drawn.
@@ -120,6 +121,15 @@ QList<Point> wireRoute(const Point &from, const Point &to, bool swapped, bool di
 // 'points' without a point equal to the one before it and without corners
 // that go on straight ahead.
 QList<Point> simplifiedWire(const QList<Point> &points);
+
+// The wire 'points' as wires that do not turn back over themselves, each
+// stretch covered once: where it turns straight back, it is cut. When the
+// way back stops short of where the segment before began, the wire ends at
+// the corner and the rest goes on as a wire of its own from where the way
+// back stops, on that segment; else the wire ends where that segment began,
+// on the way back, and the rest goes on from the corner. Parts of one point
+// are left out.
+QList<QList<Point>> wiresNotTurningBack(const QList<Point> &points);
 
 // How the program lays a wire again when what it is joined to goes: Hand
 // tries a few ways with one or two bends and takes the least bad; Grid

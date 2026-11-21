@@ -1485,6 +1485,12 @@ Sheet withWiresMerged(const Sheet &sheet)
                 QList<Point> on = wires.at(j).points;
                 if (on.first() != at)
                     std::reverse(on.begin(), on.end());
+                // One going back along the other stays apart: one wire would
+                // run back over itself.
+                const Point in = at - into.at(into.size() - 2);
+                const Point out = on.at(1) - at;
+                if (cross(in, out) == 0 && dot(in, out) < 0)
+                    continue;
                 const int kept = qMin(i, j);
                 wires[kept].points = simplifiedWire(into + on.mid(1));
                 wires.removeAt(qMax(i, j));
@@ -1702,6 +1708,37 @@ QList<Point> simplifiedWire(const QList<Point> &points)
         }
         result.append(point);
     }
+    return result;
+}
+
+QList<QList<Point>> wiresNotTurningBack(const QList<Point> &points)
+{
+    QList<QList<Point>> result;
+    QList<Point> rest = points;
+    for (;;) {
+        int turn = -1;
+        for (int i = 1; i + 1 < rest.size(); ++i) {
+            const Point in = rest.at(i) - rest.at(i - 1);
+            const Point out = rest.at(i + 1) - rest.at(i);
+            if (cross(in, out) == 0 && dot(in, out) < 0) {
+                turn = i;
+                break;
+            }
+        }
+        if (turn < 0)
+            break;
+        // Back short of the segment's start: the rest goes on from there;
+        // else the wire ends at that start and the rest goes from the corner.
+        const bool backShort =
+            isOnSegment(rest.at(turn - 1), rest.at(turn), rest.at(turn + 1));
+        const int split = backShort ? turn + 1 : turn;
+        const QList<Point> head = rest.mid(0, split);
+        if (head.size() >= 2)
+            result.append(head);
+        rest = rest.mid(split);
+    }
+    if (rest.size() >= 2)
+        result.append(rest);
     return result;
 }
 
