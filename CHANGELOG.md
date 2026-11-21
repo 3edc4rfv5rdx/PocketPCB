@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: Update board from schematic keeps a placement whose footprint is missing from the project library instead of removing it, and says so in the list
 - E: Undo, Redo or Delete pressed while dragging on the sheet ends the drag, so the drop no longer brings back what they changed
 - E: Nets with no name are named TempN1, TempN2 and so on, skipping a name a label or a power symbol already gives another net
 - E: Dropping the autosaved copy removes only its own files, no longer the whole autosave folder with other projects' copies and files put there by hand

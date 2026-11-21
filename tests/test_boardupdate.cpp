@@ -168,6 +168,23 @@ private slots:
         QCOMPARE(kept.at, mm(77, 33));
     }
 
+    void aPlacementWhoseFootprintIsMissingIsKept()
+    {
+        Design design = twoResistors();
+        design.board = boardUpdatedFromSchematic(design).board;
+        const Board placed = design.board;
+        // The footprint file is gone from the project library.
+        design.library.footprints.remove(QStringLiteral("fp"));
+
+        const BoardUpdate update = boardUpdatedFromSchematic(design);
+        QVERIFY(update.board == placed);
+        QCOMPARE(update.changes,
+                 (QList<BoardChange>{{BoardChangeKind::MissingFootprint, QStringLiteral("R1"),
+                                      QString(), QStringLiteral("fp")},
+                                     {BoardChangeKind::MissingFootprint, QStringLiteral("R2"),
+                                      QString(), QStringLiteral("fp")}}));
+    }
+
     void netsOfPadsFollowTheSchematic()
     {
         Design design = twoResistors();

@@ -54,12 +54,23 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
     }
 
     // The components that belong on the board, in the order of the sheets.
+    // Those whose footprint the library lacks belong there too, but cannot
+    // be placed: their placements are left alone.
     QList<const Component *> wanted;
     QSet<ObjectId> wantedIds;
+    QSet<ObjectId> leftAlone;
+    QList<BoardChange> changes;
     for (const Sheet &sheet : design.schematic.sheets) {
         for (const Component &component : sheet.components) {
-            if (component.offBoard || library.findFootprint(component.footprint) == nullptr)
+            if (component.offBoard || component.footprint.isEmpty())
                 continue;
+            if (library.findFootprint(component.footprint) == nullptr) {
+                leftAlone.insert(component.id);
+                changes.append(BoardChange{BoardChangeKind::MissingFootprint,
+                                           component.designator, QString(),
+                                           component.footprint});
+                continue;
+            }
             wanted.append(&component);
             wantedIds.insert(component.id);
         }
@@ -68,10 +79,10 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
     BoardUpdate update;
     update.board = design.board;
     QList<Placement> &placements = update.board.placements;
-    QList<BoardChange> changes;
 
     for (int i = int(placements.size()) - 1; i >= 0; --i) {
-        if (!wantedIds.contains(placements.at(i).component)) {
+        const ObjectId &component = placements.at(i).component;
+        if (!wantedIds.contains(component) && !leftAlone.contains(component)) {
             changes.append(BoardChange{BoardChangeKind::Remove, placements.at(i).designator,
                                        placements.at(i).footprint, QString()});
             placements.removeAt(i);

@@ -1412,5 +1412,13 @@
         <source>nets of the pads</source>
         <translation>цепи площадок</translation>
     </message>
+    <message>
+        <source>kept as it is</source>
+        <translation>оставлено как есть</translation>
+    </message>
+    <message>
+        <source>the project library has no footprint</source>
+        <translation>в библиотеке проекта нет посадочного места</translation>
+    </message>
 </context>
 </TS>

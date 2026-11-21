@@ -66,6 +66,9 @@ QString UpdateBoardDialog::changeText(const BoardChange &change)
         return of + tr("footprint") + QLatin1Char(' ') + change.before + arrow + change.after;
     case BoardChangeKind::Nets:
         return of + tr("nets of the pads");
+    case BoardChangeKind::MissingFootprint:
+        return of + tr("kept as it is") + QStringLiteral(", ")
+               + tr("the project library has no footprint") + QLatin1Char(' ') + change.after;
     }
     return QString();
 }

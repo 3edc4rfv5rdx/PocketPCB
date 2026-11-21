@@ -8,7 +8,8 @@ namespace ppcb {
 // the schematic that is on the board and has a footprint the library holds
 // gets a placement, tied to it by its id; the placements of the others go.
 // A placement kept keeps where it is; its designator, value, footprint and
-// the nets of its pads follow the component.
+// the nets of its pads follow the component. A component on the board whose
+// footprint the library lacks keeps its placement, if it has one, as it is.
 
 // What the update does to one placement.
 enum class BoardChangeKind {
@@ -23,6 +24,9 @@ enum class BoardChangeKind {
     Footprint,
     // The nets of its pads changed.
     Nets,
+    // A component on the board whose footprint 'after' the library lacks:
+    // its placement, if it has one, is kept as it is.
+    MissingFootprint,
 };
 
 struct BoardChange

@@ -1412,5 +1412,13 @@
         <source>nets of the pads</source>
         <translation>кола контактних площадок</translation>
     </message>
+    <message>
+        <source>kept as it is</source>
+        <translation>залишено як є</translation>
+    </message>
+    <message>
+        <source>the project library has no footprint</source>
+        <translation>у бібліотеці проєкту немає посадкового місця</translation>
+    </message>
 </context>
 </TS>
