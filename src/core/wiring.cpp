@@ -1104,25 +1104,15 @@ public:
     // The ends of the pins of the components left in place.
     const QList<Point> &stillPins() const { return m_stillPins; }
 
+    // Where 'point' goes; nothing when it lies on nothing moved, or when
+    // what it lies on leaves it where it is: an end that does not move is
+    // not led again.
     std::optional<Point> follow(const Point &point) const
     {
-        if (isStillPin(point))
+        const std::optional<Point> to = goesTo(point);
+        if (to && *to == point)
             return std::nullopt;
-        for (const MovedPin &pin : m_pins) {
-            if (pin.from == point)
-                return pin.to;
-        }
-        for (const auto &[was, now] : m_wires) {
-            const QList<Point> &a = was->points;
-            const QList<Point> &b = now->points;
-            if (a.size() == 1 && a.first() == point)
-                return b.first();
-            for (int i = 1; i < a.size(); ++i) {
-                if (isOnSegment(a.at(i - 1), a.at(i), point))
-                    return carriedAlong(a.at(i - 1), a.at(i), b.at(i - 1), b.at(i), point);
-            }
-        }
-        return shiftedWith(point);
+        return to;
     }
 
     // True when the end of a pin of a moved component was at 'point'.
@@ -1152,6 +1142,28 @@ private:
     QList<QPair<const Wire *, const Wire *>> m_wires;
     // The wires left alone that go whole, with the way they go.
     QList<QPair<const Wire *, Point>> m_shifted;
+
+    // Where 'point' goes with what it lies on, even when that is where it is.
+    std::optional<Point> goesTo(const Point &point) const
+    {
+        if (isStillPin(point))
+            return std::nullopt;
+        for (const MovedPin &pin : m_pins) {
+            if (pin.from == point)
+                return pin.to;
+        }
+        for (const auto &[was, now] : m_wires) {
+            const QList<Point> &a = was->points;
+            const QList<Point> &b = now->points;
+            if (a.size() == 1 && a.first() == point)
+                return b.first();
+            for (int i = 1; i < a.size(); ++i) {
+                if (isOnSegment(a.at(i - 1), a.at(i), point))
+                    return carriedAlong(a.at(i - 1), a.at(i), b.at(i - 1), b.at(i), point);
+            }
+        }
+        return shiftedWith(point);
+    }
 
     bool isShifted(const Wire &wire) const
     {

@@ -1451,6 +1451,28 @@ private slots:
         QCOMPARE(moved.wires.first().points, QList<Point>({h(-20, 0), h(-4, 0), h(-4, 10)}));
     }
 
+    // A part whose wire crosses the body of another part, and a part on the
+    // middle of a wire across its own pins, moved by nothing: no wire is
+    // laid again, whatever way wires are laid.
+    void aMoveByNothingLeavesTheWires()
+    {
+        const Library library = gridLibrary();
+        for (const WireRouting routing : {WireRouting::Hand, WireRouting::Grid}) {
+            Sheet sheet;
+            sheet.components = {gridPart(h(0, 0)), gridPart(h(20, 0)), gridPart(h(34, 10))};
+            sheet.wires = {wire({h(4, 0), h(4, -10), h(20, -10), h(20, 10), h(30, 10)}),
+                           wire({h(-12, 20), h(-4, 20)})};
+            Component across = gridPart(h(-8, 20));
+            sheet.components.append(across);
+            for (const ObjectId &id : {sheet.components.first().id, across.id}) {
+                const QSet<ObjectId> part = {id};
+                QVERIFY(withWiresFollowing(sheet, movedObjects(sheet, part, Point()), part, library,
+                                           routing)
+                        == sheet);
+            }
+        }
+    }
+
     // Another wire is crossed where that is cheapest, but neither run along
     // nor passed through at its end, which would join them.
     void gridWiresCrossOtherWiresOnly()
