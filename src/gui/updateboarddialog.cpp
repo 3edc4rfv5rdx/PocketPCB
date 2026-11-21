@@ -69,6 +69,9 @@ QString UpdateBoardDialog::changeText(const BoardChange &change)
     case BoardChangeKind::MissingFootprint:
         return of + tr("kept as it is") + QStringLiteral(", ")
                + tr("the project library has no footprint") + QLatin1Char(' ') + change.after;
+    case BoardChangeKind::MissingFootprintNotAdded:
+        return of + tr("not added") + QStringLiteral(", ")
+               + tr("the project library has no footprint") + QLatin1Char(' ') + change.after;
     }
     return QString();
 }

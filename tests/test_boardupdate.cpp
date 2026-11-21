@@ -183,6 +183,16 @@ private slots:
                                       QString(), QStringLiteral("fp")},
                                      {BoardChangeKind::MissingFootprint, QStringLiteral("R2"),
                                       QString(), QStringLiteral("fp")}}));
+
+        // One never placed is not added.
+        design.board = Board();
+        const BoardUpdate fresh = boardUpdatedFromSchematic(design);
+        QVERIFY(fresh.board.placements.isEmpty());
+        QCOMPARE(fresh.changes,
+                 (QList<BoardChange>{{BoardChangeKind::MissingFootprintNotAdded,
+                                      QStringLiteral("R1"), QString(), QStringLiteral("fp")},
+                                     {BoardChangeKind::MissingFootprintNotAdded,
+                                      QStringLiteral("R2"), QString(), QStringLiteral("fp")}}));
     }
 
     void netsOfPadsFollowTheSchematic()

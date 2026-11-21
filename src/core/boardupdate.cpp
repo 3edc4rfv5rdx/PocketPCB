@@ -66,7 +66,13 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
                 continue;
             if (library.findFootprint(component.footprint) == nullptr) {
                 leftAlone.insert(component.id);
-                changes.append(BoardChange{BoardChangeKind::MissingFootprint,
+                const bool placed =
+                    std::any_of(design.board.placements.cbegin(), design.board.placements.cend(),
+                                [&component](const Placement &placement) {
+                                    return placement.component == component.id;
+                                });
+                changes.append(BoardChange{placed ? BoardChangeKind::MissingFootprint
+                                                  : BoardChangeKind::MissingFootprintNotAdded,
                                            component.designator, QString(),
                                            component.footprint});
                 continue;

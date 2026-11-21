@@ -25,8 +25,10 @@ enum class BoardChangeKind {
     // The nets of its pads changed.
     Nets,
     // A component on the board whose footprint 'after' the library lacks:
-    // its placement, if it has one, is kept as it is.
+    // its placement is kept as it is.
     MissingFootprint,
+    // The same for a component with no placement yet: none is added.
+    MissingFootprintNotAdded,
 };
 
 struct BoardChange

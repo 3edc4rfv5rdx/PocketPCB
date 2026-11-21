@@ -1417,6 +1417,10 @@
         <translation>залишено як є</translation>
     </message>
     <message>
+        <source>not added</source>
+        <translation>не додано</translation>
+    </message>
+    <message>
         <source>the project library has no footprint</source>
         <translation>у бібліотеці проєкту немає посадкового місця</translation>
     </message>
