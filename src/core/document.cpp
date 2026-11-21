@@ -52,7 +52,7 @@ bool backUp(const QString &path, const QString &folder, int count, QString &erro
 
 // Removes the file 'name' from 'folder'; a name with a folder in it is left
 // alone, since the names come from a file.
-void removeFileIn(const QDir &folder, const QString &name)
+void removeFileIn(QDir folder, const QString &name)
 {
     if (!name.isEmpty() && QFileInfo(name).fileName() == name)
         folder.remove(name);
@@ -83,7 +83,7 @@ void removeAutosaveCopy(const QString &copyPath, const Project &fallback)
         const QDir library(folder.filePath(QLatin1String(PROJECT_LIBRARY_FOLDER)));
         for (const char *kind :
              {LIBRARY_SYMBOLS_FOLDER, LIBRARY_FOOTPRINTS_FOLDER, LIBRARY_PARTS_FOLDER}) {
-            const QDir items(library.filePath(QLatin1String(kind)));
+            QDir items(library.filePath(QLatin1String(kind)));
             const QStringList files = items.entryList(
                 {QStringLiteral("*") + QLatin1String(LIBRARY_FILE_EXT)}, QDir::Files);
             for (const QString &file : files)
