@@ -161,15 +161,13 @@ private:
     }
 };
 
-} // namespace
-
-static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
-                            const QSet<ObjectId> &moved, const Library &library,
-                            WireRouting routing)
+// A wire left in place that passes through a pin that goes is cut there
+// first, in both sheets alike, so that its two parts end on the pin and
+// follow it: a pin on a wire is joined to it, as its dot shows. 'before'
+// and 'after' so cut.
+std::pair<Sheet, Sheet> cutAtMovedPins(const Sheet &sheetBefore, const Sheet &sheetAfter,
+                                       const QSet<ObjectId> &moved, const Library &library)
 {
-    // A wire left in place that passes through a pin that goes is cut there
-    // first, in both sheets alike, so that its two parts end on the pin and
-    // follow it: a pin on a wire is joined to it, as its dot shows.
     Sheet before = sheetBefore;
     Sheet after = sheetAfter;
     const PointFollower uncut(sheetBefore, sheetAfter, moved, library);
@@ -190,95 +188,166 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
             }
         }
     }
-    const PointFollower follower(before, after, moved, library);
-    // The wires that have an end to follow are no obstacles where they were:
-    // each becomes one again where it is laid.
-    Obstacles obstacles = obstaclesOf(after, library, routing);
-    QSet<ObjectId> following;
-    for (const Wire &wire : before.wires) {
-        if (!moved.contains(wire.id) && wire.points.size() >= 2
-            && (follower.follow(wire.points.first()) || follower.follow(wire.points.last()))) {
-            following.insert(wire.id);
-            obstacles = obstacles.without(wire.id);
+    return {before, after};
+}
+
+// The wires of 'before' laid again where the objects 'moved' have gone in
+// 'after' (see withWiresFollowing()), stage by stage: the line kept through
+// a pin, the ends held by what stays, each wire led after its ends, new
+// wires to the pins that left others, and the cuts that join what came to
+// lie on a wire.
+class WiresFollowing
+{
+public:
+    WiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
+                   const QSet<ObjectId> &moved, const Library &library, WireRouting routing)
+        : m_cut(cutAtMovedPins(sheetBefore, sheetAfter, moved, library)),
+          m_before(m_cut.first),
+          m_after(m_cut.second),
+          m_moved(moved),
+          m_library(library),
+          m_routing(routing),
+          m_follower(m_before, m_after, moved, library),
+          m_obstacles(obstaclesOf(m_after, library, routing))
+    {
+        // The wires that have an end to follow are no obstacles where they
+        // were: each becomes one again where it is laid.
+        for (const Wire &wire : m_before.wires) {
+            if (!moved.contains(wire.id) && wire.points.size() >= 2
+                && (m_follower.follow(wire.points.first())
+                    || m_follower.follow(wire.points.last()))) {
+                m_following.insert(wire.id);
+                m_obstacles = m_obstacles.without(wire.id);
+            }
         }
+        for (const Wire &wire : m_before.wires)
+            m_wiresBefore.insert(wire.id, &wire);
+        for (const Wire &wire : m_after.wires)
+            m_wiresAfter.insert(wire.id, &wire);
+        m_changing = QSet<ObjectId>(moved).unite(m_following);
     }
+
+    Sheet result()
+    {
+        findLinesKept();
+        findEndsThatStay();
+        QList<Wire> wires = laidAgain();
+        addWiresToPinsLeft(wires);
+        cutWhereJoined(wires);
+        Sheet result = m_after;
+        result.wires = wires;
+        return result;
+    }
+
+private:
+    // 'before' and 'after' cut at the moved pins (cutAtMovedPins()).
+    const std::pair<Sheet, Sheet> m_cut;
+    const Sheet &m_before;
+    const Sheet &m_after;
+    const QSet<ObjectId> &m_moved;
+    const Library &m_library;
+    const WireRouting m_routing;
+    const PointFollower m_follower;
+    // What the wires laid again keep off: those laid so far where they are.
+    Obstacles m_obstacles;
+    // The wires left alone with an end to follow.
+    QSet<ObjectId> m_following;
+    // The wires that do not stay as they are: an end of a moved wire slides
+    // only along the others.
+    QSet<ObjectId> m_changing;
+    QHash<ObjectId, const Wire *> m_wiresBefore;
+    QHash<ObjectId, const Wire *> m_wiresAfter;
+    // The points of the two wires of a line kept through a pin, by their
+    // ids, and the pins gone off their line (findLinesKept()).
+    QHash<ObjectId, QList<Point>> m_lineKept;
+    QList<PointFollower::MovedPin> m_offLine;
+    // The ends that stay, with the wire they belong to (findEndsThatStay()).
+    QList<QPair<Point, ObjectId>> m_ends;
+    // The wires already led on from a point to where it went, with that
+    // point. Another end at the same point stays there when one of them
+    // still passes through it, joined to it, instead of going the same way
+    // beside it.
+    QList<QPair<Point, Wire>> m_led;
+    // Where a branch of no length was taken: the net already crosses the
+    // wire there, and is joined to it at the end.
+    QList<Point> m_crossingsToJoin;
+
     // A pin with two wires ending on it in one line, one going on the way
     // the other comes: the line they make stays as it is, so that what else
     // lies on it stays on it. Moved along the line onto one of them, short
     // of its next point, the pin slides along it, one wire growing as the
     // other shrinks; moved anywhere else, the two stay as they are and a
-    // new wire joins the pin to the line (see 'offLine' below). Nothing else
-    // may be on the pin, and the far ends of the two wires must stay. Their
-    // points, by their ids, and the pins gone off their line.
-    QHash<ObjectId, QList<Point>> lineKept;
-    QList<PointFollower::MovedPin> offLine;
-    for (const PointFollower::MovedPin &pin : follower.movedPins()) {
-        if (pin.to == pin.from || follower.isStillPin(pin.from) || isOnBus(before, pin.from))
-            continue;
-        const auto samePin = [&pin](const PointFollower::MovedPin &other) {
-            return other.from == pin.from;
-        };
-        if (std::count_if(follower.movedPins().cbegin(), follower.movedPins().cend(), samePin)
-            != 1)
-            continue;
-        QList<const Wire *> ending;
-        bool more = false;
-        for (const Wire &wire : before.wires) {
-            if (wire.points.size() < 2 || !isOnWire(wire, pin.from))
+    // new wire joins the pin to the line (addWiresToPinsLeft()). Nothing
+    // else may be on the pin, and the far ends of the two wires must stay.
+    void findLinesKept()
+    {
+        for (const PointFollower::MovedPin &pin : m_follower.movedPins()) {
+            if (pin.to == pin.from || m_follower.isStillPin(pin.from)
+                || isOnBus(m_before, pin.from))
                 continue;
-            const bool atFirst = wire.points.first() == pin.from;
-            const bool atLast = wire.points.last() == pin.from;
-            if (moved.contains(wire.id) || atFirst == atLast)
-                more = true;
-            else
-                ending.append(&wire);
+            const auto samePin = [&pin](const PointFollower::MovedPin &other) {
+                return other.from == pin.from;
+            };
+            if (std::count_if(m_follower.movedPins().cbegin(), m_follower.movedPins().cend(),
+                              samePin)
+                != 1)
+                continue;
+            QList<const Wire *> ending;
+            bool more = false;
+            for (const Wire &wire : m_before.wires) {
+                if (wire.points.size() < 2 || !isOnWire(wire, pin.from))
+                    continue;
+                const bool atFirst = wire.points.first() == pin.from;
+                const bool atLast = wire.points.last() == pin.from;
+                if (m_moved.contains(wire.id) || atFirst == atLast)
+                    more = true;
+                else
+                    ending.append(&wire);
+            }
+            if (more || ending.size() != 2)
+                continue;
+            const auto next = [&pin](const Wire &wire) {
+                const QList<Point> &p = wire.points;
+                return p.first() == pin.from ? p.at(1) : p.at(p.size() - 2);
+            };
+            const auto farEnd = [&pin](const Wire &wire) {
+                return wire.points.first() == pin.from ? wire.points.last() : wire.points.first();
+            };
+            const Wire &a = *ending.at(0);
+            const Wire &b = *ending.at(1);
+            if (m_follower.follow(farEnd(a)) || m_follower.follow(farEnd(b)))
+                continue;
+            const Point way = pin.to - pin.from;
+            const Point toA = next(a) - pin.from;
+            const Point toB = next(b) - pin.from;
+            if (cross(toA, toB) != 0 || dot(toA, toB) >= 0)
+                continue;
+            const Point onto = dot(way, toA) > 0 ? next(a) : next(b);
+            const bool along =
+                cross(way, toA) == 0 && isOnSegment(pin.from, onto, pin.to) && pin.to != onto;
+            for (const Wire *wire : {&a, &b}) {
+                QList<Point> points = wire->points;
+                if (along && points.first() == pin.from)
+                    points.first() = pin.to;
+                else if (along)
+                    points.last() = pin.to;
+                m_lineKept.insert(wire->id, points);
+            }
+            if (!along)
+                m_offLine.append(pin);
         }
-        if (more || ending.size() != 2)
-            continue;
-        const auto next = [&pin](const Wire &wire) {
-            const QList<Point> &p = wire.points;
-            return p.first() == pin.from ? p.at(1) : p.at(p.size() - 2);
-        };
-        const auto farEnd = [&pin](const Wire &wire) {
-            return wire.points.first() == pin.from ? wire.points.last() : wire.points.first();
-        };
-        const Wire &a = *ending.at(0);
-        const Wire &b = *ending.at(1);
-        if (follower.follow(farEnd(a)) || follower.follow(farEnd(b)))
-            continue;
-        const Point way = pin.to - pin.from;
-        const Point toA = next(a) - pin.from;
-        const Point toB = next(b) - pin.from;
-        if (cross(toA, toB) != 0 || dot(toA, toB) >= 0)
-            continue;
-        const Point onto = dot(way, toA) > 0 ? next(a) : next(b);
-        const bool along =
-            cross(way, toA) == 0 && isOnSegment(pin.from, onto, pin.to) && pin.to != onto;
-        for (const Wire *wire : {&a, &b}) {
-            QList<Point> points = wire->points;
-            if (along && points.first() == pin.from)
-                points.first() = pin.to;
-            else if (along)
-                points.last() = pin.to;
-            lineKept.insert(wire->id, points);
-        }
-        if (!along)
-            offLine.append(pin);
     }
-    QHash<ObjectId, const Wire *> wiresBefore;
-    for (const Wire &wire : before.wires)
-        wiresBefore.insert(wire.id, &wire);
-    QHash<ObjectId, const Wire *> wiresAfter;
-    for (const Wire &wire : after.wires)
-        wiresAfter.insert(wire.id, &wire);
-    // The wires that do not stay as they are: an end of a moved wire slides
-    // only along the others.
-    const QSet<ObjectId> changing = QSet<ObjectId>(moved).unite(following);
-    const auto onWireOf = [&](const Point &end, const QSet<ObjectId> &skip) {
-        return std::any_of(before.wires.cbegin(), before.wires.cend(), [&](const Wire &other) {
-            return !skip.contains(other.id) && other.points.size() >= 2 && isOnWire(other, end);
-        });
-    };
+
+    // True when 'end' lies on a wire of 'before' not among 'skip'.
+    bool onWireOf(const Point &end, const QSet<ObjectId> &skip) const
+    {
+        return std::any_of(m_before.wires.cbegin(), m_before.wires.cend(),
+                           [&](const Wire &other) {
+                               return !skip.contains(other.id) && other.points.size() >= 2
+                                      && isOnWire(other, end);
+                           });
+    }
+
     // Where the end 'end' of a moved wire, gone to 'goneTo' with it, is held
     // by what is not moved with it: on a pin or a bus left in place, there;
     // on a wire that stays as it is, even on such a pin, slid along the
@@ -288,73 +357,74 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
     // point it gets to; where a wire that goes whole takes it. Nothing when
     // it is free, or on a pin that goes as well.
     // 'still', when given, tells whether it is held by what stays.
-    const auto heldAt = [&](const Point &end, const Point &goneTo,
-                            bool *still = nullptr) -> std::optional<Point> {
+    std::optional<Point> heldAt(const Point &end, const Point &goneTo,
+                                bool *still = nullptr) const
+    {
         if (still != nullptr)
             *still = true;
-        const bool onStillWire = onWireOf(end, changing);
-        if (follower.isStillPin(end))
-            return onStillWire ? slidAlongWires(before.wires, changing, end, goneTo) : end;
+        const bool onStillWire = onWireOf(end, m_changing);
+        if (m_follower.isStillPin(end))
+            return onStillWire ? slidAlongWires(m_before.wires, m_changing, end, goneTo) : end;
         // A bus left in place keeps the end of a wire that enters it.
         const bool onStillBus =
-            std::any_of(before.buses.cbegin(), before.buses.cend(), [&](const Bus &bus) {
-                return !moved.contains(bus.id) && isOnWire(bus.points, end);
+            std::any_of(m_before.buses.cbegin(), m_before.buses.cend(), [&](const Bus &bus) {
+                return !m_moved.contains(bus.id) && isOnWire(bus.points, end);
             });
         if (onStillBus)
             return end;
-        if (follower.isMovedPin(end))
+        if (m_follower.isMovedPin(end))
             return std::nullopt;
-        if (const std::optional<Point> to = follower.shiftedWith(end)) {
+        if (const std::optional<Point> to = m_follower.shiftedWith(end)) {
             if (still != nullptr)
                 *still = false;
             return to;
         }
         if (onStillWire)
-            return slidAlongWires(before.wires, changing, end, goneTo);
-        if (!onWireOf(end, moved))
+            return slidAlongWires(m_before.wires, m_changing, end, goneTo);
+        if (!onWireOf(end, m_moved))
             return std::nullopt;
-        return slidAlongWires(before.wires, moved, end, goneTo);
-    };
+        return slidAlongWires(m_before.wires, m_moved, end, goneTo);
+    }
+
     // Where the moved wire 'was' has taken its last end, or its first: its
     // end itself when it is not laid the same.
-    const auto goneTo = [&](const Wire &was, bool last) {
-        const Wire *now = wiresAfter.value(was.id);
+    Point goneTo(const Wire &was, bool last) const
+    {
+        const Wire *now = m_wiresAfter.value(was.id);
         if (now == nullptr || now->points.size() != was.points.size())
             return last ? was.points.last() : was.points.first();
         return last ? now->points.last() : now->points.first();
-    };
+    }
+
     // The ends that stay, with the wire they belong to: those of the wires
     // that stay, and those of the moved ones held by what stays, where they
     // are held. A wire is joined to another where one of them lies on it.
-    QList<QPair<Point, ObjectId>> ends;
-    for (const Wire &wire : before.wires) {
-        if (wire.points.size() < 2)
-            continue;
-        for (const bool last : {false, true}) {
-            const Point end = last ? wire.points.last() : wire.points.first();
-            if (!moved.contains(wire.id)) {
-                ends.append(qMakePair(end, wire.id));
+    void findEndsThatStay()
+    {
+        for (const Wire &wire : m_before.wires) {
+            if (wire.points.size() < 2)
                 continue;
+            for (const bool last : {false, true}) {
+                const Point end = last ? wire.points.last() : wire.points.first();
+                if (!m_moved.contains(wire.id)) {
+                    m_ends.append(qMakePair(end, wire.id));
+                    continue;
+                }
+                bool still = false;
+                const std::optional<Point> held = heldAt(end, goneTo(wire, last), &still);
+                if (held && still)
+                    m_ends.append(qMakePair(*held, wire.id));
             }
-            bool still = false;
-            const std::optional<Point> held = heldAt(end, goneTo(wire, last), &still);
-            if (held && still)
-                ends.append(qMakePair(*held, wire.id));
         }
     }
-    Sheet result = after;
-    QList<Wire> wires;
-    // The wires already led on from a point to where it went, with that
-    // point. Another end at the same point stays there when one of them still
-    // passes through it, joined to it, instead of going the same way beside it.
-    QList<QPair<Point, Wire>> led;
-    // Where a branch of no length was taken: the net already crosses the
-    // wire there, and is joined to it below.
-    QList<Point> crossingsToJoin;
-    // 'next' is the point of the wire after that end: a wire that would
-    // run along the led one from there does not stay, but goes too.
-    const auto onLed = [&led](const Point &point, const Point &next) {
-        return std::any_of(led.cbegin(), led.cend(), [&](const auto &other) {
+
+    // True when an end at 'point' stays there, on a wire already led on
+    // from it that still passes through it; 'next' is the point of the wire
+    // after that end: a wire that would run along the led one from there
+    // does not stay, but goes too.
+    bool onLed(const Point &point, const Point &next) const
+    {
+        return std::any_of(m_led.cbegin(), m_led.cend(), [&](const auto &other) {
             if (other.first != point || !isOnWire(other.second, point))
                 return false;
             const QList<Point> &p = other.second.points;
@@ -364,49 +434,80 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
             }
             return true;
         });
-    };
-    for (Wire wire : result.wires) {
-        if (wire.points.size() < 2) {
-            wires.append(wire);
-            continue;
+    }
+
+    // The moved wire 'wire' with its ends held by what is not moved with it
+    // led back there.
+    Wire movedLedBack(Wire wire) const
+    {
+        const Wire *was = m_wiresBefore.value(wire.id);
+        if (was == nullptr || was->points.size() != wire.points.size())
+            return wire;
+        QList<Point> points = wire.points;
+        const Obstacles own = m_obstacles.without(wire.id);
+        const std::optional<Point> last = heldAt(was->points.last(), points.last());
+        const std::optional<Point> first = heldAt(was->points.first(), points.first());
+        if (last && points.last() != *last)
+            points = ledBack(points, *last, own);
+        if (first && points.first() != *first) {
+            std::reverse(points.begin(), points.end());
+            points = ledBack(points, *first, own);
+            std::reverse(points.begin(), points.end());
         }
-        if (moved.contains(wire.id)) {
-            // Its ends held by what is not moved with it are led back there.
-            const Wire *was = wiresBefore.value(wire.id);
-            if (was != nullptr && was->points.size() == wire.points.size()) {
-                QList<Point> points = wire.points;
-                const Obstacles own = obstacles.without(wire.id);
-                const std::optional<Point> last = heldAt(was->points.last(), points.last());
-                const std::optional<Point> first = heldAt(was->points.first(), points.first());
-                if (last && points.last() != *last)
-                    points = ledBack(points, *last, own);
-                if (first && points.first() != *first) {
-                    std::reverse(points.begin(), points.end());
-                    points = ledBack(points, *first, own);
-                    std::reverse(points.begin(), points.end());
-                }
-                wire.points = points;
+        wire.points = points;
+        return wire;
+    }
+
+    // The wires of 'after' laid again in their order, each after its ends,
+    // with the new wires branching off to where an end went.
+    QList<Wire> laidAgain()
+    {
+        QList<Wire> wires;
+        for (Wire wire : m_after.wires) {
+            if (wire.points.size() < 2) {
+                wires.append(wire);
+                continue;
             }
+            if (m_moved.contains(wire.id)) {
+                wires.append(movedLedBack(wire));
+                continue;
+            }
+            if (m_lineKept.contains(wire.id)) {
+                wire.points = m_lineKept.value(wire.id);
+                if (m_following.contains(wire.id))
+                    m_obstacles.add(wire);
+                wires.append(wire);
+                continue;
+            }
+            Wire branchWire;
+            if (!ledAfterItsEnds(wire, branchWire))
+                continue;
+            if (m_following.contains(wire.id))
+                m_obstacles.add(wire);
             wires.append(wire);
-            continue;
+            if (branchWire.points.size() >= 2) {
+                m_obstacles.add(branchWire);
+                wires.append(branchWire);
+            }
         }
-        if (lineKept.contains(wire.id)) {
-            wire.points = lineKept.value(wire.id);
-            if (following.contains(wire.id))
-                obstacles.add(wire);
-            wires.append(wire);
-            continue;
-        }
+        return wires;
+    }
+
+    // 'wire', left in place, led after its ends where they go: shifted whole
+    // when both go the same way and nothing that stays lies on it, else led
+    // on from each end that goes, keeping on it what stays joined to it.
+    // 'branchWire' gets a new wire to where an end went when the wire stays
+    // short instead. False when the wire is left with no length.
+    bool ledAfterItsEnds(Wire &wire, Wire &branchWire)
+    {
         const Point first = wire.points.first();
         const Point last = wire.points.last();
-        // A new wire to where an end went, put after this one (see below).
-        Wire branchWire;
-        std::optional<Point> newFirst = follower.follow(first);
-        std::optional<Point> newLast = follower.follow(last);
+        std::optional<Point> newFirst = m_follower.follow(first);
+        std::optional<Point> newLast = m_follower.follow(last);
         // A wire that goes whole has other ends following it: it is not held.
         // A pin left in place on its middle holds it: it is laid again.
         const bool whole = newFirst && newLast && *newFirst - first == *newLast - last
-                           && !passesThroughAny(wire, follower.stillPins());
+                           && !passesThroughAny(wire, m_follower.stillPins());
         if (!whole && newFirst && onLed(first, wire.points.at(1)))
             newFirst.reset();
         if (!whole && newLast && onLed(last, wire.points.at(wire.points.size() - 2)))
@@ -415,150 +516,155 @@ static Sheet wiresFollowing(const Sheet &sheetBefore, const Sheet &sheetAfter,
             const Point shift = *newFirst - first;
             for (Point &point : wire.points)
                 point = point + shift;
-        } else if (newFirst || newLast) {
-            // The ends of other wires joined to this one, apart from those
-            // at the ends that go, and the pins left in place on its middle,
-            // joined to it there: they must stay on it.
-            QList<Point> kept;
-            for (const auto &[end, owner] : ends) {
-                if (owner == wire.id || (newFirst && end == first) || (newLast && end == last))
-                    continue;
-                if (isOnWire(wire, end) && !kept.contains(end))
-                    kept.append(end);
-            }
-            for (const Point &pin : follower.stillPins()) {
-                if (pin != first && pin != last && isOnWire(wire, pin) && !kept.contains(pin))
-                    kept.append(pin);
-            }
-            QList<Point> points = wire.points;
-            // With one end going, a wire with joints to keep may end at the
-            // last of them and the pin be reached by a new wire branching
-            // off the net (see gridLedTo()).
-            QList<Point> branch;
-            QList<Point> *branchOut = newFirst && newLast ? nullptr : &branch;
-            if (newFirst && newLast && points.size() <= 3 && kept.isEmpty()) {
-                // Both ends went different ways, there is no middle segment
-                // to take it up and no wire joined to it to keep: the wire
-                // is laid again between them.
-                const bool upright = points.at(0).x == points.at(1).x;
-                points = laidBetween(*newFirst, *newLast, upright, obstacles.without(wire.id));
-            } else {
-                // An end that stays may leave its point for another of the
-                // wires joined to it there.
-                if (newLast)
-                    points = ledTo(points, *newLast, kept, !newFirst, obstacles.without(wire.id),
-                                   branchOut);
-                if (newFirst && points.size() >= 2) {
-                    std::reverse(points.begin(), points.end());
-                    if (newLast)
-                        kept.append(*newLast);
-                    points = ledTo(points, *newFirst, kept, !newLast, obstacles.without(wire.id),
-                                   branchOut);
-                    std::reverse(points.begin(), points.end());
-                }
-            }
-            wire.points = points;
-            if (branch.size() >= 2) {
-                // The new wire goes where the end went, the wire stays short.
-                branchWire.id = newObjectId();
-                branchWire.points = branch;
-                led.append(qMakePair(newFirst ? first : last, branchWire));
-            } else if (branch.size() == 1) {
-                crossingsToJoin.append(branch.first());
-            }
-            if (wire.points.size() < 2)
+            return true;
+        }
+        if (!newFirst && !newLast)
+            return true;
+        // The ends of other wires joined to this one, apart from those at the
+        // ends that go, and the pins left in place on its middle, joined to it
+        // there: they must stay on it.
+        QList<Point> kept;
+        for (const auto &[end, owner] : m_ends) {
+            if (owner == wire.id || (newFirst && end == first) || (newLast && end == last))
                 continue;
-            if (newFirst && branch.isEmpty())
-                led.append(qMakePair(first, wire));
-            if (newLast && branch.isEmpty())
-                led.append(qMakePair(last, wire));
+            if (isOnWire(wire, end) && !kept.contains(end))
+                kept.append(end);
         }
-        if (following.contains(wire.id))
-            obstacles.add(wire);
-        wires.append(wire);
-        if (branchWire.points.size() >= 2) {
-            obstacles.add(branchWire);
-            wires.append(branchWire);
+        for (const Point &pin : m_follower.stillPins()) {
+            if (pin != first && pin != last && isOnWire(wire, pin) && !kept.contains(pin))
+                kept.append(pin);
+        }
+        QList<Point> points = wire.points;
+        // With one end going, a wire with joints to keep may end at the last
+        // of them and the pin be reached by a new wire branching off the net
+        // (see gridLedTo()).
+        QList<Point> branch;
+        QList<Point> *branchOut = newFirst && newLast ? nullptr : &branch;
+        if (newFirst && newLast && points.size() <= 3 && kept.isEmpty()) {
+            // Both ends went different ways, there is no middle segment to
+            // take it up and no wire joined to it to keep: the wire is laid
+            // again between them.
+            const bool upright = points.at(0).x == points.at(1).x;
+            points = laidBetween(*newFirst, *newLast, upright, m_obstacles.without(wire.id));
+        } else {
+            // An end that stays may leave its point for another of the wires
+            // joined to it there.
+            if (newLast)
+                points = ledTo(points, *newLast, kept, !newFirst, m_obstacles.without(wire.id),
+                               branchOut);
+            if (newFirst && points.size() >= 2) {
+                std::reverse(points.begin(), points.end());
+                if (newLast)
+                    kept.append(*newLast);
+                points = ledTo(points, *newFirst, kept, !newLast, m_obstacles.without(wire.id),
+                               branchOut);
+                std::reverse(points.begin(), points.end());
+            }
+        }
+        wire.points = points;
+        if (branch.size() >= 2) {
+            // The new wire goes where the end went, the wire stays short.
+            branchWire.id = newObjectId();
+            branchWire.points = branch;
+            m_led.append(qMakePair(newFirst ? first : last, branchWire));
+        } else if (branch.size() == 1) {
+            m_crossingsToJoin.append(branch.first());
+        }
+        if (wire.points.size() < 2)
+            return false;
+        if (newFirst && branch.isEmpty())
+            m_led.append(qMakePair(first, wire));
+        if (newLast && branch.isEmpty())
+            m_led.append(qMakePair(last, wire));
+        return true;
+    }
+
+    // 'wires' with a new wire for each pin gone off the line of its two
+    // wires, and for each pin that touched a pin left in place, one for
+    // each pair of points: unless it lands on a wire joined to the place it
+    // left, one wire through another, which is cut there (cutWhereJoined())
+    // and so joins them.
+    void addWiresToPinsLeft(QList<Wire> &wires) const
+    {
+        Sheet laid = m_after;
+        laid.wires = wires;
+        const Obstacles now = obstaclesOf(laid, m_library, m_routing);
+        const auto netReaches = [&wires](const Point &from, const Point &to) {
+            Sheet joinedBy;
+            joinedBy.wires = wires;
+            QSet<ObjectId> reached;
+            for (const Wire &other : wires) {
+                if (isOnWire(other, from))
+                    reached.unite(joinedWires(joinedBy, other.id));
+            }
+            return std::any_of(wires.cbegin(), wires.cend(), [&](const Wire &other) {
+                return reached.contains(other.id) && isOnWire(other, to);
+            });
+        };
+        // From the line, from where the pin was or straight across from
+        // where it is.
+        for (const PointFollower::MovedPin &pin : m_offLine) {
+            if (netReaches(pin.from, pin.to))
+                continue;
+            Wire wire;
+            wire.id = newObjectId();
+            wire.points = laidToJoint(pin.from, pin.to, wires, now);
+            if (wire.points.size() >= 2)
+                wires.append(wire);
+        }
+        QSet<QPair<quint64, quint64>> joined;
+        for (const PointFollower::MovedPin &pin : m_follower.movedPins()) {
+            if (!m_follower.isStillPin(pin.from) || pin.to == pin.from)
+                continue;
+            const QPair<quint64, quint64> pair = qMakePair(key(pin.from), key(pin.to));
+            if (joined.contains(pair))
+                continue;
+            joined.insert(pair);
+            if (netReaches(pin.from, pin.to))
+                continue;
+            Wire wire;
+            wire.id = newObjectId();
+            wire.points = laidToJoint(pin.from, pin.to, wires, now);
+            if (wire.points.size() >= 2)
+                wires.append(wire);
         }
     }
 
-    // Pins that touched pins left in place: a new wire keeps them joined.
-    // One for each pair of points.
-    QSet<QPair<quint64, quint64>> joined;
-    Sheet laid = after;
-    laid.wires = wires;
-    const Obstacles now = obstaclesOf(laid, library, routing);
-    // True when a pin gone from 'from' to 'to' lands on a wire joined to
-    // one on 'from', one wire through another: it is cut there below, and
-    // that joins them, so the pin needs no wire of its own.
-    const auto netReaches = [&wires](const Point &from, const Point &to) {
-        Sheet joinedBy;
-        joinedBy.wires = wires;
-        QSet<ObjectId> reached;
-        for (const Wire &other : wires) {
-            if (isOnWire(other, from))
-                reached.unite(joinedWires(joinedBy, other.id));
+    // 'wires' cut where what should join them only crosses or lies on a
+    // wire: a branch of no length, and a pin that was joined to something
+    // and has come to lie on the middle of a wire with no wire ending there.
+    void cutWhereJoined(QList<Wire> &wires) const
+    {
+        // True when a wire ends at 'point'.
+        const auto endsAt = [&wires](const Point &point) {
+            return std::any_of(wires.cbegin(), wires.cend(), [&point](const Wire &w) {
+                return w.points.size() >= 2
+                       && (w.points.first() == point || w.points.last() == point);
+            });
+        };
+        // A branch of no length ends where the wire it starts on crosses a
+        // wire already reaching the pin: they are joined there, one cut on
+        // the other.
+        for (const Point &point : m_crossingsToJoin) {
+            if (!endsAt(point) && wiresThrough(wires, point) >= 2)
+                cutAt(wires, point);
         }
-        return std::any_of(wires.cbegin(), wires.cend(), [&](const Wire &other) {
-            return reached.contains(other.id) && isOnWire(other, to);
-        });
-    };
-    // A pin gone off the line of its two wires: a new wire from the line,
-    // from where the pin was or straight across from where it is.
-    for (const PointFollower::MovedPin &pin : offLine) {
-        if (netReaches(pin.from, pin.to))
-            continue;
-        Wire wire;
-        wire.id = newObjectId();
-        wire.points = laidToJoint(pin.from, pin.to, wires, now);
-        if (wire.points.size() >= 2)
-            wires.append(wire);
+        for (const PointFollower::MovedPin &pin : m_follower.movedPins()) {
+            const bool wasJoined =
+                m_follower.isStillPin(pin.from)
+                || std::any_of(m_before.wires.cbegin(), m_before.wires.cend(),
+                               [&pin](const Wire &w) {
+                                   return w.points.size() >= 2
+                                          && (w.points.first() == pin.from
+                                              || w.points.last() == pin.from);
+                               });
+            if (wasJoined && !endsAt(pin.to))
+                cutAt(wires, pin.to);
+        }
     }
-    for (const PointFollower::MovedPin &pin : follower.movedPins()) {
-        if (!follower.isStillPin(pin.from) || pin.to == pin.from)
-            continue;
-        const QPair<quint64, quint64> pair = qMakePair(key(pin.from), key(pin.to));
-        if (joined.contains(pair))
-            continue;
-        joined.insert(pair);
-        // Onto any wire not joined to the pin it left it needs its own.
-        if (netReaches(pin.from, pin.to))
-            continue;
-        Wire wire;
-        wire.id = newObjectId();
-        wire.points = laidToJoint(pin.from, pin.to, wires, now);
-        if (wire.points.size() >= 2)
-            wires.append(wire);
-    }
+};
 
-    // True when a wire ends at 'point'.
-    const auto endsAt = [&wires](const Point &point) {
-        return std::any_of(wires.cbegin(), wires.cend(), [&point](const Wire &w) {
-            return w.points.size() >= 2 && (w.points.first() == point || w.points.last() == point);
-        });
-    };
-    // A branch of no length ends where the wire it starts on crosses a wire
-    // already reaching the pin: they are joined there, one cut on the other.
-    for (const Point &point : crossingsToJoin) {
-        if (!endsAt(point) && wiresThrough(wires, point) >= 2)
-            cutAt(wires, point);
-    }
-    // A pin that was joined to something and has come to lie on the middle
-    // of a wire, with no wire ending there, cuts that wire, so that it is
-    // joined to it.
-    for (const PointFollower::MovedPin &pin : follower.movedPins()) {
-        const bool wasJoined =
-            follower.isStillPin(pin.from)
-            || std::any_of(before.wires.cbegin(), before.wires.cend(), [&pin](const Wire &w) {
-                   return w.points.size() >= 2
-                          && (w.points.first() == pin.from || w.points.last() == pin.from);
-               });
-        if (wasJoined && !endsAt(pin.to))
-            cutAt(wires, pin.to);
-    }
-    result.wires = wires;
-    return result;
-}
+} // namespace
 
 namespace wiring {
 
@@ -794,7 +900,7 @@ Sheet withWiresFollowing(const Sheet &before, const Sheet &after, const QSet<Obj
     const QList<ObjectId> buses = busGroups(before, movedBuses);
     const Sheet from = busesAsWires(before, buses);
     const Sheet to = busesAsWires(after, buses);
-    Sheet followed = wiresFollowing(from, to, moved, library, routing);
+    Sheet followed = WiresFollowing(from, to, moved, library, routing).result();
     followed = wiresAsBuses(followed, after, buses, movedBuses);
     followed = withBusEntriesKept(before, followed);
     return withMarksCarried(before, followed, moved, library);
