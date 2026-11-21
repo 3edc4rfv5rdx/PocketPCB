@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- R: The sheet editor and the nets find objects by id with the shared template
 - R: The following of wires is split into its stages
 - R: The wiring code is split into geometry, routing, following and editing files
 - R: One template finds an object by its id, used by the wiring code

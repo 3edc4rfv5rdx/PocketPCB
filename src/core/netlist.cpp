@@ -374,8 +374,7 @@ QList<int> netSheets(const Net &net, const Schematic &schematic)
     for (int s = 0; s < schematic.sheets.size(); ++s) {
         const QList<Component> &components = schematic.sheets.at(s).components;
         const bool hasPin = std::any_of(net.pins.cbegin(), net.pins.cend(), [&](const NetPin &pin) {
-            return std::any_of(components.cbegin(), components.cend(),
-                               [&pin](const Component &c) { return c.id == pin.component; });
+            return findById(components, pin.component) != nullptr;
         });
         if (net.objects.contains(s) || hasPin)
             result.append(s);

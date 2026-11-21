@@ -162,8 +162,7 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
     const TextHit name = textAt(*currentSheet(), m_document->design().library, shownPower(), at);
     const bool onName =
         !name.owner.isNull() && (hit.isNull() || hit == name.owner)
-        && std::any_of(currentSheet()->buses.cbegin(), currentSheet()->buses.cend(),
-                       [&name](const Bus &bus) { return bus.id == name.owner; });
+        && findById(currentSheet()->buses, name.owner) != nullptr;
     if (onName)
         hit = name.owner;
     m_dragAnchor = dragAnchor(*currentSheet(), hit, at);
@@ -206,8 +205,7 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
         QList<Point> line;
         if (text.owner.isNull() && !m_selection.contains(hit))
             line = linePoints(*sheet, hit);
-        const bool isBus = std::any_of(sheet->buses.cbegin(), sheet->buses.cend(),
-                                       [&hit](const Bus &bus) { return bus.id == hit; });
+        const bool isBus = findById(sheet->buses, hit) != nullptr;
         if (!text.owner.isNull()) {
             m_selection.clear();
             m_chosenText = text;
@@ -321,10 +319,8 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
     // chosen alone.
     if (hasText()) {
         const ObjectId owner = m_chosenText.owner;
-        const bool label = std::any_of(sheet->labels.cbegin(), sheet->labels.cend(),
-                                       [&owner](const Label &l) { return l.id == owner; });
-        const bool bus = std::any_of(sheet->buses.cbegin(), sheet->buses.cend(),
-                                     [&owner](const Bus &b) { return b.id == owner; });
+        const bool label = findById(sheet->labels, owner) != nullptr;
+        const bool bus = findById(sheet->buses, owner) != nullptr;
         if (label || bus || m_chosenText.text == ComponentText::Value) {
             editText(m_chosenText.owner);
             return;
@@ -351,10 +347,8 @@ void SheetEditor::doubleClick(const QPointF &at, bool adding)
     }
     // A wire or a bus is chosen whole.
     if (!adding) {
-        const bool wire = std::any_of(sheet->wires.cbegin(), sheet->wires.cend(),
-                                      [&hit](const Wire &w) { return w.id == hit; });
-        const bool bus = std::any_of(sheet->buses.cbegin(), sheet->buses.cend(),
-                                     [&hit](const Bus &b) { return b.id == hit; });
+        const bool wire = findById(sheet->wires, hit) != nullptr;
+        const bool bus = findById(sheet->buses, hit) != nullptr;
         if (wire || bus) {
             dropSegment();
             m_endLine = ObjectId();
@@ -383,17 +377,14 @@ ObjectId SheetEditor::chooseForMenu(const QPointF &at)
         press(at, false);
         release(at, false);
     }
-    const auto isIn = [](const auto &objects, const ObjectId &id) {
-        return std::any_of(objects.cbegin(), objects.cend(),
-                           [&id](const auto &object) { return object.id == id; });
-    };
     // A label's text, a bus's name or a component's value under the cursor.
     if (!text.owner.isNull()
-        && (isIn(sheet->labels, text.owner) || isIn(sheet->buses, text.owner)
+        && (findById(sheet->labels, text.owner) || findById(sheet->buses, text.owner)
             || text.text == ComponentText::Value)) {
         return text.owner;
     }
-    if (isIn(sheet->powerSymbols, hit) || isIn(sheet->labels, hit) || isIn(sheet->buses, hit))
+    if (findById(sheet->powerSymbols, hit) || findById(sheet->labels, hit)
+        || findById(sheet->buses, hit))
         return hit;
     for (const Component &component : sheet->components) {
         if (component.id == hit
@@ -408,8 +399,7 @@ ObjectId SheetEditor::chooseForMenu(const QPointF &at)
 bool SheetEditor::isBus(const ObjectId &id) const
 {
     const Sheet *sheet = currentSheet();
-    return sheet != nullptr && std::any_of(sheet->buses.cbegin(), sheet->buses.cend(),
-                                           [&id](const Bus &bus) { return bus.id == id; });
+    return sheet != nullptr && findById(sheet->buses, id) != nullptr;
 }
 
 void SheetEditor::addBusName(const ObjectId &bus, const QPointF &at)
@@ -469,13 +459,10 @@ QString SheetEditor::editInPlaceName(const ObjectId &id) const
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr)
         return QString();
-    const auto isIn = [&id](const auto &objects) {
-        return std::any_of(objects.cbegin(), objects.cend(),
-                           [&id](const auto &object) { return object.id == id; });
-    };
-    if (isIn(sheet->components))
+    if (findById(sheet->components, id))
         return actionName(Action::Value);
-    if (isIn(sheet->powerSymbols) || isIn(sheet->labels) || isIn(sheet->buses))
+    if (findById(sheet->powerSymbols, id) || findById(sheet->labels, id)
+        || findById(sheet->buses, id))
         return actionName(Action::Rename);
     return QString();
 }
@@ -503,8 +490,7 @@ void SheetEditor::editText(const ObjectId &id)
     }
     // Over the place of a bus's name chosen, else the first it shows, else
     // the first of a bus joined to it: they have one name.
-    if (std::any_of(sheet->buses.cbegin(), sheet->buses.cend(),
-                    [&id](const Bus &bus) { return bus.id == id; })) {
+    if (findById(sheet->buses, id)) {
         const QSet<ObjectId> group = joinedBuses(*sheet, id);
         for (const Bus &bus : sheet->buses) {
             if (bus.id == id && hasText() && m_chosenText.owner == id) {
@@ -786,8 +772,7 @@ void SheetEditor::updateDrag()
     }
     const Library &library = m_document->design().library;
     const auto isBus = [this](const ObjectId &id) {
-        return std::any_of(m_dragStart.buses.cbegin(), m_dragStart.buses.cend(),
-                           [&id](const Bus &bus) { return bus.id == id; });
+        return findById(m_dragStart.buses, id) != nullptr;
     };
     if (m_joint) {
         m_preview = withJointMoved(m_dragStart, library, *m_joint, *m_joint + m_dragDelta,
