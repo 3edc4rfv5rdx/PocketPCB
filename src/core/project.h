@@ -67,7 +67,8 @@ struct PinRef
 bool operator==(const PinRef &a, const PinRef &b);
 
 // A net with no name of its own that was given a class in the table of
-// nets: the name it got there ("NN1") and the pins it had then. The net
+// nets, or a name by updating the board (withNetsNamedByPins()): the name
+// it got ("NN1") and the pins it had then. The net
 // holding the most of these pins goes by that name (see nets()).
 struct NetByPins
 {
@@ -142,8 +143,8 @@ struct Project
     // or by the name given in 'netsByPins'. A net that is not here takes its
     // class from a label or the default one (see netClassOf()).
     QMap<QString, QString> classOfNet;
-    // Names given in the table of nets to nets with no name of their own;
-    // the names do not repeat.
+    // Names given in the table of nets, or by updating the board, to nets
+    // with no name of their own; the names do not repeat.
     QList<NetByPins> netsByPins;
 
     Rules rules;

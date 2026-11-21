@@ -47,8 +47,12 @@ bool operator==(const BoardChange &a, const BoardChange &b)
 BoardUpdate boardUpdatedFromSchematic(const Design &design)
 {
     const Library &library = design.library;
+    // Every net with pins gets a name that stays when the schematic is
+    // edited, then the nets are found again by those names.
+    const Project project =
+        withNetsNamedByPins(design.project, nets(design.schematic, library, design.project));
     QHash<QString, QString> pinNets;
-    for (const Net &net : nets(design.schematic, library, design.project)) {
+    for (const Net &net : nets(design.schematic, library, project)) {
         for (const NetPin &pin : net.pins)
             pinNets.insert(pinKey(pin.component, pin.number), net.name);
     }
@@ -84,6 +88,7 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
 
     BoardUpdate update;
     update.board = design.board;
+    update.project = project;
     QList<Placement> &placements = update.board.placements;
 
     for (int i = int(placements.size()) - 1; i >= 0; --i) {

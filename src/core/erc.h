@@ -43,8 +43,8 @@ enum class ErcKind {
     ShortedComponent,
     // A net given two or more names by its labels and power symbols.
     TwoNames,
-    // A name of the table of nets (see NetByPins) no net holds a pin of any
-    // more: its class is kept for nothing.
+    // A name of the table of nets (see NetByPins) with a class that no net
+    // holds a pin of any more: its class is kept for nothing.
     LostTableName,
     // A label or a power symbol giving a net a name that the table of nets
     // gives another net.

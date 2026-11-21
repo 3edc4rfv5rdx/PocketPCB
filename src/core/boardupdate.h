@@ -8,7 +8,8 @@ namespace ppcb {
 // the schematic that is on the board and has a footprint the library holds
 // gets a placement, tied to it by its id; the placements of the others go.
 // A placement kept keeps where it is; its designator, value, footprint and
-// the nets of its pads follow the component. A component on the board whose
+// the nets of its pads follow the component, named as withNetsNamedByPins()
+// names them. A component on the board whose
 // footprint the library lacks keeps its placement, if it has one, as it is.
 
 // What the update does to one placement.
@@ -46,6 +47,9 @@ bool operator==(const BoardChange &a, const BoardChange &b);
 struct BoardUpdate
 {
     Board board;
+    // The project with a lasting name for every net with no name of its own
+    // (withNetsNamedByPins()): the board's pads are on nets by these names.
+    Project project;
     // In the order of the designators (designatorLess()); for one
     // placement, its kinds in the order of BoardChangeKind.
     QList<BoardChange> changes;

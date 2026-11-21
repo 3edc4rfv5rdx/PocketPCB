@@ -95,6 +95,14 @@ QString netClassOf(const Net &net, const Project &project, const Schematic &sche
 Project withNetClass(const Project &project, const QList<Net> &all, const Net &net,
                      const QString &netClass);
 
+// 'project' with a lasting name for every net of 'all' that has pins and
+// no name a power symbol, a label or the table gives: a new table name
+// ("NN" and the first free number), as withNetClass() gives, with no class.
+// The table names held keep the pins their nets have now; a name no net
+// holds any more is dropped unless a class is kept by it. The board names
+// its nets by these, so that they stay when the schematic is edited.
+Project withNetsNamedByPins(const Project &project, const QList<Net> &all);
+
 // A net class as edited in the project properties: 'original' is the name
 // it had, empty for a class added there.
 struct NetClassEdit

@@ -488,6 +488,47 @@ Design withNetClasses(const Design &design, const QList<NetClassEdit> &edits,
     return result;
 }
 
+namespace {
+
+// The names a new table name must not take: those of the nets of 'all' and
+// those 'project' gives.
+QSet<QString> takenNetNames(const Project &project, const QList<Net> &all)
+{
+    QSet<QString> taken;
+    for (const Net &net : all) {
+        taken.insert(net.name);
+        for (const QString &name : net.otherNames)
+            taken.insert(name);
+    }
+    for (const NetByPins &byPins : project.netsByPins)
+        taken.insert(byPins.name);
+    for (auto it = project.classOfNet.cbegin(); it != project.classOfNet.cend(); ++it)
+        taken.insert(it.key());
+    return taken;
+}
+
+// "NN" and the first number whose name is not in 'taken'; it is added there.
+QString nextTableName(QSet<QString> &taken)
+{
+    int number = 1;
+    while (taken.contains(QLatin1String(TABLE_NAME_PREFIX) + QString::number(number)))
+        ++number;
+    const QString name = QLatin1String(TABLE_NAME_PREFIX) + QString::number(number);
+    taken.insert(name);
+    return name;
+}
+
+// The pins of 'net' as the table of nets keeps them.
+QList<PinRef> pinRefsOf(const Net &net)
+{
+    QList<PinRef> pins;
+    for (const NetPin &pin : net.pins)
+        pins.append(PinRef{pin.component, pin.number});
+    return pins;
+}
+
+} // namespace
+
 Project withNetClass(const Project &project, const QList<Net> &all, const Net &net,
                      const QString &netClass)
 {
@@ -506,30 +547,50 @@ Project withNetClass(const Project &project, const QList<Net> &all, const Net &n
     if (name.isEmpty()) {
         if (net.pins.isEmpty())
             return project;
-        QSet<QString> taken;
-        for (const Net &other : all) {
-            taken.insert(other.name);
-            for (const QString &otherName : other.otherNames)
-                taken.insert(otherName);
-        }
-        for (const NetByPins &byPins : project.netsByPins)
-            taken.insert(byPins.name);
-        for (auto it = project.classOfNet.cbegin(); it != project.classOfNet.cend(); ++it)
-            taken.insert(it.key());
-        int number = 1;
-        while (taken.contains(QLatin1String(TABLE_NAME_PREFIX) + QString::number(number)))
-            ++number;
-        name = QLatin1String(TABLE_NAME_PREFIX) + QString::number(number);
+        QSet<QString> taken = takenNetNames(project, all);
+        name = nextTableName(taken);
         result.netsByPins.append(NetByPins{name, {}});
     }
     for (NetByPins &byPins : result.netsByPins) {
-        if (byPins.name != name)
-            continue;
-        byPins.pins.clear();
-        for (const NetPin &pin : net.pins)
-            byPins.pins.append(PinRef{pin.component, pin.number});
+        if (byPins.name == name)
+            byPins.pins = pinRefsOf(net);
     }
     result.classOfNet.insert(name, netClass);
+    return result;
+}
+
+Project withNetsNamedByPins(const Project &project, const QList<Net> &all)
+{
+    Project result = project;
+    // A name no net holds any more goes, unless it keeps a class.
+    QSet<QString> held;
+    for (const Net &net : all) {
+        if (!net.tableName.isEmpty())
+            held.insert(net.tableName);
+        for (const QString &merged : net.mergedTableNames)
+            held.insert(merged);
+    }
+    result.netsByPins.removeIf([&held, &project](const NetByPins &byPins) {
+        return !held.contains(byPins.name) && !project.classOfNet.contains(byPins.name);
+    });
+    QSet<QString> taken = takenNetNames(project, all);
+    for (const Net &net : all) {
+        if (net.pins.isEmpty())
+            continue;
+        if (!net.tableName.isEmpty()) {
+            // Its pins as they are now, so that it keeps the name as it
+            // grows; not while it holds others' pins as well, so that
+            // parting it again gives each its name back.
+            if (!net.mergedTableNames.isEmpty())
+                continue;
+            for (NetByPins &byPins : result.netsByPins) {
+                if (byPins.name == net.tableName)
+                    byPins.pins = pinRefsOf(net);
+            }
+        } else if (!net.named) {
+            result.netsByPins.append(NetByPins{nextTableName(taken), pinRefsOf(net)});
+        }
+    }
     return result;
 }
 

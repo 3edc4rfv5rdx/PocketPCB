@@ -195,6 +195,29 @@ private slots:
                                       QStringLiteral("R2"), QString(), QStringLiteral("fp")}}));
     }
 
+    void netsOfPadsKeepTheirNamesWhenOtherNetsComeFirst()
+    {
+        Design design = twoResistors();
+        BoardUpdate update = boardUpdatedFromSchematic(design);
+        design.board = update.board;
+        design.project = update.project;
+        const QString name =
+            placementOf(design.board, QStringLiteral("R1"))->padNets.value(QStringLiteral("2"));
+        QCOMPARE(name, QStringLiteral("NN1"));
+
+        // A new net whose first pin, R0.2, comes before R1.2.
+        QList<Component> &components = design.schematic.sheets[0].components;
+        components << part(QStringLiteral("R0"), mm(-30, 30))
+                   << part(QStringLiteral("R00"), mm(-20, 30));
+        update = boardUpdatedFromSchematic(design);
+        for (const BoardChange &change : update.changes)
+            QCOMPARE(int(change.kind), int(BoardChangeKind::Add));
+        QCOMPARE(placementOf(update.board, QStringLiteral("R1"))->padNets.value(QStringLiteral("2")),
+                 name);
+        QCOMPARE(placementOf(update.board, QStringLiteral("R0"))->padNets.value(QStringLiteral("2")),
+                 QStringLiteral("NN2"));
+    }
+
     void netsOfPadsFollowTheSchematic()
     {
         Design design = twoResistors();

@@ -327,6 +327,9 @@ void checkNames(const Schematic &schematic, const QList<Net> &all, QList<ErcProb
 void checkTableNames(const Project &project, const QList<Net> &all, QList<ErcProblem> &problems)
 {
     for (const NetByPins &byPins : project.netsByPins) {
+        // A name with no class only names a net for the board: nothing is lost.
+        if (!project.classOfNet.contains(byPins.name))
+            continue;
         const bool held = std::any_of(all.cbegin(), all.cend(), [&byPins](const Net &net) {
             return net.tableName == byPins.name || net.mergedTableNames.contains(byPins.name);
         });

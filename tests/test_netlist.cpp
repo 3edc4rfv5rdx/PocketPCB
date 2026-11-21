@@ -466,6 +466,40 @@ private slots:
         QCOMPARE(netClassOf(data, project, schematic), signal);
     }
 
+    void netsWithNoNameAreNamedByTheirPinsForTheBoard()
+    {
+        Schematic schematic = twoUnnamedNets();
+        const Library library = twoPinLibrary();
+        Project project = newDesign(QStringLiteral("t")).project;
+        // A name lost with a class stays, one lost without goes.
+        project.netsByPins = {NetByPins{QStringLiteral("NN7"), {PinRef{newObjectId(), QStringLiteral("1")}}},
+                              NetByPins{QStringLiteral("NN8"), {PinRef{newObjectId(), QStringLiteral("1")}}}};
+        project.classOfNet.insert(QStringLiteral("NN7"), project.powerClass);
+
+        project = withNetsNamedByPins(project, nets(schematic, library, project));
+        QStringList names;
+        for (const NetByPins &byPins : project.netsByPins)
+            names.append(byPins.name);
+        QCOMPARE(names, QStringList({QStringLiteral("NN7"), QStringLiteral("NN1"),
+                                     QStringLiteral("NN2")}));
+        QVERIFY(!project.classOfNet.contains(QStringLiteral("NN1")));
+        QList<Net> all = nets(schematic, library, project);
+        QCOMPARE(all.at(0).name, QStringLiteral("NN1"));
+        QCOMPARE(pinsOf(all.at(0)), QStringLiteral("R1.2, R2.1"));
+        QCOMPARE(all.at(1).name, QStringLiteral("NN2"));
+        QCOMPARE(netClassOf(all.at(0), project, schematic), project.defaultClass);
+
+        // Named again, nothing changes.
+        QVERIFY(withNetsNamedByPins(project, all) == project);
+
+        // Joined by a wire, the two keep their pins, so that parting them
+        // again gives each its name back.
+        schematic.sheets[0].wires.append(wire({mm(5, 0), mm(5, 20)}));
+        all = nets(schematic, library, project);
+        QCOMPARE(int(all.size()), 1);
+        QVERIFY(withNetsNamedByPins(project, all) == project);
+    }
+
     void aClassChosenForANetWithNoNameNamesItByItsPins()
     {
         const Schematic schematic = twoUnnamedNets();

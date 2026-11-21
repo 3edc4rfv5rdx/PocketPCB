@@ -299,6 +299,9 @@ private slots:
             NetByPins{QStringLiteral("NN1"), {PinRef{sheet.components.at(0).id, QStringLiteral("2")}}},
             NetByPins{QStringLiteral("NN2"), {PinRef{newObjectId(), QStringLiteral("1")}}},
         };
+        // A name with no class names a net for the board only: lost, it loses nothing.
+        QVERIFY(check(schematic, project).isEmpty());
+        project.classOfNet.insert(QStringLiteral("NN2"), QStringLiteral("Power"));
         QCOMPARE(describe(check(schematic, project)), QStringList({QStringLiteral("LostTableName NN2")}));
 
         // A label naming the other net NN1.

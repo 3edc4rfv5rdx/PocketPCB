@@ -1123,6 +1123,7 @@ void MainWindow::updateBoardFromSchematic()
         return;
     Design design = m_document->design();
     design.board = update.board;
+    design.project = update.project;
     const int board = m_designItem->boardPage();
     m_document->change(UpdateBoardDialog::title(), design, board);
     showPage(board);

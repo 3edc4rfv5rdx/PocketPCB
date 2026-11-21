@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Update board from schematic gives every net with no name a lasting name (NN1, NN2 …), so the nets of the pads stay when other parts are added
 - E: Update board from schematic keeps a placement whose footprint is missing from the project library instead of removing it, and lists such a component as kept or not added
 - E: Undo, Redo or Delete pressed while dragging on the sheet ends the drag, so the drop no longer brings back what they changed
 - E: Nets with no name are named TempN1, TempN2 and so on, skipping a name a label or a power symbol already gives another net
