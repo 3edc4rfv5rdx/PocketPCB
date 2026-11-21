@@ -2362,9 +2362,8 @@ Sheet withBusEntriesKept(const Sheet &before, const Sheet &after)
 {
     Sheet result = after;
     for (Wire &wire : result.wires) {
-        const auto was = std::find_if(before.wires.cbegin(), before.wires.cend(),
-                                      [&wire](const Wire &w) { return w.id == wire.id; });
-        if (was == before.wires.cend())
+        const Wire *was = findById(before.wires, wire.id);
+        if (was == nullptr)
             continue;
         for (const bool last : {true, false}) {
             QList<Point> old = was->points;
@@ -2421,9 +2420,8 @@ Sheet withMarksCarried(const Sheet &before, const Sheet &after, const QSet<Objec
     const QList<SheetPin> pinsBefore = sheetPins(before, library);
     const QList<SheetPin> pinsAfter = sheetPins(after, library);
     for (NoConnect &mark : result.noConnects) {
-        const auto was = std::find_if(before.noConnects.cbegin(), before.noConnects.cend(),
-                                      [&mark](const NoConnect &m) { return m.id == mark.id; });
-        if (moved.contains(mark.id) || was == before.noConnects.cend() || was->at != mark.at)
+        const NoConnect *was = findById(before.noConnects, mark.id);
+        if (moved.contains(mark.id) || was == nullptr || was->at != mark.at)
             continue;
         if (const std::optional<Point> now = pinMovedFrom(pinsBefore, pinsAfter, mark.at))
             mark.at = *now;
@@ -2432,9 +2430,8 @@ Sheet withMarksCarried(const Sheet &before, const Sheet &after, const QSet<Objec
         if (moved.contains(label.id))
             continue;
         // Only where it was left in place.
-        const auto was = std::find_if(before.labels.cbegin(), before.labels.cend(),
-                                      [&label](const Label &l) { return l.id == label.id; });
-        if (was == before.labels.cend() || was->at != label.at)
+        const Label *was = findById(before.labels, label.id);
+        if (was == nullptr || was->at != label.at)
             continue;
         const Point at = label.at;
 
@@ -2452,9 +2449,8 @@ Sheet withMarksCarried(const Sheet &before, const Sheet &after, const QSet<Objec
         for (const Wire &wire : before.wires) {
             if (wire.points.size() < 2 || !isOnWire(wire, at))
                 continue;
-            const auto now = std::find_if(after.wires.cbegin(), after.wires.cend(),
-                                          [&wire](const Wire &w) { return w.id == wire.id; });
-            if (now == after.wires.cend() || now->points.size() < 2)
+            const Wire *now = findById(after.wires, wire.id);
+            if (now == nullptr || now->points.size() < 2)
                 break;
             if (now->points.size() == wire.points.size()) {
                 int segment = 1;
@@ -2578,9 +2574,8 @@ Sheet withPinsKept(const Sheet &before, const Sheet &after, const Library &libra
     Obstacles around = obstaclesOf(result, library, routing);
     const QList<Point> pins = pinPoints(before, library);
     for (const Wire &was : before.wires) {
-        const auto now = std::find_if(after.wires.cbegin(), after.wires.cend(),
-                                      [&was](const Wire &w) { return w.id == was.id; });
-        if (was.points.size() < 2 || now == after.wires.cend() || now->points == was.points)
+        const Wire *now = findById(after.wires, was.id);
+        if (was.points.size() < 2 || now == nullptr || now->points == was.points)
             continue;
         const Wire moved = *now;
         for (const Point &pin : pins) {
@@ -2692,8 +2687,7 @@ Sheet withJointMoved(const Sheet &sheet, const Library &library, const Point &fr
     const ObjectId through = jointWire(sheet, library, from);
     if (through.isNull())
         return sheet;
-    const auto wire = std::find_if(sheet.wires.cbegin(), sheet.wires.cend(),
-                                   [&through](const Wire &w) { return w.id == through; });
+    const Wire *wire = findById(sheet.wires, through);
     const Point target = nearestOnWire(*wire, to);
     if (target == from)
         return sheet;

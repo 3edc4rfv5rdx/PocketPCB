@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QHashFunctions>
+#include <QList>
 #include <QString>
 
 namespace ppcb {
@@ -31,5 +32,16 @@ QString idToString(const ObjectId &id);
 
 // Returns "no object" (isNull()) for text that is not an id in that form.
 ObjectId idFromString(const QString &text);
+
+// The object of 'objects' whose id is 'id'; null when none is.
+template <typename T>
+const T *findById(const QList<T> &objects, const ObjectId &id)
+{
+    for (const T &object : objects) {
+        if (object.id == id)
+            return &object;
+    }
+    return nullptr;
+}
 
 } // namespace ppcb
