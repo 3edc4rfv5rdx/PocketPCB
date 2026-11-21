@@ -8,13 +8,11 @@
 #include <QHash>
 
 #include <algorithm>
+#include <cmath>
 
 namespace ppcb {
 
 namespace {
-
-// How tall a column of new placements may grow on a board without an outline.
-const Coord DEFAULT_COLUMN_HEIGHT = 50 * NM_PER_MM;
 
 // The key of a pin of a component among the nets.
 QString pinKey(const ObjectId &component, const QString &number)
@@ -150,8 +148,16 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
     const Coord gap = NEW_PLACEMENT_GAP;
     const Coord top = update.board.outline.isEmpty() ? (empty ? 0 : mmToNm(taken.top()))
                                                      : mmToNm(outline.top());
-    const Coord columnHeight = update.board.outline.isEmpty() ? DEFAULT_COLUMN_HEIGHT
-                                                              : mmToNm(outline.height());
+    // A block about as tall as it is wide: the columns as tall as the side
+    // of a square holding them all, and the tallest of them at least.
+    double area = 0;
+    Coord tallest = 0;
+    for (const Component *component : std::as_const(added)) {
+        const QRectF bounds = footprintBounds(*library.findFootprint(component->footprint));
+        area += (bounds.width() + nmToMm(gap)) * (bounds.height() + nmToMm(gap));
+        tallest = std::max(tallest, mmToNm(bounds.height()));
+    }
+    const Coord columnHeight = std::max(tallest, mmToNm(std::sqrt(area)));
     Coord x = empty ? 0 : mmToNm(taken.right()) + gap;
     Coord y = top;
     Coord columnWidth = 0;

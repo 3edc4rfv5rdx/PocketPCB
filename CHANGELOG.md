@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: New parts on the board are packed in a block, closer together
 - F: The menu of the outline button lists Rectangular board first, then Cut-out, then Outline
 - N: Update board from schematic has a button on the strip of the board
 - F: A designator or a value chosen on the board shows a line to its part
