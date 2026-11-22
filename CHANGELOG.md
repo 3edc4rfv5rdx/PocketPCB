@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The Save button stands on red while the project is not saved
 - N: Delete on the board moves the parts chosen off it, packed to its right
 - F: Project properties has a button on the strip, after Recent projects
 - N: Update board from schematic carries the nets of mounting holes along when nets are renamed

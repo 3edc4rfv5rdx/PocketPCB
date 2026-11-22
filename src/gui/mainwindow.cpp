@@ -1428,7 +1428,10 @@ void MainWindow::createToolBar()
     // Without the dots of the menu item in its tip: the button opens it.
     QAction *properties = put("actionProjectProperties", ToolIcon::ProjectProperties);
     properties->setToolTip(ProjectPropertiesDialog::title());
-    put("actionSaveProject", ToolIcon::Save);
+    m_saveButton = qobject_cast<QToolButton *>(
+        bar->widgetForAction(put("actionSaveProject", ToolIcon::Save)));
+    // On red while something is not saved.
+    updateSavedMark();
     put("actionPrintSchematic", ToolIcon::Print);
     put("actionExportSchematicPdf", ToolIcon::Pdf);
     // A gap that does not grow.
@@ -1840,6 +1843,13 @@ void MainWindow::updateSavedMark()
         m_savedMark->setText(tr("Saved"));
     }
     m_savedMark->setStyleSheet(QString::fromLatin1(SAVED_MARK_STYLE).arg(QLatin1String(color)));
+    // The Save button stands on red while something is not saved.
+    if (m_saveButton != nullptr) {
+        m_saveButton->setStyleSheet(
+            m_document->isModified()
+                ? QStringLiteral("QToolButton { background: %1; }").arg(QLatin1String(NOT_SAVED_COLOR))
+                : QString());
+    }
 }
 
 void MainWindow::showStatus(const QString &text)

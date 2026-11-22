@@ -228,6 +228,7 @@ private:
     void keepShownPage();
     void updateTitle();
     // The mark in the bottom left corner: saved, not saved, or new.
+    // Also colours the background of the Save button.
     void updateSavedMark();
     // Puts 'text' into the status bar until the next one. Not
     // QStatusBar::showMessage(), which would hide the saved mark.
@@ -317,6 +318,7 @@ private:
     // The one button of the outline tools: it shows the mode on, else the
     // tool chosen last from its arrow.
     QToolButton *m_outlineButton = nullptr;
+    QToolButton *m_saveButton = nullptr;
     // The actions of the outline's button, stopped while it is locked.
     QList<QAction *> m_outlineActions;
 
