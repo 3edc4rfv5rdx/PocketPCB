@@ -339,6 +339,10 @@
         <source>a hole without a copper ring has no net</source>
         <translation>у отверстия без медного пояска нет цепи</translation>
     </message>
+    <message>
+        <source>a plated hole has its pad on both sides</source>
+        <translation>у металлизированного отверстия площадка с обеих сторон</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::Paint</name>
@@ -896,6 +900,22 @@
         <source>Other</source>
         <translation>Другой</translation>
     </message>
+    <message>
+        <source>Both sides</source>
+        <translation>Обе стороны</translation>
+    </message>
+    <message>
+        <source>Top</source>
+        <translation>Верх</translation>
+    </message>
+    <message>
+        <source>Bottom</source>
+        <translation>Низ</translation>
+    </message>
+    <message>
+        <source>No net</source>
+        <translation>Без цепи</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>
@@ -1183,6 +1203,22 @@
     <message>
         <source>Project properties</source>
         <translation>Свойства проекта</translation>
+    </message>
+    <message>
+        <source>Copper sides</source>
+        <translation>Стороны с медью</translation>
+    </message>
+    <message>
+        <source>Both</source>
+        <translation>Обе</translation>
+    </message>
+    <message>
+        <source>Top only</source>
+        <translation>Только верх</translation>
+    </message>
+    <message>
+        <source>Bottom only</source>
+        <translation>Только низ</translation>
     </message>
 </context>
 <context>
@@ -1482,6 +1518,14 @@
         <source>The pad must be larger than the hole</source>
         <translation>Площадка должна быть больше отверстия</translation>
     </message>
+    <message>
+        <source>Pad side</source>
+        <translation>Сторона площадки</translation>
+    </message>
+    <message>
+        <source>Pad net</source>
+        <translation>Цепь площадки</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::RectangleBoardDialog</name>
@@ -1543,6 +1587,18 @@
     <message>
         <source>the project library has no footprint</source>
         <translation>в библиотеке проекта нет посадочного места</translation>
+    </message>
+    <message>
+        <source>Mounting holes</source>
+        <translation>Монтажные отверстия</translation>
+    </message>
+    <message>
+        <source>net</source>
+        <translation>цепь</translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>нет</translation>
     </message>
 </context>
 </TS>

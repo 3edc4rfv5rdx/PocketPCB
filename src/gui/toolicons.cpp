@@ -15,6 +15,8 @@ namespace {
 const qreal LINE_WIDTH = 2.0;
 const qreal BUS_WIDTH = 4.0;
 const qreal DOT_RADIUS = 2.0;
+// The knobs of the sliders of Project properties.
+const qreal KNOB_RADIUS = 3.0;
 // Pixels per unit of the larger of the two pixmaps.
 const int SHARP_SCALE = 2;
 
@@ -48,6 +50,18 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
     case ToolIcon::Menu:
         for (const qreal y : {6.0, 12.0, 18.0})
             painter.drawLine(QPointF(4, y), QPointF(20, y));
+        break;
+    case ToolIcon::ProjectProperties:
+        // Three upright sliders, each with its knob, bolder than a dot: not
+        // to be taken for the lines of the menu.
+        for (const QPointF &knob : {QPointF(5, 9), QPointF(12, 16), QPointF(19, 7)}) {
+            painter.drawLine(QPointF(knob.x(), 3), QPointF(knob.x(), 21));
+            painter.save();
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(color);
+            painter.drawEllipse(knob, KNOB_RADIUS, KNOB_RADIUS);
+            painter.restore();
+        }
         break;
     case ToolIcon::Save:
         painter.drawPolygon(polygon({{4, 4}, {17, 4}, {20, 7}, {20, 20}, {4, 20}}));

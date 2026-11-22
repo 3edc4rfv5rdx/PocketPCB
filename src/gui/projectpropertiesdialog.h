@@ -14,7 +14,8 @@ class QTableWidget;
 namespace ppcb {
 
 // The properties of a project, edited on a copy: on the General tab the
-// fields of the title block and the style of designators; on the Net
+// fields of the title block, the style of designators and the sides of
+// the board with copper; on the Net
 // classes tab the classes, added, renamed, changed and deleted, and which
 // of them is the default class and the power class.
 class ProjectPropertiesDialog : public QDialog
@@ -65,6 +66,7 @@ private:
     QLineEdit *m_dateEdit = nullptr;
     QLineEdit *m_noteEdit = nullptr;
     QComboBox *m_styleBox = nullptr;
+    QComboBox *m_sidesBox = nullptr;
     QTableWidget *m_classTable = nullptr;
     QPushButton *m_deleteClassButton = nullptr;
     QComboBox *m_defaultClassBox = nullptr;

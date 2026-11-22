@@ -74,7 +74,8 @@ Board withHolesMoved(const Board &board, const QSet<ObjectId> &ids, const Point 
 // The holes 'ids' of diameter 'drill'.
 Board withHolesDrill(const Board &board, const QSet<ObjectId> &ids, Coord drill);
 // The holes 'ids' made plated, a hole without a ring getting
-// DEFAULT_HOLE_RING, or not plated, keeping their rings.
+// DEFAULT_HOLE_RING and every one its pad on both sides, or not plated,
+// keeping their rings.
 Board withHolesPlated(const Board &board, const QSet<ObjectId> &ids, bool plated);
 // The copper ring of 'hole' that makes a pad of 'diameter' around it; 0 for
 // a diameter of 0 or one not larger than the hole.
@@ -90,6 +91,11 @@ Board withHolesPad(const Board &board, const QSet<ObjectId> &ids, Coord diameter
 Board withoutHoles(const Board &board, const QSet<ObjectId> &ids);
 // True when there is a hole among 'ids' and every one of them is plated.
 bool areHolesPlated(const Board &board, const QSet<ObjectId> &ids);
+// The holes 'ids' with their pads on 'sides'; a plated hole keeps its pad
+// on both.
+Board withHolesPadSides(const Board &board, const QSet<ObjectId> &ids, CopperSides sides);
+// The holes 'ids' that have a pad joined to 'net'; empty for none.
+Board withHolesNet(const Board &board, const QSet<ObjectId> &ids, const QString &net);
 // The holes 'ids' locked or unlocked.
 Board withHolesLocked(const Board &board, const QSet<ObjectId> &ids, bool locked);
 // True when there is a hole among 'ids' and every one of them is locked.

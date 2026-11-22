@@ -10,6 +10,7 @@ namespace ppcb {
 enum class ToolIcon {
     Menu,
     Recent,
+    ProjectProperties,
     Save,
     Print,
     Pdf,

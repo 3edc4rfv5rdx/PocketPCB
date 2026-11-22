@@ -3,6 +3,10 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Project properties has a button on the strip, after Recent projects
+- N: Update board from schematic carries the nets of mounting holes along when nets are renamed
+- N: The board has copper on both sides, the top only or the bottom only, set in Project properties
+- N: The pad of a mounting hole may be on one side only and on a net, which joins it to the ratsnest
 - F: A plated hole is drawn with a white wall, and every mounting hole with a cross in its middle
 - N: A mounting hole may have a copper pad without plating, its diameter typed in place
 - N: Mounting holes may be locked: a locked one is drawn yellow and is not moved, changed or deleted

@@ -27,6 +27,7 @@ Board fullBoard()
                      OutlineCorner{Point{10 * MM, 30 * MM}, 0},
                      OutlineCorner{Point{0, 20 * MM}, 0}};
     board.outlineLocked = true;
+    board.copper = CopperSides::Bottom;
 
     Placement placement;
     placement.id = id(0x11);
@@ -237,6 +238,8 @@ private slots:
         CHANGED(other.holes[0].plated = false);
         CHANGED(other.holes[0].ring += 1);
         CHANGED(other.holes[0].net.clear());
+        CHANGED(other.holes[0].padSides = CopperSides::Top);
+        CHANGED(other.copper = CopperSides::Top);
         CHANGED(other.holes[0].locked = false);
         CHANGED(other.holes.clear());
 
@@ -296,6 +299,62 @@ private slots:
         const Board back = readBack(root, error);
         QVERIFY2(error.isEmpty(), qPrintable(error));
         QVERIFY(back == Board());
+    }
+
+    // Files written before the sides were chosen have two, and holes their
+    // pads on both sides; other values are refused.
+    void sidesAreOptional()
+    {
+        QJsonObject root = boardToJson(fullBoard());
+        root.remove(QStringLiteral("copper"));
+        QJsonArray holes = root.value(QStringLiteral("holes")).toArray();
+        QJsonObject hole = holes.at(0).toObject();
+        hole.remove(QStringLiteral("padSides"));
+        holes[0] = hole;
+        root.insert(QStringLiteral("holes"), holes);
+        QString error;
+        const Board back = readBack(root, error);
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+        QVERIFY(back.copper == CopperSides::Both);
+        QVERIFY(back.holes.at(0).padSides == CopperSides::Both);
+
+        root.insert(QStringLiteral("copper"), QStringLiteral("inner"));
+        error = errorOf(root);
+        QVERIFY2(error.startsWith(QStringLiteral("copper: ")), qPrintable(error));
+
+        error = errorOfChange("holes", "padSides", QStringLiteral("left"));
+        QVERIFY2(error.startsWith(QStringLiteral("holes[0].padSides: ")), qPrintable(error));
+        // The hole of the full board is plated: its pad is on both sides.
+        error = errorOfChange("holes", "padSides", QStringLiteral("top"));
+        QVERIFY2(error.startsWith(QStringLiteral("holes[0].padSides: ")), qPrintable(error));
+    }
+
+    void holePadSides()
+    {
+        Board board;
+        MountingHole hole;
+        hole.ring = 1000000;
+        QVERIFY(holePadOn(board, hole, BoardSide::Top));
+        QVERIFY(holePadOn(board, hole, BoardSide::Bottom));
+        hole.padSides = CopperSides::Top;
+        QVERIFY(holePadOn(board, hole, BoardSide::Top));
+        QVERIFY(!holePadOn(board, hole, BoardSide::Bottom));
+        hole.padSides = CopperSides::Bottom;
+        QVERIFY(!holePadOn(board, hole, BoardSide::Top));
+        QVERIFY(holePadOn(board, hole, BoardSide::Bottom));
+        // On a board of one side every pad is on that side.
+        for (const CopperSides sides : {CopperSides::Both, CopperSides::Top, CopperSides::Bottom}) {
+            hole.padSides = sides;
+            board.copper = CopperSides::Bottom;
+            QVERIFY(!holePadOn(board, hole, BoardSide::Top));
+            QVERIFY(holePadOn(board, hole, BoardSide::Bottom));
+            board.copper = CopperSides::Top;
+            QVERIFY(holePadOn(board, hole, BoardSide::Top));
+            QVERIFY(!holePadOn(board, hole, BoardSide::Bottom));
+        }
+        // No ring, no pad.
+        hole.ring = 0;
+        QVERIFY(!holePadOn(board, hole, BoardSide::Bottom));
     }
 
     // Files written before the lock have an unlocked outline; a lock that

@@ -24,6 +24,8 @@ BoardLayer pasteLayer(BoardSide side)
 
 namespace {
 
+// Optional: files written before it have copper on both sides.
+const char KEY_COPPER[] = "copper";
 const char KEY_OUTLINE[] = "outline";
 // Optional: files written before it have an unlocked outline.
 const char KEY_OUTLINE_LOCKED[] = "outlineLocked";
@@ -61,11 +63,21 @@ const char KEY_DRILL[] = "drill";
 const char KEY_SIZE[] = "size";
 const char KEY_PLATED[] = "plated";
 const char KEY_RING[] = "ring";
+// Optional: files written before it have pads on both sides.
+const char KEY_PAD_SIDES[] = "padSides";
 const char KEY_CLEARANCE[] = "clearance";
 const char KEY_POINTS[] = "points";
 
 // An outline, of the board or of a zone.
 const int MIN_OUTLINE_POINTS = 3;
+
+// In the order of CopperSides.
+const QStringList &copperSidesNames()
+{
+    static const QStringList names = {QStringLiteral("both"), QStringLiteral("top"),
+                                      QStringLiteral("bottom")};
+    return names;
+}
 
 // In the order of BoardSide.
 const QStringList &sideNames()
@@ -262,6 +274,7 @@ QJsonObject holeToJson(const MountingHole &hole)
     object.insert(QLatin1String(KEY_DRILL), mmToJson(hole.drill));
     object.insert(QLatin1String(KEY_PLATED), hole.plated);
     object.insert(QLatin1String(KEY_RING), mmToJson(hole.ring));
+    object.insert(QLatin1String(KEY_PAD_SIDES), copperSidesNames().at(int(hole.padSides)));
     object.insert(QLatin1String(KEY_NET), hole.net);
     object.insert(QLatin1String(KEY_LOCKED), hole.locked);
     return object;
@@ -277,6 +290,9 @@ MountingHole holeFromJson(const QJsonObject &object, const QString &where, ReadC
     hole.plated = reader.boolean(object, KEY_PLATED, where);
     hole.ring = reader.nonNegativeMm(object, KEY_RING, where);
     hole.net = reader.string(object, KEY_NET, where);
+    if (object.contains(QLatin1String(KEY_PAD_SIDES)))
+        hole.padSides =
+            CopperSides(reader.choice(object, KEY_PAD_SIDES, where, copperSidesNames()));
     // Optional: files written before it have unlocked holes.
     if (object.contains(QLatin1String(KEY_LOCKED)))
         hole.locked = reader.boolean(object, KEY_LOCKED, where);
@@ -286,6 +302,9 @@ MountingHole holeFromJson(const QJsonObject &object, const QString &where, ReadC
     if (hole.plated && hole.ring == 0) {
         reader.fail(JsonReader::pathOf(where, KEY_RING),
                     JsonReader::tr("a plated hole needs a copper ring"));
+    } else if (hole.plated && hole.padSides != CopperSides::Both) {
+        reader.fail(JsonReader::pathOf(where, KEY_PAD_SIDES),
+                    JsonReader::tr("a plated hole has its pad on both sides"));
     } else if (hole.ring == 0 && !hole.net.isEmpty()) {
         reader.fail(JsonReader::pathOf(where, KEY_NET),
                     JsonReader::tr("a hole without a copper ring has no net"));
@@ -377,10 +396,24 @@ Coord holeOuterDiameter(const MountingHole &hole)
     return hole.drill + 2 * hole.ring;
 }
 
+bool copperOn(CopperSides sides, BoardSide side)
+{
+    return sides == CopperSides::Both
+           || (sides == CopperSides::Top) == (side == BoardSide::Top);
+}
+
+bool holePadOn(const Board &board, const MountingHole &hole, BoardSide side)
+{
+    if (hole.ring == 0 || !copperOn(board.copper, side))
+        return false;
+    return board.copper != CopperSides::Both || copperOn(hole.padSides, side);
+}
+
 bool operator==(const MountingHole &a, const MountingHole &b)
 {
     return a.id == b.id && a.at == b.at && a.drill == b.drill && a.plated == b.plated
-           && a.ring == b.ring && a.net == b.net && a.locked == b.locked;
+           && a.ring == b.ring && a.padSides == b.padSides && a.net == b.net
+           && a.locked == b.locked;
 }
 
 bool operator==(const BoardGraphic &a, const BoardGraphic &b)
@@ -396,7 +429,8 @@ bool operator==(const Zone &a, const Zone &b)
 
 bool operator==(const Board &a, const Board &b)
 {
-    return a.outline == b.outline && a.outlineLocked == b.outlineLocked
+    return a.copper == b.copper && a.outline == b.outline
+           && a.outlineLocked == b.outlineLocked
            && a.placements == b.placements && a.tracks == b.tracks && a.vias == b.vias
            && a.holes == b.holes && a.graphics == b.graphics && a.zones == b.zones;
 }
@@ -404,6 +438,7 @@ bool operator==(const Board &a, const Board &b)
 QJsonObject boardToJson(const Board &board)
 {
     QJsonObject root;
+    root.insert(QLatin1String(KEY_COPPER), copperSidesNames().at(int(board.copper)));
     root.insert(QLatin1String(KEY_OUTLINE), listToJson(board.outline, cornerToJson));
     root.insert(QLatin1String(KEY_OUTLINE_LOCKED), board.outlineLocked);
     root.insert(QLatin1String(KEY_PLACEMENTS), listToJson(board.placements, placementToJson));
@@ -419,6 +454,9 @@ Board boardFromJson(const QJsonObject &root, JsonReader &reader)
 {
     Board board;
     ReadContext context{reader, {}, {}};
+
+    if (root.contains(QLatin1String(KEY_COPPER)))
+        board.copper = CopperSides(reader.choice(root, KEY_COPPER, QString(), copperSidesNames()));
 
     board.outline = listFromJson<OutlineCorner>(root, KEY_OUTLINE, QString(), context,
                                                 cornerFromJson);

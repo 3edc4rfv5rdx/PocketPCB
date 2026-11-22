@@ -203,6 +203,8 @@ Board withHolesPlated(const Board &board, const QSet<ObjectId> &ids, bool plated
         hole.plated = plated;
         if (plated && hole.ring == 0)
             hole.ring = DEFAULT_HOLE_RING;
+        if (plated)
+            hole.padSides = CopperSides::Both;
     }
     return result;
 }
@@ -241,6 +243,26 @@ Board withoutHoles(const Board &board, const QSet<ObjectId> &ids)
 bool areHolesPlated(const Board &board, const QSet<ObjectId> &ids)
 {
     return allHave(board.holes, ids, [](const MountingHole &item) { return item.plated; });
+}
+
+Board withHolesPadSides(const Board &board, const QSet<ObjectId> &ids, CopperSides sides)
+{
+    Board result = board;
+    for (MountingHole &hole : result.holes) {
+        if (ids.contains(hole.id) && !hole.locked && !hole.plated)
+            hole.padSides = sides;
+    }
+    return result;
+}
+
+Board withHolesNet(const Board &board, const QSet<ObjectId> &ids, const QString &net)
+{
+    Board result = board;
+    for (MountingHole &hole : result.holes) {
+        if (ids.contains(hole.id) && !hole.locked && hole.ring > 0)
+            hole.net = net;
+    }
+    return result;
 }
 
 Board withHolesLocked(const Board &board, const QSet<ObjectId> &ids, bool locked)

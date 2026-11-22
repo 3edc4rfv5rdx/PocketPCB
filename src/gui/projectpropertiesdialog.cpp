@@ -103,8 +103,16 @@ QWidget *ProjectPropertiesDialog::makeGeneralTab()
     m_styleBox->addItem(tr("International") + QStringLiteral(" (R, D, Q, U)"));
     m_styleBox->addItem(tr("GOST") + QStringLiteral(" (R, VD, VT, DD)"));
     m_styleBox->setCurrentIndex(int(m_design.project.designatorStyle));
+    // In the order of CopperSides.
+    m_sidesBox = new QComboBox(tab);
+    m_sidesBox->setObjectName(QStringLiteral("copperSidesBox"));
+    m_sidesBox->addItem(tr("Both"));
+    m_sidesBox->addItem(tr("Top only"));
+    m_sidesBox->addItem(tr("Bottom only"));
+    m_sidesBox->setCurrentIndex(int(m_design.board.copper));
     QFormLayout *styleForm = new QFormLayout;
     styleForm->addRow(tr("Designator style") + colon, m_styleBox);
+    styleForm->addRow(tr("Copper sides") + colon, m_sidesBox);
 
     QVBoxLayout *layout = new QVBoxLayout(tab);
     layout->addWidget(blockBox);
@@ -316,6 +324,8 @@ Design ProjectPropertiesDialog::design() const
     block.revision = m_revisionEdit->text().trimmed();
     block.date = m_dateEdit->text().trimmed();
     block.note = m_noteEdit->text().trimmed();
+
+    result.board.copper = CopperSides(m_sidesBox->currentIndex());
 
     const DesignatorStyle style = DesignatorStyle(m_styleBox->currentIndex());
     if (style != result.project.designatorStyle) {

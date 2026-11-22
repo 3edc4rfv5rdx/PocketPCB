@@ -65,6 +65,8 @@ public:
         CopperRing,
         LockHoles,
         UnlockHoles,
+        PadSides,
+        PadNet,
     };
     static QString actionName(Action action);
     // Asks for a hole's diameter in millimetres, after a wrong one.
@@ -171,6 +173,17 @@ public:
     bool chosenHolesPlated() const;
     // Every hole chosen is locked: its diameter, plating and ring stay.
     bool chosenHolesLocked() const;
+    // Every hole chosen has a copper pad, and none of them is plated.
+    bool chosenHolesHavePads() const;
+    bool chosenHolesPlatedNone() const;
+    // The sides of the pads of the holes chosen, or the net of the pads,
+    // when all of them have the same; nothing otherwise.
+    std::optional<CopperSides> chosenHolesPadSides() const;
+    std::optional<QString> chosenHolesNet() const;
+    // Given to the holes chosen as one step (withHolesPadSides(),
+    // withHolesNet()).
+    void setChosenHolesPadSides(CopperSides sides);
+    void setChosenHolesNet(const QString &net);
     void setChosenHolesPlated(bool plated);
     // Types the diameter of the copper pad of the holes chosen in place; 0
     // takes it off, except from the plated ones.

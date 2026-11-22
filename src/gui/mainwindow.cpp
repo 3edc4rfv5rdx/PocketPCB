@@ -925,6 +925,28 @@ void MainWindow::showBoardMenu(const QPoint &globalPos)
             BoardEditor::actionName(BoardEditor::Action::CopperRing) + QStringLiteral("…"));
         ring->setEnabled(!locked);
         connect(ring, &QAction::triggered, m_boardEditor, &BoardEditor::editMenuHolePad);
+        // The side of the pad, on a board of two sides; a plated hole has
+        // it on both.
+        const bool pads = m_boardEditor->chosenHolesHavePads();
+        if (m_document->design().board.copper == CopperSides::Both) {
+            QMenu *sides = menu.addMenu(BoardEditor::actionName(BoardEditor::Action::PadSides));
+            sides->setEnabled(!locked && pads && m_boardEditor->chosenHolesPlatedNone());
+            const std::optional<CopperSides> current = m_boardEditor->chosenHolesPadSides();
+            const QList<QPair<CopperSides, QString>> choices = {
+                {CopperSides::Both, tr("Both sides")},
+                {CopperSides::Top, tr("Top")},
+                {CopperSides::Bottom, tr("Bottom")}};
+            for (const auto &[value, text] : choices) {
+                QAction *choice = sides->addAction(text);
+                choice->setCheckable(true);
+                choice->setChecked(current == value);
+                connect(choice, &QAction::triggered, m_boardEditor,
+                        [this, value] { m_boardEditor->setChosenHolesPadSides(value); });
+            }
+        }
+        QMenu *net = menu.addMenu(BoardEditor::actionName(BoardEditor::Action::PadNet));
+        net->setEnabled(!locked && pads);
+        fillPadNetMenu(net);
         menu.addSeparator();
         add("actionDelete");
         break;
@@ -1400,6 +1422,9 @@ void MainWindow::createToolBar()
     recentButton->setMenu(recentMenu);
     recentButton->setPopupMode(QToolButton::InstantPopup);
     bar->addWidget(recentButton);
+    // Without the dots of the menu item in its tip: the button opens it.
+    QAction *properties = put("actionProjectProperties", ToolIcon::ProjectProperties);
+    properties->setToolTip(ProjectPropertiesDialog::title());
     put("actionSaveProject", ToolIcon::Save);
     put("actionPrintSchematic", ToolIcon::Print);
     put("actionExportSchematicPdf", ToolIcon::Pdf);
@@ -1895,6 +1920,42 @@ void MainWindow::updatePowerIcon()
 bool MainWindow::placeLastPower()
 {
     return placePower(m_lastPowerSource, m_lastPowerSymbol);
+}
+
+void MainWindow::fillPadNetMenu(QMenu *menu)
+{
+    const Design &design = m_document->design();
+    // The nets of the board: of the pads of its parts and of its holes.
+    QSet<QString> boardNets;
+    for (const Placement &placement : design.board.placements) {
+        for (const QString &name : placement.padNets)
+            boardNets.insert(name);
+    }
+    for (const MountingHole &hole : design.board.holes)
+        boardNets.insert(hole.net);
+    boardNets.remove(QString());
+    // Those of the power class first, then the others, each by name.
+    QSet<QString> power;
+    for (const Net &net : m_sheetEditor->nets()) {
+        if (netClassOf(net, design.project, design.schematic) == design.project.powerClass)
+            power.insert(net.name);
+    }
+    QStringList names(boardNets.cbegin(), boardNets.cend());
+    std::sort(names.begin(), names.end(), [&power](const QString &a, const QString &b) {
+        if (power.contains(a) != power.contains(b))
+            return power.contains(a);
+        return QString::localeAwareCompare(a, b) < 0;
+    });
+    names.prepend(QString());
+
+    const std::optional<QString> current = m_boardEditor->chosenHolesNet();
+    for (const QString &name : std::as_const(names)) {
+        QAction *choice = menu->addAction(name.isEmpty() ? tr("No net") : name);
+        choice->setCheckable(true);
+        choice->setChecked(current == name);
+        connect(choice, &QAction::triggered, m_boardEditor,
+                [this, name] { m_boardEditor->setChosenHolesNet(name); });
+    }
 }
 
 void MainWindow::fillHoleMenu(QMenu *menu, bool chosenHoles)

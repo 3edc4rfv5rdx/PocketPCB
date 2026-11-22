@@ -30,7 +30,8 @@ struct NetPad
     Coord sizeY = 0;
     QString net;
 };
-// The pads of the placements of 'board' that are on a net.
+// The pads of the placements of 'board' that are on a net, then the pads
+// of its mounting holes that are.
 QList<NetPad> netPads(const Board &board, const Library &library);
 
 // Where the pad at 'padAt' of a footprint stands on the board when the

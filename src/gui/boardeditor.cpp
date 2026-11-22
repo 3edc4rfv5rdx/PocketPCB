@@ -8,6 +8,8 @@
 #include <QApplication>
 #include <QLineF>
 
+#include <utility>
+
 namespace ppcb {
 
 namespace {
@@ -86,6 +88,10 @@ QString BoardEditor::actionName(Action action)
         return tr("Lock holes");
     case Action::UnlockHoles:
         return tr("Unlock holes");
+    case Action::PadSides:
+        return tr("Pad side");
+    case Action::PadNet:
+        return tr("Pad net");
     case Action::LockParts:
         return lockPartsName(true);
     case Action::UnlockParts:
@@ -669,18 +675,81 @@ BoardEditor::MenuTarget BoardEditor::chooseForMenu(const QPointF &at)
     return m_menuCorner >= 0 ? MenuTarget::Corner : MenuTarget::Side;
 }
 
-Coord BoardEditor::chosenHolesDrill() const
+namespace {
+
+// What 'property' gives for every hole of 'ids' on 'board', when it gives
+// the same for all of them; nothing otherwise, or when none is there.
+template <typename Property>
+auto commonOfHoles(const Board &board, const QSet<ObjectId> &ids, Property property)
+    -> std::optional<decltype(property(std::declval<const MountingHole &>()))>
 {
-    const QSet<ObjectId> ids = chosenHoles();
-    Coord drill = 0;
-    for (const MountingHole &hole : m_document->design().board.holes) {
+    std::optional<decltype(property(std::declval<const MountingHole &>()))> common;
+    for (const MountingHole &hole : board.holes) {
         if (!ids.contains(hole.id))
             continue;
-        if (drill != 0 && hole.drill != drill)
-            return 0;
-        drill = hole.drill;
+        const auto value = property(hole);
+        if (common && *common != value)
+            return std::nullopt;
+        common = value;
     }
-    return drill;
+    return common;
+}
+
+} // namespace
+
+Coord BoardEditor::chosenHolesDrill() const
+{
+    return commonOfHoles(m_document->design().board, chosenHoles(),
+                         [](const MountingHole &hole) { return hole.drill; })
+        .value_or(0);
+}
+
+bool BoardEditor::chosenHolesHavePads() const
+{
+    return commonOfHoles(m_document->design().board, chosenHoles(),
+                         [](const MountingHole &hole) { return hole.ring > 0; })
+               == std::optional<bool>(true);
+}
+
+bool BoardEditor::chosenHolesPlatedNone() const
+{
+    return commonOfHoles(m_document->design().board, chosenHoles(),
+                         [](const MountingHole &hole) { return hole.plated; })
+               == std::optional<bool>(false);
+}
+
+std::optional<CopperSides> BoardEditor::chosenHolesPadSides() const
+{
+    return commonOfHoles(m_document->design().board, chosenHoles(),
+                         [](const MountingHole &hole) { return hole.padSides; });
+}
+
+std::optional<QString> BoardEditor::chosenHolesNet() const
+{
+    return commonOfHoles(m_document->design().board, chosenHoles(),
+                         [](const MountingHole &hole) { return hole.net; });
+}
+
+void BoardEditor::setChosenHolesPadSides(CopperSides sides)
+{
+    const QSet<ObjectId> ids = chosenHoles();
+    const Board &board = m_document->design().board;
+    if (refuseHolesLocked())
+        return;
+    const Board changedBoard = withHolesPadSides(board, ids, sides);
+    if (changedBoard != board)
+        applyBoard(Action::PadSides, changedBoard, ids);
+}
+
+void BoardEditor::setChosenHolesNet(const QString &net)
+{
+    const QSet<ObjectId> ids = chosenHoles();
+    const Board &board = m_document->design().board;
+    if (refuseHolesLocked())
+        return;
+    const Board changedBoard = withHolesNet(board, ids, net);
+    if (changedBoard != board)
+        applyBoard(Action::PadNet, changedBoard, ids);
 }
 
 void BoardEditor::setChosenHolesDrill(Coord drill)

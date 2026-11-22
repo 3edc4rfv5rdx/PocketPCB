@@ -247,6 +247,47 @@ private slots:
         QVERIFY(r1 != nullptr);
         QVERIFY(r1->at.y >= 20 * MM && r1->at.y < 30 * MM);
     }
+
+    // The pads of holes go where most pads of their net went: a net renamed
+    // takes them along, a net kept keeps them, a net gone drops them.
+    void holeNetsFollowTheirPads()
+    {
+        Placement first;
+        first.id = newObjectId();
+        first.padNets = {{QStringLiteral("1"), QStringLiteral("GND")},
+                         {QStringLiteral("2"), QStringLiteral("A")}};
+        Placement second = first;
+        second.id = newObjectId();
+        second.padNets = {{QStringLiteral("1"), QStringLiteral("GND")},
+                          {QStringLiteral("2"), QStringLiteral("B")}};
+        Board before;
+        before.placements = {first, second};
+        for (const char *net : {"GND", "A", "B", "C"}) {
+            MountingHole hole;
+            hole.id = newObjectId();
+            hole.ring = MM;
+            hole.net = QLatin1String(net);
+            before.holes.append(hole);
+        }
+        Board after = before;
+        // GND renamed VSS on both, A kept, B gone with the second part.
+        after.placements[0].padNets = {{QStringLiteral("1"), QStringLiteral("VSS")},
+                                       {QStringLiteral("2"), QStringLiteral("A")}};
+        after.placements.removeLast();
+        const QHash<QString, QString> followed = holeNetsFollowed(before, after);
+        QCOMPARE(followed.value(QStringLiteral("GND")), QStringLiteral("VSS"));
+        QCOMPARE(followed.value(QStringLiteral("A")), QStringLiteral("A"));
+        QCOMPARE(followed.value(QStringLiteral("B")), QString());
+        // A net no pad was ever on, and no pad is on now, is dropped too.
+        QVERIFY(followed.contains(QStringLiteral("C")));
+        QCOMPARE(followed.value(QStringLiteral("C")), QString());
+        // A net only a part added now is on is kept.
+        Placement added;
+        added.id = newObjectId();
+        added.padNets = {{QStringLiteral("1"), QStringLiteral("C")}};
+        after.placements.append(added);
+        QCOMPARE(holeNetsFollowed(before, after).value(QStringLiteral("C")), QStringLiteral("C"));
+    }
 };
 
 QTEST_APPLESS_MAIN(TestBoardUpdate)

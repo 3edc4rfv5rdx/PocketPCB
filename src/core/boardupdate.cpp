@@ -42,6 +42,50 @@ bool operator==(const BoardChange &a, const BoardChange &b)
            && a.after == b.after;
 }
 
+QHash<QString, QString> holeNetsFollowed(const Board &before, const Board &after)
+{
+    QHash<ObjectId, const Placement *> afterById;
+    QSet<QString> afterNets;
+    for (const Placement &placement : after.placements) {
+        afterById.insert(placement.id, &placement);
+        for (const QString &net : placement.padNets)
+            afterNets.insert(net);
+    }
+    QSet<QString> holeNets;
+    for (const MountingHole &hole : before.holes) {
+        if (!hole.net.isEmpty())
+            holeNets.insert(hole.net);
+    }
+    QHash<QString, QString> followed;
+    for (const QString &net : std::as_const(holeNets)) {
+        // How many pads that were on 'net' are on each net now.
+        QMap<QString, int> votes;
+        for (const Placement &old : before.placements) {
+            const Placement *now = afterById.value(old.id);
+            if (now == nullptr)
+                continue;
+            for (auto it = old.padNets.cbegin(); it != old.padNets.cend(); ++it) {
+                const QString next = now->padNets.value(it.key());
+                if (it.value() == net && !next.isEmpty())
+                    ++votes[next];
+            }
+        }
+        QString chosen;
+        int most = 0;
+        // The map goes by name: the first of equals wins.
+        for (auto it = votes.cbegin(); it != votes.cend(); ++it) {
+            if (it.value() > most) {
+                most = it.value();
+                chosen = it.key();
+            }
+        }
+        if (chosen.isEmpty() && afterNets.contains(net))
+            chosen = net;
+        followed.insert(net, chosen);
+    }
+    return followed;
+}
+
 BoardUpdate boardUpdatedFromSchematic(const Design &design)
 {
     const Library &library = design.library;
@@ -133,6 +177,17 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
         }
     }
 
+    // The pads of the holes follow their nets, said once for each net.
+    const QHash<QString, QString> holeNets = holeNetsFollowed(design.board, update.board);
+    for (auto it = holeNets.cbegin(); it != holeNets.cend(); ++it) {
+        if (it.key() != it.value())
+            changes.append(BoardChange{BoardChangeKind::HoleNet, QString(), it.key(), it.value()});
+    }
+    for (MountingHole &hole : update.board.holes) {
+        if (!hole.net.isEmpty())
+            hole.net = holeNets.value(hole.net);
+    }
+
     // The new ones go to the right of what is on the board, from the top of
     // the outline down, in the order of their designators.
     std::stable_sort(added.begin(), added.end(), [](const Component *a, const Component *b) {
@@ -193,7 +248,9 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
                      [](const BoardChange &a, const BoardChange &b) {
                          if (a.designator != b.designator)
                              return designatorLess(a.designator, b.designator);
-                         return int(a.kind) < int(b.kind);
+                         if (a.kind != b.kind)
+                             return int(a.kind) < int(b.kind);
+                         return a.before < b.before;
                      });
     update.changes = changes;
     return update;

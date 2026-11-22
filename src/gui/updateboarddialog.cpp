@@ -72,6 +72,9 @@ QString UpdateBoardDialog::changeText(const BoardChange &change)
     case BoardChangeKind::MissingFootprintNotAdded:
         return of + tr("not added") + QStringLiteral(", ")
                + tr("the project library has no footprint") + QLatin1Char(' ') + change.after;
+    case BoardChangeKind::HoleNet:
+        return tr("Mounting holes") + QStringLiteral(": ") + tr("net") + QLatin1Char(' ')
+               + change.before + arrow + (change.after.isEmpty() ? tr("none") : change.after);
     }
     return QString();
 }

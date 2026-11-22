@@ -233,6 +233,30 @@ private slots:
         QCOMPARE(fewer.holes.at(0).id, second);
     }
 
+    void padSidesAndNets()
+    {
+        Board board;
+        board.holes = {newHole(mm(0, 0), 3 * MM), newHole(mm(10, 0), 3 * MM)};
+        const ObjectId first = board.holes.at(0).id;
+        const ObjectId second = board.holes.at(1).id;
+        const QSet<ObjectId> both = {first, second};
+        // Only a hole with a pad takes a net.
+        board = withHolesPad(board, {first}, 5 * MM);
+        Board netted = withHolesNet(board, both, QStringLiteral("GND"));
+        QCOMPARE(netted.holes.at(0).net, QStringLiteral("GND"));
+        QCOMPARE(netted.holes.at(1).net, QString());
+        // The side goes on a hole without plating; plating puts it back on both.
+        Board sided = withHolesPadSides(netted, both, CopperSides::Bottom);
+        QVERIFY(sided.holes.at(0).padSides == CopperSides::Bottom);
+        sided = withHolesPlated(sided, {first}, true);
+        QVERIFY(sided.holes.at(0).padSides == CopperSides::Both);
+        QCOMPARE(withHolesPadSides(sided, {first}, CopperSides::Top), sided);
+        // A locked hole keeps them.
+        const Board locked = withHolesLocked(netted, {first}, true);
+        QCOMPARE(withHolesNet(locked, both, QString()), locked);
+        QCOMPARE(withHolesPadSides(locked, {first}, CopperSides::Top), locked);
+    }
+
     void lockedHolesStay()
     {
         Board board;

@@ -123,10 +123,14 @@ struct Via
     Coord size = 0;
 };
 
-// A mounting hole. It may have a copper ring around it, a pad on both
-// sides, which may be given a net; one without a ring has no net. Plating,
-// for a board from a factory, needs the ring; a board made at home has a
-// ring without plating.
+// Where copper is: on both sides, or on one; of the board, or of the pad
+// of a mounting hole.
+enum class CopperSides { Both, Top, Bottom };
+
+// A mounting hole. It may have a copper ring around it, a pad on 'padSides',
+// which may be given a net; one without a ring has no net. Plating, for a
+// board from a factory, needs the ring on both sides; a board made at home
+// has a ring without plating.
 struct MountingHole
 {
     ObjectId id;
@@ -136,6 +140,7 @@ struct MountingHole
     bool plated = false;
     // Width of the copper ring.
     Coord ring = 0;
+    CopperSides padSides = CopperSides::Both;
     QString net;
     // It may not be moved, changed or deleted until this is taken off.
     bool locked = false;
@@ -144,6 +149,7 @@ struct MountingHole
 // The diameter a hole takes on the board: of its copper ring, or of the
 // hole itself without one.
 Coord holeOuterDiameter(const MountingHole &hole);
+
 
 // The author's own drawing on the silkscreen of one side: text and lines.
 struct BoardGraphic
@@ -168,6 +174,8 @@ struct Zone
 // The board of a project.
 struct Board
 {
+    // The sides of the board with copper: both, or one.
+    CopperSides copper = CopperSides::Both;
     // The board's edge: a closed chain of corners (see outline.h). Empty
     // while the board has no outline yet.
     QList<OutlineCorner> outline;
@@ -189,6 +197,12 @@ bool operator==(const MountingHole &a, const MountingHole &b);
 bool operator==(const BoardGraphic &a, const BoardGraphic &b);
 bool operator==(const Zone &a, const Zone &b);
 bool operator==(const Board &a, const Board &b);
+
+// True when 'sides' hold 'side'.
+bool copperOn(CopperSides sides, BoardSide side);
+// True when the pad of 'hole' on 'board' has copper on 'side': it has a
+// ring, on that side or on both; on a board of one side, on that one.
+bool holePadOn(const Board &board, const MountingHole &hole, BoardSide side);
 inline bool operator!=(const Board &a, const Board &b) { return !(a == b); }
 
 QJsonObject boardToJson(const Board &board);

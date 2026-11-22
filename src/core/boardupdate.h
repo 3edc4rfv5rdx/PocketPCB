@@ -2,6 +2,8 @@
 
 #include "project.h"
 
+#include <QHash>
+
 namespace ppcb {
 
 // Updating the board from the schematic, one way only: every component of
@@ -11,6 +13,14 @@ namespace ppcb {
 // the nets of its pads follow the component, named as withNetsNamedByPins()
 // names them. A component on the board whose
 // footprint the library lacks keeps its placement, if it has one, as it is.
+// The pads of mounting holes follow the nets they were on (holeNetsFollowed()).
+
+// The net each net of the holes of 'before' is on after the board became
+// 'after' (the same placements by id, their pads' nets updated): the one
+// most of the pads of placements that were on it are on now, the first by
+// name among equals; else itself, while some pad of 'after' is still on it;
+// else none (empty).
+QHash<QString, QString> holeNetsFollowed(const Board &before, const Board &after);
 
 // What the update does to one placement.
 enum class BoardChangeKind {
@@ -30,6 +40,9 @@ enum class BoardChangeKind {
     MissingFootprint,
     // The same for a component with no placement yet: none is added.
     MissingFootprintNotAdded,
+    // The pads of mounting holes on net 'before' go to net 'after', or to
+    // none when it is empty; 'designator' is empty.
+    HoleNet,
 };
 
 struct BoardChange

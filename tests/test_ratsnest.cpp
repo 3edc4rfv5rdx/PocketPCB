@@ -84,6 +84,30 @@ private slots:
         QCOMPARE(ratsnest(board, library()), (Lines{{mm(5, 0), mm(15, 0), QStringLiteral("A")}}));
         QCOMPARE(netPads(board, library()).size(), 3);
     }
+
+    // A mounting hole with a pad on a net is one of its pads; one without
+    // a pad, or without a net, is not.
+    void holePadsAreOnTheirNets()
+    {
+        Board board;
+        board.placements = {placement(mm(0, 0), QString(), QStringLiteral("GND"))};
+        MountingHole hole;
+        hole.id = newObjectId();
+        hole.at = mm(30, 0);
+        hole.drill = 3 * NM_PER_MM;
+        hole.ring = NM_PER_MM;
+        hole.net = QStringLiteral("GND");
+        board.holes.append(hole);
+        hole.id = newObjectId();
+        hole.at = mm(60, 0);
+        hole.net.clear();
+        board.holes.append(hole);
+        QCOMPARE(ratsnest(board, library()),
+                 (Lines{{mm(5, 0), mm(30, 0), QStringLiteral("GND")}}));
+        const QList<NetPad> pads = netPads(board, library());
+        QCOMPARE(pads.size(), 2);
+        QCOMPARE(pads.at(1).sizeX, 5 * NM_PER_MM);
+    }
 };
 
 QTEST_APPLESS_MAIN(TestRatsnest)

@@ -33,6 +33,11 @@ QList<NetPad> netPads(const Board &board, const Library &library)
             pads.append(NetPad{placedPadPoint(placement, pad.at), pad.sizeX, pad.sizeY, *net});
         }
     }
+    for (const MountingHole &hole : board.holes) {
+        if (hole.ring > 0 && !hole.net.isEmpty())
+            pads.append(NetPad{hole.at, holeOuterDiameter(hole), holeOuterDiameter(hole),
+                               hole.net});
+    }
     return pads;
 }
 
