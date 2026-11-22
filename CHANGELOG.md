@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Delete on the board moves the parts chosen off it, packed to its right
 - F: Project properties has a button on the strip, after Recent projects
 - N: Update board from schematic carries the nets of mounting holes along when nets are renamed
 - N: The board has copper on both sides, the top only or the bottom only, set in Project properties

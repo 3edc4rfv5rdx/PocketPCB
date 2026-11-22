@@ -1,5 +1,6 @@
 #pragma once
 
+#include "boardedit.h"
 #include "project.h"
 
 #include <QHash>
@@ -68,14 +69,8 @@ struct BoardUpdate
     QList<BoardChange> changes;
 };
 
-// The gap between new placements, and between them and the board, in
-// nanometres.
-constexpr Coord NEW_PLACEMENT_GAP = 1270000;
-
 // The board of 'design' brought in line with its schematic. New placements
-// stand packed in columns to the right of the outline and of the placements
-// there are, from the top of the outline down, the columns about as tall as
-// the block of them is wide, on the board's grid.
+// stand packed as withPlacementsPacked() packs them.
 BoardUpdate boardUpdatedFromSchematic(const Design &design);
 
 } // namespace ppcb

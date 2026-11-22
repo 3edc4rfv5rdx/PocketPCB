@@ -903,6 +903,9 @@ void MainWindow::showBoardMenu(const QPoint &globalPos)
         QAction *show = menu.addAction(tr("Show on schematic"));
         connect(show, &QAction::triggered, this,
                 [this, components] { showComponents(components); });
+        // Moves them off the board (BoardEditor::deleteChosen()).
+        menu.addSeparator();
+        add("actionDelete");
         break;
     }
     case BoardEditor::MenuTarget::Hole: {

@@ -1526,6 +1526,10 @@
         <source>Pad net</source>
         <translation>Цепь площадки</translation>
     </message>
+    <message>
+        <source>Move parts off the board</source>
+        <translation>Вынести детали за плату</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::RectangleBoardDialog</name>

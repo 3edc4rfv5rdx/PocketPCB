@@ -46,6 +46,17 @@ Board withPlacementsMoved(const Board &board, const QSet<ObjectId> &ids, const P
 Board withPlacementsRotated(const Board &board, const QSet<ObjectId> &ids, const Point &center);
 // The text moved by 'delta' away from where it stands; its placement stays.
 Board withPlacementTextMoved(const Board &board, const PlacementText &text, const Point &delta);
+// The gap between placements packed, and between them and the board, in
+// nanometres.
+constexpr Coord NEW_PLACEMENT_GAP = 1270000;
+// The placements 'ids' packed in columns to the right of the outline and of
+// everything else on the board, from the top of the outline down, in the
+// order of their designators, the columns about as tall as the block of
+// them is wide, each placement's point on the grid of 'gridStep'. A board
+// with neither an outline nor other placements has the block at the origin.
+Board withPlacementsPacked(const Board &board, const Library &library, const QSet<ObjectId> &ids,
+                           Coord gridStep);
+
 // The placements 'ids' locked or unlocked.
 Board withPlacementsLocked(const Board &board, const QSet<ObjectId> &ids, bool locked);
 // True when there is a placement among 'ids' and every one of them is locked.

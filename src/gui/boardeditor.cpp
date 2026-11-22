@@ -78,6 +78,8 @@ QString BoardEditor::actionName(Action action)
         return tr("Move holes");
     case Action::DeleteHoles:
         return tr("Delete holes");
+    case Action::MovePartsOff:
+        return tr("Move parts off the board");
     case Action::HoleDiameter:
         return tr("Hole diameter");
     case Action::PlatedHoles:
@@ -294,20 +296,34 @@ void BoardEditor::rotateChosen()
 
 void BoardEditor::deleteChosen()
 {
-    if (!m_active || m_dragging || refuseHolesLocked())
+    if (!m_active || m_dragging)
         return;
     // The locked ones stay, chosen.
-    const Board &board = m_document->design().board;
-    QSet<ObjectId> ids;
+    const Design &design = m_document->design();
+    const Board &board = design.board;
+    QSet<ObjectId> holes;
     for (const MountingHole &hole : board.holes) {
         if (m_chosen.contains(hole.id) && !hole.locked)
-            ids.insert(hole.id);
+            holes.insert(hole.id);
     }
-    if (ids.isEmpty())
+    QSet<ObjectId> parts;
+    for (const Placement &placement : board.placements) {
+        if (m_chosen.contains(placement.id) && !placement.locked)
+            parts.insert(placement.id);
+    }
+    if (holes.isEmpty() && parts.isEmpty()) {
+        if (!chosenPlacements().isEmpty())
+            emit message(partLockedMessage());
+        else
+            refuseHolesLocked();
         return;
-    m_chosen.subtract(ids);
-    // An Undo brings them back chosen.
-    applyBoard(Action::DeleteHoles, withoutHoles(board, ids), ids);
+    }
+    // The parts stay chosen where they go; an Undo brings all back chosen.
+    m_chosen.subtract(holes);
+    const Board result = withPlacementsPacked(withoutHoles(board, holes), design.library, parts,
+                                              design.project.boardGridStep);
+    applyBoard(parts.isEmpty() ? Action::DeleteHoles : Action::MovePartsOff, result,
+               QSet<ObjectId>(holes).unite(parts));
     emit changed();
 }
 

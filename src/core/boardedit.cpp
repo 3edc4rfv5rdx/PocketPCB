@@ -1,8 +1,12 @@
 #include "boardedit.h"
 
+#include "bom.h"
+#include "grid.h"
+
 #include <QLineF>
 
 #include <algorithm>
+#include <cmath>
 
 namespace ppcb {
 
@@ -123,6 +127,67 @@ Board withPlacementTextMoved(const Board &board, const PlacementText &text, cons
         Point &offset =
             text.text == ComponentText::Designator ? placement.refAt : placement.valueAt;
         offset = offset + delta;
+    }
+    return result;
+}
+
+Board withPlacementsPacked(const Board &board, const Library &library, const QSet<ObjectId> &ids,
+                           Coord gridStep)
+{
+    // Where the rest of the board lies, without those to pack.
+    Board rest = board;
+    rest.placements.removeIf([&ids](const Placement &p) { return ids.contains(p.id); });
+    QList<int> packed;
+    for (int i = 0; i < board.placements.size(); ++i) {
+        if (ids.contains(board.placements.at(i).id))
+            packed.append(i);
+    }
+    std::stable_sort(packed.begin(), packed.end(), [&board](int a, int b) {
+        return designatorLess(board.placements.at(a).designator,
+                              board.placements.at(b).designator);
+    });
+
+    QPolygonF outlineCorners;
+    for (const OutlineCorner &corner : board.outline)
+        outlineCorners.append(toMm(corner.at));
+    const QRectF outline = outlineCorners.boundingRect();
+    const bool empty = rest.outline.isEmpty() && rest.placements.isEmpty();
+    const QRectF taken = empty ? QRectF() : boardBounds(rest, library);
+    const Coord gap = NEW_PLACEMENT_GAP;
+    const Coord top = board.outline.isEmpty() ? (empty ? 0 : mmToNm(taken.top()))
+                                              : mmToNm(outline.top());
+    // What each one covers about its own point.
+    Board result = board;
+    const auto ownRect = [&library](const Placement &placement) {
+        return placementRect(placement, library).translated(-toMm(placement.at));
+    };
+    // A block about as tall as it is wide: the columns as tall as the side
+    // of a square holding them all, and the tallest of them at least.
+    double area = 0;
+    Coord tallest = 0;
+    for (const int i : std::as_const(packed)) {
+        const QRectF bounds = ownRect(board.placements.at(i));
+        area += (bounds.width() + nmToMm(gap)) * (bounds.height() + nmToMm(gap));
+        tallest = std::max(tallest, mmToNm(bounds.height()));
+    }
+    const Coord columnHeight = std::max(tallest, mmToNm(std::sqrt(area)));
+    Coord x = empty ? 0 : mmToNm(taken.right()) + gap;
+    Coord y = top;
+    Coord columnWidth = 0;
+    for (const int i : std::as_const(packed)) {
+        Placement &placement = result.placements[i];
+        const QRectF bounds = ownRect(placement);
+        const Coord width = mmToNm(bounds.width());
+        const Coord height = mmToNm(bounds.height());
+        if (y > top && y + height > top + columnHeight) {
+            x += columnWidth + gap;
+            y = top;
+            columnWidth = 0;
+        }
+        placement.at = Point{snapToGrid(x - mmToNm(bounds.left()), gridStep),
+                             snapToGrid(y - mmToNm(bounds.top()), gridStep)};
+        y += height + gap;
+        columnWidth = std::max(columnWidth, width);
     }
     return result;
 }

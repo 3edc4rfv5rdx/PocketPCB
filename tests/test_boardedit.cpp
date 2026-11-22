@@ -157,6 +157,27 @@ private slots:
         QCOMPARE(withPlacementsLocked(locked, {r1}, false), board);
     }
 
+    // Packed to the right of the outline and of the rest, from the top of
+    // the outline down, on the grid; packing them again leaves them there.
+    void placementsArePackedOffTheBoard()
+    {
+        Board board = twoPlacements();
+        board.outline = {OutlineCorner{mm(-10, -10), 0}, OutlineCorner{mm(30, -10), 0},
+                         OutlineCorner{mm(30, 20), 0}, OutlineCorner{mm(-10, 20), 0}};
+        const ObjectId r1 = board.placements.at(0).id;
+        const Coord grid = 1270000;
+        const Board packed = withPlacementsPacked(board, library(), {r1}, grid);
+        QCOMPARE(packed.placements.at(1), board.placements.at(1));
+        const QRectF moved = placementRect(packed.placements.at(0), library());
+        QVERIFY(moved.left() >= 30 + nmToMm(NEW_PLACEMENT_GAP) - nmToMm(grid));
+        QVERIFY(moved.top() >= -10 - nmToMm(grid));
+        QCOMPARE(packed.placements.at(0).at.x % grid, Coord(0));
+        QCOMPARE(packed.placements.at(0).at.y % grid, Coord(0));
+        QCOMPARE(withPlacementsPacked(packed, library(), {r1}, grid), packed);
+        // Nothing to pack, nothing moves.
+        QCOMPARE(withPlacementsPacked(board, library(), {}, grid), board);
+    }
+
     void holesAreFoundAtAPointAndInsideARectangle()
     {
         Board board;

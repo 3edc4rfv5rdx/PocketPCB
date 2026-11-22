@@ -25,8 +25,9 @@ class CanvasView;
 // on the empty board chooses the placements wholly inside it. A click on a
 // placement's designator or value chooses that text alone, and a drag
 // moves it away from the placement. Mounting holes are chosen and dragged
-// as placements are, and with them; Delete takes them off, the placements
-// staying, as they come from the schematic. Placing holes: every click puts
+// as placements are, and with them; Delete takes them off and moves the
+// placements off the board, as they come from the schematic. Placing
+// holes: every click puts
 // one on the grid. Drawing the outline: every click sets
 // a corner on the grid; a click on the first corner closes it. Cutting
 // out: a rectangle drawn across the edge is taken off the board. Each
@@ -60,6 +61,7 @@ public:
         PlaceHole,
         MoveHoles,
         DeleteHoles,
+        MovePartsOff,
         HoleDiameter,
         PlatedHoles,
         CopperRing,
@@ -143,8 +145,9 @@ public:
     // While they are dragged, they turn about the point of the one taken,
     // and the drag goes on. Locked ones stay.
     void rotateChosen();
-    // The holes chosen are taken off the board as one step; the placements
-    // chosen stay.
+    // Delete, as one step: the holes chosen are taken off the board, and
+    // the placements chosen, which come and go with the schematic, are
+    // packed off it to the right (withPlacementsPacked()). Locked ones stay.
     void deleteChosen();
 
     // What a short right click at 'at' is on, choosing it as a click

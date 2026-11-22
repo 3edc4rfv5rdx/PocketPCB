@@ -188,61 +188,30 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
             hole.net = holeNets.value(hole.net);
     }
 
-    // The new ones go to the right of what is on the board, from the top of
-    // the outline down, in the order of their designators.
+    // The new ones join the list in the order of their designators, and go
+    // to the right of what is on the board (withPlacementsPacked()).
     std::stable_sort(added.begin(), added.end(), [](const Component *a, const Component *b) {
         return designatorLess(a->designator, b->designator);
     });
-    QPolygonF outlineCorners;
-    for (const OutlineCorner &corner : update.board.outline)
-        outlineCorners.append(toMm(corner.at));
-    const QRectF outline = outlineCorners.boundingRect();
-    const bool empty = update.board.outline.isEmpty() && placements.isEmpty();
-    const QRectF taken = empty ? QRectF() : boardBounds(update.board, library);
-    const Coord grid = design.project.boardGridStep;
-    const Coord gap = NEW_PLACEMENT_GAP;
-    const Coord top = update.board.outline.isEmpty() ? (empty ? 0 : mmToNm(taken.top()))
-                                                     : mmToNm(outline.top());
-    // A block about as tall as it is wide: the columns as tall as the side
-    // of a square holding them all, and the tallest of them at least.
-    double area = 0;
-    Coord tallest = 0;
-    for (const Component *component : std::as_const(added)) {
-        const QRectF bounds = footprintBounds(*library.findFootprint(component->footprint));
-        area += (bounds.width() + nmToMm(gap)) * (bounds.height() + nmToMm(gap));
-        tallest = std::max(tallest, mmToNm(bounds.height()));
-    }
-    const Coord columnHeight = std::max(tallest, mmToNm(std::sqrt(area)));
-    Coord x = empty ? 0 : mmToNm(taken.right()) + gap;
-    Coord y = top;
-    Coord columnWidth = 0;
+    QSet<ObjectId> addedIds;
     for (const Component *component : std::as_const(added)) {
         const Footprint &footprint = *library.findFootprint(component->footprint);
-        const QRectF bounds = footprintBounds(footprint);
-        const Coord width = mmToNm(bounds.width());
-        const Coord height = mmToNm(bounds.height());
-        if (y > top && y + height > top + columnHeight) {
-            x += columnWidth + gap;
-            y = top;
-            columnWidth = 0;
-        }
         Placement placement;
         placement.id = newObjectId();
         placement.component = component->id;
         placement.footprint = component->footprint;
         placement.designator = component->designator;
         placement.value = component->value;
-        placement.at = Point{snapToGrid(x - mmToNm(bounds.left()), grid),
-                             snapToGrid(y - mmToNm(bounds.top()), grid)};
         placement.refAt = footprint.refAt;
         placement.valueAt = footprint.valueAt;
         placement.padNets = padNetsOf(footprint, component->id, pinNets);
         placements.append(placement);
+        addedIds.insert(placement.id);
         changes.append(BoardChange{BoardChangeKind::Add, component->designator, QString(),
                                    placement.footprint});
-        y += height + gap;
-        columnWidth = std::max(columnWidth, width);
     }
+    update.board = withPlacementsPacked(update.board, library, addedIds,
+                                        design.project.boardGridStep);
 
     std::stable_sort(changes.begin(), changes.end(),
                      [](const BoardChange &a, const BoardChange &b) {
