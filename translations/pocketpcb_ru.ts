@@ -296,14 +296,6 @@
         <translation>металлизированному отверстию нужно медное кольцо</translation>
     </message>
     <message>
-        <source>a hole without plating has no copper ring</source>
-        <translation>у отверстия без металлизации нет медного кольца</translation>
-    </message>
-    <message>
-        <source>a hole without plating has no net</source>
-        <translation>у отверстия без металлизации нет цепи</translation>
-    </message>
-    <message>
         <source>a file name without a folder is expected</source>
         <translation>ожидается имя файла без папки</translation>
     </message>
@@ -342,6 +334,10 @@
     <message>
         <source>every drill must be greater than the one before it</source>
         <translation>каждое сверло должно быть больше предыдущего</translation>
+    </message>
+    <message>
+        <source>a hole without a copper ring has no net</source>
+        <translation>у отверстия без медного пояска нет цепи</translation>
     </message>
 </context>
 <context>
@@ -1455,12 +1451,12 @@
         <translation>Металлизированное</translation>
     </message>
     <message>
-        <source>Copper ring</source>
-        <translation>Медный поясок</translation>
+        <source>Copper pad</source>
+        <translation>Медная площадка</translation>
     </message>
     <message>
-        <source>Type the ring width in millimetres</source>
-        <translation>Введите ширину пояска в миллиметрах</translation>
+        <source>Type the pad diameter in millimetres</source>
+        <translation>Введите диаметр площадки в миллиметрах</translation>
     </message>
     <message>
         <source>Type the diameter in millimetres</source>
@@ -1477,6 +1473,14 @@
     <message>
         <source>The hole is locked</source>
         <translation>Отверстие заблокировано</translation>
+    </message>
+    <message>
+        <source>A plated hole needs a copper ring</source>
+        <translation>Металлизированному отверстию нужен медный поясок</translation>
+    </message>
+    <message>
+        <source>The pad must be larger than the hole</source>
+        <translation>Площадка должна быть больше отверстия</translation>
     </message>
 </context>
 <context>

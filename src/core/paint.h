@@ -67,6 +67,8 @@ inline QColor ratsnest() { return QColor(150, 240, 150); }
 // The mark of the origin, which coordinates on the board count from.
 inline QColor boardOrigin() { return QColor(0, 200, 220); }
 inline QColor bareHole() { return QColor(100, 100, 100); }
+// The plating of a hole, a line round the inside of its pad.
+inline QColor platedWall() { return QColor(255, 255, 255); }
 // What stands in for a symbol or a footprint the project library lacks.
 inline QColor missing() { return QColor(220, 0, 0); }
 // The selection and the rectangle drawn to choose with.

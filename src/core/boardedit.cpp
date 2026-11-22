@@ -201,22 +201,31 @@ Board withHolesPlated(const Board &board, const QSet<ObjectId> &ids, bool plated
         if (!ids.contains(hole.id) || hole.locked)
             continue;
         hole.plated = plated;
-        if (!plated) {
-            hole.ring = 0;
-            hole.net.clear();
-        } else if (hole.ring == 0) {
+        if (plated && hole.ring == 0)
             hole.ring = DEFAULT_HOLE_RING;
-        }
     }
     return result;
 }
 
-Board withHolesRing(const Board &board, const QSet<ObjectId> &ids, Coord ring)
+Coord padRing(const MountingHole &hole, Coord diameter)
+{
+    return diameter == 0 ? 0 : std::max<Coord>((diameter - hole.drill) / 2, 0);
+}
+
+bool takesPad(const MountingHole &hole, Coord diameter)
+{
+    return diameter == 0 ? !hole.plated : padRing(hole, diameter) > 0;
+}
+
+Board withHolesPad(const Board &board, const QSet<ObjectId> &ids, Coord diameter)
 {
     Board result = board;
     for (MountingHole &hole : result.holes) {
-        if (ids.contains(hole.id) && hole.plated && !hole.locked)
-            hole.ring = ring;
+        if (!ids.contains(hole.id) || hole.locked || !takesPad(hole, diameter))
+            continue;
+        hole.ring = padRing(hole, diameter);
+        if (hole.ring == 0)
+            hole.net.clear();
     }
     return result;
 }

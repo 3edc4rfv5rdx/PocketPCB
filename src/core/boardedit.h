@@ -55,7 +55,8 @@ bool arePlacementsLocked(const Board &board, const QSet<ObjectId> &ids);
 
 // The diameter a new hole has until another is chosen: for an M3 screw.
 constexpr Coord DEFAULT_HOLE_DRILL = 3200000;
-// The width of the copper ring a hole gets when it is made plated.
+// The width of the copper ring a hole without one gets when it is made
+// plated.
 constexpr Coord DEFAULT_HOLE_RING = 1000000;
 
 // The hole under 'at' (millimetres), or within 'reach' millimetres of its
@@ -73,11 +74,18 @@ Board withHolesMoved(const Board &board, const QSet<ObjectId> &ids, const Point 
 // The holes 'ids' of diameter 'drill'.
 Board withHolesDrill(const Board &board, const QSet<ObjectId> &ids, Coord drill);
 // The holes 'ids' made plated, a hole without a ring getting
-// DEFAULT_HOLE_RING, or bare, losing their rings and nets.
+// DEFAULT_HOLE_RING, or not plated, keeping their rings.
 Board withHolesPlated(const Board &board, const QSet<ObjectId> &ids, bool plated);
-// The plated ones of the holes 'ids' with a copper ring 'ring' wide, more
-// than zero; the bare ones stay without.
-Board withHolesRing(const Board &board, const QSet<ObjectId> &ids, Coord ring);
+// The copper ring of 'hole' that makes a pad of 'diameter' around it; 0 for
+// a diameter of 0 or one not larger than the hole.
+Coord padRing(const MountingHole &hole, Coord diameter);
+// A pad of 'diameter' fits 'hole': larger than the hole, or 0 (no pad)
+// for a hole without plating, as a plated one needs its ring.
+bool takesPad(const MountingHole &hole, Coord diameter);
+// The holes 'ids' with copper pads of 'diameter' (the ring's width going by
+// each hole's own); 0 takes the pad and its net off. A hole the pad does
+// not fit (takesPad()) keeps its own.
+Board withHolesPad(const Board &board, const QSet<ObjectId> &ids, Coord diameter);
 // The board without the holes 'ids'.
 Board withoutHoles(const Board &board, const QSet<ObjectId> &ids);
 // True when there is a hole among 'ids' and every one of them is plated.

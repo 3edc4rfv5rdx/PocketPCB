@@ -123,8 +123,10 @@ struct Via
     Coord size = 0;
 };
 
-// A mounting hole. A plated one has a copper ring around it, which may be
-// given a net; one without plating has neither.
+// A mounting hole. It may have a copper ring around it, a pad on both
+// sides, which may be given a net; one without a ring has no net. Plating,
+// for a board from a factory, needs the ring; a board made at home has a
+// ring without plating.
 struct MountingHole
 {
     ObjectId id;

@@ -683,6 +683,12 @@ private slots:
         bare.at = Point{-5000000, 5000000};
         bare.drill = 3000000;
         board.holes.append(bare);
+        // A ring without plating: copper, and nothing on the wall.
+        MountingHole home;
+        home.at = Point{-5000000, -5000000};
+        home.drill = 2000000;
+        home.ring = 1000000;
+        board.holes.append(home);
 
         const QImage image = render(board);
         QVERIFY(isColor(colorAt(image, 5.75, -5), paintcolor::via()));
@@ -690,11 +696,22 @@ private slots:
         QVERIFY(isColor(colorAt(image, 6.25, -5), paintcolor::boardBackground()));
         // The ring is 1 mm of copper around a hole of 2 mm.
         QVERIFY(isColor(colorAt(image, 6.5, 5), paintcolor::padBoth()));
-        QVERIFY(isColor(colorAt(image, 5, 5), paintcolor::boardBackground()));
+        // Inside the hole, off the arms of its cross.
+        QVERIFY(isColor(colorAt(image, 5.45, 5.45), paintcolor::boardBackground()));
         QVERIFY(isColor(colorAt(image, 7.25, 5), paintcolor::boardBackground()));
         // A hole without plating has no copper anywhere.
         QVERIFY(!anyColor(image, -8, 2, -2, 8, paintcolor::padBoth()));
         QVERIFY(anyColor(image, -7, 4.9, -6, 5.1, paintcolor::bareHole()));
+        QVERIFY(isColor(colorAt(image, -3.5, -5), paintcolor::padBoth()));
+        QVERIFY(!anyColor(image, -8, -8, -6.5, -2, paintcolor::bareHole()));
+        QVERIFY(!anyColor(image, -8, -8, -2, -2, paintcolor::platedWall()));
+        // Every hole has a cross in its middle; the plated one's black
+        // middle is crossed too.
+        QVERIFY(anyColor(image, -5.4, -5.05, -4.6, -4.95, paintcolor::bareHole()));
+        QVERIFY(anyColor(image, 4.6, 4.95, 5.4, 5.05, paintcolor::bareHole()));
+        QVERIFY(anyColor(image, -5.6, 4.95, -4.4, 5.05, paintcolor::bareHole()));
+        // A plated hole has its wall drawn white.
+        QVERIFY(anyColor(image, 5.8, 4.9, 6.1, 5.1, paintcolor::platedWall()));
     }
 
     void hiddenLayersAreNotDrawn()

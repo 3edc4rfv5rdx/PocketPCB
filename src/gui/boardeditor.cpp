@@ -81,7 +81,7 @@ QString BoardEditor::actionName(Action action)
     case Action::PlatedHoles:
         return tr("Plated");
     case Action::CopperRing:
-        return tr("Copper ring");
+        return tr("Copper pad");
     case Action::LockHoles:
         return tr("Lock holes");
     case Action::UnlockHoles:
@@ -723,27 +723,37 @@ void BoardEditor::editHoleValue(Typed typed)
     if (hole == nullptr || chosenHoles().isEmpty() || refuseHolesLocked())
         return;
     m_typed = typed;
-    const Coord value = typed == Typed::Ring ? hole->ring : hole->drill;
+    const Coord value = typed == Typed::Pad ? (hole->ring > 0 ? holeOuterDiameter(*hole) : 0)
+                                            : hole->drill;
     m_valueEdit.open(formatMmShort(value), QRectF(toMm(hole->at), QSizeF(0, 0)));
 }
 
 void BoardEditor::holeValueTyped(Typed typed, const QString &text)
 {
+    // A pad of 0 is taken off; a hole has a diameter.
     Coord value = 0;
-    if (!parseMm(text, value) || value <= 0) {
-        emit message(typed == Typed::Ring ? tr("Type the ring width in millimetres")
-                                          : diameterHint());
+    const bool pad = typed == Typed::Pad;
+    if (!parseMm(text, value) || value < 0 || (!pad && value == 0)) {
+        emit message(pad ? tr("Type the pad diameter in millimetres") : diameterHint());
         return;
     }
-    if (typed == Typed::Drill) {
+    if (!pad) {
         setChosenHolesDrill(value);
         return;
     }
     const QSet<ObjectId> ids = chosenHoles();
     const Board &board = m_document->design().board;
-    const Board ringed = withHolesRing(board, ids, value);
-    if (ringed != board)
-        applyBoard(Action::CopperRing, ringed, ids);
+    // Those the pad does not fit keep theirs: say why.
+    for (const MountingHole &hole : board.holes) {
+        if (!ids.contains(hole.id) || hole.locked || takesPad(hole, value))
+            continue;
+        emit message(value == 0 ? tr("A plated hole needs a copper ring")
+                                : tr("The pad must be larger than the hole"));
+        break;
+    }
+    const Board padded = withHolesPad(board, ids, value);
+    if (padded != board)
+        applyBoard(Action::CopperRing, padded, ids);
 }
 
 void BoardEditor::valueTyped(const QString &text)
@@ -755,7 +765,7 @@ void BoardEditor::valueTyped(const QString &text)
         radiusTyped(text);
         break;
     case Typed::Drill:
-    case Typed::Ring:
+    case Typed::Pad:
         holeValueTyped(typed, text);
         break;
     case Typed::None:

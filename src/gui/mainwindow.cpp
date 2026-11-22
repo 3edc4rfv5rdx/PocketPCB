@@ -921,11 +921,10 @@ void MainWindow::showBoardMenu(const QPoint &globalPos)
         plating->setEnabled(!locked);
         connect(plating, &QAction::triggered, m_boardEditor,
                 &BoardEditor::setChosenHolesPlated);
-        // Only a plated hole has copper round it.
         QAction *ring = menu.addAction(
             BoardEditor::actionName(BoardEditor::Action::CopperRing) + QStringLiteral("…"));
-        ring->setEnabled(plated && !locked);
-        connect(ring, &QAction::triggered, m_boardEditor, &BoardEditor::editMenuHoleRing);
+        ring->setEnabled(!locked);
+        connect(ring, &QAction::triggered, m_boardEditor, &BoardEditor::editMenuHolePad);
         menu.addSeparator();
         add("actionDelete");
         break;

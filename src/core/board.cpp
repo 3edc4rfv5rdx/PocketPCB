@@ -286,12 +286,9 @@ MountingHole holeFromJson(const QJsonObject &object, const QString &where, ReadC
     if (hole.plated && hole.ring == 0) {
         reader.fail(JsonReader::pathOf(where, KEY_RING),
                     JsonReader::tr("a plated hole needs a copper ring"));
-    } else if (!hole.plated && hole.ring != 0) {
-        reader.fail(JsonReader::pathOf(where, KEY_RING),
-                    JsonReader::tr("a hole without plating has no copper ring"));
-    } else if (!hole.plated && !hole.net.isEmpty()) {
+    } else if (hole.ring == 0 && !hole.net.isEmpty()) {
         reader.fail(JsonReader::pathOf(where, KEY_NET),
-                    JsonReader::tr("a hole without plating has no net"));
+                    JsonReader::tr("a hole without a copper ring has no net"));
     }
     return hole;
 }

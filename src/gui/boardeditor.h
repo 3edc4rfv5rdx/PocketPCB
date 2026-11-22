@@ -172,8 +172,9 @@ public:
     // Every hole chosen is locked: its diameter, plating and ring stay.
     bool chosenHolesLocked() const;
     void setChosenHolesPlated(bool plated);
-    // Types the copper ring of the plated holes chosen in place.
-    void editMenuHoleRing() { editHoleValue(Typed::Ring); }
+    // Types the diameter of the copper pad of the holes chosen in place; 0
+    // takes it off, except from the plated ones.
+    void editMenuHolePad() { editHoleValue(Typed::Pad); }
     // Every placement chosen shows its value; shown or hidden as one step.
     bool chosenValuesShown() const;
     void setChosenValuesShown(bool shown);
@@ -232,7 +233,7 @@ signals:
 
 private:
     // What the line typed in place is for.
-    enum class Typed { None, Radius, Drill, Ring };
+    enum class Typed { None, Radius, Drill, Pad };
 
     const QList<OutlineCorner> &outline() const { return m_document->design().board.outline; }
     int boardPage() const;
@@ -244,8 +245,9 @@ private:
     // Opens the line to type the radius of 'corner' in.
     void editRadius(int corner);
     void radiusTyped(const QString &text);
-    // What the line typed holds, in millimetres, as a hole's diameter or
-    // ring; refused in the status bar when it is not a size above zero.
+    // What the line typed holds, in millimetres, as the diameter of the
+    // holes chosen or of their pads; refused in the status bar when it is
+    // not a size, or is 0 for a hole.
     void holeValueTyped(Typed typed, const QString &text);
     // Says in the status bar that the outline is locked; true when it is.
     bool refuseLocked();
@@ -328,8 +330,8 @@ private:
     int m_litCorner = -1;
     int m_litSide = -1;
 
-    // The line typed in place: a corner's radius, the diameter or the ring
-    // of the holes chosen.
+    // The line typed in place: a corner's radius, the diameter of the holes
+    // chosen or of their pads.
     InPlaceEdit m_valueEdit;
     Typed m_typed = Typed::None;
     int m_radiusCorner = -1;

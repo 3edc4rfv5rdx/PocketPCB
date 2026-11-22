@@ -81,6 +81,9 @@ const double ERC_MARK_LINE_WIDTH = 0.3;
 
 // The board.
 const double OUTLINE_WIDTH = 0.15;
+// The arms of the cross in the middle of a mounting hole, as a part of its
+// radius.
+const double HOLE_CROSS_PART = 0.6;
 const double ZONE_LINE_WIDTH = 0.15;
 // A circle or an arc is found by the mouse along this many straight pieces.
 const int CURVE_PIECES = 32;
@@ -942,15 +945,27 @@ void paintMountingHole(QPainter &painter, const MountingHole &hole, const BoardL
     const QPointF at = toMm(hole.at);
     const double drill = nmToMm(hole.drill);
     const bool marked = lockedMarked && hole.locked;
-    if (hole.plated) {
+    const QColor edge = marked ? paintcolor::lockedPart() : paintcolor::bareHole();
+    if (hole.ring > 0) {
         paintRing(painter, at, nmToMm(holeOuterDiameter(hole)), drill,
                   marked ? paintcolor::lockedPart() : paintcolor::padBoth(), throughShown(shown));
-        return;
+        // The plating, a line round the inside of the pad, with the copper.
+        if (hole.plated && throughShown(shown)) {
+            painter.setPen(linePen(paintcolor::platedWall(), OUTLINE_WIDTH));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawEllipse(at, drill / 2, drill / 2);
+        }
+    } else {
+        // A bare hole: its edge, as it would not show on black.
+        painter.setPen(linePen(edge, OUTLINE_WIDTH));
+        painter.setBrush(paintcolor::boardBackground());
+        painter.drawEllipse(at, drill / 2, drill / 2);
     }
-    painter.setPen(linePen(marked ? paintcolor::lockedPart() : paintcolor::bareHole(),
-                           OUTLINE_WIDTH));
-    painter.setBrush(paintcolor::boardBackground());
-    painter.drawEllipse(at, drill / 2, drill / 2);
+    // A cross marks the middle, where the drill goes.
+    const double arm = drill / 2 * HOLE_CROSS_PART;
+    painter.setPen(linePen(edge, OUTLINE_WIDTH));
+    painter.drawLine(at - QPointF(arm, 0), at + QPointF(arm, 0));
+    painter.drawLine(at - QPointF(0, arm), at + QPointF(0, arm));
 }
 
 QColor silkscreenColor(BoardSide side)

@@ -522,15 +522,15 @@ private slots:
         error = errorOfChange("holes", "drill", 0);
         QVERIFY2(error.startsWith(QStringLiteral("holes[0].drill: ")), qPrintable(error));
 
-        // Without plating the ring must go.
+        // A ring without plating, for a board made at home, keeps its net.
         error = errorOfChange("holes", "plated", false);
-        QVERIFY2(error.startsWith(QStringLiteral("holes[0].ring: ")), qPrintable(error));
+        QCOMPARE(error, QString());
 
         // A plated hole may be left without a net.
         error = errorOfChange("holes", "net", QStringLiteral(""));
         QCOMPARE(error, QString());
 
-        // Without plating: no ring, and then no net either.
+        // Without plating and without a ring, no net either.
         QJsonObject root = boardToJson(fullBoard());
         QJsonArray holes = root.value(QStringLiteral("holes")).toArray();
         QJsonObject hole = holes.at(0).toObject();

@@ -198,19 +198,35 @@ private slots:
         QCOMPARE(drilled.holes.at(0).drill, 3 * MM);
         QCOMPARE(drilled.holes.at(1).drill, 4 * MM);
 
-        // Plating gives a ring, keeping one already set; bare takes it and the net off.
+        // Plating gives a ring to a hole without one and keeps one already set.
         Board plated = withHolesPlated(board, {first}, true);
         QCOMPARE(plated.holes.at(0).ring, DEFAULT_HOLE_RING);
         QVERIFY(areHolesPlated(plated, {first}));
         QVERIFY(!areHolesPlated(plated, {first, second}));
         QVERIFY(!areHolesPlated(plated, {}));
-        plated = withHolesRing(plated, {first, second}, MM / 2);
+        // A pad goes on any hole, plated or not: 4 mm around 3 mm.
+        plated = withHolesPad(plated, {first, second}, 4 * MM);
         QCOMPARE(plated.holes.at(0).ring, MM / 2);
-        QCOMPARE(plated.holes.at(1).ring, Coord(0));
+        QCOMPARE(plated.holes.at(1).ring, MM / 2);
         QCOMPARE(withHolesPlated(plated, {first}, true).holes.at(0).ring, MM / 2);
+        // Plating taken off keeps the ring and its net.
         plated.holes[0].net = QStringLiteral("GND");
-        const Board bare = withHolesPlated(plated, {first}, false);
-        QCOMPARE(bare, board);
+        const Board unplated = withHolesPlated(plated, {first}, false);
+        QVERIFY(!unplated.holes.at(0).plated);
+        QCOMPARE(unplated.holes.at(0).ring, MM / 2);
+        QCOMPARE(unplated.holes.at(0).net, QStringLiteral("GND"));
+        // A pad of 0 goes off a hole without plating, with its net, and
+        // stays on a plated one.
+        Board ringless = withHolesPad(unplated, {first, second}, 0);
+        QCOMPARE(ringless, board);
+        ringless = withHolesPad(plated, {first, second}, 0);
+        QCOMPARE(ringless.holes.at(0), plated.holes.at(0));
+        QCOMPARE(ringless.holes.at(1).ring, Coord(0));
+        // A pad not larger than the hole leaves it as it was.
+        QVERIFY(!takesPad(plated.holes.at(1), 3 * MM));
+        QVERIFY(!takesPad(plated.holes.at(1), 3 * MM + 1));
+        QCOMPARE(withHolesPad(plated, {first, second}, 3 * MM), plated);
+        QCOMPARE(padRing(plated.holes.at(1), 5 * MM), MM);
 
         const Board fewer = withoutHoles(board, {first});
         QCOMPARE(fewer.holes.size(), 1);
@@ -237,7 +253,7 @@ private slots:
         const Board drilled = withHolesDrill(locked, both, 4 * MM);
         QCOMPARE(drilled.holes.at(0), locked.holes.at(0));
         QCOMPARE(drilled.holes.at(1).drill, 4 * MM);
-        const Board plated = withHolesRing(withHolesPlated(locked, both, true), both, MM / 2);
+        const Board plated = withHolesPad(withHolesPlated(locked, both, true), both, 4 * MM);
         QCOMPARE(plated.holes.at(0), locked.holes.at(0));
         QCOMPARE(plated.holes.at(1).ring, MM / 2);
         const Board fewer = withoutHoles(locked, both);

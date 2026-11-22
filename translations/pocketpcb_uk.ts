@@ -296,14 +296,6 @@
         <translation>металізованому отвору потрібне мідне кільце</translation>
     </message>
     <message>
-        <source>a hole without plating has no copper ring</source>
-        <translation>в отвору без металізації немає мідного кільця</translation>
-    </message>
-    <message>
-        <source>a hole without plating has no net</source>
-        <translation>в отвору без металізації немає кола</translation>
-    </message>
-    <message>
         <source>a file name without a folder is expected</source>
         <translation>очікується назва файлу без теки</translation>
     </message>
@@ -342,6 +334,10 @@
     <message>
         <source>every drill must be greater than the one before it</source>
         <translation>кожне свердло має бути більшим за попереднє</translation>
+    </message>
+    <message>
+        <source>a hole without a copper ring has no net</source>
+        <translation>у отвору без мідного пояска немає кола</translation>
     </message>
 </context>
 <context>
@@ -1455,12 +1451,12 @@
         <translation>Металізований</translation>
     </message>
     <message>
-        <source>Copper ring</source>
-        <translation>Мідний поясок</translation>
+        <source>Copper pad</source>
+        <translation>Мідна площадка</translation>
     </message>
     <message>
-        <source>Type the ring width in millimetres</source>
-        <translation>Введіть ширину пояска в міліметрах</translation>
+        <source>Type the pad diameter in millimetres</source>
+        <translation>Введіть діаметр площадки в міліметрах</translation>
     </message>
     <message>
         <source>Type the diameter in millimetres</source>
@@ -1477,6 +1473,14 @@
     <message>
         <source>The hole is locked</source>
         <translation>Отвір заблоковано</translation>
+    </message>
+    <message>
+        <source>A plated hole needs a copper ring</source>
+        <translation>Металізованому отвору потрібен мідний поясок</translation>
+    </message>
+    <message>
+        <source>The pad must be larger than the hole</source>
+        <translation>Площадка має бути більшою за отвір</translation>
     </message>
 </context>
 <context>

@@ -3,6 +3,8 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A plated hole is drawn with a white wall, and every mounting hole with a cross in its middle
+- N: A mounting hole may have a copper pad without plating, its diameter typed in place
 - N: Mounting holes may be locked: a locked one is drawn yellow and is not moved, changed or deleted
 - N: Mounting holes are placed on the board from the Hole button, its arrow choosing the diameter from the drill set of the project rules
 ## v0.9.243 (2026-11-21)
