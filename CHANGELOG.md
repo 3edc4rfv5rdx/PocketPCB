@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+## v0.10.257 (2026-11-22)
 - F: A project opened while the board is shown opens on its board
 - F: The outline button starts as Rectangular board, and Update board stands a gap left of Lock
 - F: The Save button stands on red while the project is not saved
