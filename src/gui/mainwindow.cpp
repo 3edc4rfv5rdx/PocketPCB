@@ -1058,6 +1058,8 @@ bool MainWindow::openProject(const QString &path)
 {
     QString error;
     QStringList problems;
+    // Opened from the board, the project opens on its board.
+    const bool fromBoard = m_boardEditor->isActive();
     storeViews();
     if (!m_document->open(path, error, &problems)) {
         showStatus(error);
@@ -1065,7 +1067,7 @@ bool MainWindow::openProject(const QString &path)
     }
     m_views = readProjectView(path);
     m_shownViewKey.clear();
-    showPage(0);
+    showPage(fromBoard ? m_designItem->boardPage() : 0);
     updateTitle();
     AppSettings::addRecentProject(path);
     // The first problem in full, and how many more there are.
