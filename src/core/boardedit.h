@@ -51,4 +51,40 @@ Board withPlacementsLocked(const Board &board, const QSet<ObjectId> &ids, bool l
 // True when there is a placement among 'ids' and every one of them is locked.
 bool arePlacementsLocked(const Board &board, const QSet<ObjectId> &ids);
 
+// Mounting holes (MountingHole).
+
+// The diameter a new hole has until another is chosen: for an M3 screw.
+constexpr Coord DEFAULT_HOLE_DRILL = 3200000;
+// The width of the copper ring a hole gets when it is made plated.
+constexpr Coord DEFAULT_HOLE_RING = 1000000;
+
+// The hole under 'at' (millimetres), or within 'reach' millimetres of its
+// middle when it is smaller than that; the one placed last of several;
+// null when there is none.
+ObjectId holeAt(const Board &board, const QPointF &at, double reach);
+// The holes lying wholly inside 'rect' (millimetres).
+QSet<ObjectId> holesInside(const Board &board, const QRectF &rect);
+// A new hole of diameter 'drill' at 'at', without plating.
+MountingHole newHole(const Point &at, Coord drill);
+// A locked hole (MountingHole::locked) is not moved, changed or taken off
+// by any of these.
+// The holes 'ids' moved by 'delta'.
+Board withHolesMoved(const Board &board, const QSet<ObjectId> &ids, const Point &delta);
+// The holes 'ids' of diameter 'drill'.
+Board withHolesDrill(const Board &board, const QSet<ObjectId> &ids, Coord drill);
+// The holes 'ids' made plated, a hole without a ring getting
+// DEFAULT_HOLE_RING, or bare, losing their rings and nets.
+Board withHolesPlated(const Board &board, const QSet<ObjectId> &ids, bool plated);
+// The plated ones of the holes 'ids' with a copper ring 'ring' wide, more
+// than zero; the bare ones stay without.
+Board withHolesRing(const Board &board, const QSet<ObjectId> &ids, Coord ring);
+// The board without the holes 'ids'.
+Board withoutHoles(const Board &board, const QSet<ObjectId> &ids);
+// True when there is a hole among 'ids' and every one of them is plated.
+bool areHolesPlated(const Board &board, const QSet<ObjectId> &ids);
+// The holes 'ids' locked or unlocked.
+Board withHolesLocked(const Board &board, const QSet<ObjectId> &ids, bool locked);
+// True when there is a hole among 'ids' and every one of them is locked.
+bool areHolesLocked(const Board &board, const QSet<ObjectId> &ids);
+
 } // namespace ppcb

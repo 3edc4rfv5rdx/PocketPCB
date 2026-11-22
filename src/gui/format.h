@@ -16,6 +16,8 @@ QString formatMmFixed(Coord nm);
 // Millimetres with trailing zeros removed: "2.54", "10.16", "5".
 // For values shown in lists (grid steps, widths).
 QString formatMmShort(Coord nm);
+// The same with the unit: "3.2 mm".
+QString formatMmShortUnit(Coord nm);
 
 // "X 12.700   Y 5.080 mm": a point, as the status bar shows the cursor.
 QString formatPosition(Coord x, Coord y);

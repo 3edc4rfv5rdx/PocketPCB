@@ -263,6 +263,7 @@ QJsonObject holeToJson(const MountingHole &hole)
     object.insert(QLatin1String(KEY_PLATED), hole.plated);
     object.insert(QLatin1String(KEY_RING), mmToJson(hole.ring));
     object.insert(QLatin1String(KEY_NET), hole.net);
+    object.insert(QLatin1String(KEY_LOCKED), hole.locked);
     return object;
 }
 
@@ -276,6 +277,9 @@ MountingHole holeFromJson(const QJsonObject &object, const QString &where, ReadC
     hole.plated = reader.boolean(object, KEY_PLATED, where);
     hole.ring = reader.nonNegativeMm(object, KEY_RING, where);
     hole.net = reader.string(object, KEY_NET, where);
+    // Optional: files written before it have unlocked holes.
+    if (object.contains(QLatin1String(KEY_LOCKED)))
+        hole.locked = reader.boolean(object, KEY_LOCKED, where);
     if (!reader.ok())
         return hole;
 
@@ -371,10 +375,15 @@ bool operator==(const Via &a, const Via &b)
            && a.size == b.size;
 }
 
+Coord holeOuterDiameter(const MountingHole &hole)
+{
+    return hole.drill + 2 * hole.ring;
+}
+
 bool operator==(const MountingHole &a, const MountingHole &b)
 {
     return a.id == b.id && a.at == b.at && a.drill == b.drill && a.plated == b.plated
-           && a.ring == b.ring && a.net == b.net;
+           && a.ring == b.ring && a.net == b.net && a.locked == b.locked;
 }
 
 bool operator==(const BoardGraphic &a, const BoardGraphic &b)

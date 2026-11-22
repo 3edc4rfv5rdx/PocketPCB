@@ -78,6 +78,7 @@ Board fullBoard()
     hole.plated = true;
     hole.ring = 1500000;
     hole.net = QStringLiteral("GND");
+    hole.locked = true;
     board.holes.append(hole);
 
     BoardGraphic text;
@@ -236,6 +237,7 @@ private slots:
         CHANGED(other.holes[0].plated = false);
         CHANGED(other.holes[0].ring += 1);
         CHANGED(other.holes[0].net.clear());
+        CHANGED(other.holes[0].locked = false);
         CHANGED(other.holes.clear());
 
         CHANGED(other.graphics[0].id = id(1));
@@ -325,6 +327,21 @@ private slots:
         const Board back = readBack(root, error);
         QVERIFY2(error.isEmpty(), qPrintable(error));
         QVERIFY(!back.placements.at(0).locked);
+    }
+
+    // Files written before holes were locked have them unlocked.
+    void holeLockIsOptional()
+    {
+        QJsonObject root = boardToJson(fullBoard());
+        QJsonArray holes = root.value(QStringLiteral("holes")).toArray();
+        QJsonObject first = holes.at(0).toObject();
+        first.remove(QStringLiteral("locked"));
+        holes[0] = first;
+        root.insert(QStringLiteral("holes"), holes);
+        QString error;
+        const Board back = readBack(root, error);
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+        QVERIFY(!back.holes.at(0).locked);
     }
 
     void everyListMustBePresent()

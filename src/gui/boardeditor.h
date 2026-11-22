@@ -24,7 +24,10 @@ class CanvasView;
 // it away, and a drag moves what is chosen along the grid; a frame drawn
 // on the empty board chooses the placements wholly inside it. A click on a
 // placement's designator or value chooses that text alone, and a drag
-// moves it away from the placement. Drawing the outline: every click sets
+// moves it away from the placement. Mounting holes are chosen and dragged
+// as placements are, and with them; Delete takes them off, the placements
+// staying, as they come from the schematic. Placing holes: every click puts
+// one on the grid. Drawing the outline: every click sets
 // a corner on the grid; a click on the first corner closes it. Cutting
 // out: a rectangle drawn across the edge is taken off the board. Each
 // change is one step. Positions come in scene millimetres.
@@ -54,8 +57,18 @@ public:
         ShowValue,
         HideValue,
         LineToPart,
+        PlaceHole,
+        MoveHoles,
+        DeleteHoles,
+        HoleDiameter,
+        PlatedHoles,
+        CopperRing,
+        LockHoles,
+        UnlockHoles,
     };
     static QString actionName(Action action);
+    // Asks for a hole's diameter in millimetres, after a wrong one.
+    static QString diameterHint();
 
     // While the board is shown. Leaving it drops what is being drawn or
     // dragged and goes back to choosing.
@@ -63,16 +76,27 @@ public:
     void setActive(bool active);
 
     // What the mouse does now.
-    enum class Tool { Select, Outline, CutOut };
+    enum class Tool { Select, Outline, CutOut, Hole };
     Tool tool() const { return m_tool; }
     void chooseSelectTool();
     // Drawing a new outline, which takes the place of the old one once
     // closed.
     void startDrawingOutline();
     void startCuttingOut();
-    // Drawing the outline or a cut-out is going on: a short right click ends
-    // it, as Esc does.
-    bool isDrawing() const { return !m_outlinePoints.isEmpty() || m_cutting; }
+    // Placing holes of the diameter holeDrill().
+    void startPlacingHoles();
+    // The diameter of the holes placed: the one chosen last, DEFAULT_HOLE_DRILL
+    // at first. Choosing one starts placing them.
+    Coord holeDrill() const { return m_holeDrill; }
+    void setHoleDrill(Coord drill);
+    // Drawing the outline or a cut-out, or placing holes, is going on: a
+    // short right click ends it, as Esc does.
+    bool isDrawing() const
+    {
+        return !m_outlinePoints.isEmpty() || m_cutting || (m_active && m_tool == Tool::Hole);
+    }
+    // Where the next hole goes, as it would stand; nothing while not placing.
+    std::optional<MountingHole> holeToPlace() const;
     // The outline becomes a rectangle 'width' by 'height' with its top left
     // corner at the origin, as one step; choosing comes back.
     void makeRectangleBoard(Coord width, Coord height);
@@ -87,6 +111,8 @@ public:
     bool outlineChosen() const { return m_active && m_outlineChosen && !outline().isEmpty(); }
     // The placements chosen, of those the board has.
     QSet<ObjectId> chosenPlacements() const;
+    // The holes chosen, of those the board has.
+    QSet<ObjectId> chosenHoles() const;
     // The nets of the pads of the placements chosen, lit on the board.
     QSet<QString> litNets() const;
     // The text chosen alone; null when none is.
@@ -95,12 +121,16 @@ public:
     // whose they are: for the text chosen alone, and for both shown texts of
     // every placement chosen, as the board stands while dragged.
     QList<QLineF> textGuides() const;
-    // Something is chosen that may be locked: the outline or placements.
-    bool hasChosen() const { return outlineChosen() || !chosenPlacements().isEmpty(); }
-    // The outline and every placement.
+    // Something is chosen that may be locked: the outline, placements or
+    // holes.
+    bool hasChosen() const
+    {
+        return outlineChosen() || !chosenPlacements().isEmpty() || !chosenHoles().isEmpty();
+    }
+    // The outline, every placement and every hole.
     void chooseAll();
-    // The placements 'ids' and nothing else, as after an Undo of a step
-    // that touched them.
+    // The placements and holes 'ids' and nothing else, as after an Undo of
+    // a step that touched them.
     void setChosen(const QSet<ObjectId> &ids);
     // Everything chosen is locked (the lock button is pressed); locking or
     // unlocking it is one step.
@@ -111,12 +141,15 @@ public:
     // While they are dragged, they turn about the point of the one taken,
     // and the drag goes on. Locked ones stay.
     void rotateChosen();
+    // The holes chosen are taken off the board as one step; the placements
+    // chosen stay.
+    void deleteChosen();
 
     // What a short right click at 'at' is on, choosing it as a click
     // would, unless it is chosen already: a placement (also by one of its
-    // texts), a corner or a side of the outline, or nothing (what is chosen
-    // then stays).
-    enum class MenuTarget { None, Placement, Corner, Side };
+    // texts), a hole, a corner or a side of the outline, or nothing (what is
+    // chosen then stays).
+    enum class MenuTarget { None, Placement, Hole, Corner, Side };
     MenuTarget chooseForMenu(const QPointF &at);
     // The corner of the outline the menu was opened on; -1 for none.
     int menuCorner() const { return m_menuCorner; }
@@ -126,6 +159,21 @@ public:
         if (m_menuCorner >= 0)
             editRadius(m_menuCorner);
     }
+    // The diameter of every hole chosen; 0 when they differ or none is.
+    Coord chosenHolesDrill() const;
+    // The holes chosen get the diameter 'drill' as one step.
+    void setChosenHolesDrill(Coord drill);
+    // Types the diameter of the holes chosen in place, over the hole the
+    // menu was opened on.
+    void editMenuHoleDrill() { editHoleValue(Typed::Drill); }
+    // Every hole chosen is plated (areHolesPlated()); made plated or bare as
+    // one step.
+    bool chosenHolesPlated() const;
+    // Every hole chosen is locked: its diameter, plating and ring stay.
+    bool chosenHolesLocked() const;
+    void setChosenHolesPlated(bool plated);
+    // Types the copper ring of the plated holes chosen in place.
+    void editMenuHoleRing() { editHoleValue(Typed::Ring); }
     // Every placement chosen shows its value; shown or hidden as one step.
     bool chosenValuesShown() const;
     void setChosenValuesShown(bool shown);
@@ -183,6 +231,9 @@ signals:
     void message(const QString &text);
 
 private:
+    // What the line typed in place is for.
+    enum class Typed { None, Radius, Drill, Ring };
+
     const QList<OutlineCorner> &outline() const { return m_document->design().board.outline; }
     int boardPage() const;
     // Makes 'outline' the board's as one step named after 'action'.
@@ -193,14 +244,27 @@ private:
     // Opens the line to type the radius of 'corner' in.
     void editRadius(int corner);
     void radiusTyped(const QString &text);
+    // What the line typed holds, in millimetres, as a hole's diameter or
+    // ring; refused in the status bar when it is not a size above zero.
+    void holeValueTyped(Typed typed, const QString &text);
     // Says in the status bar that the outline is locked; true when it is.
     bool refuseLocked();
+    // Says in the status bar that the holes chosen are locked, when holes
+    // are chosen and all of them are; true then.
+    bool refuseHolesLocked();
     // Makes 'board' the board as one step named after 'action', with the
     // placements 'ids' as those it touched.
     void applyBoard(Action action, const Board &board, const QSet<ObjectId> &ids);
-    // A press in choosing on a placement's text or on a placement; false
-    // when there is neither under 'at'.
-    bool pressPlacement(const QPointF &at, bool adding);
+    // A press in choosing on a placement's text, a hole or a placement;
+    // false when there is none of them under 'at'.
+    bool pressChoosable(const QPointF &at, bool adding);
+    // The hole under 'at', as the mouse reaches.
+    ObjectId holeUnder(const QPointF &at) const;
+    // Opens the line over the hole the menu was opened on.
+    void editHoleValue(Typed typed);
+    void valueTyped(const QString &text);
+    // Places a hole of holeDrill() at 'at', unless one stands there.
+    void placeHole(const Point &at);
     // The board as a drag of placements or of a text to 'at' leaves it.
     Board draggedBoard(const QPointF &at) const;
     // Drops what is chosen: the outline, the placements, the text.
@@ -241,7 +305,7 @@ private:
     bool m_outlineChosen = false;
     std::optional<QList<OutlineCorner>> m_preview;
 
-    // The placements chosen, and a text chosen alone.
+    // The placements and the holes chosen, and a text chosen alone.
     QSet<ObjectId> m_chosen;
     PlacementText m_chosenText;
     // The press took a placement chosen, or a text: a drag moves them from
@@ -264,9 +328,16 @@ private:
     int m_litCorner = -1;
     int m_litSide = -1;
 
-    InPlaceEdit m_radiusEdit;
+    // The line typed in place: a corner's radius, the diameter or the ring
+    // of the holes chosen.
+    InPlaceEdit m_valueEdit;
+    Typed m_typed = Typed::None;
     int m_radiusCorner = -1;
     int m_menuCorner = -1;
+    // The hole the menu was opened on.
+    ObjectId m_menuHole;
+
+    Coord m_holeDrill = DEFAULT_HOLE_DRILL;
 };
 
 } // namespace ppcb

@@ -936,16 +936,19 @@ bool throughShown(const BoardLayerSet &shown)
     return shown.contains(BoardLayer::CopperTop) || shown.contains(BoardLayer::CopperBottom);
 }
 
-void paintMountingHole(QPainter &painter, const MountingHole &hole, const BoardLayerSet &shown)
+void paintMountingHole(QPainter &painter, const MountingHole &hole, const BoardLayerSet &shown,
+                       bool lockedMarked)
 {
     const QPointF at = toMm(hole.at);
     const double drill = nmToMm(hole.drill);
+    const bool marked = lockedMarked && hole.locked;
     if (hole.plated) {
-        paintRing(painter, at, drill + 2 * nmToMm(hole.ring), drill, paintcolor::padBoth(),
-                  throughShown(shown));
+        paintRing(painter, at, nmToMm(holeOuterDiameter(hole)), drill,
+                  marked ? paintcolor::lockedPart() : paintcolor::padBoth(), throughShown(shown));
         return;
     }
-    painter.setPen(linePen(paintcolor::bareHole(), OUTLINE_WIDTH));
+    painter.setPen(linePen(marked ? paintcolor::lockedPart() : paintcolor::bareHole(),
+                           OUTLINE_WIDTH));
     painter.setBrush(paintcolor::boardBackground());
     painter.drawEllipse(at, drill / 2, drill / 2);
 }
@@ -1451,7 +1454,7 @@ QRectF boardBounds(const Board &board, const Library &library)
     for (const Via &via : board.vias)
         bounds.add(squareAround(toMm(via.at), nmToMm(via.size)));
     for (const MountingHole &hole : board.holes)
-        bounds.add(squareAround(toMm(hole.at), nmToMm(hole.drill) + 2 * nmToMm(hole.ring)));
+        bounds.add(squareAround(toMm(hole.at), nmToMm(holeOuterDiameter(hole))));
     for (const BoardGraphic &item : board.graphics) {
         // A text on the bottom is mirrored about its anchor: room on both sides.
         const QRectF rect = graphicBounds(item.graphic);
@@ -1516,7 +1519,7 @@ void paintBoard(QPainter &painter, const Board &board, const Library &library,
                   throughShown(shown));
     }
     for (const MountingHole &hole : board.holes)
-        paintMountingHole(painter, hole, shown);
+        paintMountingHole(painter, hole, shown, lockedMarked);
 
     for (const Placement &placement : board.placements) {
         if (shown.contains(silkscreenLayer(placement.side)))

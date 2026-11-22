@@ -54,6 +54,8 @@ const char KEY_ANNULAR_RING[] = "annularRing";
 const char KEY_EDGE_CLEARANCE[] = "edgeClearance";
 const char KEY_MASK_EXPANSION[] = "maskExpansion";
 const char KEY_VIAS_COVERED[] = "viasCovered";
+const char KEY_DRILLS[] = "drills";
+const char KEY_DRILLS_ONLY[] = "drillsOnly";
 const char KEY_CHECKS[] = "checks";
 const char KEY_CLASS_WIDTH[] = "classWidth";
 const char KEY_MINIMUM_WIDTH[] = "minimumWidth";
@@ -73,6 +75,13 @@ const Coord LUT_ANNULAR_RING = 600000;
 const Coord LUT_EDGE_CLEARANCE = 1000000;
 const Coord MASK_EXPANSION = 100000;
 const Coord POWER_TRACK_WIDTH = 1500000;
+// A factory drills any diameter; these are the common ones. Toner transfer
+// is drilled at home with the drills one has.
+const QList<Coord> PRODUCTION_DRILLS = {600000,  800000,  1000000, 1200000, 1500000,
+                                        2000000, 2500000, 3000000, 3200000, 3500000,
+                                        4000000, 5000000, 6000000};
+const QList<Coord> LUT_DRILLS = {600000,  800000,  1000000, 1200000, 1500000, 2000000, 3000000,
+                                 3200000, 4000000, 5000000, 6000000, 8000000, 10000000};
 
 // In the order of DesignatorStyle.
 const QStringList &styleNames()
@@ -207,6 +216,10 @@ QJsonObject rulesToJson(const Rules &rules)
     checks.insert(QLatin1String(KEY_EDGE_CLEARANCE),
                   levelNames().at(int(rules.edgeClearanceLevel)));
 
+    QJsonArray drills;
+    for (Coord drill : rules.drills)
+        drills.append(mmToJson(drill));
+
     QJsonObject object;
     object.insert(QLatin1String(KEY_SET), ruleSetNames().at(int(rules.set)));
     object.insert(QLatin1String(KEY_TRACK_WIDTHS), widths);
@@ -218,6 +231,8 @@ QJsonObject rulesToJson(const Rules &rules)
     object.insert(QLatin1String(KEY_EDGE_CLEARANCE), mmToJson(rules.edgeClearance));
     object.insert(QLatin1String(KEY_MASK_EXPANSION), mmToJson(rules.maskExpansion));
     object.insert(QLatin1String(KEY_VIAS_COVERED), rules.viasCovered);
+    object.insert(QLatin1String(KEY_DRILLS), drills);
+    object.insert(QLatin1String(KEY_DRILLS_ONLY), rules.drillsOnly);
     object.insert(QLatin1String(KEY_CHECKS), checks);
     return object;
 }
@@ -226,6 +241,26 @@ CheckLevel levelFromJson(const QJsonObject &checks, const char *key, const QStri
                          JsonReader &reader)
 {
     return CheckLevel(reader.choice(checks, key, where, levelNames()));
+}
+
+// A list of sizes under 'key', at least one, each greater than the one
+// before it.
+QList<Coord> sizesFromJson(const QJsonObject &object, const char *key, const QString &where,
+                           JsonReader &reader, const QString &emptyMessage,
+                           const QString &orderMessage)
+{
+    const QList<Coord> sizes = reader.mmList(object, key, where);
+    const QString listWhere = JsonReader::pathOf(where, key);
+    if (reader.ok() && sizes.isEmpty())
+        reader.fail(listWhere, emptyMessage);
+    for (int i = 0; i < sizes.size(); ++i) {
+        const QString sizeWhere = JsonReader::pathOf(listWhere, i);
+        if (sizes.at(i) <= 0)
+            reader.fail(sizeWhere, JsonReader::tr("a size greater than zero is expected"));
+        else if (i > 0 && sizes.at(i) <= sizes.at(i - 1))
+            reader.fail(sizeWhere, orderMessage);
+    }
+    return sizes;
 }
 
 Rules rulesFromJson(const QJsonObject &root, JsonReader &reader)
@@ -238,19 +273,10 @@ Rules rulesFromJson(const QJsonObject &root, JsonReader &reader)
 
     rules.set = RuleSet(reader.choice(object, KEY_SET, where, ruleSetNames()));
 
-    rules.trackWidths = reader.mmList(object, KEY_TRACK_WIDTHS, where);
-    const QString widthsWhere = JsonReader::pathOf(where, KEY_TRACK_WIDTHS);
-    if (reader.ok() && rules.trackWidths.isEmpty())
-        reader.fail(widthsWhere, JsonReader::tr("at least one track width is expected"));
-    for (int i = 0; i < rules.trackWidths.size(); ++i) {
-        const QString widthWhere = JsonReader::pathOf(widthsWhere, i);
-        if (rules.trackWidths.at(i) <= 0)
-            reader.fail(widthWhere, JsonReader::tr("a size greater than zero is expected"));
-        else if (i > 0 && rules.trackWidths.at(i) <= rules.trackWidths.at(i - 1)) {
-            reader.fail(widthWhere,
-                        JsonReader::tr("every track width must be greater than the one before it"));
-        }
-    }
+    rules.trackWidths = sizesFromJson(
+        object, KEY_TRACK_WIDTHS, where, reader,
+        JsonReader::tr("at least one track width is expected"),
+        JsonReader::tr("every track width must be greater than the one before it"));
 
     rules.defaultTrackWidth = reader.positiveMm(object, KEY_DEFAULT_TRACK_WIDTH, where);
     if (reader.ok() && !rules.trackWidths.contains(rules.defaultTrackWidth)) {
@@ -263,6 +289,17 @@ Rules rulesFromJson(const QJsonObject &root, JsonReader &reader)
     rules.edgeClearance = reader.nonNegativeMm(object, KEY_EDGE_CLEARANCE, where);
     rules.maskExpansion = reader.nonNegativeMm(object, KEY_MASK_EXPANSION, where);
     rules.viasCovered = reader.boolean(object, KEY_VIAS_COVERED, where);
+    // Files written before there were drills take those of their set.
+    if (object.contains(QLatin1String(KEY_DRILLS))) {
+        rules.drills = sizesFromJson(
+            object, KEY_DRILLS, where, reader, JsonReader::tr("at least one drill is expected"),
+            JsonReader::tr("every drill must be greater than the one before it"));
+        rules.drillsOnly = reader.boolean(object, KEY_DRILLS_ONLY, where);
+    } else {
+        const Rules starting = rules.set == RuleSet::Lut ? lutRules() : productionRules();
+        rules.drills = starting.drills;
+        rules.drillsOnly = starting.drillsOnly;
+    }
 
     const QJsonObject checks = reader.object(object, KEY_CHECKS, where);
     const QString checksWhere = JsonReader::pathOf(where, KEY_CHECKS);
@@ -384,6 +421,8 @@ Rules productionRules()
     rules.annularRing = PRODUCTION_ANNULAR_RING;
     rules.edgeClearance = PRODUCTION_EDGE_CLEARANCE;
     rules.maskExpansion = MASK_EXPANSION;
+    rules.drills = PRODUCTION_DRILLS;
+    rules.drillsOnly = false;
     return rules;
 }
 
@@ -399,6 +438,8 @@ Rules lutRules()
     rules.annularRing = LUT_ANNULAR_RING;
     rules.edgeClearance = LUT_EDGE_CLEARANCE;
     rules.maskExpansion = MASK_EXPANSION;
+    rules.drills = LUT_DRILLS;
+    rules.drillsOnly = true;
     return rules;
 }
 
@@ -422,6 +463,7 @@ bool operator==(const Rules &a, const Rules &b)
            && a.viaDrill == b.viaDrill && a.viaSize == b.viaSize
            && a.annularRing == b.annularRing && a.edgeClearance == b.edgeClearance
            && a.maskExpansion == b.maskExpansion && a.viasCovered == b.viasCovered
+           && a.drills == b.drills && a.drillsOnly == b.drillsOnly
            && a.clearanceLevel == b.clearanceLevel && a.annularRingLevel == b.annularRingLevel
            && a.classWidthLevel == b.classWidthLevel
            && a.minimumWidthLevel == b.minimumWidthLevel

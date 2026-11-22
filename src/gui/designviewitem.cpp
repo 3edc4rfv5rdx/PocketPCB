@@ -251,7 +251,8 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
         for (const QPointF &point : drawn)
             painter.drawRect(QRectF(point - QPointF(half, half), QSizeF(2 * half, 2 * half)));
     }
-    // The placements chosen, a text chosen alone, the frame choosing them.
+    // The placements and holes chosen, a text chosen alone, the frame
+    // choosing them.
     const QSet<ObjectId> chosen = editor->chosenPlacements();
     painter.setPen(pen);
     painter.setBrush(fill);
@@ -264,6 +265,18 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
             if (!placementTextShown(placement, text).isEmpty())
                 painter.drawRect(placementTextRect(placement, text));
         }
+    }
+    // The holes chosen, and the one to place under the cursor.
+    const QSet<ObjectId> chosenHoles = editor->chosenHoles();
+    for (const MountingHole &hole : board.holes) {
+        if (!chosenHoles.contains(hole.id))
+            continue;
+        const double radius = nmToMm(holeOuterDiameter(hole)) / 2;
+        painter.drawEllipse(toMm(hole.at), radius, radius);
+    }
+    if (const std::optional<MountingHole> hole = editor->holeToPlace()) {
+        const double radius = nmToMm(holeOuterDiameter(*hole)) / 2;
+        painter.drawEllipse(toMm(hole->at), radius, radius);
     }
     const PlacementText text = editor->chosenText();
     if (const Placement *owner = findById(board.placements, text.owner))

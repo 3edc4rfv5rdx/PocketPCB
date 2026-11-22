@@ -29,6 +29,7 @@
 #include "screensizedialog.h"
 
 #include <QAction>
+#include <QApplication>
 #include <QScreen>
 #include <QToolBar>
 #include <QActionGroup>
@@ -41,6 +42,8 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFileSystemWatcher>
+#include <QInputDialog>
+#include <QWidgetAction>
 #include <QGraphicsScene>
 #include <QGridLayout>
 #include <QIcon>
@@ -103,6 +106,9 @@ const char SWATCH_STYLE[] = "QToolButton { border: 1px solid #a0a0a0; padding: 2
                             "QToolButton:checked { border: 3px solid %1; padding: 0px; }";
 // The menu of the sheet stands out from the paper under it: a dark frame,
 // the item under the mouse in the colour of the selection.
+// The columns of the drills in the menu of a hole's diameter.
+const int DRILL_MENU_COLUMNS = 3;
+
 const char SHEET_MENU_STYLE[] =
     "QMenu { background: #ffffff; border: 1px solid #505050; padding: 2px; }"
     "QMenu::item { padding: 3px 20px 3px 10px; }"
@@ -192,6 +198,7 @@ MainWindow::MainWindow(QWidget *parent)
     // it opens the menu of the sheet. On the board it ends drawing the
     // outline or a cut-out.
     connect(m_canvas, &CanvasView::contextMenuRequested, this, [this](const QPoint &globalPos) {
+        // On the board it ends placing holes too.
         if (m_boardEditor->isActive()) {
             if (m_boardEditor->isDrawing())
                 m_boardEditor->cancel();
@@ -482,8 +489,14 @@ void MainWindow::createMenus()
     });
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Mirror), "actionMirror",
                   QKeySequence(Qt::Key_M), &SheetEditor::mirrorSelection);
-    addEditAction(SheetEditor::actionName(SheetEditor::Action::Delete), "actionDelete",
-                  QKeySequence::Delete, &SheetEditor::deleteSelection);
+    QAction *deleteAction =
+        addEditAction(SheetEditor::actionName(SheetEditor::Action::Delete), "actionDelete",
+                      QKeySequence::Delete, &SheetEditor::deleteSelection);
+    // On the board the holes chosen go; the sheet editor has no sheet then.
+    connect(deleteAction, &QAction::triggered, this, [this] {
+        if (m_boardEditor->isActive())
+            m_boardEditor->deleteChosen();
+    });
     editMenu->addSeparator();
     QAction *selectAllAction = editMenu->addAction(tr("Select all"));
     selectAllAction->setObjectName(QStringLiteral("actionSelectAll"));
@@ -527,6 +540,8 @@ void MainWindow::createMenus()
         BoardEditor::actionName(BoardEditor::Action::RectangleBoard) + QStringLiteral("…"));
     rectangleAction->setObjectName(QStringLiteral("actionRectangleBoard"));
     connect(rectangleAction, &QAction::triggered, this, &MainWindow::makeRectangleBoard);
+    addBoardAction(BoardEditor::Action::PlaceHole, "actionPlaceHole",
+                   &BoardEditor::startPlacingHoles);
 
     QMenu *viewMenu = m_mainMenu->addMenu(tr("&View"));
 
@@ -888,6 +903,31 @@ void MainWindow::showBoardMenu(const QPoint &globalPos)
         QAction *show = menu.addAction(tr("Show on schematic"));
         connect(show, &QAction::triggered, this,
                 [this, components] { showComponents(components); });
+        break;
+    }
+    case BoardEditor::MenuTarget::Hole: {
+        addLock();
+        // A locked hole keeps its diameter, plating and ring.
+        const bool locked = m_boardEditor->chosenHolesLocked();
+        QMenu *diameter =
+            menu.addMenu(BoardEditor::actionName(BoardEditor::Action::HoleDiameter));
+        diameter->setEnabled(!locked);
+        fillHoleMenu(diameter, true);
+        const bool plated = m_boardEditor->chosenHolesPlated();
+        QAction *plating =
+            menu.addAction(BoardEditor::actionName(BoardEditor::Action::PlatedHoles));
+        plating->setCheckable(true);
+        plating->setChecked(plated);
+        plating->setEnabled(!locked);
+        connect(plating, &QAction::triggered, m_boardEditor,
+                &BoardEditor::setChosenHolesPlated);
+        // Only a plated hole has copper round it.
+        QAction *ring = menu.addAction(
+            BoardEditor::actionName(BoardEditor::Action::CopperRing) + QStringLiteral("…"));
+        ring->setEnabled(plated && !locked);
+        connect(ring, &QAction::triggered, m_boardEditor, &BoardEditor::editMenuHoleRing);
+        menu.addSeparator();
+        add("actionDelete");
         break;
     }
     case BoardEditor::MenuTarget::Corner:
@@ -1424,6 +1464,9 @@ void MainWindow::createToolBar()
               {int(BoardEditor::Tool::CutOut), cutOut}},
              m_boardToolActions, m_boardActions);
     m_boardActions.append(rectangleBoard);
+    // A locked outline is not drawn anew, cut or made a rectangle (see
+    // updateTools()); these are the actions it stops.
+    m_outlineActions = m_boardActions;
     auto *outlineButton = qobject_cast<QToolButton *>(bar->widgetForAction(drawOutline));
     Q_ASSERT(outlineButton != nullptr);
     m_outlineButton = outlineButton;
@@ -1432,6 +1475,16 @@ void MainWindow::createToolBar()
     outlineButton->setMenu(outlineMenu);
     outlineButton->setPopupMode(QToolButton::MenuButtonPopup);
     connect(outlineMenu, &QMenu::triggered, outlineButton, &QToolButton::setDefaultAction);
+    // Holes: the button places them, its arrow chooses their diameter.
+    QAction *placeHole = put("actionPlaceHole", ToolIcon::Hole);
+    addModes({{int(BoardEditor::Tool::Hole), placeHole}}, m_boardToolActions, m_boardActions);
+    auto *holeButton = qobject_cast<QToolButton *>(bar->widgetForAction(placeHole));
+    Q_ASSERT(holeButton != nullptr);
+    QMenu *holeMenu = new QMenu(this);
+    connect(holeMenu, &QMenu::aboutToShow, this,
+            [this, holeMenu] { fillHoleMenu(holeMenu, false); });
+    holeButton->setMenu(holeMenu);
+    holeButton->setPopupMode(QToolButton::MenuButtonPopup);
     // Update board from schematic, on the strip of the board beside the
     // outline: an action of its own, so that the File menu keeps its item.
     QAction *updateBoardTool = new QAction(
@@ -1454,10 +1507,10 @@ void MainWindow::createToolBar()
     powerButton->setMenu(powerMenu);
     powerButton->setPopupMode(QToolButton::MenuButtonPopup);
     // In the menu and the menu of the sheet only, with their pictures.
-    // Turning serves the board as well.
+    // Turning and deleting serve the board as well.
     dress("actionRotate", ToolIcon::Rotate);
     m_sheetActions.append(dress("actionMirror", ToolIcon::Mirror));
-    m_sheetActions.append(dress("actionDelete", ToolIcon::Delete));
+    dress("actionDelete", ToolIcon::Delete);
 
     // The switches of the panels, on the right.
     stretch();
@@ -1498,14 +1551,16 @@ void MainWindow::updateTools()
         it.value()->setChecked(board && it.key() == boardTool);
     // A mode of the outline on shows on its button, pressed.
     if (QAction *on = m_boardToolActions.value(boardTool); board && on != nullptr
-        && m_outlineButton != nullptr && m_outlineButton->defaultAction() != on)
+        && m_outlineActions.contains(on) && m_outlineButton != nullptr
+        && m_outlineButton->defaultAction() != on)
         m_outlineButton->setDefaultAction(on);
     // A locked outline is not drawn anew, cut or made a rectangle.
     if (board && m_boardEditor->isOutlineLocked()) {
-        for (QAction *action : std::as_const(m_boardActions))
+        for (QAction *action : std::as_const(m_outlineActions))
             action->setEnabled(false);
     }
     findChild<QAction *>(QStringLiteral("actionRotate"))->setEnabled(sheet || board);
+    findChild<QAction *>(QStringLiteral("actionDelete"))->setEnabled(sheet || board);
     if (QAction *updateBoardTool = findChild<QAction *>(QStringLiteral("actionUpdateBoardTool"))) {
         updateBoardTool->setVisible(board);
         updateBoardTool->setEnabled(board);
@@ -1679,7 +1734,7 @@ void MainWindow::storeGridStep(Coord step)
 
 QString MainWindow::gridStepText(Coord step)
 {
-    return formatMmShort(step) + QLatin1Char(' ') + mmUnit();
+    return formatMmShortUnit(step);
 }
 
 void MainWindow::showProject()
@@ -1841,6 +1896,67 @@ void MainWindow::updatePowerIcon()
 bool MainWindow::placeLastPower()
 {
     return placePower(m_lastPowerSource, m_lastPowerSymbol);
+}
+
+void MainWindow::fillHoleMenu(QMenu *menu, bool chosenHoles)
+{
+    menu->clear();
+    const Coord current =
+        chosenHoles ? m_boardEditor->chosenHolesDrill() : m_boardEditor->holeDrill();
+    // The drills in a grid of buttons, row by row, the one in use pressed.
+    QWidget *grid = new QWidget(menu);
+    auto *layout = new QGridLayout(grid);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    const QList<Coord> &drills = m_document->design().project.rules.drills;
+    for (int i = 0; i < drills.size(); ++i) {
+        const Coord drill = drills.at(i);
+        auto *button = new QToolButton(grid);
+        button->setText(formatMmShortUnit(drill));
+        button->setCheckable(true);
+        button->setChecked(drill == current);
+        button->setAutoRaise(true);
+        button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        layout->addWidget(button, i / DRILL_MENU_COLUMNS, i % DRILL_MENU_COLUMNS);
+        connect(button, &QToolButton::clicked, this, [this, drill, chosenHoles] {
+            // A button in a menu does not close it as an item does: the
+            // menu and those it opened from close.
+            while (QWidget *popup = QApplication::activePopupWidget())
+                popup->close();
+            if (chosenHoles)
+                m_boardEditor->setChosenHolesDrill(drill);
+            else
+                m_boardEditor->setHoleDrill(drill);
+            updateTools();
+        });
+    }
+    auto *gridAction = new QWidgetAction(menu);
+    gridAction->setDefaultWidget(grid);
+    menu->addAction(gridAction);
+    menu->addSeparator();
+    QAction *other = menu->addAction(tr("Other") + QStringLiteral("…"));
+    if (chosenHoles) {
+        // Typed in place, over the hole.
+        connect(other, &QAction::triggered, m_boardEditor, &BoardEditor::editMenuHoleDrill);
+        return;
+    }
+    connect(other, &QAction::triggered, this, [this] {
+        bool ok = false;
+        const QString text = QInputDialog::getText(
+            this, BoardEditor::actionName(BoardEditor::Action::HoleDiameter),
+            BoardEditor::actionName(BoardEditor::Action::HoleDiameter) + QStringLiteral(", ")
+                + mmUnit() + QLatin1Char(':'),
+            QLineEdit::Normal, formatMmShort(m_boardEditor->holeDrill()), &ok);
+        if (!ok)
+            return;
+        Coord drill = 0;
+        if (!parseMm(text, drill) || drill <= 0) {
+            showStatus(BoardEditor::diameterHint());
+            return;
+        }
+        m_boardEditor->setHoleDrill(drill);
+        updateTools();
+    });
 }
 
 void MainWindow::fillPowerMenu(QMenu *menu)

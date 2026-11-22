@@ -26,12 +26,12 @@ BoardEditor::BoardEditor(Document *document, CanvasView *canvas, QObject *parent
     : QObject(parent)
     , m_document(document)
     , m_canvas(canvas)
-    , m_radiusEdit(canvas)
+    , m_valueEdit(canvas)
 {
-    connect(&m_radiusEdit, &InPlaceEdit::accepted, this, &BoardEditor::radiusTyped);
+    connect(&m_valueEdit, &InPlaceEdit::accepted, this, &BoardEditor::valueTyped);
     // Undo, Redo or a project opened: what was dragged or lit may be gone.
     connect(m_document, &Document::designChanged, this, [this] {
-        m_radiusEdit.close(false);
+        m_valueEdit.close(false);
         dropDrag();
         emit changed();
     });
@@ -70,6 +70,22 @@ QString BoardEditor::actionName(Action action)
         return tr("Hide value");
     case Action::LineToPart:
         return tr("Line to part");
+    case Action::PlaceHole:
+        return tr("Place hole");
+    case Action::MoveHoles:
+        return tr("Move holes");
+    case Action::DeleteHoles:
+        return tr("Delete holes");
+    case Action::HoleDiameter:
+        return tr("Hole diameter");
+    case Action::PlatedHoles:
+        return tr("Plated");
+    case Action::CopperRing:
+        return tr("Copper ring");
+    case Action::LockHoles:
+        return tr("Lock holes");
+    case Action::UnlockHoles:
+        return tr("Unlock holes");
     case Action::LockParts:
         return lockPartsName(true);
     case Action::UnlockParts:
@@ -78,9 +94,14 @@ QString BoardEditor::actionName(Action action)
     return QString();
 }
 
+QString BoardEditor::diameterHint()
+{
+    return tr("Type the diameter in millimetres");
+}
+
 void BoardEditor::setActive(bool active)
 {
-    m_radiusEdit.close(true);
+    m_valueEdit.close(true);
     m_active = active;
     m_tool = Tool::Select;
     dropChosen();
@@ -120,6 +141,49 @@ void BoardEditor::startCuttingOut()
     // Where the cursor is now, before it moves.
     m_cursor = Point{m_canvas->cursorX(), m_canvas->cursorY()};
     emit changed();
+}
+
+void BoardEditor::startPlacingHoles()
+{
+    if (!m_active)
+        return;
+    chooseSelectTool();
+    dropChosen();
+    m_tool = Tool::Hole;
+    // Where the cursor is now, before it moves.
+    m_cursor = Point{m_canvas->cursorX(), m_canvas->cursorY()};
+    emit changed();
+}
+
+void BoardEditor::setHoleDrill(Coord drill)
+{
+    if (drill <= 0)
+        return;
+    m_holeDrill = drill;
+    startPlacingHoles();
+}
+
+std::optional<MountingHole> BoardEditor::holeToPlace() const
+{
+    if (!m_active || m_tool != Tool::Hole)
+        return std::nullopt;
+    MountingHole hole;
+    hole.at = m_cursor;
+    hole.drill = m_holeDrill;
+    return hole;
+}
+
+void BoardEditor::placeHole(const Point &at)
+{
+    const Board &board = m_document->design().board;
+    // A second click of a double click lands on the hole just placed.
+    if (std::any_of(board.holes.cbegin(), board.holes.cend(),
+                    [&at](const MountingHole &hole) { return hole.at == at; }))
+        return;
+    Board placed = board;
+    const MountingHole hole = newHole(at, m_holeDrill);
+    placed.holes.append(hole);
+    applyBoard(Action::PlaceHole, placed, {hole.id});
 }
 
 void BoardEditor::makeRectangleBoard(Coord width, Coord height)
@@ -171,14 +235,29 @@ QSet<ObjectId> BoardEditor::chosenPlacements() const
     return chosen;
 }
 
+QSet<ObjectId> BoardEditor::chosenHoles() const
+{
+    QSet<ObjectId> chosen;
+    if (!m_active)
+        return chosen;
+    for (const MountingHole &hole : m_document->design().board.holes) {
+        if (m_chosen.contains(hole.id))
+            chosen.insert(hole.id);
+    }
+    return chosen;
+}
+
 bool BoardEditor::chosenLocked() const
 {
     if (!hasChosen())
         return false;
     if (outlineChosen() && !isOutlineLocked())
         return false;
+    const Board &board = m_document->design().board;
     const QSet<ObjectId> placements = chosenPlacements();
-    return placements.isEmpty() || arePlacementsLocked(m_document->design().board, placements);
+    const QSet<ObjectId> holes = chosenHoles();
+    return (placements.isEmpty() || arePlacementsLocked(board, placements))
+           && (holes.isEmpty() || areHolesLocked(board, holes));
 }
 
 void BoardEditor::rotateChosen()
@@ -205,6 +284,25 @@ void BoardEditor::rotateChosen()
             ? one->at
             : m_canvas->snapped(placementsBounds(board, m_document->design().library, ids).center());
     applyBoard(Action::RotateParts, withPlacementsRotated(board, ids, center), ids);
+}
+
+void BoardEditor::deleteChosen()
+{
+    if (!m_active || m_dragging || refuseHolesLocked())
+        return;
+    // The locked ones stay, chosen.
+    const Board &board = m_document->design().board;
+    QSet<ObjectId> ids;
+    for (const MountingHole &hole : board.holes) {
+        if (m_chosen.contains(hole.id) && !hole.locked)
+            ids.insert(hole.id);
+    }
+    if (ids.isEmpty())
+        return;
+    m_chosen.subtract(ids);
+    // An Undo brings them back chosen.
+    applyBoard(Action::DeleteHoles, withoutHoles(board, ids), ids);
+    emit changed();
 }
 
 QSet<QString> BoardEditor::litNets() const
@@ -248,7 +346,13 @@ Board BoardEditor::shownBoard() const
     return board;
 }
 
-bool BoardEditor::pressPlacement(const QPointF &at, bool adding)
+ObjectId BoardEditor::holeUnder(const QPointF &at) const
+{
+    return holeAt(m_document->design().board, at,
+                  m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
+}
+
+bool BoardEditor::pressChoosable(const QPointF &at, bool adding)
 {
     const Design &design = m_document->design();
     const PlacementText text = placementTextAt(design.board, at);
@@ -260,7 +364,9 @@ bool BoardEditor::pressPlacement(const QPointF &at, bool adding)
         m_dragAnchor = placementTextPoint(design.board, text);
         return true;
     }
-    const ObjectId hit = placementAt(design.board, design.library, at);
+    // Holes are drawn over the pads.
+    const ObjectId hole = holeUnder(at);
+    const ObjectId hit = hole.isNull() ? placementAt(design.board, design.library, at) : hole;
     if (hit.isNull())
         return false;
     m_chosenText = PlacementText();
@@ -276,7 +382,8 @@ bool BoardEditor::pressPlacement(const QPointF &at, bool adding)
         m_outlineChosen = false;
     }
     m_dragPlacements = true;
-    m_dragAnchor = findById(design.board.placements, hit)->at;
+    m_dragAnchor = hole.isNull() ? findById(design.board.placements, hit)->at
+                                 : findById(design.board.holes, hit)->at;
     return true;
 }
 
@@ -288,6 +395,7 @@ Board BoardEditor::draggedBoard(const QPointF &at) const
     if (m_dragText)
         return withPlacementTextMoved(board, m_chosenText, delta);
     Board moved = withPlacementsMoved(board, chosenPlacements(), delta);
+    moved = withHolesMoved(moved, chosenHoles(), delta);
     if (outlineChosen() && !isOutlineLocked())
         moved.outline = outlineMoved(board.outline, delta);
     return moved;
@@ -312,10 +420,13 @@ void BoardEditor::press(const QPointF &at, bool adding)
 {
     if (!m_active)
         return;
-    m_radiusEdit.close(true);
+    m_valueEdit.close(true);
     switch (m_tool) {
     case Tool::Outline:
         outlineClick(m_canvas->snapped(at));
+        return;
+    case Tool::Hole:
+        placeHole(m_canvas->snapped(at));
         return;
     case Tool::CutOut:
         m_cutting = true;
@@ -334,8 +445,8 @@ void BoardEditor::press(const QPointF &at, bool adding)
     m_pressGrid = m_canvas->snapped(at);
     m_dragBase = m_document->design().board;
     m_dragCorner = outlineCornerAt(outline(), at, m_canvas->pixelsToMm(CanvasView::END_PIXELS));
-    // A placement or its text lies over the sides of the outline.
-    if (m_dragCorner < 0 && pressPlacement(at, adding)) {
+    // A placement, its text or a hole lies over the sides of the outline.
+    if (m_dragCorner < 0 && pressChoosable(at, adding)) {
         emit changed();
         return;
     }
@@ -394,10 +505,16 @@ void BoardEditor::move(const QPointF &at)
             const bool placementsGo =
                 !placements.isEmpty()
                 && !arePlacementsLocked(m_document->design().board, placements);
-            if (!m_dragText && !outlineGoes && !placementsGo) {
-                if (!m_lockTold)
-                    emit message(placements.isEmpty() ? tr("The board outline is locked")
-                                                      : partLockedMessage());
+            const QSet<ObjectId> holes = chosenHoles();
+            const bool holesGo =
+                !holes.isEmpty() && !areHolesLocked(m_document->design().board, holes);
+            if (!m_dragText && !outlineGoes && !placementsGo && !holesGo) {
+                if (!m_lockTold) {
+                    if (!placements.isEmpty())
+                        emit message(partLockedMessage());
+                    else if (!refuseHolesLocked())
+                        refuseLocked();
+                }
                 m_lockTold = true;
                 return;
             }
@@ -452,7 +569,8 @@ void BoardEditor::release(const QPointF &at)
     }
     if (m_framing) {
         const Design &design = m_document->design();
-        const QSet<ObjectId> inside = placementsInside(design.board, design.library, m_frame);
+        const QSet<ObjectId> inside = placementsInside(design.board, design.library, m_frame)
+                                          .unite(holesInside(design.board, m_frame));
         if (m_frameAdding)
             m_chosen.unite(inside);
         else
@@ -464,11 +582,13 @@ void BoardEditor::release(const QPointF &at)
     if (m_movedBoard) {
         const Board moved = *m_movedBoard;
         const QSet<ObjectId> ids = chosenPlacements();
-        const Action action = m_dragText        ? Action::MovePartText
-                              : !ids.isEmpty() ? Action::MoveParts
-                                               : Action::MoveOutline;
+        const QSet<ObjectId> holes = chosenHoles();
+        const Action action = m_dragText         ? Action::MovePartText
+                              : !ids.isEmpty()   ? Action::MoveParts
+                              : !holes.isEmpty() ? Action::MoveHoles
+                                                 : Action::MoveOutline;
         const QSet<ObjectId> touched =
-            m_dragText ? QSet<ObjectId>{m_chosenText.owner} : ids;
+            m_dragText ? QSet<ObjectId>{m_chosenText.owner} : QSet<ObjectId>(ids).unite(holes);
         dropDrag();
         if (moved != m_document->design().board)
             applyBoard(action, moved, touched);
@@ -511,26 +631,32 @@ void BoardEditor::chooseAll()
     m_outlineChosen = !outline().isEmpty();
     for (const Placement &placement : m_document->design().board.placements)
         m_chosen.insert(placement.id);
+    for (const MountingHole &hole : m_document->design().board.holes)
+        m_chosen.insert(hole.id);
     emit changed();
 }
 
 BoardEditor::MenuTarget BoardEditor::chooseForMenu(const QPointF &at)
 {
     m_menuCorner = -1;
+    m_menuHole = ObjectId();
     if (!m_active || m_tool != Tool::Select)
         return MenuTarget::None;
     const Design &design = m_document->design();
-    // A text stands for its placement.
+    // A text stands for its placement; holes are drawn over the pads.
     const PlacementText text = placementTextAt(design.board, at);
-    const ObjectId hit =
-        text.isNull() ? placementAt(design.board, design.library, at) : text.owner;
+    const ObjectId hole = text.isNull() ? holeUnder(at) : ObjectId();
+    const ObjectId hit = !text.isNull()   ? text.owner
+                         : !hole.isNull() ? hole
+                                          : placementAt(design.board, design.library, at);
     if (!hit.isNull()) {
         if (!m_chosen.contains(hit)) {
             dropChosen();
             m_chosen = {hit};
         }
+        m_menuHole = hole;
         emit changed();
-        return MenuTarget::Placement;
+        return hole.isNull() ? MenuTarget::Placement : MenuTarget::Hole;
     }
     m_menuCorner = outlineCornerAt(outline(), at, m_canvas->pixelsToMm(CanvasView::END_PIXELS));
     const bool side =
@@ -541,6 +667,100 @@ BoardEditor::MenuTarget BoardEditor::chooseForMenu(const QPointF &at)
     if (!outlineChosen())
         chooseOutline();
     return m_menuCorner >= 0 ? MenuTarget::Corner : MenuTarget::Side;
+}
+
+Coord BoardEditor::chosenHolesDrill() const
+{
+    const QSet<ObjectId> ids = chosenHoles();
+    Coord drill = 0;
+    for (const MountingHole &hole : m_document->design().board.holes) {
+        if (!ids.contains(hole.id))
+            continue;
+        if (drill != 0 && hole.drill != drill)
+            return 0;
+        drill = hole.drill;
+    }
+    return drill;
+}
+
+void BoardEditor::setChosenHolesDrill(Coord drill)
+{
+    const QSet<ObjectId> ids = chosenHoles();
+    const Board &board = m_document->design().board;
+    if (refuseHolesLocked())
+        return;
+    const Board drilled = withHolesDrill(board, ids, drill);
+    if (drill > 0 && drilled != board)
+        applyBoard(Action::HoleDiameter, drilled, ids);
+}
+
+bool BoardEditor::chosenHolesPlated() const
+{
+    return areHolesPlated(m_document->design().board, chosenHoles());
+}
+
+bool BoardEditor::chosenHolesLocked() const
+{
+    return areHolesLocked(m_document->design().board, chosenHoles());
+}
+
+void BoardEditor::setChosenHolesPlated(bool plated)
+{
+    const QSet<ObjectId> ids = chosenHoles();
+    const Board &board = m_document->design().board;
+    if (refuseHolesLocked())
+        return;
+    const Board changedBoard = withHolesPlated(board, ids, plated);
+    if (changedBoard != board)
+        applyBoard(Action::PlatedHoles, changedBoard, ids);
+}
+
+void BoardEditor::editHoleValue(Typed typed)
+{
+    // A line still open keeps what it holds for its own holes.
+    m_valueEdit.close(true);
+    const MountingHole *hole = findById(m_document->design().board.holes, m_menuHole);
+    if (hole == nullptr || chosenHoles().isEmpty() || refuseHolesLocked())
+        return;
+    m_typed = typed;
+    const Coord value = typed == Typed::Ring ? hole->ring : hole->drill;
+    m_valueEdit.open(formatMmShort(value), QRectF(toMm(hole->at), QSizeF(0, 0)));
+}
+
+void BoardEditor::holeValueTyped(Typed typed, const QString &text)
+{
+    Coord value = 0;
+    if (!parseMm(text, value) || value <= 0) {
+        emit message(typed == Typed::Ring ? tr("Type the ring width in millimetres")
+                                          : diameterHint());
+        return;
+    }
+    if (typed == Typed::Drill) {
+        setChosenHolesDrill(value);
+        return;
+    }
+    const QSet<ObjectId> ids = chosenHoles();
+    const Board &board = m_document->design().board;
+    const Board ringed = withHolesRing(board, ids, value);
+    if (ringed != board)
+        applyBoard(Action::CopperRing, ringed, ids);
+}
+
+void BoardEditor::valueTyped(const QString &text)
+{
+    const Typed typed = m_typed;
+    m_typed = Typed::None;
+    switch (typed) {
+    case Typed::Radius:
+        radiusTyped(text);
+        break;
+    case Typed::Drill:
+    case Typed::Ring:
+        holeValueTyped(typed, text);
+        break;
+    case Typed::None:
+        break;
+    }
 }
 
 bool BoardEditor::chosenValuesShown() const
@@ -602,13 +822,25 @@ void BoardEditor::setChosenLocked(bool locked)
         return;
     Design design = m_document->design();
     const QSet<ObjectId> placements = chosenPlacements();
+    const QSet<ObjectId> holes = chosenHoles();
     if (outlineChosen())
         design.board.outlineLocked = locked;
     design.board = withPlacementsLocked(design.board, placements, locked);
+    design.board = withHolesLocked(design.board, holes, locked);
     const Action action = !placements.isEmpty() ? (locked ? Action::LockParts : Action::UnlockParts)
+                          : !holes.isEmpty()    ? (locked ? Action::LockHoles : Action::UnlockHoles)
                                                 : (locked ? Action::LockOutline
                                                           : Action::UnlockOutline);
-    m_document->change(actionName(action), design, boardPage(), placements);
+    m_document->change(actionName(action), design, boardPage(),
+                       QSet<ObjectId>(placements).unite(holes));
+}
+
+bool BoardEditor::refuseHolesLocked()
+{
+    if (!chosenHolesLocked())
+        return false;
+    emit message(tr("The hole is locked"));
+    return true;
 }
 
 bool BoardEditor::refuseLocked()
@@ -624,8 +856,8 @@ void BoardEditor::hover(const Point &at)
     if (m_cursor == at)
         return;
     m_cursor = at;
-    // The side being drawn and the coordinates follow it.
-    if (m_active && (m_tool == Tool::Outline || m_tool == Tool::CutOut))
+    // The side being drawn, the hole to place and the coordinates follow it.
+    if (m_active && m_tool != Tool::Select)
         emit changed();
 }
 
@@ -693,7 +925,7 @@ std::optional<Point> BoardEditor::drawnPoint() const
         if (corner >= 0 && corner < count)
             return dragged->at(corner).at;
     }
-    if (m_tool == Tool::Outline || m_tool == Tool::CutOut)
+    if (m_tool != Tool::Select)
         return m_cursor;
     return std::nullopt;
 }
@@ -757,12 +989,13 @@ void BoardEditor::cutOut(const Point &a, const Point &b)
 void BoardEditor::editRadius(int corner)
 {
     // A line still open keeps what it holds for its own corner.
-    m_radiusEdit.close(true);
+    m_valueEdit.close(true);
     if (corner >= outline().size())
         return;
+    m_typed = Typed::Radius;
     m_radiusCorner = corner;
     const Point at = outline().at(corner).at;
-    m_radiusEdit.open(formatMmShort(outline().at(corner).radius), QRectF(toMm(at), QSizeF(0, 0)));
+    m_valueEdit.open(formatMmShort(outline().at(corner).radius), QRectF(toMm(at), QSizeF(0, 0)));
 }
 
 void BoardEditor::radiusTyped(const QString &text)

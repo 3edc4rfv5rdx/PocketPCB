@@ -335,6 +335,14 @@
         <source>a pad number is expected</source>
         <translation>очікується номер площадки</translation>
     </message>
+    <message>
+        <source>at least one drill is expected</source>
+        <translation>очікується хоча б одне свердло</translation>
+    </message>
+    <message>
+        <source>every drill must be greater than the one before it</source>
+        <translation>кожне свердло має бути більшим за попереднє</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::Paint</name>
@@ -888,6 +896,10 @@
         <source>Coordinates while drawing the board</source>
         <translation>Координати під час малювання плати</translation>
     </message>
+    <message>
+        <source>Other</source>
+        <translation>Інший</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>
@@ -1421,6 +1433,50 @@
     <message>
         <source>The board outline is locked</source>
         <translation>Контур плати закріплено</translation>
+    </message>
+    <message>
+        <source>Place hole</source>
+        <translation>Поставити отвір</translation>
+    </message>
+    <message>
+        <source>Move holes</source>
+        <translation>Перемістити отвори</translation>
+    </message>
+    <message>
+        <source>Delete holes</source>
+        <translation>Видалити отвори</translation>
+    </message>
+    <message>
+        <source>Hole diameter</source>
+        <translation>Діаметр отвору</translation>
+    </message>
+    <message>
+        <source>Plated</source>
+        <translation>Металізований</translation>
+    </message>
+    <message>
+        <source>Copper ring</source>
+        <translation>Мідний поясок</translation>
+    </message>
+    <message>
+        <source>Type the ring width in millimetres</source>
+        <translation>Введіть ширину пояска в міліметрах</translation>
+    </message>
+    <message>
+        <source>Type the diameter in millimetres</source>
+        <translation>Введіть діаметр у міліметрах</translation>
+    </message>
+    <message>
+        <source>Lock holes</source>
+        <translation>Заблокувати отвори</translation>
+    </message>
+    <message>
+        <source>Unlock holes</source>
+        <translation>Розблокувати отвори</translation>
+    </message>
+    <message>
+        <source>The hole is locked</source>
+        <translation>Отвір заблоковано</translation>
     </message>
 </context>
 <context>

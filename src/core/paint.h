@@ -59,7 +59,8 @@ inline QColor pasteTop() { return QColor(180, 180, 180); }
 inline QColor pasteBottom() { return QColor(120, 120, 120); }
 // Lilac, so that yellow is left to the locked parts.
 inline QColor boardOutline() { return QColor(200, 162, 200); }
-// The silkscreen of a locked part on the board, on the screen only.
+// The silkscreen of a locked part on the board, and a locked hole, on the
+// screen only.
 inline QColor lockedPart() { return QColor(230, 200, 0); }
 // The lines of the pads still to be joined (ratsnest()), on the screen only.
 inline QColor ratsnest() { return QColor(150, 240, 150); }
@@ -224,7 +225,7 @@ QRectF boardBounds(const Board &board, const Library &library);
 // Only the layers in 'shown' are drawn; a pad or a via through the board
 // shows while either copper layer does, and holes always show. With
 // 'lockedMarked', for the screen, the silkscreen of a locked part is drawn
-// yellow instead of its side's colour.
+// yellow instead of its side's colour, and so is a locked hole.
 void paintBoard(QPainter &painter, const Board &board, const Library &library,
                 const BoardLayerSet &shown = BoardLayerSet::all(), bool lockedMarked = false);
 

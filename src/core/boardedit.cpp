@@ -1,5 +1,7 @@
 #include "boardedit.h"
 
+#include <QLineF>
+
 #include <algorithm>
 
 namespace ppcb {
@@ -14,6 +16,21 @@ constexpr int FULL_TURN = 360;
 Point turned(const Point &offset)
 {
     return Point{-offset.y, offset.x};
+}
+
+// True when 'items' hold one of 'ids' and every one of them has 'property'.
+template <typename Item, typename Property>
+bool allHave(const QList<Item> &items, const QSet<ObjectId> &ids, Property property)
+{
+    bool any = false;
+    for (const Item &item : items) {
+        if (!ids.contains(item.id))
+            continue;
+        if (!property(item))
+            return false;
+        any = true;
+    }
+    return any;
 }
 
 } // namespace
@@ -122,15 +139,114 @@ Board withPlacementsLocked(const Board &board, const QSet<ObjectId> &ids, bool l
 
 bool arePlacementsLocked(const Board &board, const QSet<ObjectId> &ids)
 {
-    bool any = false;
-    for (const Placement &placement : board.placements) {
-        if (!ids.contains(placement.id))
-            continue;
-        if (!placement.locked)
-            return false;
-        any = true;
+    return allHave(board.placements, ids, [](const Placement &item) { return item.locked; });
+}
+
+ObjectId holeAt(const Board &board, const QPointF &at, double reach)
+{
+    for (auto it = board.holes.crbegin(); it != board.holes.crend(); ++it) {
+        const double radius = std::max(nmToMm(holeOuterDiameter(*it)) / 2, reach);
+        if (QLineF(toMm(it->at), at).length() <= radius)
+            return it->id;
     }
-    return any;
+    return ObjectId();
+}
+
+QSet<ObjectId> holesInside(const Board &board, const QRectF &rect)
+{
+    QSet<ObjectId> inside;
+    for (const MountingHole &hole : board.holes) {
+        const double radius = nmToMm(holeOuterDiameter(hole)) / 2;
+        const QPointF middle = toMm(hole.at);
+        if (rect.contains(QRectF(middle - QPointF(radius, radius),
+                                 middle + QPointF(radius, radius))))
+            inside.insert(hole.id);
+    }
+    return inside;
+}
+
+MountingHole newHole(const Point &at, Coord drill)
+{
+    MountingHole hole;
+    hole.id = newObjectId();
+    hole.at = at;
+    hole.drill = drill;
+    return hole;
+}
+
+Board withHolesMoved(const Board &board, const QSet<ObjectId> &ids, const Point &delta)
+{
+    Board result = board;
+    for (MountingHole &hole : result.holes) {
+        if (ids.contains(hole.id) && !hole.locked)
+            hole.at = hole.at + delta;
+    }
+    return result;
+}
+
+Board withHolesDrill(const Board &board, const QSet<ObjectId> &ids, Coord drill)
+{
+    Board result = board;
+    for (MountingHole &hole : result.holes) {
+        if (ids.contains(hole.id) && !hole.locked)
+            hole.drill = drill;
+    }
+    return result;
+}
+
+Board withHolesPlated(const Board &board, const QSet<ObjectId> &ids, bool plated)
+{
+    Board result = board;
+    for (MountingHole &hole : result.holes) {
+        if (!ids.contains(hole.id) || hole.locked)
+            continue;
+        hole.plated = plated;
+        if (!plated) {
+            hole.ring = 0;
+            hole.net.clear();
+        } else if (hole.ring == 0) {
+            hole.ring = DEFAULT_HOLE_RING;
+        }
+    }
+    return result;
+}
+
+Board withHolesRing(const Board &board, const QSet<ObjectId> &ids, Coord ring)
+{
+    Board result = board;
+    for (MountingHole &hole : result.holes) {
+        if (ids.contains(hole.id) && hole.plated && !hole.locked)
+            hole.ring = ring;
+    }
+    return result;
+}
+
+Board withoutHoles(const Board &board, const QSet<ObjectId> &ids)
+{
+    Board result = board;
+    result.holes.removeIf(
+        [&ids](const MountingHole &hole) { return ids.contains(hole.id) && !hole.locked; });
+    return result;
+}
+
+bool areHolesPlated(const Board &board, const QSet<ObjectId> &ids)
+{
+    return allHave(board.holes, ids, [](const MountingHole &item) { return item.plated; });
+}
+
+Board withHolesLocked(const Board &board, const QSet<ObjectId> &ids, bool locked)
+{
+    Board result = board;
+    for (MountingHole &hole : result.holes) {
+        if (ids.contains(hole.id))
+            hole.locked = locked;
+    }
+    return result;
+}
+
+bool areHolesLocked(const Board &board, const QSet<ObjectId> &ids)
+{
+    return allHave(board.holes, ids, [](const MountingHole &item) { return item.locked; });
 }
 
 } // namespace ppcb

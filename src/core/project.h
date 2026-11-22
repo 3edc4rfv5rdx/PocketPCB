@@ -107,6 +107,11 @@ struct Rules
     Coord maskExpansion = 0;
     // Vias are under the solder mask.
     bool viasCovered = true;
+    // The drills there are, ascending: the diameters offered for holes.
+    QList<Coord> drills;
+    // Only these drills may be used: holes are drilled with the nearest one
+    // not smaller, and the rules check warns of a diameter not among them.
+    bool drillsOnly = false;
 
     CheckLevel clearanceLevel = CheckLevel::Error;
     CheckLevel annularRingLevel = CheckLevel::Warning;

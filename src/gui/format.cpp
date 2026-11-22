@@ -51,6 +51,11 @@ QString formatPosition(Coord x, Coord y)
     return QStringLiteral("X %1   Y %2 ").arg(formatMmFixed(x), formatMmFixed(y)) + mmUnit();
 }
 
+QString formatMmShortUnit(Coord nm)
+{
+    return formatMmShort(nm) + QLatin1Char(' ') + mmUnit();
+}
+
 bool parseMm(const QString &text, Coord &nm)
 {
     const QString trimmed = text.trimmed();

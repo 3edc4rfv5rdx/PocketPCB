@@ -73,6 +73,10 @@ public:
     // symbols with their drawings, the one P places ticked; the one chosen
     // is placed and becomes it.
     void fillPowerMenu(QMenu *menu);
+    // The diameters of the drill set of the project's rules, the one chosen
+    // checked, and Other… for a diameter typed. Choosing one places holes of
+    // it; with 'chosenHoles' it is given to the holes chosen instead.
+    void fillHoleMenu(QMenu *menu, bool chosenHoles);
     // The Power button shows the power symbol P places; its own picture
     // while that symbol cannot be found.
     void updatePowerIcon();
@@ -309,6 +313,8 @@ private:
     // The one button of the outline tools: it shows the mode on, else the
     // tool chosen last from its arrow.
     QToolButton *m_outlineButton = nullptr;
+    // The actions of the outline's button, stopped while it is locked.
+    QList<QAction *> m_outlineActions;
 
     QFileSystemWatcher *m_libraryWatcher = nullptr;
     // Delays the reload a little: editors often save in several steps.

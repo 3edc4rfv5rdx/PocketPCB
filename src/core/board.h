@@ -135,7 +135,13 @@ struct MountingHole
     // Width of the copper ring.
     Coord ring = 0;
     QString net;
+    // It may not be moved, changed or deleted until this is taken off.
+    bool locked = false;
 };
+
+// The diameter a hole takes on the board: of its copper ring, or of the
+// hole itself without one.
+Coord holeOuterDiameter(const MountingHole &hole);
 
 // The author's own drawing on the silkscreen of one side: text and lines.
 struct BoardGraphic

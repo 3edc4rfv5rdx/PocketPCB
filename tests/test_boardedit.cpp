@@ -156,6 +156,95 @@ private slots:
         QCOMPARE(text.placements.at(0).at, mm(0, 0));
         QCOMPARE(withPlacementsLocked(locked, {r1}, false), board);
     }
+
+    void holesAreFoundAtAPointAndInsideARectangle()
+    {
+        Board board;
+        board.holes = {newHole(mm(0, 0), 3 * MM), newHole(mm(20, 0), MM / 2)};
+        // Plated, the first takes its ring too: 3 + 2 * 1 mm across.
+        board = withHolesPlated(board, {board.holes.at(0).id}, true);
+        const ObjectId big = board.holes.at(0).id;
+        const ObjectId small = board.holes.at(1).id;
+        QCOMPARE(holeAt(board, QPointF(2.4, 0), 0.1), big);
+        QVERIFY(holeAt(board, QPointF(2.6, 0), 0.1).isNull());
+        // A small hole is found within the reach of its middle.
+        QCOMPARE(holeAt(board, QPointF(20.8, 0), 1.0), small);
+        QVERIFY(holeAt(board, QPointF(20.8, 0), 0.1).isNull());
+        // The one placed last of two on one place.
+        board.holes.append(newHole(mm(0, 0), MM));
+        QCOMPARE(holeAt(board, QPointF(0, 0), 0.1), board.holes.at(2).id);
+        // Only what lies wholly inside, ring included.
+        QCOMPARE(holesInside(board, QRectF(-2.6, -2.6, 5.2, 5.2)),
+                 QSet<ObjectId>({big, board.holes.at(2).id}));
+        QCOMPARE(holesInside(board, QRectF(-2.4, -2.4, 4.8, 4.8)),
+                 QSet<ObjectId>{board.holes.at(2).id});
+    }
+
+    void holesAreEdited()
+    {
+        Board board;
+        board.holes = {newHole(mm(0, 0), 3 * MM), newHole(mm(10, 0), 3 * MM)};
+        const ObjectId first = board.holes.at(0).id;
+        const ObjectId second = board.holes.at(1).id;
+        QVERIFY(first != second);
+        QCOMPARE(board.holes.at(0).plated, false);
+        QCOMPARE(board.holes.at(0).ring, Coord(0));
+
+        const Board moved = withHolesMoved(board, {first}, mm(1, 2));
+        QCOMPARE(moved.holes.at(0).at, mm(1, 2));
+        QCOMPARE(moved.holes.at(1).at, mm(10, 0));
+
+        const Board drilled = withHolesDrill(board, {second}, 4 * MM);
+        QCOMPARE(drilled.holes.at(0).drill, 3 * MM);
+        QCOMPARE(drilled.holes.at(1).drill, 4 * MM);
+
+        // Plating gives a ring, keeping one already set; bare takes it and the net off.
+        Board plated = withHolesPlated(board, {first}, true);
+        QCOMPARE(plated.holes.at(0).ring, DEFAULT_HOLE_RING);
+        QVERIFY(areHolesPlated(plated, {first}));
+        QVERIFY(!areHolesPlated(plated, {first, second}));
+        QVERIFY(!areHolesPlated(plated, {}));
+        plated = withHolesRing(plated, {first, second}, MM / 2);
+        QCOMPARE(plated.holes.at(0).ring, MM / 2);
+        QCOMPARE(plated.holes.at(1).ring, Coord(0));
+        QCOMPARE(withHolesPlated(plated, {first}, true).holes.at(0).ring, MM / 2);
+        plated.holes[0].net = QStringLiteral("GND");
+        const Board bare = withHolesPlated(plated, {first}, false);
+        QCOMPARE(bare, board);
+
+        const Board fewer = withoutHoles(board, {first});
+        QCOMPARE(fewer.holes.size(), 1);
+        QCOMPARE(fewer.holes.at(0).id, second);
+    }
+
+    void lockedHolesStay()
+    {
+        Board board;
+        board.holes = {newHole(mm(0, 0), 3 * MM), newHole(mm(10, 0), 3 * MM)};
+        const ObjectId first = board.holes.at(0).id;
+        const ObjectId second = board.holes.at(1).id;
+        const QSet<ObjectId> both = {first, second};
+        QVERIFY(!areHolesLocked(board, both));
+        const Board locked = withHolesLocked(board, {first}, true);
+        QVERIFY(areHolesLocked(locked, {first}));
+        QVERIFY(!areHolesLocked(locked, both));
+        QVERIFY(!areHolesLocked(locked, {}));
+
+        // Every change passes the locked one by and reaches the other.
+        const Board moved = withHolesMoved(locked, both, mm(1, 1));
+        QCOMPARE(moved.holes.at(0), locked.holes.at(0));
+        QCOMPARE(moved.holes.at(1).at, mm(11, 1));
+        const Board drilled = withHolesDrill(locked, both, 4 * MM);
+        QCOMPARE(drilled.holes.at(0), locked.holes.at(0));
+        QCOMPARE(drilled.holes.at(1).drill, 4 * MM);
+        const Board plated = withHolesRing(withHolesPlated(locked, both, true), both, MM / 2);
+        QCOMPARE(plated.holes.at(0), locked.holes.at(0));
+        QCOMPARE(plated.holes.at(1).ring, MM / 2);
+        const Board fewer = withoutHoles(locked, both);
+        QCOMPARE(fewer.holes.size(), 1);
+        QCOMPARE(fewer.holes.at(0).id, first);
+        QCOMPARE(withHolesLocked(locked, {first}, false), board);
+    }
 };
 
 QTEST_APPLESS_MAIN(TestBoardEdit)

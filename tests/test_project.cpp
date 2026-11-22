@@ -97,6 +97,8 @@ Project fullProject()
     project.rules.edgeClearance = 900000;
     project.rules.maskExpansion = 150000;
     project.rules.viasCovered = false;
+    project.rules.drills = {700000, 3300000};
+    project.rules.drillsOnly = false;
     project.rules.clearanceLevel = CheckLevel::Warning;
     project.rules.annularRingLevel = CheckLevel::Off;
     project.rules.classWidthLevel = CheckLevel::Error;
@@ -250,6 +252,9 @@ private slots:
         CHANGED(other.rules.edgeClearance += 1);
         CHANGED(other.rules.maskExpansion += 1);
         CHANGED(other.rules.viasCovered = true);
+        CHANGED(other.rules.drills[0] += 1);
+        CHANGED(other.rules.drills.removeLast());
+        CHANGED(other.rules.drillsOnly = true);
         CHANGED(other.rules.clearanceLevel = CheckLevel::Error);
         CHANGED(other.rules.annularRingLevel = CheckLevel::Warning);
         CHANGED(other.rules.classWidthLevel = CheckLevel::Warning);
@@ -273,6 +278,10 @@ private slots:
         QCOMPARE(production.viaSize, Coord(1200000));
         QCOMPARE(production.annularRing, Coord(300000));
         QCOMPARE(production.edgeClearance, Coord(500000));
+        QCOMPARE(production.drills,
+                 QList<Coord>({600000, 800000, 1000000, 1200000, 1500000, 2000000, 2500000,
+                               3000000, 3200000, 3500000, 4000000, 5000000, 6000000}));
+        QCOMPARE(production.drillsOnly, false);
 
         const Rules lut = lutRules();
         QVERIFY(lut.set == RuleSet::Lut);
@@ -283,6 +292,10 @@ private slots:
         QCOMPARE(lut.viaSize, Coord(2000000));
         QCOMPARE(lut.annularRing, Coord(600000));
         QCOMPARE(lut.edgeClearance, Coord(1000000));
+        QCOMPARE(lut.drills,
+                 QList<Coord>({600000, 800000, 1000000, 1200000, 1500000, 2000000, 3000000,
+                               3200000, 4000000, 5000000, 6000000, 8000000, 10000000}));
+        QCOMPARE(lut.drillsOnly, true);
 
         // The same in both sets: the mask, covered vias and the levels.
         for (const Rules &rules : {production, lut}) {
@@ -484,6 +497,42 @@ private slots:
 
         // One width is enough.
         QCOMPARE(errorOfPart("rules", "trackWidths", sizes({0.7})), QString());
+    }
+
+    void drillRules()
+    {
+        QString error = errorOfPart("rules", "drills", QJsonArray());
+        QVERIFY2(error.startsWith(QStringLiteral("rules.drills: ")), qPrintable(error));
+
+        error = errorOfPart("rules", "drills", sizes({0, 0.7}));
+        QVERIFY2(error.startsWith(QStringLiteral("rules.drills[0]: ")), qPrintable(error));
+
+        error = errorOfPart("rules", "drills", sizes({0.7, 0.7}));
+        QVERIFY2(error.startsWith(QStringLiteral("rules.drills[1]: ")), qPrintable(error));
+
+        error = errorOfPart("rules", "drillsOnly", QStringLiteral("yes"));
+        QVERIFY2(error.startsWith(QStringLiteral("rules.drillsOnly: ")), qPrintable(error));
+
+        QCOMPARE(errorOfPart("rules", "drills", sizes({3.2})), QString());
+    }
+
+    // A file written before there were drills takes those of its set.
+    void drillsMissingFromAnOldFile()
+    {
+        for (const Rules &rules : {productionRules(), lutRules()}) {
+            Project project = fullProject();
+            project.rules = rules;
+            QJsonObject root = projectToJson(project);
+            QJsonObject object = root.value(QStringLiteral("rules")).toObject();
+            object.remove(QStringLiteral("drills"));
+            object.remove(QStringLiteral("drillsOnly"));
+            root.insert(QStringLiteral("rules"), object);
+            JsonReader reader;
+            const Project back = projectFromJson(root, reader);
+            QVERIFY2(reader.ok(), qPrintable(reader.error()));
+            QCOMPARE(back.rules.drills, rules.drills);
+            QCOMPARE(back.rules.drillsOnly, rules.drillsOnly);
+        }
     }
 
     void otherRuleErrors()

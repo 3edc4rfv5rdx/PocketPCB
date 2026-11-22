@@ -139,6 +139,14 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         painter.drawLine(QPointF(4, 3), QPointF(4, 7));
         painter.drawLine(QPointF(20, 3), QPointF(20, 7));
         break;
+    case ToolIcon::Hole:
+        // A hole with its middle marked.
+        painter.drawEllipse(QPointF(12, 12), 7, 7);
+        painter.drawLine(QPointF(12, 2), QPointF(12, 8));
+        painter.drawLine(QPointF(12, 16), QPointF(12, 22));
+        painter.drawLine(QPointF(2, 12), QPointF(8, 12));
+        painter.drawLine(QPointF(16, 12), QPointF(22, 12));
+        break;
     case ToolIcon::UpdateBoard:
         // A sheet, an arrow down and right from it, and a board with two pads.
         painter.drawRect(QRectF(3, 3, 9, 7));
