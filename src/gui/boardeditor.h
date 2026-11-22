@@ -116,6 +116,9 @@ public:
     void viaAndOtherSide();
     // Chooses 'side', as V does when it is the other one.
     void setTrackSide(BoardSide side);
+    // While the silkscreen is hidden, parts and their texts are not chosen;
+    // hiding it drops them from what is chosen.
+    void setSilkscreenShown(bool shown);
     // Space: the piece at 45 degrees goes first or last.
     void swapTrackCorner();
     // Drawing the outline or a cut-out, placing holes or laying tracks is
@@ -329,6 +332,10 @@ private:
     bool pressChoosable(const QPointF &at, bool adding);
     // The hole under 'at', as the mouse reaches.
     ObjectId holeUnder(const QPointF &at) const;
+    // The text of a placement, and the placement, under 'at', as far as
+    // what is shown lets them be taken (setSilkscreenShown()).
+    PlacementText textUnder(const QPointF &at) const;
+    ObjectId placementUnder(const QPointF &at) const;
     // Opens the line over the hole the menu was opened on.
     void editHoleValue(Typed typed);
     void valueTyped(const QString &text);
@@ -417,6 +424,7 @@ private:
     void setHoveredNet(const QString &net);
 
     Coord m_holeDrill = DEFAULT_HOLE_DRILL;
+    bool m_silkscreenShown = true;
 
     // Laying tracks: the last point laid (none before the first click),
     // the net, the width and the side of the track, its corner, and where

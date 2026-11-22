@@ -27,6 +27,7 @@ const char KEY_GRID_STYLE[] = "view/gridStyle";
 const char KEY_CURSOR_STYLE[] = "view/cursorStyle";
 const char KEY_ZOOM_WARP[] = "view/zoomCenterAndWarp";
 const char KEY_DRAWING_COORDINATES[] = "view/drawingCoordinates";
+const char KEY_RATSNEST_ARCS[] = "view/ratsnestArcs";
 const char KEY_SCREEN_DOTS[] = "view/screenDotsPerMm";
 const char KEY_WIRE_ROUTING[] = "schematic/wireRouting";
 const char KEY_STEP_HISTORY[] = "debug/keepStepHistory";
@@ -223,6 +224,16 @@ bool AppSettings::drawingCoordinatesShown()
 void AppSettings::setDrawingCoordinatesShown(bool on)
 {
     writeValue(KEY_DRAWING_COORDINATES, on);
+}
+
+bool AppSettings::ratsnestArcs()
+{
+    return readValue(KEY_RATSNEST_ARCS, false).toBool();
+}
+
+void AppSettings::setRatsnestArcs(bool on)
+{
+    writeValue(KEY_RATSNEST_ARCS, on);
 }
 
 bool AppSettings::keepStepHistory()

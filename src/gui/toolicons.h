@@ -27,6 +27,8 @@ enum class ToolIcon {
     RectangleBoard,
     Hole,
     Track,
+    Silkscreen,
+    Unrouted,
     UpdateBoard,
     Lock,
     Rotate,

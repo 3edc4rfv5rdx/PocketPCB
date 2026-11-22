@@ -232,6 +232,9 @@ private:
     // The mark in the bottom left corner: saved, not saved, or new.
     // Also colours the background of the Save button.
     void updateSavedMark();
+    // The connections still to be routed and all there are, in the status
+    // bar while the board is shown.
+    void updateUnrouted();
     // Puts 'text' into the status bar until the next one. Not
     // QStatusBar::showMessage(), which would hide the saved mark.
     void showStatus(const QString &text);
@@ -321,6 +324,7 @@ private:
     // tool chosen last from its arrow.
     QToolButton *m_outlineButton = nullptr;
     QToolButton *m_saveButton = nullptr;
+    QLabel *m_unroutedLabel = nullptr;
     // The actions of the outline's button, stopped while it is locked.
     QList<QAction *> m_outlineActions;
 

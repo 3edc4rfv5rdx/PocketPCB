@@ -106,6 +106,8 @@ private slots:
         };
         board.tracks = {track(BoardSide::Bottom, mm(5, 0), mm(15, 0))};
         QVERIFY(ratsnest(board, library()).isEmpty());
+        QCOMPARE(routingProgress(board, library()).unrouted, 0);
+        QCOMPARE(routingProgress(board, library()).total, 1);
         // Top to a via, then bottom on, ending on the middle of a track there.
         board.tracks = {track(BoardSide::Top, mm(5, 0), mm(10, 5)),
                         track(BoardSide::Bottom, mm(10, 5), mm(15, 5)),

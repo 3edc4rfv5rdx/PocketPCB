@@ -60,6 +60,11 @@ public:
     static bool drawingCoordinatesShown();
     static void setDrawingCoordinatesShown(bool on);
 
+    // Whether the lines of the ratsnest are drawn as gentle arcs instead of
+    // straight; straight by default.
+    static bool ratsnestArcs();
+    static void setRatsnestArcs(bool on);
+
     // Whether every step made is written into stepHistoryFolder(), for
     // finding out what went wrong in one (see writeStep()); off by default.
     static bool keepStepHistory();

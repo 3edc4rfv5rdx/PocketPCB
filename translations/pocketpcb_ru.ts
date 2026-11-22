@@ -928,6 +928,22 @@
         <source>Layer</source>
         <translation>Слой</translation>
     </message>
+    <message>
+        <source>Hide silkscreen</source>
+        <translation>Спрятать шелкографию</translation>
+    </message>
+    <message>
+        <source>Show unrouted connections</source>
+        <translation>Показать неразведённые связи</translation>
+    </message>
+    <message>
+        <source>Unrouted connections as arcs</source>
+        <translation>Неразведённые связи дугами</translation>
+    </message>
+    <message>
+        <source>Unrouted</source>
+        <translation>Не разведено</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>

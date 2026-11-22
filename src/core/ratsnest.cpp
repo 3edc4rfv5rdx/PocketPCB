@@ -111,6 +111,18 @@ QList<int> copperGroups(const Board &board, const QList<NetPad> &pads)
     return groups;
 }
 
+RoutingProgress routingProgress(const Board &board, const Library &library)
+{
+    QHash<QString, int> padsOfNet;
+    for (const NetPad &pad : netPads(board, library))
+        ++padsOfNet[pad.net];
+    RoutingProgress progress;
+    for (const int count : std::as_const(padsOfNet))
+        progress.total += count - 1;
+    progress.unrouted = int(ratsnest(board, library).size());
+    return progress;
+}
+
 QList<RatsnestLine> ratsnest(const Board &board, const Library &library)
 {
     // The centres of the pads of every net, in the order of the placements,

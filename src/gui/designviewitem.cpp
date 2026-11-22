@@ -10,6 +10,7 @@
 #include <QGraphicsSceneHoverEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 
 namespace ppcb {
 
@@ -35,6 +36,11 @@ const double CORNER_MARK_PIXELS = 7.0;
 const double LIT_EDGE_PIXELS = 4.0;
 // The width of a ratsnest line of a net lit, in pixels.
 const double LIT_LINE_PIXELS = 3.0;
+// How far a line of the ratsnest drawn as an arc is bent, as a part of its
+// length: the control point of the curve, which bends it half as far.
+const double RATSNEST_BEND = 1.0 / 3;
+// The dots at the ends of the ratsnest drawn bright, in screen pixels.
+const double RATSNEST_END_PIXELS = 4.0;
 // The arms of the origin mark on the board, in pixels.
 const double ORIGIN_ARM_PIXELS = 30.0;
 // Where the coordinates of the corner being drawn stand from it, in pixels.
@@ -140,6 +146,22 @@ void DesignViewItem::setDrawingCoordinatesShown(bool shown)
     update();
 }
 
+void DesignViewItem::setRatsnestArcs(bool arcs)
+{
+    if (arcs == m_ratsnestArcs)
+        return;
+    m_ratsnestArcs = arcs;
+    update();
+}
+
+void DesignViewItem::setRatsnestBright(bool bright)
+{
+    if (bright == m_ratsnestBright)
+        return;
+    m_ratsnestBright = bright;
+    update();
+}
+
 void DesignViewItem::setBoardLayers(const BoardLayerSet &layers)
 {
     if (layers == m_boardLayers)
@@ -211,12 +233,30 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     }
     painter.setBrush(Qt::NoBrush);
     const double litWidth = LIT_LINE_PIXELS / painter.worldTransform().m11();
+    const double endRadius = RATSNEST_END_PIXELS / painter.worldTransform().m11();
     for (const RatsnestLine &line : ratsnest(board, design.library)) {
-        if (lit.contains(line.net))
+        if (m_ratsnestBright || lit.contains(line.net))
             painter.setPen(QPen(paintcolor::ratsnest(), litWidth));
         else
             painter.setPen(QPen(paintcolor::ratsnest(), 0));
-        painter.drawLine(toMm(line.from), toMm(line.to));
+        const QPointF from = toMm(line.from);
+        const QPointF to = toMm(line.to);
+        if (m_ratsnestArcs) {
+            // Bent to the left of its way by a part of its length.
+            const QPointF along = to - from;
+            const QPointF bend = (from + to) / 2 + QPointF(along.y(), -along.x()) * RATSNEST_BEND;
+            QPainterPath arc(from);
+            arc.quadTo(bend, to);
+            painter.drawPath(arc);
+        } else {
+            painter.drawLine(from, to);
+        }
+        if (m_ratsnestBright) {
+            painter.setBrush(paintcolor::ratsnest());
+            painter.drawEllipse(toMm(line.from), endRadius, endRadius);
+            painter.drawEllipse(toMm(line.to), endRadius, endRadius);
+            painter.setBrush(Qt::NoBrush);
+        }
     }
     painter.restore();
     // The origin, which coordinates count from: a corner of two arms along

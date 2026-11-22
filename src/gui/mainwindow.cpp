@@ -15,6 +15,7 @@
 #include "netspanel.h"
 #include "projectpropertiesdialog.h"
 #include "propertiespanel.h"
+#include "ratsnest.h"
 #include "rectangleboarddialog.h"
 #include "sheeteditor.h"
 #include "sheettabs.h"
@@ -122,6 +123,8 @@ const char SAVED_MARK_STYLE[] =
     "QPushButton { color: white; font-weight: bold; padding: 0px 6px; border: none;"
     " border-radius: 2px; background: %1; }";
 const char SAVED_COLOR[] = "#5f9462";
+// The count of unrouted connections: black, with a gap after it.
+const char UNROUTED_STYLE[] = "QLabel { color: black; margin-right: 12px; }";
 const char NOT_SAVED_COLOR[] = "#c25450";
 const char NEW_COLOR[] = "#8c8c8c";
 
@@ -182,6 +185,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_designItem->setEditor(m_sheetEditor);
     m_designItem->setBoardEditor(m_boardEditor);
     m_designItem->setDrawingCoordinatesShown(AppSettings::drawingCoordinatesShown());
+    m_designItem->setRatsnestArcs(AppSettings::ratsnestArcs());
     connect(m_sheetEditor, &SheetEditor::changed, this, [this] { m_designItem->update(); });
     connect(m_boardEditor, &BoardEditor::changed, this, [this] { m_designItem->update(); });
     connect(m_boardEditor, &BoardEditor::message, this, &MainWindow::showStatus);
@@ -687,6 +691,15 @@ void MainWindow::createMenus()
         m_designItem->setDrawingCoordinatesShown(on);
     });
 
+    QAction *arcsAction = viewMenu->addAction(tr("Unrouted connections as arcs"));
+    arcsAction->setObjectName(QStringLiteral("actionRatsnestArcs"));
+    arcsAction->setCheckable(true);
+    arcsAction->setChecked(AppSettings::ratsnestArcs());
+    connect(arcsAction, &QAction::toggled, this, [this](bool on) {
+        AppSettings::setRatsnestArcs(on);
+        m_designItem->setRatsnestArcs(on);
+    });
+
     // The language of the interface, each named in itself; it is taken at
     // the next start.
     QMenu *settingsMenu = m_mainMenu->addMenu(tr("&Settings"));
@@ -761,6 +774,12 @@ void MainWindow::createStatusBar()
     statusBar()->addWidget(m_savedMark);
     m_statusText = new QLabel(this);
     statusBar()->addWidget(m_statusText, 1);
+
+    // How much of the board is still to be routed, while it is shown.
+    m_unroutedLabel = new QLabel(this);
+    m_unroutedLabel->setObjectName(QStringLiteral("unroutedLabel"));
+    m_unroutedLabel->setStyleSheet(QLatin1String(UNROUTED_STYLE));
+    statusBar()->addPermanentWidget(m_unroutedLabel);
 
     m_positionLabel = new QLabel(this);
     statusBar()->addPermanentWidget(m_positionLabel);
@@ -1371,6 +1390,7 @@ void MainWindow::showPage(int page, bool fit)
     m_sheetEditor->setSheet(shown == m_designItem->boardPage() ? -1 : shown);
     m_boardEditor->setActive(shown == m_designItem->boardPage());
     applyProjectGrid();
+    updateUnrouted();
     if (fit)
         showPageView();
 }
@@ -1613,6 +1633,33 @@ void MainWindow::createToolBar()
     });
     layerButton->setMenu(layerMenu);
     layerButton->setPopupMode(QToolButton::MenuButtonPopup);
+    // The silkscreen of both sides hidden or shown, on the screen only;
+    // pads, holes and copper stay. Pressed while it is hidden.
+    QAction *silkscreen = new QAction(tr("Hide silkscreen"), this);
+    silkscreen->setObjectName(QStringLiteral("actionSilkscreen"));
+    silkscreen->setIcon(toolIcon(ToolIcon::Silkscreen, color));
+    silkscreen->setCheckable(true);
+    silkscreen->setChecked(!m_designItem->boardLayers().contains(BoardLayer::SilkscreenTop));
+    connect(silkscreen, &QAction::toggled, this, [this](bool hidden) {
+        const bool shown = !hidden;
+        BoardLayerSet layers = m_designItem->boardLayers();
+        layers.set(BoardLayer::SilkscreenTop, shown);
+        layers.set(BoardLayer::SilkscreenBottom, shown);
+        m_designItem->setBoardLayers(layers);
+        m_boardEditor->setSilkscreenShown(shown);
+    });
+    bar->addAction(silkscreen);
+    m_boardActions.append(silkscreen);
+    // What is still to be joined, bold and with its ends marked, while
+    // pressed; on the screen only.
+    QAction *unrouted = new QAction(tr("Show unrouted connections"), this);
+    unrouted->setObjectName(QStringLiteral("actionShowUnrouted"));
+    unrouted->setIcon(toolIcon(ToolIcon::Unrouted, color));
+    unrouted->setCheckable(true);
+    connect(unrouted, &QAction::toggled, this,
+            [this](bool bright) { m_designItem->setRatsnestBright(bright); });
+    bar->addAction(unrouted);
+    m_boardActions.append(unrouted);
     auto *holeButton = qobject_cast<QToolButton *>(bar->widgetForAction(placeHole));
     Q_ASSERT(holeButton != nullptr);
     QMenu *holeMenu = new QMenu(this);
@@ -1908,6 +1955,22 @@ void MainWindow::projectChanged()
         m_boardEditor->setActive(board);
     applyProjectGrid();
     updateLibraryPanel();
+    updateUnrouted();
+}
+
+void MainWindow::updateUnrouted()
+{
+    if (m_unroutedLabel == nullptr)
+        return;
+    const bool board = m_boardEditor->isActive();
+    m_unroutedLabel->setVisible(board);
+    if (!board)
+        return;
+    const Design &design = m_document->design();
+    const RoutingProgress progress = routingProgress(design.board, design.library);
+    m_unroutedLabel->setText(tr("Unrouted") + QStringLiteral(": %1/%2")
+                                                  .arg(progress.unrouted)
+                                                  .arg(progress.total));
 }
 
 void MainWindow::keepShownPage()

@@ -3,6 +3,9 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: The status bar on the board shows the unrouted connections of all, and View can draw them as arcs
+- N: A Show unrouted connections button draws every ratsnest line bold with its ends marked
+- N: A Hide silkscreen button on the board strip hides the silkscreen while pressed, the copper staying and parts not chosen
 - N: Tracks and vias are chosen and deleted, a track's menu sets its width and side
 - N: The mouse resting on copper lights its net on the board and shows its name
 - N: A Layer button on the board strip shows the side chosen and switches it, its arrow choosing one

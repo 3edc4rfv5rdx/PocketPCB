@@ -48,6 +48,12 @@ public:
     // The layers of the board drawn; all at first.
     BoardLayerSet boardLayers() const { return m_boardLayers; }
     void setBoardLayers(const BoardLayerSet &layers);
+    // Whether every line of the ratsnest is drawn bold, with a dot at each
+    // end, so that what is still to be joined stands out.
+    void setRatsnestBright(bool bright);
+    // Whether the lines of the ratsnest are gentle arcs, all bent the same
+    // way, so that lines from one pad part.
+    void setRatsnestArcs(bool arcs);
     // Whether the coordinates of the corner being drawn on the board are
     // shown beside it.
     void setDrawingCoordinatesShown(bool shown);
@@ -83,6 +89,8 @@ private:
     SheetEditor *m_editor = nullptr;
     BoardEditor *m_boardEditor = nullptr;
     BoardLayerSet m_boardLayers = BoardLayerSet::all();
+    bool m_ratsnestBright = false;
+    bool m_ratsnestArcs = false;
     bool m_drawingCoordinatesShown = true;
     QRectF m_area;
     int m_page = 0;

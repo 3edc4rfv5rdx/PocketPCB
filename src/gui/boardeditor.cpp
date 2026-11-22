@@ -602,6 +602,32 @@ Board BoardEditor::shownBoard() const
     return board;
 }
 
+void BoardEditor::setSilkscreenShown(bool shown)
+{
+    m_silkscreenShown = shown;
+    // What is chosen of the parts is not seen any more.
+    if (!shown) {
+        m_chosenText = PlacementText();
+        m_chosen.subtract(chosenPlacements());
+        emit changed();
+    }
+}
+
+PlacementText BoardEditor::textUnder(const QPointF &at) const
+{
+    if (!m_silkscreenShown)
+        return PlacementText();
+    return placementTextAt(m_document->design().board, at);
+}
+
+ObjectId BoardEditor::placementUnder(const QPointF &at) const
+{
+    const Design &design = m_document->design();
+    if (!m_silkscreenShown)
+        return ObjectId();
+    return placementAt(design.board, design.library, at);
+}
+
 ObjectId BoardEditor::holeUnder(const QPointF &at) const
 {
     return holeAt(m_document->design().board, at,
@@ -611,7 +637,7 @@ ObjectId BoardEditor::holeUnder(const QPointF &at) const
 bool BoardEditor::pressChoosable(const QPointF &at, bool adding)
 {
     const Design &design = m_document->design();
-    const PlacementText text = placementTextAt(design.board, at);
+    const PlacementText text = textUnder(at);
     if (!text.isNull() && !adding) {
         m_chosen.clear();
         m_outlineChosen = false;
@@ -632,7 +658,7 @@ bool BoardEditor::pressChoosable(const QPointF &at, bool adding)
     }
     const ObjectId hit = !hole.isNull()     ? hole
                          : !copper.isNull() ? copper
-                                            : placementAt(design.board, design.library, at);
+                                            : placementUnder(at);
     if (hit.isNull())
         return false;
     // Tracks and vias are chosen, not dragged.
@@ -852,7 +878,9 @@ void BoardEditor::release(const QPointF &at)
     }
     if (m_framing) {
         const Design &design = m_document->design();
-        const QSet<ObjectId> inside = placementsInside(design.board, design.library, m_frame)
+        const QSet<ObjectId> inside = (m_silkscreenShown
+                                           ? placementsInside(design.board, design.library, m_frame)
+                                           : QSet<ObjectId>())
                                           .unite(holesInside(design.board, m_frame))
                                           .unite(tracksInside(design.board, m_frame));
         if (m_frameAdding)
@@ -946,7 +974,7 @@ BoardEditor::MenuTarget BoardEditor::chooseForMenu(const QPointF &at)
         return MenuTarget::None;
     const Design &design = m_document->design();
     // A text stands for its placement; holes are drawn over the pads.
-    const PlacementText text = placementTextAt(design.board, at);
+    const PlacementText text = textUnder(at);
     m_menuAt = at;
     const ObjectId hole = text.isNull() ? holeUnder(at) : ObjectId();
     ObjectId copper;
@@ -959,7 +987,7 @@ BoardEditor::MenuTarget BoardEditor::chooseForMenu(const QPointF &at)
     const ObjectId hit = !text.isNull()     ? text.owner
                          : !hole.isNull()   ? hole
                          : !copper.isNull() ? copper
-                                            : placementAt(design.board, design.library, at);
+                                            : placementUnder(at);
     if (!hit.isNull()) {
         if (!m_chosen.contains(hit)) {
             dropChosen();

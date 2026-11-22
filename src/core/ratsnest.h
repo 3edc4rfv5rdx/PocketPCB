@@ -22,6 +22,15 @@ bool operator==(const RatsnestLine &a, const RatsnestLine &b);
 // copper joins already (copperGroups()). A net with one pad has none.
 QList<RatsnestLine> ratsnest(const Board &board, const Library &library);
 
+// How far the routing is: the connections still to be made (the lines of
+// the ratsnest) and all there are, one fewer than the pads of each net.
+struct RoutingProgress
+{
+    int unrouted = 0;
+    int total = 0;
+};
+RoutingProgress routingProgress(const Board &board, const Library &library);
+
 // A pad of the board on a net: its centre and its size, in nanometres.
 struct NetPad
 {
