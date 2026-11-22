@@ -6,7 +6,10 @@
 #include "paint.h"
 
 #include <QApplication>
+#include <QCursor>
+#include <QGuiApplication>
 #include <QLineF>
+#include <QToolTip>
 
 #include <utility>
 
@@ -31,9 +34,17 @@ BoardEditor::BoardEditor(Document *document, CanvasView *canvas, QObject *parent
     , m_valueEdit(canvas)
 {
     connect(&m_valueEdit, &InPlaceEdit::accepted, this, &BoardEditor::valueTyped);
+    m_hoverTimer.setSingleShot(true);
+    m_hoverTimer.setInterval(CanvasView::HOVER_DELAY_MS);
+    connect(&m_hoverTimer, &QTimer::timeout, this, [this] {
+        // Something else may have begun since.
+        if (m_active && m_tool == Tool::Select && !m_pressed)
+            setHoveredNet(m_pendingNet);
+    });
     // Undo, Redo or a project opened: what was dragged or lit may be gone.
     connect(m_document, &Document::designChanged, this, [this] {
         m_valueEdit.close(false);
+        setHoveredNet(QString());
         dropDrag();
         emit changed();
     });
@@ -94,12 +105,33 @@ QString BoardEditor::actionName(Action action)
         return tr("Pad side");
     case Action::PadNet:
         return tr("Pad net");
+    case Action::LayTrack:
+        return tr("Lay track");
+    case Action::ViaAndOtherSide:
+        return tr("Via to the other side");
+    case Action::DeleteTracks:
+        return tr("Delete tracks");
+    case Action::TrackWidth:
+        return tr("Track width");
+    case Action::TrackSide:
+        return tr("Track layer");
     case Action::LockParts:
         return lockPartsName(true);
     case Action::UnlockParts:
         return lockPartsName(false);
     }
     return QString();
+}
+
+QString BoardEditor::sideName(BoardSide side)
+{
+    return side == BoardSide::Top ? tr("Top layer") : tr("Bottom layer");
+}
+
+void BoardEditor::setTrackSide(BoardSide side)
+{
+    if (side != trackSide())
+        viaAndOtherSide();
 }
 
 QString BoardEditor::diameterHint()
@@ -112,6 +144,10 @@ void BoardEditor::setActive(bool active)
     m_valueEdit.close(true);
     m_active = active;
     m_tool = Tool::Select;
+    m_trackFrom.reset();
+    m_hoverTimer.stop();
+    m_pendingNet.clear();
+    setHoveredNet(QString());
     dropChosen();
     m_outlinePoints.clear();
     m_cutting = false;
@@ -122,6 +158,7 @@ void BoardEditor::setActive(bool active)
 void BoardEditor::chooseSelectTool()
 {
     m_tool = Tool::Select;
+    m_trackFrom.reset();
     m_outlinePoints.clear();
     m_cutting = false;
     emit changed();
@@ -148,6 +185,175 @@ void BoardEditor::startCuttingOut()
     m_tool = Tool::CutOut;
     // Where the cursor is now, before it moves.
     m_cursor = Point{m_canvas->cursorX(), m_canvas->cursorY()};
+    emit changed();
+}
+
+void BoardEditor::startLayingTracks()
+{
+    if (!m_active)
+        return;
+    chooseSelectTool();
+    dropChosen();
+    m_tool = Tool::Track;
+    m_mouseAt = toMm(Point{m_canvas->cursorX(), m_canvas->cursorY()});
+    m_cursor = Point{m_canvas->cursorX(), m_canvas->cursorY()};
+    emit message(sideName(trackSide()));
+    emit changed();
+}
+
+BoardSide BoardEditor::trackSide() const
+{
+    switch (m_document->design().board.copper) {
+    case CopperSides::Top:
+        return BoardSide::Top;
+    case CopperSides::Bottom:
+        return BoardSide::Bottom;
+    case CopperSides::Both:
+        break;
+    }
+    return m_trackSide;
+}
+
+void BoardEditor::swapTrackCorner()
+{
+    if (!m_active || m_tool != Tool::Track)
+        return;
+    m_diagonalFirst = !m_diagonalFirst;
+    emit changed();
+}
+
+void BoardEditor::viaAndOtherSide()
+{
+    if (!m_active)
+        return;
+    if (m_document->design().board.copper != CopperSides::Both) {
+        emit message(tr("The board has copper on one side"));
+        return;
+    }
+    const BoardSide other = trackSide() == BoardSide::Top ? BoardSide::Bottom : BoardSide::Top;
+    if (m_tool == Tool::Track && m_trackFrom) {
+        const NetClass *netClass = trackClass(m_document->design(), m_trackNet);
+        const Rules &rules = m_document->design().project.rules;
+        Via via;
+        via.id = newObjectId();
+        via.at = trackTarget(m_mouseAt);
+        via.net = m_trackNet;
+        via.drill = netClass != nullptr ? netClass->viaDrill : rules.viaDrill;
+        via.size = netClass != nullptr ? netClass->viaSize : rules.viaSize;
+        layTrack(via.at, Action::ViaAndOtherSide, via);
+        m_trackFrom = via.at;
+    }
+    m_trackSide = other;
+    emit message(sideName(other));
+    emit changed();
+}
+
+Point BoardEditor::trackTarget(const QPointF &at) const
+{
+    const Design &design = m_document->design();
+    const std::optional<CopperPoint> copper = copperAt(
+        design.board, design.library, at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
+    if (copper && copper->on(trackSide()))
+        return copper->at;
+    return m_canvas->snapped(at);
+}
+
+QList<Point> BoardEditor::trackPieces(const Point &target) const
+{
+    if (!m_trackFrom)
+        return {};
+    // Shift: one piece at any angle.
+    if (QGuiApplication::queryKeyboardModifiers() & Qt::ShiftModifier) {
+        if (target == *m_trackFrom)
+            return {target};
+        return {*m_trackFrom, target};
+    }
+    return trackCorners(*m_trackFrom, target, m_diagonalFirst);
+}
+
+QList<Track> BoardEditor::trackPreview() const
+{
+    QList<Track> preview;
+    if (!m_active || m_tool != Tool::Track || !m_trackFrom)
+        return preview;
+    const QList<Point> points = trackPieces(trackTarget(m_mouseAt));
+    for (int i = 1; i < points.size(); ++i) {
+        Track track;
+        track.side = trackSide();
+        track.net = m_trackNet;
+        track.width = m_trackWidth;
+        track.from = points.at(i - 1);
+        track.to = points.at(i);
+        preview.append(track);
+    }
+    return preview;
+}
+
+void BoardEditor::layTrack(const Point &target, Action action, const std::optional<Via> &via)
+{
+    Board board = m_document->design().board;
+    QSet<ObjectId> ids;
+    const QList<Point> points = trackPieces(target);
+    for (int i = 1; i < points.size(); ++i) {
+        Track track;
+        track.id = newObjectId();
+        track.side = trackSide();
+        track.net = m_trackNet;
+        track.width = m_trackWidth;
+        track.from = points.at(i - 1);
+        track.to = points.at(i);
+        board.tracks.append(track);
+        ids.insert(track.id);
+    }
+    if (via) {
+        board.vias.append(*via);
+        ids.insert(via->id);
+    }
+    if (!ids.isEmpty())
+        applyBoard(action, board, ids);
+}
+
+void BoardEditor::trackClick(const QPointF &at)
+{
+    m_mouseAt = at;
+    const Design &design = m_document->design();
+    const std::optional<CopperPoint> copper = copperAt(
+        design.board, design.library, at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
+    if (!m_trackFrom) {
+        if (!copper) {
+            emit message(tr("Start a track on a pad or a track"));
+            return;
+        }
+        // Copper on the other side only: the track starts there.
+        if (!copper->on(trackSide()) && design.board.copper == CopperSides::Both)
+            m_trackSide = trackSide() == BoardSide::Top ? BoardSide::Bottom : BoardSide::Top;
+        m_trackFrom = copper->at;
+        m_trackNet = copper->net;
+        const NetClass *netClass = trackClass(design, m_trackNet);
+        m_trackWidth =
+            netClass != nullptr ? netClass->trackWidth : design.project.rules.defaultTrackWidth;
+        emit changed();
+        return;
+    }
+    const bool ending = copper && copper->on(trackSide());
+    if (ending && !copper->net.isEmpty() && !m_trackNet.isEmpty() && copper->net != m_trackNet) {
+        emit message(tr("The copper there is on another net"));
+        return;
+    }
+    const Point target = trackTarget(at);
+    if (target == *m_trackFrom) {
+        // Back on the copper it started from: nothing laid, the track ends.
+        if (ending)
+            m_trackFrom.reset();
+        emit changed();
+        return;
+    }
+    layTrack(target, Action::LayTrack, std::nullopt);
+    // On copper of its own side the track ends; else it goes on from there.
+    if (ending)
+        m_trackFrom.reset();
+    else
+        m_trackFrom = target;
     emit changed();
 }
 
@@ -255,6 +461,23 @@ QSet<ObjectId> BoardEditor::chosenHoles() const
     return chosen;
 }
 
+QSet<ObjectId> BoardEditor::chosenTracks() const
+{
+    QSet<ObjectId> chosen;
+    if (!m_active)
+        return chosen;
+    const Board &board = m_document->design().board;
+    for (const Track &track : board.tracks) {
+        if (m_chosen.contains(track.id))
+            chosen.insert(track.id);
+    }
+    for (const Via &via : board.vias) {
+        if (m_chosen.contains(via.id))
+            chosen.insert(via.id);
+    }
+    return chosen;
+}
+
 bool BoardEditor::chosenLocked() const
 {
     if (!hasChosen())
@@ -311,7 +534,8 @@ void BoardEditor::deleteChosen()
         if (m_chosen.contains(placement.id) && !placement.locked)
             parts.insert(placement.id);
     }
-    if (holes.isEmpty() && parts.isEmpty()) {
+    const QSet<ObjectId> tracks = chosenTracks();
+    if (holes.isEmpty() && parts.isEmpty() && tracks.isEmpty()) {
         if (!chosenPlacements().isEmpty())
             emit message(partLockedMessage());
         else
@@ -320,16 +544,26 @@ void BoardEditor::deleteChosen()
     }
     // The parts stay chosen where they go; an Undo brings all back chosen.
     m_chosen.subtract(holes);
-    const Board result = withPlacementsPacked(withoutHoles(board, holes), design.library, parts,
-                                              design.project.boardGridStep);
-    applyBoard(parts.isEmpty() ? Action::DeleteHoles : Action::MovePartsOff, result,
-               QSet<ObjectId>(holes).unite(parts));
+    m_chosen.subtract(tracks);
+    const Board result =
+        withPlacementsPacked(withoutTracks(withoutHoles(board, holes), tracks), design.library,
+                             parts, design.project.boardGridStep);
+    const Action action = !parts.isEmpty()   ? Action::MovePartsOff
+                          : !holes.isEmpty() ? Action::DeleteHoles
+                                             : Action::DeleteTracks;
+    applyBoard(action, result, QSet<ObjectId>(holes).unite(parts).unite(tracks));
     emit changed();
 }
 
 QSet<QString> BoardEditor::litNets() const
 {
     QSet<QString> nets;
+    // The pads of the track's net while it is laid, and the net the mouse
+    // stays on.
+    if (m_active && m_tool == Tool::Track && m_trackFrom && !m_trackNet.isEmpty())
+        nets.insert(m_trackNet);
+    if (!m_hoveredNet.isEmpty())
+        nets.insert(m_hoveredNet);
     const QSet<ObjectId> chosen = chosenPlacements();
     for (const Placement &placement : m_document->design().board.placements) {
         if (!chosen.contains(placement.id))
@@ -386,11 +620,35 @@ bool BoardEditor::pressChoosable(const QPointF &at, bool adding)
         m_dragAnchor = placementTextPoint(design.board, text);
         return true;
     }
-    // Holes are drawn over the pads.
+    // Holes are drawn over the pads; vias and tracks are taken off the pads
+    // of parts, which are the parts'.
+    const double reach = m_canvas->pixelsToMm(CanvasView::HIT_PIXELS);
     const ObjectId hole = holeUnder(at);
-    const ObjectId hit = hole.isNull() ? placementAt(design.board, design.library, at) : hole;
+    ObjectId copper;
+    if (hole.isNull() && !padAt(design.board, design.library, at, 0)) {
+        copper = viaAt(design.board, at, reach);
+        if (copper.isNull())
+            copper = trackAt(design.board, at, reach, trackSide());
+    }
+    const ObjectId hit = !hole.isNull()     ? hole
+                         : !copper.isNull() ? copper
+                                            : placementAt(design.board, design.library, at);
     if (hit.isNull())
         return false;
+    // Tracks and vias are chosen, not dragged.
+    if (!copper.isNull()) {
+        m_chosenText = PlacementText();
+        if (adding) {
+            if (m_chosen.contains(copper))
+                m_chosen.remove(copper);
+            else
+                m_chosen.insert(copper);
+        } else if (!m_chosen.contains(copper)) {
+            m_chosen = {copper};
+            m_outlineChosen = false;
+        }
+        return true;
+    }
     m_chosenText = PlacementText();
     if (adding) {
         if (m_chosen.contains(hit))
@@ -449,6 +707,9 @@ void BoardEditor::press(const QPointF &at, bool adding)
         return;
     case Tool::Hole:
         placeHole(m_canvas->snapped(at));
+        return;
+    case Tool::Track:
+        trackClick(at);
         return;
     case Tool::CutOut:
         m_cutting = true;
@@ -592,7 +853,8 @@ void BoardEditor::release(const QPointF &at)
     if (m_framing) {
         const Design &design = m_document->design();
         const QSet<ObjectId> inside = placementsInside(design.board, design.library, m_frame)
-                                          .unite(holesInside(design.board, m_frame));
+                                          .unite(holesInside(design.board, m_frame))
+                                          .unite(tracksInside(design.board, m_frame));
         if (m_frameAdding)
             m_chosen.unite(inside);
         else
@@ -629,9 +891,27 @@ void BoardEditor::doubleClick(const QPointF &at)
 {
     if (!m_active)
         return;
+    // The first click of the two laid the track there: it ends.
+    if (m_tool == Tool::Track) {
+        m_trackFrom.reset();
+        emit changed();
+        return;
+    }
     if (m_tool != Tool::Select) {
         press(at);
         return;
+    }
+    // A track off the pads chooses the whole of it.
+    const Design &design = m_document->design();
+    if (!padAt(design.board, design.library, at, 0)) {
+        const ObjectId track = trackAt(design.board, at,
+                                       m_canvas->pixelsToMm(CanvasView::HIT_PIXELS), trackSide());
+        if (!track.isNull()) {
+            dropChosen();
+            m_chosen = trackRun(design.board, track);
+            emit changed();
+            return;
+        }
     }
     const int corner =
         outlineCornerAt(outline(), at, m_canvas->pixelsToMm(CanvasView::END_PIXELS));
@@ -667,10 +947,19 @@ BoardEditor::MenuTarget BoardEditor::chooseForMenu(const QPointF &at)
     const Design &design = m_document->design();
     // A text stands for its placement; holes are drawn over the pads.
     const PlacementText text = placementTextAt(design.board, at);
+    m_menuAt = at;
     const ObjectId hole = text.isNull() ? holeUnder(at) : ObjectId();
-    const ObjectId hit = !text.isNull()   ? text.owner
-                         : !hole.isNull() ? hole
-                                          : placementAt(design.board, design.library, at);
+    ObjectId copper;
+    if (text.isNull() && hole.isNull() && !padAt(design.board, design.library, at, 0)) {
+        const double reach = m_canvas->pixelsToMm(CanvasView::HIT_PIXELS);
+        copper = viaAt(design.board, at, reach);
+        if (copper.isNull())
+            copper = trackAt(design.board, at, reach, trackSide());
+    }
+    const ObjectId hit = !text.isNull()     ? text.owner
+                         : !hole.isNull()   ? hole
+                         : !copper.isNull() ? copper
+                                            : placementAt(design.board, design.library, at);
     if (!hit.isNull()) {
         if (!m_chosen.contains(hit)) {
             dropChosen();
@@ -678,7 +967,9 @@ BoardEditor::MenuTarget BoardEditor::chooseForMenu(const QPointF &at)
         }
         m_menuHole = hole;
         emit changed();
-        return hole.isNull() ? MenuTarget::Placement : MenuTarget::Hole;
+        if (!hole.isNull())
+            return MenuTarget::Hole;
+        return copper.isNull() ? MenuTarget::Placement : MenuTarget::Track;
     }
     m_menuCorner = outlineCornerAt(outline(), at, m_canvas->pixelsToMm(CanvasView::END_PIXELS));
     const bool side =
@@ -693,17 +984,17 @@ BoardEditor::MenuTarget BoardEditor::chooseForMenu(const QPointF &at)
 
 namespace {
 
-// What 'property' gives for every hole of 'ids' on 'board', when it gives
+// What 'property' gives for every item of 'ids' in 'items', when it gives
 // the same for all of them; nothing otherwise, or when none is there.
-template <typename Property>
-auto commonOfHoles(const Board &board, const QSet<ObjectId> &ids, Property property)
-    -> std::optional<decltype(property(std::declval<const MountingHole &>()))>
+template <typename Item, typename Property>
+auto commonOf(const QList<Item> &items, const QSet<ObjectId> &ids, Property property)
+    -> std::optional<decltype(property(std::declval<const Item &>()))>
 {
-    std::optional<decltype(property(std::declval<const MountingHole &>()))> common;
-    for (const MountingHole &hole : board.holes) {
-        if (!ids.contains(hole.id))
+    std::optional<decltype(property(std::declval<const Item &>()))> common;
+    for (const Item &item : items) {
+        if (!ids.contains(item.id))
             continue;
-        const auto value = property(hole);
+        const auto value = property(item);
         if (common && *common != value)
             return std::nullopt;
         common = value;
@@ -713,36 +1004,110 @@ auto commonOfHoles(const Board &board, const QSet<ObjectId> &ids, Property prope
 
 } // namespace
 
+Coord BoardEditor::chosenTracksWidth() const
+{
+    return commonOf(m_document->design().board.tracks, chosenTracks(),
+                    [](const Track &track) { return track.width; })
+        .value_or(0);
+}
+
+void BoardEditor::setChosenTracksWidth(Coord width)
+{
+    const QSet<ObjectId> ids = chosenTracks();
+    const Board &board = m_document->design().board;
+    const Board changedBoard = withTracksWidth(board, ids, width);
+    if (width > 0 && changedBoard != board)
+        applyBoard(Action::TrackWidth, changedBoard, ids);
+}
+
+void BoardEditor::setChosenTracksSide(BoardSide side)
+{
+    const QSet<ObjectId> ids = chosenTracks();
+    const Board &board = m_document->design().board;
+    const Board changedBoard = withTracksSide(board, ids, side);
+    if (changedBoard != board)
+        applyBoard(Action::TrackSide, changedBoard, ids);
+}
+
+void BoardEditor::editMenuTrackWidth()
+{
+    // A line still open keeps what it holds for its own tracks.
+    m_valueEdit.close(true);
+    const QSet<ObjectId> ids = chosenTracks();
+    const Board &board = m_document->design().board;
+    const auto first = std::find_if(board.tracks.cbegin(), board.tracks.cend(),
+                                    [&ids](const Track &track) { return ids.contains(track.id); });
+    if (first == board.tracks.cend())
+        return;
+    m_typed = Typed::TrackWidth;
+    const Coord width = chosenTracksWidth();
+    m_valueEdit.open(formatMmShort(width != 0 ? width : first->width), QRectF(m_menuAt, QSizeF(0, 0)));
+}
+
+void BoardEditor::hoverNet(const QPointF &at)
+{
+    const Design &design = m_document->design();
+    const std::optional<CopperPoint> copper = copperAt(
+        design.board, design.library, at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
+    const QString net = copper ? copper->net : QString();
+    if (!net.isEmpty() && net == m_hoveredNet) {
+        // Shown again after it went out by itself or with a click.
+        QToolTip::showText(QCursor::pos(), net, m_canvas->viewport());
+        return;
+    }
+    // Off the net lit: it goes out at once, and the next waits its time.
+    setHoveredNet(QString());
+    if (net.isEmpty()) {
+        m_hoverTimer.stop();
+        m_pendingNet.clear();
+    } else if (net != m_pendingNet) {
+        m_pendingNet = net;
+        m_hoverTimer.start();
+    }
+}
+
+void BoardEditor::setHoveredNet(const QString &net)
+{
+    if (net == m_hoveredNet)
+        return;
+    m_hoveredNet = net;
+    if (net.isEmpty())
+        QToolTip::hideText();
+    else
+        QToolTip::showText(QCursor::pos(), net, m_canvas->viewport());
+    emit changed();
+}
+
 Coord BoardEditor::chosenHolesDrill() const
 {
-    return commonOfHoles(m_document->design().board, chosenHoles(),
+    return commonOf(m_document->design().board.holes, chosenHoles(),
                          [](const MountingHole &hole) { return hole.drill; })
         .value_or(0);
 }
 
 bool BoardEditor::chosenHolesHavePads() const
 {
-    return commonOfHoles(m_document->design().board, chosenHoles(),
+    return commonOf(m_document->design().board.holes, chosenHoles(),
                          [](const MountingHole &hole) { return hole.ring > 0; })
                == std::optional<bool>(true);
 }
 
 bool BoardEditor::chosenHolesPlatedNone() const
 {
-    return commonOfHoles(m_document->design().board, chosenHoles(),
+    return commonOf(m_document->design().board.holes, chosenHoles(),
                          [](const MountingHole &hole) { return hole.plated; })
                == std::optional<bool>(false);
 }
 
 std::optional<CopperSides> BoardEditor::chosenHolesPadSides() const
 {
-    return commonOfHoles(m_document->design().board, chosenHoles(),
+    return commonOf(m_document->design().board.holes, chosenHoles(),
                          [](const MountingHole &hole) { return hole.padSides; });
 }
 
 std::optional<QString> BoardEditor::chosenHolesNet() const
 {
-    return commonOfHoles(m_document->design().board, chosenHoles(),
+    return commonOf(m_document->design().board.holes, chosenHoles(),
                          [](const MountingHole &hole) { return hole.net; });
 }
 
@@ -850,6 +1215,14 @@ void BoardEditor::valueTyped(const QString &text)
         radiusTyped(text);
         break;
     case Typed::Drill:
+    case Typed::TrackWidth: {
+        Coord width = 0;
+        if (parseMm(text, width) && width > 0)
+            setChosenTracksWidth(width);
+        else
+            emit message(tr("Type the width in millimetres"));
+        break;
+    }
     case Typed::Pad:
         holeValueTyped(typed, text);
         break;
@@ -958,8 +1331,16 @@ void BoardEditor::hover(const Point &at)
 
 void BoardEditor::hoverMouse(const QPointF &at)
 {
+    // The track being laid follows the mouse.
+    if (m_active && m_tool == Tool::Track) {
+        m_mouseAt = at;
+        if (m_trackFrom)
+            emit changed();
+        return;
+    }
     if (!m_active || m_tool != Tool::Select || m_pressed)
         return;
+    hoverNet(at);
     // A locked outline is not offered for dragging.
     if (isOutlineLocked()) {
         setLit(-1, -1);
@@ -979,6 +1360,9 @@ void BoardEditor::cancel()
         dropDrag();
     } else if (!m_outlinePoints.isEmpty()) {
         m_outlinePoints.clear();
+    } else if (m_trackFrom) {
+        // The track begun stops where it was last laid to.
+        m_trackFrom.reset();
     } else if (m_cutting) {
         m_cutting = false;
     } else if (m_tool == Tool::Select

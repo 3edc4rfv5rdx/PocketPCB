@@ -916,6 +916,18 @@
         <source>No net</source>
         <translation>Без кола</translation>
     </message>
+    <message>
+        <source>User guide</source>
+        <translation>Посібник користувача</translation>
+    </message>
+    <message>
+        <source>Cannot open the user guide</source>
+        <translation>Не вдається відкрити посібник користувача</translation>
+    </message>
+    <message>
+        <source>Layer</source>
+        <translation>Шар</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>
@@ -1529,6 +1541,50 @@
     <message>
         <source>Move parts off the board</source>
         <translation>Винести деталі за плату</translation>
+    </message>
+    <message>
+        <source>Lay track</source>
+        <translation>Прокласти доріжку</translation>
+    </message>
+    <message>
+        <source>Via to the other side</source>
+        <translation>Перехідний на інший бік</translation>
+    </message>
+    <message>
+        <source>Top layer</source>
+        <translation>Верхній шар</translation>
+    </message>
+    <message>
+        <source>Bottom layer</source>
+        <translation>Нижній шар</translation>
+    </message>
+    <message>
+        <source>The board has copper on one side</source>
+        <translation>У плати мідь лише з одного боку</translation>
+    </message>
+    <message>
+        <source>Start a track on a pad or a track</source>
+        <translation>Почніть доріжку на площадці або доріжці</translation>
+    </message>
+    <message>
+        <source>The copper there is on another net</source>
+        <translation>Там мідь іншого кола</translation>
+    </message>
+    <message>
+        <source>Delete tracks</source>
+        <translation>Видалити доріжки</translation>
+    </message>
+    <message>
+        <source>Track width</source>
+        <translation>Ширина доріжки</translation>
+    </message>
+    <message>
+        <source>Track layer</source>
+        <translation>Шар доріжки</translation>
+    </message>
+    <message>
+        <source>Type the width in millimetres</source>
+        <translation>Введіть ширину в міліметрах</translation>
     </message>
 </context>
 <context>

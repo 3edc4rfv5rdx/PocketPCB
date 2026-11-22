@@ -3,6 +3,13 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Tracks and vias are chosen and deleted, a track's menu sets its width and side
+- N: The mouse resting on copper lights its net on the board and shows its name
+- N: A Layer button on the board strip shows the side chosen and switches it, its arrow choosing one
+- F: The ratsnest leaves out pads that tracks and vias join already
+- N: Help > User guide (F1) opens the user guide, help.html, in the browser
+- N: Tracks are laid on the board with the Track tool (T), V putting a via and going on on the other side
+- F: The copper of the side not chosen is drawn darker under the side chosen
 ## v0.10.257 (2026-11-22)
 - F: A project opened while the board is shown opens on its board
 - F: The outline button starts as Rectangular board, and Update board stands a gap left of Lock

@@ -157,6 +157,8 @@ private:
     // Help > About: the name and version of the program, the day of its
     // build, what it is, its license.
     void showAbout();
+    // Opens help.html (AppSettings::helpFile()) in the browser.
+    void showUserGuide();
     static QString aboutTitle();
     void createStatusBar();
     // Adds a checkable, mutually exclusive item to a menu.

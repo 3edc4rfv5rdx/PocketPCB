@@ -21,6 +21,7 @@ Only on an explicit request — "запиши", "коммит", "commit". A work
 - Commit message: one line, subject only.
 - Every commit carries its `CHANGELOG.md` entry (format below), except changes to files that touch neither the app nor its build (`AGENTS.md`, `README.md`, `.gitignore`).
 - `README.md` describes what the app does now; a commit that changes behaviour or usage carries the README edit with it.
+- `help.html` is the user's guide, with a table of contents: the essentials of every feature for the user, short, without the details README keeps. A commit that adds or changes a feature carries its help edit too.
 - Exactly the intended changes: no chmod, no side tweaks; a file mode the author changed is committed as it is.
 - `build_number.txt` is the author's: never edit it by hand, but stage it when a build has left it dirty.
 - The branch is `main`. After committing, stop — the author pushes.

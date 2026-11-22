@@ -16,8 +16,6 @@ namespace ppcb {
 
 namespace {
 
-// How long the mouse stays on a net before it is lit, in milliseconds.
-const int HOVER_DELAY_MS = 1000;
 // How many components a step's name lists before it stops.
 const int NAMED_COMPONENTS = 3;
 
@@ -49,7 +47,7 @@ SheetEditor::SheetEditor(Document *document, CanvasView *canvas, QObject *parent
         emit netsChanged();
     });
     m_hoverTimer.setSingleShot(true);
-    m_hoverTimer.setInterval(HOVER_DELAY_MS);
+    m_hoverTimer.setInterval(CanvasView::HOVER_DELAY_MS);
     connect(&m_hoverTimer, &QTimer::timeout, this, [this] {
         // Placing or drawing wires may have begun from the keyboard since.
         if (currentSheet() == nullptr || m_placing || m_wiring || m_pressed) {

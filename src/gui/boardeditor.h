@@ -4,11 +4,13 @@
 #include "boardedit.h"
 #include "document.h"
 #include "inplaceedit.h"
+#include "trackedit.h"
 
 #include <QLineF>
 #include <QObject>
 #include <QPolygonF>
 #include <QRectF>
+#include <QTimer>
 
 #include <optional>
 
@@ -27,9 +29,12 @@ class CanvasView;
 // moves it away from the placement. Mounting holes are chosen and dragged
 // as placements are, and with them; Delete takes them off and moves the
 // placements off the board, as they come from the schematic. Placing
-// holes: every click puts
-// one on the grid. Drawing the outline: every click sets
-// a corner on the grid; a click on the first corner closes it. Cutting
+// holes: every click puts one on the grid. Laying tracks: a click on a pad
+// or a track starts one on the side chosen, every click after it lays a
+// straight piece and one at 45 degrees up to it (Shift: one piece at any
+// angle), as one step, and a click on copper ends it; V puts a via and goes
+// on on the other side. Drawing the outline: every click sets a corner on
+// the grid; a click on the first corner closes it. Cutting
 // out: a rectangle drawn across the edge is taken off the board. Each
 // change is one step. Positions come in scene millimetres.
 class BoardEditor : public QObject
@@ -69,10 +74,17 @@ public:
         UnlockHoles,
         PadSides,
         PadNet,
+        LayTrack,
+        ViaAndOtherSide,
+        DeleteTracks,
+        TrackWidth,
+        TrackSide,
     };
     static QString actionName(Action action);
     // Asks for a hole's diameter in millimetres, after a wrong one.
     static QString diameterHint();
+    // "Top layer", "Bottom layer".
+    static QString sideName(BoardSide side);
 
     // While the board is shown. Leaving it drops what is being drawn or
     // dragged and goes back to choosing.
@@ -80,7 +92,7 @@ public:
     void setActive(bool active);
 
     // What the mouse does now.
-    enum class Tool { Select, Outline, CutOut, Hole };
+    enum class Tool { Select, Outline, CutOut, Hole, Track };
     Tool tool() const { return m_tool; }
     void chooseSelectTool();
     // Drawing a new outline, which takes the place of the old one once
@@ -93,12 +105,29 @@ public:
     // at first. Choosing one starts placing them.
     Coord holeDrill() const { return m_holeDrill; }
     void setHoleDrill(Coord drill);
-    // Drawing the outline or a cut-out, or placing holes, is going on: a
-    // short right click ends it, as Esc does.
+    // Laying tracks on the side chosen (trackSide()).
+    void startLayingTracks();
+    // The side tracks are laid on, and shown brighter than the other: the
+    // board's only side of copper, or the one chosen.
+    BoardSide trackSide() const;
+    // V: while a track is laid, it goes to the cursor, a via is put there
+    // and the track goes on on the other side; else the other side is
+    // chosen. Nothing on a board with copper on one side.
+    void viaAndOtherSide();
+    // Chooses 'side', as V does when it is the other one.
+    void setTrackSide(BoardSide side);
+    // Space: the piece at 45 degrees goes first or last.
+    void swapTrackCorner();
+    // Drawing the outline or a cut-out, placing holes or laying tracks is
+    // going on: a short right click ends it, as Esc does.
     bool isDrawing() const
     {
-        return !m_outlinePoints.isEmpty() || m_cutting || (m_active && m_tool == Tool::Hole);
+        return !m_outlinePoints.isEmpty() || m_cutting
+               || (m_active && (m_tool == Tool::Hole || m_tool == Tool::Track));
     }
+    // The pieces of the track being laid, from its last point to the
+    // cursor; empty when none is.
+    QList<Track> trackPreview() const;
     // Where the next hole goes, as it would stand; nothing while not placing.
     std::optional<MountingHole> holeToPlace() const;
     // The outline becomes a rectangle 'width' by 'height' with its top left
@@ -117,6 +146,8 @@ public:
     QSet<ObjectId> chosenPlacements() const;
     // The holes chosen, of those the board has.
     QSet<ObjectId> chosenHoles() const;
+    // The tracks and the vias chosen, of those the board has.
+    QSet<ObjectId> chosenTracks() const;
     // The nets of the pads of the placements chosen, lit on the board.
     QSet<QString> litNets() const;
     // The text chosen alone; null when none is.
@@ -154,7 +185,7 @@ public:
     // would, unless it is chosen already: a placement (also by one of its
     // texts), a hole, a corner or a side of the outline, or nothing (what is
     // chosen then stays).
-    enum class MenuTarget { None, Placement, Hole, Corner, Side };
+    enum class MenuTarget { None, Placement, Hole, Track, Corner, Side };
     MenuTarget chooseForMenu(const QPointF &at);
     // The corner of the outline the menu was opened on; -1 for none.
     int menuCorner() const { return m_menuCorner; }
@@ -164,6 +195,14 @@ public:
         if (m_menuCorner >= 0)
             editRadius(m_menuCorner);
     }
+    // The width of every track chosen; 0 when they differ or none is.
+    Coord chosenTracksWidth() const;
+    // Given to the tracks chosen as one step.
+    void setChosenTracksWidth(Coord width);
+    void setChosenTracksSide(BoardSide side);
+    // Types the width of the tracks chosen in place, where the menu was
+    // opened.
+    void editMenuTrackWidth();
     // The diameter of every hole chosen; 0 when they differ or none is.
     Coord chosenHolesDrill() const;
     // The holes chosen get the diameter 'drill' as one step.
@@ -249,7 +288,7 @@ signals:
 
 private:
     // What the line typed in place is for.
-    enum class Typed { None, Radius, Drill, Pad };
+    enum class Typed { None, Radius, Drill, Pad, TrackWidth };
 
     const QList<OutlineCorner> &outline() const { return m_document->design().board.outline; }
     int boardPage() const;
@@ -273,6 +312,18 @@ private:
     // Makes 'board' the board as one step named after 'action', with the
     // placements 'ids' as those it touched.
     void applyBoard(Action action, const Board &board, const QSet<ObjectId> &ids);
+    // A click while laying tracks at 'at' (millimetres): starts a track, or
+    // lays the pieces up to it.
+    void trackClick(const QPointF &at);
+    // Where the track being laid goes from its last point when the mouse
+    // is at 'at': the middle of the copper under it on the side, else the
+    // grid point.
+    Point trackTarget(const QPointF &at) const;
+    // The pieces from the last point to 'target'.
+    QList<Point> trackPieces(const Point &target) const;
+    // Lays the pieces to 'target' as tracks, and 'via' with them when
+    // given, as one step named after 'action'.
+    void layTrack(const Point &target, Action action, const std::optional<Via> &via);
     // A press in choosing on a placement's text, a hole or a placement;
     // false when there is none of them under 'at'.
     bool pressChoosable(const QPointF &at, bool adding);
@@ -352,10 +403,30 @@ private:
     Typed m_typed = Typed::None;
     int m_radiusCorner = -1;
     int m_menuCorner = -1;
-    // The hole the menu was opened on.
+    // The hole the menu was opened on, and where it was opened.
     ObjectId m_menuHole;
+    QPointF m_menuAt;
+
+    // The net under the mouse, lit once the mouse has stayed on it a while
+    // (CanvasView::HOVER_DELAY_MS), and its name shown beside the cursor.
+    QTimer m_hoverTimer;
+    QString m_pendingNet;
+    QString m_hoveredNet;
+    // Lights the net under 'at' after a while; one lit goes out off it.
+    void hoverNet(const QPointF &at);
+    void setHoveredNet(const QString &net);
 
     Coord m_holeDrill = DEFAULT_HOLE_DRILL;
+
+    // Laying tracks: the last point laid (none before the first click),
+    // the net, the width and the side of the track, its corner, and where
+    // the mouse is.
+    std::optional<Point> m_trackFrom;
+    QString m_trackNet;
+    Coord m_trackWidth = 0;
+    BoardSide m_trackSide = BoardSide::Top;
+    bool m_diagonalFirst = false;
+    QPointF m_mouseAt;
 };
 
 } // namespace ppcb

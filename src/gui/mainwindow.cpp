@@ -470,8 +470,14 @@ void MainWindow::createMenus()
                   QKeySequence(Qt::Key_W), &SheetEditor::startWiring);
     addEditAction(tr("Draw bus"), "actionBus", QKeySequence(Qt::Key_B),
                   &SheetEditor::startDrawingBus);
-    addEditAction(tr("Turn the wire corner the other way"), "actionWireCorner",
-                  QKeySequence(Qt::Key_Space), &SheetEditor::swapWireCorner);
+    QAction *cornerAction =
+        addEditAction(tr("Turn the wire corner the other way"), "actionWireCorner",
+                      QKeySequence(Qt::Key_Space), &SheetEditor::swapWireCorner);
+    // On the board it turns the corner of the track being laid.
+    connect(cornerAction, &QAction::triggered, this, [this] {
+        if (m_boardEditor->isActive())
+            m_boardEditor->swapTrackCorner();
+    });
     QAction *slantAction = addEditAction(tr("Slant the wire corner"), "actionWireSlant",
                                          QKeySequence(Qt::Key_Slash),
                                          &SheetEditor::toggleWireSlant);
@@ -542,6 +548,12 @@ void MainWindow::createMenus()
     connect(rectangleAction, &QAction::triggered, this, &MainWindow::makeRectangleBoard);
     addBoardAction(BoardEditor::Action::PlaceHole, "actionPlaceHole",
                    &BoardEditor::startPlacingHoles);
+    addBoardAction(BoardEditor::Action::LayTrack, "actionLayTrack",
+                   &BoardEditor::startLayingTracks)
+        ->setShortcut(QKeySequence(Qt::Key_T));
+    addBoardAction(BoardEditor::Action::ViaAndOtherSide, "actionVia",
+                   &BoardEditor::viaAndOtherSide)
+        ->setShortcut(QKeySequence(Qt::Key_V));
 
     QMenu *viewMenu = m_mainMenu->addMenu(tr("&View"));
 
@@ -719,6 +731,10 @@ void MainWindow::createMenus()
     connect(historyAction, &QAction::toggled, this, &AppSettings::setKeepStepHistory);
 
     QMenu *helpMenu = m_mainMenu->addMenu(tr("&Help"));
+    QAction *guideAction = helpMenu->addAction(tr("User guide"));
+    guideAction->setObjectName(QStringLiteral("actionUserGuide"));
+    guideAction->setShortcut(QKeySequence::HelpContents);
+    connect(guideAction, &QAction::triggered, this, &MainWindow::showUserGuide);
     QAction *aboutAction = helpMenu->addAction(aboutTitle() + QStringLiteral("…"));
     aboutAction->setObjectName(QStringLiteral("actionAbout"));
     connect(aboutAction, &QAction::triggered, this, &MainWindow::showAbout);
@@ -950,6 +966,46 @@ void MainWindow::showBoardMenu(const QPoint &globalPos)
         QMenu *net = menu.addMenu(BoardEditor::actionName(BoardEditor::Action::PadNet));
         net->setEnabled(!locked && pads);
         fillPadNetMenu(net);
+        menu.addSeparator();
+        add("actionDelete");
+        break;
+    }
+    case BoardEditor::MenuTarget::Track: {
+        // Width and side for the tracks chosen; a via has neither.
+        const Board &board = m_document->design().board;
+        const QSet<ObjectId> chosen = m_boardEditor->chosenTracks();
+        bool onTop = false;
+        bool onBottom = false;
+        for (const Track &track : board.tracks) {
+            if (chosen.contains(track.id))
+                (track.side == BoardSide::Top ? onTop : onBottom) = true;
+        }
+        const bool tracks = onTop || onBottom;
+        QMenu *width = menu.addMenu(BoardEditor::actionName(BoardEditor::Action::TrackWidth));
+        width->setEnabled(tracks);
+        const Coord current = m_boardEditor->chosenTracksWidth();
+        for (const Coord size : m_document->design().project.rules.trackWidths) {
+            QAction *choice = width->addAction(formatMmShortUnit(size));
+            choice->setCheckable(true);
+            choice->setChecked(size == current);
+            connect(choice, &QAction::triggered, m_boardEditor,
+                    [this, size] { m_boardEditor->setChosenTracksWidth(size); });
+        }
+        width->addSeparator();
+        QAction *other = width->addAction(tr("Other") + QStringLiteral("…"));
+        connect(other, &QAction::triggered, m_boardEditor, &BoardEditor::editMenuTrackWidth);
+        if (board.copper == CopperSides::Both) {
+            QMenu *layer = menu.addMenu(BoardEditor::actionName(BoardEditor::Action::TrackSide));
+            layer->setEnabled(tracks);
+            for (const BoardSide side : {BoardSide::Top, BoardSide::Bottom}) {
+                QAction *choice = layer->addAction(BoardEditor::sideName(side));
+                choice->setCheckable(true);
+                choice->setChecked(side == BoardSide::Top ? onTop && !onBottom
+                                                          : onBottom && !onTop);
+                connect(choice, &QAction::triggered, m_boardEditor,
+                        [this, side] { m_boardEditor->setChosenTracksSide(side); });
+            }
+        }
         menu.addSeparator();
         add("actionDelete");
         break;
@@ -1526,7 +1582,37 @@ void MainWindow::createToolBar()
     connect(outlineMenu, &QMenu::triggered, outlineButton, &QToolButton::setDefaultAction);
     // Holes: the button places them, its arrow chooses their diameter.
     QAction *placeHole = put("actionPlaceHole", ToolIcon::Hole);
-    addModes({{int(BoardEditor::Tool::Hole), placeHole}}, m_boardToolActions, m_boardActions);
+    addModes({{int(BoardEditor::Tool::Hole), placeHole},
+              {int(BoardEditor::Tool::Track), put("actionLayTrack", ToolIcon::Track)}},
+             m_boardToolActions, m_boardActions);
+    // The via key is only in the menu, and only on the board.
+    m_boardActions.append(findChild<QAction *>(QStringLiteral("actionVia")));
+    // The layer tracks are laid on: a click goes to the other one, as V
+    // does, the arrow chooses one; the picture shows the one chosen in front
+    // (see updateTools()).
+    QAction *layer = new QAction(tr("Layer"), this);
+    layer->setObjectName(QStringLiteral("actionLayer"));
+    layer->setToolTip(layer->text() + QStringLiteral(" (")
+                      + QKeySequence(Qt::Key_V).toString(QKeySequence::NativeText)
+                      + QLatin1Char(')'));
+    connect(layer, &QAction::triggered, m_boardEditor, &BoardEditor::viaAndOtherSide);
+    bar->addAction(layer);
+    m_boardActions.append(layer);
+    auto *layerButton = qobject_cast<QToolButton *>(bar->widgetForAction(layer));
+    Q_ASSERT(layerButton != nullptr);
+    QMenu *layerMenu = new QMenu(this);
+    connect(layerMenu, &QMenu::aboutToShow, this, [this, layerMenu] {
+        layerMenu->clear();
+        for (const BoardSide side : {BoardSide::Top, BoardSide::Bottom}) {
+            QAction *choice = layerMenu->addAction(BoardEditor::sideName(side));
+            choice->setCheckable(true);
+            choice->setChecked(m_boardEditor->trackSide() == side);
+            connect(choice, &QAction::triggered, m_boardEditor,
+                    [this, side] { m_boardEditor->setTrackSide(side); });
+        }
+    });
+    layerButton->setMenu(layerMenu);
+    layerButton->setPopupMode(QToolButton::MenuButtonPopup);
     auto *holeButton = qobject_cast<QToolButton *>(bar->widgetForAction(placeHole));
     Q_ASSERT(holeButton != nullptr);
     QMenu *holeMenu = new QMenu(this);
@@ -1594,6 +1680,16 @@ void MainWindow::updateTools()
     if (board && m_boardEditor->isOutlineLocked()) {
         for (QAction *action : std::as_const(m_outlineActions))
             action->setEnabled(false);
+    }
+    // The layer button shows the side chosen in front, and goes only on a
+    // board with copper on both sides.
+    if (QAction *layer = findChild<QAction *>(QStringLiteral("actionLayer"))) {
+        const BoardSide side = m_boardEditor->trackSide();
+        const BoardSide other = side == BoardSide::Top ? BoardSide::Bottom : BoardSide::Top;
+        layer->setIcon(layerIcon(boardLayerColor(copperLayer(side)),
+                                 boardLayerColor(copperLayer(other)),
+                                 palette().color(QPalette::WindowText)));
+        layer->setEnabled(board && m_document->design().board.copper == CopperSides::Both);
     }
     findChild<QAction *>(QStringLiteral("actionRotate"))->setEnabled(sheet || board);
     findChild<QAction *>(QStringLiteral("actionDelete"))->setEnabled(sheet || board);
@@ -1669,6 +1765,14 @@ void MainWindow::showActualSize()
 QString MainWindow::aboutTitle()
 {
     return tr("About %1").arg(QCoreApplication::applicationName());
+}
+
+void MainWindow::showUserGuide()
+{
+    const QString path = AppSettings::helpFile();
+    if (!QFileInfo(path).isFile() || !QDesktopServices::openUrl(QUrl::fromLocalFile(path)))
+        showStatus(tr("Cannot open the user guide") + QLatin1Char(' ')
+                   + QDir::toNativeSeparators(path));
 }
 
 void MainWindow::showAbout()

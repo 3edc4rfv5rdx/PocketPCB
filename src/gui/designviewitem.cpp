@@ -15,6 +15,13 @@ namespace ppcb {
 
 namespace {
 
+// How opaque the track being laid is.
+const int TRACK_PREVIEW_ALPHA = 200;
+// The band round a track or a via chosen: how opaque, and how far beyond
+// its copper, in screen pixels.
+const int CHOSEN_TRACK_ALPHA = 140;
+const double CHOSEN_TRACK_PIXELS = 3;
+
 // The band drawn along a selected wire or bus, in millimetres.
 const double SELECTED_LINE_WIDTH = 0.8;
 // How opaque the net lit is drawn over the sheet, of 255.
@@ -168,9 +175,15 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     const Design &design = m_document->design();
     const BoardEditor *editor = activeBoardEditor();
     const Board board = editor == nullptr ? design.board : editor->shownBoard();
-    paintBoard(painter, board, design.library, m_boardLayers, true);
+    // The side tracks are laid on bright, the other darker, on a board of two.
+    const std::optional<BoardSide> bright =
+        editor != nullptr && board.copper == CopperSides::Both
+            ? std::optional<BoardSide>(editor->trackSide())
+            : std::nullopt;
+    paintBoard(painter, board, design.library, m_boardLayers, true, bright);
     // The pads still to be joined, as the board stands now; the nets of the
-    // parts chosen are lit, their pads and their lines.
+    // parts chosen, and the net the mouse stays on, are lit: their pads,
+    // vias, tracks and lines.
     const QSet<QString> lit = editor == nullptr ? QSet<QString>() : editor->litNets();
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -184,6 +197,17 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
             const double radius = nmToMm(std::max(pad.sizeX, pad.sizeY)) / 2;
             painter.drawEllipse(toMm(pad.at), radius, radius);
         }
+    }
+    // Its vias and tracks too.
+    for (const Via &via : board.vias) {
+        if (lit.contains(via.net))
+            painter.drawEllipse(toMm(via.at), nmToMm(via.size) / 2, nmToMm(via.size) / 2);
+    }
+    for (const Track &track : board.tracks) {
+        if (!lit.contains(track.net))
+            continue;
+        painter.setPen(QPen(litColor, nmToMm(track.width), Qt::SolidLine, Qt::RoundCap));
+        painter.drawLine(toMm(track.from), toMm(track.to));
     }
     painter.setBrush(Qt::NoBrush);
     const double litWidth = LIT_LINE_PIXELS / painter.worldTransform().m11();
@@ -266,6 +290,34 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
                 painter.drawRect(placementTextRect(placement, text));
         }
     }
+    // The tracks and the vias chosen: a band round each.
+    const QSet<ObjectId> chosenTracks = editor->chosenTracks();
+    QColor bandColor = paintcolor::selection();
+    bandColor.setAlpha(CHOSEN_TRACK_ALPHA);
+    for (const Track &track : board.tracks) {
+        if (!chosenTracks.contains(track.id))
+            continue;
+        painter.setPen(QPen(bandColor, nmToMm(track.width) + 2 * pixel * CHOSEN_TRACK_PIXELS,
+                            Qt::SolidLine, Qt::RoundCap));
+        painter.drawLine(toMm(track.from), toMm(track.to));
+    }
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(bandColor);
+    for (const Via &via : board.vias) {
+        if (chosenTracks.contains(via.id)) {
+            const double radius = nmToMm(via.size) / 2 + pixel * CHOSEN_TRACK_PIXELS;
+            painter.drawEllipse(toMm(via.at), radius, radius);
+        }
+    }
+    // The track being laid, in its side's copper, a little see-through.
+    for (const Track &track : editor->trackPreview()) {
+        QColor copper = boardLayerColor(copperLayer(track.side));
+        copper.setAlpha(TRACK_PREVIEW_ALPHA);
+        painter.setPen(QPen(copper, nmToMm(track.width), Qt::SolidLine, Qt::RoundCap));
+        painter.drawLine(toMm(track.from), toMm(track.to));
+    }
+    painter.setPen(pen);
+    painter.setBrush(fill);
     // The holes chosen, and the one to place under the cursor.
     const QSet<ObjectId> chosenHoles = editor->chosenHoles();
     for (const MountingHole &hole : board.holes) {

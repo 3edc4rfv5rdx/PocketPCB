@@ -10,6 +10,8 @@
 #include <QRectF>
 #include <QTransform>
 
+#include <optional>
+
 class QPainter;
 
 namespace ppcb {
@@ -227,8 +229,11 @@ QRectF boardBounds(const Board &board, const Library &library);
 // Only the layers in 'shown' are drawn; a pad or a via through the board
 // shows while either copper layer does, and holes always show. With
 // 'lockedMarked', for the screen, the silkscreen of a locked part is drawn
-// yellow instead of its side's colour, and so is a locked hole.
+// yellow instead of its side's colour, and so is a locked hole. With
+// 'bright', the side chosen on the screen, the copper of the other side
+// is darker and under it.
 void paintBoard(QPainter &painter, const Board &board, const Library &library,
-                const BoardLayerSet &shown = BoardLayerSet::all(), bool lockedMarked = false);
+                const BoardLayerSet &shown = BoardLayerSet::all(), bool lockedMarked = false,
+                std::optional<BoardSide> bright = std::nullopt);
 
 } // namespace ppcb

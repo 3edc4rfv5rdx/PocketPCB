@@ -81,6 +81,8 @@ const double ERC_MARK_LINE_WIDTH = 0.3;
 
 // The board.
 const double OUTLINE_WIDTH = 0.15;
+// How much darker the copper of the side not chosen is (QColor::darker()).
+const int DIMMED_COPPER = 250;
 // The arms of the cross in the middle of a mounting hole, as a part of its
 // radius.
 const double HOLE_CROSS_PART = 0.6;
@@ -459,15 +461,22 @@ BoardSide otherSide(BoardSide side)
 }
 
 // 'partSide' is the side the part is mounted on: a pad's Front is that side.
-QColor padColor(PadLayers layers, BoardSide partSide)
+// The copper of 'side', darker when another side is the one shown bright.
+QColor shownCopper(BoardSide side, std::optional<BoardSide> bright)
+{
+    const QColor color = copperColor(side);
+    return bright && *bright != side ? color.darker(DIMMED_COPPER) : color;
+}
+
+QColor padColor(PadLayers layers, BoardSide partSide, std::optional<BoardSide> bright = std::nullopt)
 {
     switch (layers) {
     case PadLayers::Both:
         return paintcolor::padBoth();
     case PadLayers::Front:
-        return copperColor(partSide);
+        return shownCopper(partSide, bright);
     case PadLayers::Back:
-        return copperColor(otherSide(partSide));
+        return shownCopper(otherSide(partSide), bright);
     }
     return paintcolor::padBoth();
 }
@@ -516,13 +525,14 @@ bool padShown(PadLayers layers, BoardSide partSide, const BoardLayerSet &shown)
 }
 
 void paintPad(QPainter &painter, const Pad &pad, const HoleColors &holes,
-              BoardSide partSide = BoardSide::Top, bool upright = false)
+              BoardSide partSide = BoardSide::Top, bool upright = false,
+              std::optional<BoardSide> bright = std::nullopt)
 {
     const QRectF rect = padRect(pad);
     const double smaller = std::min(rect.width(), rect.height());
 
     painter.setPen(Qt::NoPen);
-    painter.setBrush(padColor(pad.layers, partSide));
+    painter.setBrush(padColor(pad.layers, partSide, bright));
     switch (pad.shape) {
     case PadShape::Circle:
         painter.drawEllipse(rect);
@@ -908,14 +918,14 @@ QPainterPath outlinePath(const QList<OutlineCorner> &outline)
 }
 
 void paintTracks(QPainter &painter, const Board &board, BoardSide side,
-                 const BoardLayerSet &shown)
+                 const BoardLayerSet &shown, std::optional<BoardSide> bright)
 {
     if (!shown.contains(copperLayer(side)))
         return;
     for (const Track &track : board.tracks) {
         if (track.side != side)
             continue;
-        painter.setPen(linePen(copperColor(side), nmToMm(track.width)));
+        painter.setPen(linePen(shownCopper(side, bright), nmToMm(track.width)));
         painter.drawLine(toMm(track.from), toMm(track.to));
     }
 }
@@ -940,7 +950,8 @@ bool throughShown(const BoardLayerSet &shown)
 }
 
 void paintMountingHole(QPainter &painter, const Board &board, const MountingHole &hole,
-                       const BoardLayerSet &shown, bool lockedMarked)
+                       const BoardLayerSet &shown, bool lockedMarked,
+                       std::optional<BoardSide> bright)
 {
     const QPointF at = toMm(hole.at);
     const double drill = nmToMm(hole.drill);
@@ -950,8 +961,9 @@ void paintMountingHole(QPainter &painter, const Board &board, const MountingHole
         // The pad in the colour of its copper: of one side, or through.
         const bool top = holePadOn(board, hole, BoardSide::Top);
         const bool bottom = holePadOn(board, hole, BoardSide::Bottom);
-        const QColor copper = top && bottom ? paintcolor::padBoth()
-                                            : copperColor(top ? BoardSide::Top : BoardSide::Bottom);
+        const QColor copper =
+            top && bottom ? paintcolor::padBoth()
+                          : shownCopper(top ? BoardSide::Top : BoardSide::Bottom, bright);
         const bool copperShown = (top && shown.contains(BoardLayer::CopperTop))
                                  || (bottom && shown.contains(BoardLayer::CopperBottom));
         paintRing(painter, at, nmToMm(holeOuterDiameter(hole)), drill,
@@ -981,7 +993,7 @@ QColor silkscreenColor(BoardSide side)
 }
 
 void paintPlacementPads(QPainter &painter, const Library &library, const Placement &placement,
-                        const BoardLayerSet &shown)
+                        const BoardLayerSet &shown, std::optional<BoardSide> bright)
 {
     const Footprint *footprint = library.findFootprint(placement.footprint);
     if (footprint == nullptr) {
@@ -992,7 +1004,7 @@ void paintPlacementPads(QPainter &painter, const Library &library, const Placeme
     painter.setTransform(placementTransform(placement), true);
     for (const Pad &pad : footprint->pads) {
         if (padShown(pad.layers, placement.side, shown))
-            paintPad(painter, pad, boardHoles(), placement.side, true);
+            paintPad(painter, pad, boardHoles(), placement.side, true, bright);
     }
     painter.restore();
 }
@@ -1518,7 +1530,7 @@ QColor boardLayerColor(BoardLayer layer)
 }
 
 void paintBoard(QPainter &painter, const Board &board, const Library &library,
-                const BoardLayerSet &shown, bool lockedMarked)
+                const BoardLayerSet &shown, bool lockedMarked, std::optional<BoardSide> bright)
 {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -1532,16 +1544,18 @@ void paintBoard(QPainter &painter, const Board &board, const Library &library,
         painter.drawPolygon(toPolygon(zone.points));
     }
 
-    paintTracks(painter, board, BoardSide::Bottom, shown);
-    paintTracks(painter, board, BoardSide::Top, shown);
+    // The side shown bright over the other.
+    const BoardSide under = bright == BoardSide::Bottom ? BoardSide::Top : BoardSide::Bottom;
+    paintTracks(painter, board, under, shown, bright);
+    paintTracks(painter, board, otherSide(under), shown, bright);
     for (const Placement &placement : board.placements)
-        paintPlacementPads(painter, library, placement, shown);
+        paintPlacementPads(painter, library, placement, shown, bright);
     for (const Via &via : board.vias) {
         paintRing(painter, toMm(via.at), nmToMm(via.size), nmToMm(via.drill), paintcolor::via(),
                   throughShown(shown));
     }
     for (const MountingHole &hole : board.holes)
-        paintMountingHole(painter, board, hole, shown, lockedMarked);
+        paintMountingHole(painter, board, hole, shown, lockedMarked, bright);
 
     for (const Placement &placement : board.placements) {
         if (shown.contains(silkscreenLayer(placement.side)))

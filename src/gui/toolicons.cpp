@@ -161,6 +161,18 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         painter.drawLine(QPointF(2, 12), QPointF(8, 12));
         painter.drawLine(QPointF(16, 12), QPointF(22, 12));
         break;
+    case ToolIcon::Track: {
+        // A track from pad to pad with a bend at 45 degrees.
+        QPen track = painter.pen();
+        track.setWidthF(BUS_WIDTH);
+        painter.save();
+        painter.setPen(track);
+        painter.drawPolyline(polygon({{5, 19}, {11, 19}, {19, 11}, {19, 5}}));
+        painter.restore();
+        dot(painter, {5, 19}, color);
+        dot(painter, {19, 5}, color);
+        break;
+    }
     case ToolIcon::UpdateBoard:
         // A sheet, an arrow down and right from it, and a board with two pads.
         painter.drawRect(QRectF(3, 3, 9, 7));
@@ -268,7 +280,9 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
     }
 }
 
-QPixmap pixmap(ToolIcon icon, const QColor &color, int scale)
+// A picture 'drawing' paints on the square of units, with lines of 'color'.
+template <typename Drawing>
+QPixmap pixmap(const QColor &color, int scale, Drawing drawing)
 {
     QPixmap result(TOOL_ICON_SIZE * scale, TOOL_ICON_SIZE * scale);
     result.fill(Qt::transparent);
@@ -278,9 +292,19 @@ QPixmap pixmap(ToolIcon icon, const QColor &color, int scale)
     // Square ends and corners: they end on whole units too.
     painter.setPen(QPen(color, LINE_WIDTH, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
     painter.setBrush(Qt::NoBrush);
-    draw(painter, icon, color);
+    drawing(painter);
     painter.end();
     result.setDevicePixelRatio(scale);
+    return result;
+}
+
+// The same picture at both scales.
+template <typename Drawing>
+QIcon sharpIcon(const QColor &color, Drawing drawing)
+{
+    QIcon result;
+    result.addPixmap(pixmap(color, 1, drawing));
+    result.addPixmap(pixmap(color, SHARP_SCALE, drawing));
     return result;
 }
 
@@ -288,10 +312,19 @@ QPixmap pixmap(ToolIcon icon, const QColor &color, int scale)
 
 QIcon toolIcon(ToolIcon icon, const QColor &color)
 {
-    QIcon result;
-    result.addPixmap(pixmap(icon, color, 1));
-    result.addPixmap(pixmap(icon, color, SHARP_SCALE));
-    return result;
+    return sharpIcon(color, [icon, &color](QPainter &painter) { draw(painter, icon, color); });
+}
+
+QIcon layerIcon(const QColor &front, const QColor &back, const QColor &color)
+{
+    return sharpIcon(color, [&front, &back](QPainter &painter) {
+        // Two sheets of copper, the one chosen in front, framed in the
+        // colour of the lines.
+        painter.setBrush(back);
+        painter.drawRect(QRectF(9, 3, 12, 12));
+        painter.setBrush(front);
+        painter.drawRect(QRectF(3, 9, 12, 12));
+    });
 }
 
 } // namespace ppcb

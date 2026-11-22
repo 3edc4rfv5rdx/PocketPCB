@@ -402,6 +402,19 @@ bool copperOn(CopperSides sides, BoardSide side)
            || (sides == CopperSides::Top) == (side == BoardSide::Top);
 }
 
+CopperSides padCopperSides(PadLayers layers, BoardSide partSide)
+{
+    switch (layers) {
+    case PadLayers::Both:
+        return CopperSides::Both;
+    case PadLayers::Front:
+        return partSide == BoardSide::Top ? CopperSides::Top : CopperSides::Bottom;
+    case PadLayers::Back:
+        return partSide == BoardSide::Top ? CopperSides::Bottom : CopperSides::Top;
+    }
+    return CopperSides::Both;
+}
+
 bool holePadOn(const Board &board, const MountingHole &hole, BoardSide side)
 {
     if (hole.ring == 0 || !copperOn(board.copper, side))

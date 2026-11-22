@@ -200,6 +200,9 @@ bool operator==(const Board &a, const Board &b);
 
 // True when 'sides' hold 'side'.
 bool copperOn(CopperSides sides, BoardSide side);
+// The sides a pad of a footprint has copper on, once its part is placed on
+// 'partSide': a pad's Front is the side the part is on.
+CopperSides padCopperSides(PadLayers layers, BoardSide partSide);
 // True when the pad of 'hole' on 'board' has copper on 'side': it has a
 // ring, on that side or on both; on a board of one side, on that one.
 bool holePadOn(const Board &board, const MountingHole &hole, BoardSide side);

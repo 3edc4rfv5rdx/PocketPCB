@@ -26,6 +26,7 @@ enum class ToolIcon {
     CutOut,
     RectangleBoard,
     Hole,
+    Track,
     UpdateBoard,
     Lock,
     Rotate,
@@ -46,6 +47,8 @@ enum class ToolIcon {
 // 'icon' drawn in lines of 'color' on a square of TOOL_ICON_SIZE pixels,
 // sharp on screens of twice the pixels too.
 QIcon toolIcon(ToolIcon icon, const QColor &color);
+// The layer button: two sheets, 'front' over 'back', framed in 'color'.
+QIcon layerIcon(const QColor &front, const QColor &back, const QColor &color);
 constexpr int TOOL_ICON_SIZE = 24;
 
 } // namespace ppcb

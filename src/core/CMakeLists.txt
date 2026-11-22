@@ -5,6 +5,7 @@ add_library(pocketpcb_core STATIC
     board.h board.cpp
     boardedit.h boardedit.cpp
     boardupdate.h boardupdate.cpp
+    trackedit.h trackedit.cpp
     bom.h bom.cpp
     document.h document.cpp
     footprint.h footprint.cpp

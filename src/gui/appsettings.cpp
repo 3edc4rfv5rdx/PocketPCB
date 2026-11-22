@@ -51,6 +51,8 @@ const char PROJECTS_FOLDER[] = "PocketPCB-Projects";
 const char APPIMAGE_VARIABLE[] = "APPIMAGE";
 // Where an AppImage keeps the built-in library, from the program's folder.
 const char INSTALLED_LIBRARY_FOLDER[] = "../share/pocketpcb/library";
+// The same for the user guide.
+const char INSTALLED_HELP_FILE[] = "../share/pocketpcb/help.html";
 const char KEY_WINDOW_GEOMETRY[] = "window/geometry";
 const char KEY_WINDOW_STATE[] = "window/state";
 
@@ -275,6 +277,15 @@ QString AppSettings::builtInLibraryFolder()
     if (QFileInfo(installed).isDir())
         return QDir::cleanPath(installed);
     return QStringLiteral(PPCB_SOURCE_LIBRARY_DIR);
+}
+
+QString AppSettings::helpFile()
+{
+    const QString installed = QDir(QCoreApplication::applicationDirPath())
+                                  .filePath(QLatin1String(INSTALLED_HELP_FILE));
+    if (QFileInfo(installed).isFile())
+        return QDir::cleanPath(installed);
+    return QStringLiteral(PPCB_SOURCE_HELP_FILE);
 }
 
 QString AppSettings::lastProjectFolder()

@@ -916,6 +916,18 @@
         <source>No net</source>
         <translation>Без цепи</translation>
     </message>
+    <message>
+        <source>User guide</source>
+        <translation>Руководство пользователя</translation>
+    </message>
+    <message>
+        <source>Cannot open the user guide</source>
+        <translation>Не удаётся открыть руководство пользователя</translation>
+    </message>
+    <message>
+        <source>Layer</source>
+        <translation>Слой</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>
@@ -1529,6 +1541,50 @@
     <message>
         <source>Move parts off the board</source>
         <translation>Вынести детали за плату</translation>
+    </message>
+    <message>
+        <source>Lay track</source>
+        <translation>Проложить дорожку</translation>
+    </message>
+    <message>
+        <source>Via to the other side</source>
+        <translation>Переходное на другую сторону</translation>
+    </message>
+    <message>
+        <source>Top layer</source>
+        <translation>Верхний слой</translation>
+    </message>
+    <message>
+        <source>Bottom layer</source>
+        <translation>Нижний слой</translation>
+    </message>
+    <message>
+        <source>The board has copper on one side</source>
+        <translation>У платы медь только с одной стороны</translation>
+    </message>
+    <message>
+        <source>Start a track on a pad or a track</source>
+        <translation>Начните дорожку на площадке или дорожке</translation>
+    </message>
+    <message>
+        <source>The copper there is on another net</source>
+        <translation>Там медь другой цепи</translation>
+    </message>
+    <message>
+        <source>Delete tracks</source>
+        <translation>Удалить дорожки</translation>
+    </message>
+    <message>
+        <source>Track width</source>
+        <translation>Ширина дорожки</translation>
+    </message>
+    <message>
+        <source>Track layer</source>
+        <translation>Слой дорожки</translation>
+    </message>
+    <message>
+        <source>Type the width in millimetres</source>
+        <translation>Введите ширину в миллиметрах</translation>
     </message>
 </context>
 <context>

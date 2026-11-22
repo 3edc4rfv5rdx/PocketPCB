@@ -27,6 +27,9 @@ public:
     // How near the mouse must be to the end of a line (a wire's end, a
     // corner of the board) to take the end alone.
     static constexpr double END_PIXELS = 8.0;
+    // How long the mouse stays on a net before it is lit, on the sheet and
+    // on the board, in milliseconds.
+    static constexpr int HOVER_DELAY_MS = 1000;
 
     explicit CanvasView(QWidget *parent = nullptr);
 
