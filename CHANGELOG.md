@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The outline button starts as Rectangular board, and Update board stands a gap left of Lock
 - F: The Save button stands on red while the project is not saved
 - N: Delete on the board moves the parts chosen off it, packed to its right
 - F: Project properties has a button on the strip, after Recent projects

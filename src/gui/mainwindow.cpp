@@ -1438,7 +1438,7 @@ void MainWindow::createToolBar()
     const auto gap = [bar] {
         QWidget *spacer = new QWidget(bar);
         spacer->setFixedWidth(GROUP_GAP);
-        bar->addWidget(spacer);
+        return bar->addWidget(spacer);
     };
     // Undo and Redo a gap away from the file buttons, the zoom buttons a
     // gap after them.
@@ -1455,6 +1455,22 @@ void MainWindow::createToolBar()
 
     // The modes in the middle, one pressed: those of the sheet editor or of
     // the board editor, whichever page is shown; Select serves both.
+    // Update board from schematic, on the strip of the board a gap before
+    // the lock: an action of its own, so that the File menu keeps its item.
+    // Its gap goes with it.
+    QAction *updateBoardTool = new QAction(
+        findChild<QAction *>(QStringLiteral("actionUpdateBoard"))->text(), this);
+    updateBoardTool->setObjectName(QStringLiteral("actionUpdateBoardTool"));
+    updateBoardTool->setIcon(toolIcon(ToolIcon::UpdateBoard, color));
+    QString updateTip = updateBoardTool->text();
+    updateTip.remove(QStringLiteral("…"));
+    updateBoardTool->setToolTip(updateTip + QStringLiteral(" (")
+                                + QKeySequence(Qt::Key_F8).toString(QKeySequence::NativeText)
+                                + QLatin1Char(')'));
+    connect(updateBoardTool, &QAction::triggered, this, &MainWindow::updateBoardFromSchematic);
+    bar->addAction(updateBoardTool);
+    QAction *updateGap = gap();
+    updateGap->setObjectName(QStringLiteral("updateBoardGap"));
     // The lock a gap before the modes.
     put("actionLock", ToolIcon::Lock);
     gap();
@@ -1486,10 +1502,11 @@ void MainWindow::createToolBar()
                put("actionPlaceNoConnect", ToolIcon::NoConnect)}},
              m_toolActions, m_sheetActions);
     // The outline of the board is drawn, cut and made a rectangle from one
-    // button: it does what was chosen last from its arrow, drawing at first.
-    QAction *drawOutline = put("actionDrawOutline", ToolIcon::Outline);
+    // button: it does what was chosen last from its arrow, the first of it,
+    // Rectangular board, at first.
+    QAction *rectangleBoard = put("actionRectangleBoard", ToolIcon::RectangleBoard);
+    QAction *drawOutline = dress("actionDrawOutline", ToolIcon::Outline);
     QAction *cutOut = dress("actionCutOut", ToolIcon::CutOut);
-    QAction *rectangleBoard = dress("actionRectangleBoard", ToolIcon::RectangleBoard);
     addModes({{int(BoardEditor::Tool::Outline), drawOutline},
               {int(BoardEditor::Tool::CutOut), cutOut}},
              m_boardToolActions, m_boardActions);
@@ -1497,7 +1514,7 @@ void MainWindow::createToolBar()
     // A locked outline is not drawn anew, cut or made a rectangle (see
     // updateTools()); these are the actions it stops.
     m_outlineActions = m_boardActions;
-    auto *outlineButton = qobject_cast<QToolButton *>(bar->widgetForAction(drawOutline));
+    auto *outlineButton = qobject_cast<QToolButton *>(bar->widgetForAction(rectangleBoard));
     Q_ASSERT(outlineButton != nullptr);
     m_outlineButton = outlineButton;
     QMenu *outlineMenu = new QMenu(this);
@@ -1515,19 +1532,6 @@ void MainWindow::createToolBar()
             [this, holeMenu] { fillHoleMenu(holeMenu, false); });
     holeButton->setMenu(holeMenu);
     holeButton->setPopupMode(QToolButton::MenuButtonPopup);
-    // Update board from schematic, on the strip of the board beside the
-    // outline: an action of its own, so that the File menu keeps its item.
-    QAction *updateBoardTool = new QAction(
-        findChild<QAction *>(QStringLiteral("actionUpdateBoard"))->text(), this);
-    updateBoardTool->setObjectName(QStringLiteral("actionUpdateBoardTool"));
-    updateBoardTool->setIcon(toolIcon(ToolIcon::UpdateBoard, color));
-    QString updateTip = updateBoardTool->text();
-    updateTip.remove(QStringLiteral("…"));
-    updateBoardTool->setToolTip(updateTip + QStringLiteral(" (")
-                                + QKeySequence(Qt::Key_F8).toString(QKeySequence::NativeText)
-                                + QLatin1Char(')'));
-    connect(updateBoardTool, &QAction::triggered, this, &MainWindow::updateBoardFromSchematic);
-    bar->addAction(updateBoardTool);
     // The arrow of the Power button chooses the symbol it places.
     QMenu *powerMenu = new QMenu(this);
     connect(powerMenu, &QMenu::aboutToShow, this, [this, powerMenu] { fillPowerMenu(powerMenu); });
@@ -1595,6 +1599,8 @@ void MainWindow::updateTools()
         updateBoardTool->setVisible(board);
         updateBoardTool->setEnabled(board);
     }
+    if (QAction *updateGap = findChild<QAction *>(QStringLiteral("updateBoardGap")))
+        updateGap->setVisible(board);
     QAction *lock = findChild<QAction *>(QStringLiteral("actionLock"));
     lock->setEnabled(board ? m_boardEditor->hasChosen() : sheet && m_sheetEditor->canLockChosen());
     lock->setChecked(board ? m_boardEditor->chosenLocked()
