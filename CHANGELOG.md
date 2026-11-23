@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+## v0.12.313 (2026-11-23)
 - F: The history of steps goes into the folder of each saved project, its last 25 steps, instead of one folder in the cache
 - F: The autorouter lays tracks on a grid no coarser than 0.635 mm whatever the grid of the board
 - E: The pad of a wire link is fitted by its own size instead of a square of grid points, so links find room on a coarse grid
