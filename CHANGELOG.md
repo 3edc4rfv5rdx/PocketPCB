@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A click on a wire chooses its segment only up to a pin or a joint lying on it, so Delete no longer takes the wire beyond them
 - N: Delete of parts and holes on the board, and Update board from schematic removing parts, delete their tracks, from each pad up to the next pad or fork
 - E: A double click on a track chooses it up to a pad or a fork instead of on through pads to other parts
 - N: Ctrl+A on the board chooses the tracks and vias too, and those chosen go along whole when what is chosen with them is dragged

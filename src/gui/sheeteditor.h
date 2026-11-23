@@ -366,10 +366,17 @@ private:
     WireRouting m_wireRouting = WireRouting::Hand;
     int m_sheet = -1;
     QSet<ObjectId> m_selection;
-    // The segment chosen by a click on a wire or a bus: its line and its
-    // index. It counts only while 'm_selection' is empty (hasSegment()).
+    // The segment chosen by a click on a wire or a bus: its line, its
+    // index and where it was clicked. It counts only while 'm_selection' is
+    // empty (hasSegment()).
     ObjectId m_segmentLine;
     int m_segmentIndex = -1;
+    QPointF m_segmentAt;
+    // The piece of that segment the click chose, cut short at pins and
+    // joints inside it (wirePieceAt()), on 'sheet'.
+    WirePiece chosenPiece(const Sheet &sheet) const;
+    // The index of that piece on the sheet a segment drag starts from.
+    int m_dragSegment = -1;
 
     // The press that may start a drag or a rectangle.
     bool m_pressed = false;

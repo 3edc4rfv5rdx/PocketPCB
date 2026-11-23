@@ -117,6 +117,36 @@ class TestWiring : public QObject
     Q_OBJECT
 
 private slots:
+    void aClickChoosesTheWireUpToPinsAndJoints()
+    {
+        // A wire from (0, 0) up to (0, -40) and left to (-10, -40); the left
+        // pin of a part at (5, -20) lies on it at (0, -20), and another wire
+        // ends on it at (0, -30).
+        Sheet sheet;
+        sheet.components = {twoPin(mm(5, -20))};
+        const Wire long_ = wire({mm(0, 0), mm(0, -40), mm(-10, -40)});
+        sheet.wires = {long_, wire({mm(0, -30), mm(-10, -30)})};
+        const Library library = twoPinLibrary();
+
+        // Below the pin: from the end up to the pin.
+        WirePiece piece = wirePieceAt(sheet, library, long_.id, 0, QPointF(0, -5));
+        QCOMPARE(piece.index, 0);
+        QCOMPARE(linePoints(piece.sheet, long_.id),
+                 (QList<Point>{mm(0, 0), mm(0, -20), mm(0, -40), mm(-10, -40)}));
+        // Between the pin and the joint.
+        piece = wirePieceAt(sheet, library, long_.id, 0, QPointF(0, -25));
+        QCOMPARE(piece.index, 1);
+        QCOMPARE(linePoints(piece.sheet, long_.id).mid(1, 2),
+                 (QList<Point>{mm(0, -20), mm(0, -30)}));
+        // Deleting it leaves the end on the pin and the wire on from the joint.
+        const Sheet cut = withoutSegment(piece.sheet, long_.id, piece.index);
+        QCOMPARE(linePoints(cut, long_.id), (QList<Point>{mm(0, 0), mm(0, -20)}));
+        // A segment with nothing inside stays as it is.
+        piece = wirePieceAt(sheet, library, long_.id, 1, QPointF(-5, -40));
+        QCOMPARE(piece.index, 1);
+        QCOMPARE(linePoints(piece.sheet, long_.id), long_.points);
+    }
+
     void pinsAreWhereTheComponentPutsThem()
     {
         const Point p = mm(3, 1);

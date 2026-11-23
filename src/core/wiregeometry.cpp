@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <optional>
 
 namespace ppcb {
 
@@ -289,6 +290,55 @@ bool isOnWire(const QList<Point> &points, const Point &point)
 bool isOnWire(const Wire &wire, const Point &point)
 {
     return isOnWire(wire.points, point);
+}
+
+WirePiece wirePieceAt(const Sheet &sheet, const Library &library, const ObjectId &line,
+                      int index, const QPointF &at)
+{
+    WirePiece piece{sheet, index};
+    Wire *wire = nullptr;
+    for (Wire &candidate : piece.sheet.wires) {
+        if (candidate.id == line)
+            wire = &candidate;
+    }
+    if (wire == nullptr || index < 0 || index + 1 >= wire->points.size())
+        return piece;
+    const Point a = wire->points.at(index);
+    const Point b = wire->points.at(index + 1);
+    // Where along the segment, from 'a', a point lies: 0 to 1.
+    const QPointF along = toMm(b) - toMm(a);
+    const double length = QPointF::dotProduct(along, along);
+    if (length == 0)
+        return piece;
+    const auto part = [&a, &along, length](const QPointF &point) {
+        return QPointF::dotProduct(point - toMm(a), along) / length;
+    };
+    // The pins and the ends of other wires inside the segment.
+    QList<Point> stops = pinPoints(sheet, library);
+    for (const Wire &other : sheet.wires) {
+        if (other.id != line && !other.points.isEmpty())
+            stops << other.points.first() << other.points.last();
+    }
+    const double clicked = part(at);
+    std::optional<Point> from;
+    std::optional<Point> to;
+    for (const Point &stop : std::as_const(stops)) {
+        if (stop == a || stop == b || !isOnWire(QList<Point>{a, b}, stop))
+            continue;
+        const double t = part(toMm(stop));
+        if (t <= clicked && (!from || t > part(toMm(*from))))
+            from = stop;
+        if (t > clicked && (!to || t < part(toMm(*to))))
+            to = stop;
+    }
+    int insertAt = index + 1;
+    if (from) {
+        wire->points.insert(insertAt++, *from);
+        ++piece.index;
+    }
+    if (to)
+        wire->points.insert(insertAt, *to);
+    return piece;
 }
 
 bool wiresJoined(const QList<Point> &a, const QList<Point> &b)

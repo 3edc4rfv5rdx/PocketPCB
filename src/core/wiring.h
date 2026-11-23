@@ -3,6 +3,7 @@
 #include "library.h"
 #include "schematic.h"
 
+#include <QPointF>
 #include <QSet>
 
 namespace ppcb {
@@ -46,6 +47,21 @@ QList<Point> partPinPoints(const Sheet &sheet, const Library &library);
 // The same for a line of 'points', a wire's or a bus's.
 bool isOnWire(const Wire &wire, const Point &point);
 bool isOnWire(const QList<Point> &points, const Point &point);
+
+// A segment of a wire as a click chooses it: the segment 'index' of the
+// wire 'line', cut short at the pins and the ends of other wires lying
+// inside it nearest to 'at' (millimetres) on either side, as a joint cuts
+// it. 'sheet' has the wire with points of its own at those cuts, which
+// change nothing drawn, and 'index' is the segment between them. The sheet
+// and the index as they are for a bus, for a wire with nothing inside the
+// segment, or for no such segment.
+struct WirePiece
+{
+    Sheet sheet;
+    int index = -1;
+};
+WirePiece wirePieceAt(const Sheet &sheet, const Library &library, const ObjectId &line,
+                      int index, const QPointF &at);
 
 // True when the wires 'a' and 'b' are joined: an end of one lies on the
 // other. How nets() and the editing of wires join them.
