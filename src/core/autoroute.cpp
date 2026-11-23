@@ -28,6 +28,11 @@ const int BEND45_COST = 2;
 const int BEND90_COST = 6;
 const int ACROSS_GRAIN_COST = 4;
 const int VIA_COST = 60 * STRAIGHT_COST;
+// Room kept from the copper of other nets beyond the clearance when there is
+// room for it, in millimetres, and what a step into it adds: tracks keep to
+// the middle of the room they run in, as the author moves them by hand.
+const double SOFT_ROOM_MM = 1.0;
+const int CROWDED_COST = 6;
 // The room around what is on a board without an outline.
 const Coord NO_OUTLINE_MARGIN = 5 * NM_PER_MM;
 
@@ -53,6 +58,7 @@ public:
         , m_rows(rows)
         , m_layers(layers)
         , m_occupants(std::size_t(columns) * rows * layers, FREE)
+        , m_near(std::size_t(columns) * rows * layers, FREE)
     {
     }
 
@@ -91,30 +97,46 @@ public:
         return occupant == FREE || occupant == net;
     }
 
+    // A track of the net 'net' through 'node' comes nearer to copper of
+    // another net than it need, though it may.
+    bool crowded(const GridNode &node, int net) const
+    {
+        const int near = m_near[std::size_t(key(node))];
+        return near != FREE && near != net;
+    }
+
     // The room of copper of 'net' (or of what no net may touch, BLOCKED) on
-    // 'layer': the nodes nearer than 'reach' millimetres to the line 'a'-'b'.
+    // 'layer': the nodes nearer than 'reach' millimetres to the line 'a'-'b',
+    // and those nearer than 'reach' and SOFT_ROOM_MM, which are crowded.
     void mark(int layer, const QPointF &a, const QPointF &b, double reach, int net)
     {
+        const double soft = reach + SOFT_ROOM_MM;
         const double step = nmToMm(m_step);
         const QPointF origin = toMm(m_origin);
         // The nodes of the rectangle round the line, on the grid.
-        const auto low = [step, reach](double a, double b, double from) {
-            return std::max(0, int(std::floor((std::min(a, b) - reach - from) / step)));
+        const auto low = [step](double a, double b, double from, double around) {
+            return std::max(0, int(std::floor((std::min(a, b) - around - from) / step)));
         };
-        const auto high = [step, reach](double a, double b, double from, int count) {
-            return std::min(count - 1, int(std::ceil((std::max(a, b) + reach - from) / step)));
+        const auto high = [step](double a, double b, double from, int count, double around) {
+            return std::min(count - 1, int(std::ceil((std::max(a, b) + around - from) / step)));
         };
-        const int columnFrom = low(a.x(), b.x(), origin.x());
-        const int columnTo = high(a.x(), b.x(), origin.x(), m_columns);
-        const int rowFrom = low(a.y(), b.y(), origin.y());
-        const int rowTo = high(a.y(), b.y(), origin.y(), m_rows);
+        const int columnFrom = low(a.x(), b.x(), origin.x(), soft);
+        const int columnTo = high(a.x(), b.x(), origin.x(), m_columns, soft);
+        const int rowFrom = low(a.y(), b.y(), origin.y(), soft);
+        const int rowTo = high(a.y(), b.y(), origin.y(), m_rows, soft);
         for (int row = rowFrom; row <= rowTo; ++row) {
             for (int column = columnFrom; column <= columnTo; ++column) {
                 const QPointF at = origin + QPointF(column * step, row * step);
-                if (QLineF(nearestOnPiece(a, b, at), at).length() >= reach)
-                    continue;
-                int &occupant = m_occupants[std::size_t(key(GridNode{column, row, layer}))];
-                occupant = net == BLOCKED || (occupant != FREE && occupant != net) ? BLOCKED : net;
+                const double apart = QLineF(nearestOnPiece(a, b, at), at).length();
+                const std::size_t index = std::size_t(key(GridNode{column, row, layer}));
+                const auto take = [net](int &occupant) {
+                    occupant =
+                        net == BLOCKED || (occupant != FREE && occupant != net) ? BLOCKED : net;
+                };
+                if (apart < soft)
+                    take(m_near[index]);
+                if (apart < reach)
+                    take(m_occupants[index]);
             }
         }
     }
@@ -131,6 +153,8 @@ private:
     int m_rows;
     int m_layers;
     std::vector<int> m_occupants;
+    // The same for the soft room round copper.
+    std::vector<int> m_near;
 };
 
 class Router
@@ -320,9 +344,10 @@ bool Router::route(const RatsnestLine &line)
     rules.diagonalCost = DIAGONAL_COST;
     rules.bend45Cost = BEND45_COST;
     rules.bend90Cost = BEND90_COST;
-    rules.stepCost = [&open, &grid](const GridNode &a, const GridNode &b) {
+    rules.stepCost = [&open, &grid, net](const GridNode &a, const GridNode &b) {
         if (!open(b))
             return -1;
+        const int crowded = grid.crowded(b, net) ? CROWDED_COST : 0;
         // A slanted step only across a cell clear on all its corners.
         if (a.column != b.column && a.row != b.row
             && (!open(GridNode{b.column, a.row, a.layer})
@@ -330,8 +355,8 @@ bool Router::route(const RatsnestLine &line)
             return -1;
         if (grid.layers() == 2
             && ((b.layer == 0 && a.column == b.column) || (b.layer == 1 && a.row == b.row)))
-            return ACROSS_GRAIN_COST;
-        return 0;
+            return crowded + ACROSS_GRAIN_COST;
+        return crowded;
     };
     if (grid.layers() == 2) {
         // A via needs the node and those round it clear on both sides.

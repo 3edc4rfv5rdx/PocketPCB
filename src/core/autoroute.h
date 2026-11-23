@@ -16,8 +16,9 @@ namespace ppcb {
 // eight directions: from the pads of one group of copper to those of the
 // other, keeping the clearance of the net classes from copper of other
 // nets, from holes and from the edge of the board. On the top straight
-// pieces go level more cheaply, on the bottom upright. The tracks already
-// there are kept as they are; only copper is added.
+// pieces go level more cheaply, on the bottom upright, and a step nearer to
+// other copper than it need be costs more. The tracks already there are
+// kept as they are; only copper is added.
 
 struct AutorouteResult
 {

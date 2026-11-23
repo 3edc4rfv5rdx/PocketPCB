@@ -112,6 +112,29 @@ private slots:
         }
     }
 
+    void aTrackKeepsAwayFromAnotherNetWhenThereIsRoom()
+    {
+        // Pad 2 of the left part and pad 1 of the right one on net A, at
+        // (12.7, 15.24) and (27.94, 15.24); a track of net W runs along
+        // above the straight way, 1.27 mm off it.
+        Design design = twoParts();
+        design.board.placements[0].padNets = {{QStringLiteral("1"), QStringLiteral("X")},
+                                              {QStringLiteral("2"), QStringLiteral("A")}};
+        Track near = wall(BoardSide::Top);
+        near.width = mmToNm(0.25);
+        near.from = mm(15, 13.97);
+        near.to = mm(25, 13.97);
+        design.board.tracks = {near};
+        design.board.copper = CopperSides::Top;
+        const AutorouteResult result = autorouted(design);
+        QCOMPARE(result.unrouted, 0);
+        // It goes round below, not straight along the other track.
+        bool below = false;
+        for (const Track &track : newTracks(design.board, result.board))
+            below = below || track.from.y > mm(0, 15.24).y || track.to.y > mm(0, 15.24).y;
+        QVERIFY(below);
+    }
+
     void aWallOnTheTopIsPassedBelowWithoutVias()
     {
         Design design = twoParts();

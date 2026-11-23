@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The autorouter keeps tracks away from other nets where there is room
 - E: A piece of track dragged keeps the pieces beside it on their ways, made longer or shorter, and pieces on one line become one
 - N: A piece of track is dragged across itself and a corner of a track is dragged, the pieces beside following
 - F: The autorouter ends with a box of the connections, those routed and unrouted, the vias and the time
