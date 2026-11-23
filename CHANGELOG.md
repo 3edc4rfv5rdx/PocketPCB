@@ -3,6 +3,8 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The autorouter lays tracks on a grid no coarser than 0.635 mm whatever the grid of the board
+- E: The pad of a wire link is fitted by its own size instead of a square of grid points, so links find room on a coarse grid
 - N: Insulated wire links, any way and up to 150 mm long, which the autorouter lays where neither a track nor a bare link can go
 - F: The autorouter looks for wire links only where a track finds no way, lays them up to 30.48 mm long, and lets their wires pass under raised parts
 - N: Replace with track in the menu of a wire link lays its connection as a track when there is a way

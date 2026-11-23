@@ -47,6 +47,8 @@ const double SOFT_LANDING_MM = 8.0;
 // the middle of the room they run in, as the author moves them by hand.
 const double SOFT_ROOM_MM = 1.0;
 const int CROWDED_COST = 6;
+// The coarsest grid tracks are laid on, in nanometres: 0.635 mm.
+const Coord ROUTE_STEP_MAX = 635000;
 // The room around what is on a board without an outline.
 const Coord NO_OUTLINE_MARGIN = 5 * NM_PER_MM;
 
@@ -271,7 +273,9 @@ private:
 void Router::buildGrid()
 {
     const Library &library = m_design.library;
-    const Coord step = std::max<Coord>(m_design.project.boardGridStep / 2, 1);
+    // Half the board's step, no coarser than ROUTE_STEP_MAX, which every
+    // pitch of pads on the board's grids is a whole number of.
+    const Coord step = std::clamp<Coord>(m_design.project.boardGridStep / 2, 1, ROUTE_STEP_MAX);
     m_step = step;
     QRectF bounds = m_board.outline.isEmpty() ? boardBounds(m_board, library)
                                               : m_outline.boundingRect();
@@ -442,9 +446,18 @@ bool Router::route(const RatsnestLine &line)
     for (const Placement &placement : m_board.placements)
         bodies.append(placementRect(placement, library));
     const QList<PadPoint> padsThere = padPoints(m_board, library);
-    // Where a pad of a link may go: not under a part, clear of every pad,
-    // hole and link pad there is.
+    // Where a pad of a link may go: on the board, its edge clearance off, not
+    // under a part, clear of every pad, hole and link pad there is.
+    const QPolygonF edge = m_outline.toFillPolygon();
+    const double edgeClearance = nmToMm(linkRules.edgeClearance);
     const auto endClear = [&](const QPointF &end) {
+        if (!m_board.outline.isEmpty() && !m_outline.contains(end))
+            return false;
+        for (int i = 0; i + 1 < edge.size(); ++i) {
+            if (QLineF(nearestOnPiece(edge.at(i), edge.at(i + 1), end), end).length()
+                < linkPad + edgeClearance)
+                return false;
+        }
         for (const QRectF &body : std::as_const(bodies)) {
             if (body.contains(end))
                 return false;
@@ -492,12 +505,23 @@ bool Router::route(const RatsnestLine &line)
         }
         return true;
     };
-    const auto padFits = [&grid, &open](const GridNode &at) {
-        for (int row = at.row - 1; row <= at.row + 1; ++row) {
-            for (int column = at.column - 1; column <= at.column + 1; ++column) {
-                if (!open(GridNode{column, row, at.layer}))
-                    return false;
-            }
+    // A link's pad at 'at': the node open to the net, and the copper of
+    // tracks and vias of other nets as far off as the pad and the clearance
+    // ask (endClear() looks at the pads, holes and links).
+    const auto padFits = [&](const GridNode &at) {
+        if (!open(at))
+            return false;
+        const QPointF p = toMm(grid.point(at));
+        for (const Track &track : m_board.tracks) {
+            if (track.net != line.net
+                && piecesApart(p, p, toMm(track.from), toMm(track.to))
+                       < nmToMm(track.width) / 2 + linkPad + gap)
+                return false;
+        }
+        for (const Via &via : m_board.vias) {
+            if (via.net != line.net
+                && QLineF(p, toMm(via.at)).length() < nmToMm(via.size) / 2 + linkPad + gap)
+                return false;
         }
         return true;
     };

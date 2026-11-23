@@ -12,7 +12,7 @@ namespace ppcb {
 // Laying the tracks of the board by the program (tz-add.md, Autorouter).
 // Fewer vias come before shorter tracks. Each connection still to be made
 // (ratsnest()), the shortest first, is laid by the grid search (gridRoute())
-// on a grid of half the board's step, on both sides of a board of two, in
+// on a grid of half the board's step and no coarser than 0.635 mm, on both sides of a board of two, in
 // eight directions: from the pads of one group of copper to those of the
 // other, keeping the clearance of the net classes from copper of other
 // nets, from holes and from the edge of the board. On the top straight
