@@ -815,11 +815,11 @@ Board BoardEditor::draggedBoard(const QPointF &at) const
     moved = withHolesMoved(moved, chosenHoles(), delta);
     if (outlineChosen() && !isOutlineLocked())
         moved.outline = outlineMoved(board.outline, delta);
-    // The tracks and vias chosen go along whole, unless something chosen
-    // is locked and stays; the tracks on the pads moved stretch after them.
+    // The tracks and vias chosen go along whole, unless a part or a hole
+    // chosen is locked and stays (a locked outline staying holds nothing);
+    // the tracks on the pads moved stretch after them.
     const bool lockedChosen =
-        (outlineChosen() && isOutlineLocked())
-        || std::any_of(board.placements.cbegin(), board.placements.cend(),
+        std::any_of(board.placements.cbegin(), board.placements.cend(),
                        [this](const Placement &placement) {
                            return placement.locked && m_chosen.contains(placement.id);
                        })
