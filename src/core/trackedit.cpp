@@ -770,6 +770,21 @@ Room roomOf(const Board &board, const QList<PadPoint> &pads, const QPainterPath 
     return room;
 }
 
+// 'track' touches or crosses a piece of its own net on its side that shares
+// no end with it: a move put it onto copper it is not joined to as laid.
+bool touchesOwnNet(const Board &board, const Track &track)
+{
+    const QPointF a = toMm(track.from);
+    const QPointF b = toMm(track.to);
+    return std::any_of(board.tracks.cbegin(), board.tracks.cend(), [&](const Track &other) {
+        return other.id != track.id && other.side == track.side && other.net == track.net
+               && other.from != track.from && other.from != track.to && other.to != track.from
+               && other.to != track.to
+               && piecesApart(a, b, toMm(other.from), toMm(other.to))
+                      < nmToMm(track.width + other.width) / 2;
+    });
+}
+
 } // namespace
 
 Board withTracksSpread(const Board &board, const Design &design, Coord gridStep,
@@ -789,7 +804,7 @@ Board withTracksSpread(const Board &board, const Design &design, Coord gridStep,
             if (was != nullptr && was->from == track.from && was->to == track.to)
                 continue;
             const Room room = roomOf(after, pads, outline, edge, track);
-            if (room.edge < edgeClearance)
+            if (room.edge < edgeClearance || touchesOwnNet(after, track))
                 return std::nullopt;
             least = std::min({least, room.copper, room.edge});
         }

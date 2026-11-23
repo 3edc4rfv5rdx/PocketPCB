@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: Spreading tracks no longer moves a piece onto copper of its own net it is not joined to
 - N: The autorouter takes up the tracks it laid that are in the way of a connection with no way, and lays them again
 - N: Tracks and vias laid by the autorouter are marked as its own until changed by hand
 - N: Spread tracks in the menu of a track spreads the tracks chosen

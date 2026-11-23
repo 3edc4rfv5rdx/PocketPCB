@@ -462,6 +462,17 @@ private slots:
         QVERIFY(shortingTracks(spread, design, {across}).isEmpty());
         // Only the pieces asked for move.
         QCOMPARE(withTracksSpread(board, design, MM, {newObjectId()}), board);
+        // Nor onto copper of its own net it is not joined to: a track of A
+        // across both upright pieces holds them.
+        Board held = board;
+        Track across9;
+        across9.id = newObjectId();
+        across9.net = a;
+        across9.width = MM / 2;
+        across9.from = mm(-6, 9);
+        across9.to = mm(6, 9);
+        held.tracks.append(across9);
+        QCOMPARE(withTracksSpread(held, design, MM), held);
     }
 
     void tracksTakeTheClassOfTheirNet()
