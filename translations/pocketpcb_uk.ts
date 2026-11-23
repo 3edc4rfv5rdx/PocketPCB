@@ -969,6 +969,22 @@
         <translation>Розведення перервано</translation>
     </message>
     <message>
+        <source>Connections</source>
+        <translation>Зʼєднань</translation>
+    </message>
+    <message>
+        <source>Vias</source>
+        <translation>Перехідних</translation>
+    </message>
+    <message>
+        <source>Time</source>
+        <translation>Час</translation>
+    </message>
+    <message>
+        <source>s</source>
+        <translation>с</translation>
+    </message>
+    <message>
         <source>Unrouted</source>
         <translation>Не розведено</translation>
     </message>

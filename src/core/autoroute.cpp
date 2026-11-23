@@ -413,6 +413,7 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
         return lines;
     };
     const int total = int(waiting(none).size());
+    result.total = total;
     for (QList<RatsnestLine> lines = waiting(failed); !lines.isEmpty(); lines = waiting(failed)) {
         if (progress && !progress(result.routed + int(failed.size()), total)) {
             result.stopped = true;
@@ -433,6 +434,7 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
     result.board = router.board();
     // What is left to lay, however it is drawn now.
     result.unrouted = int(waiting(none).size());
+    result.vias = int(result.board.vias.size() - design.board.vias.size());
     return result;
 }
 

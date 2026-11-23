@@ -52,6 +52,8 @@
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
+#include <QElapsedTimer>
+#include <QLocale>
 #include <QMessageBox>
 #include <QProgressDialog>
 #include <QPainter>
@@ -1859,8 +1861,10 @@ void MainWindow::routeBoard(bool chosen)
             return;
         }
     }
-    QProgressDialog box(BoardEditor::actionName(BoardEditor::Action::Autoroute), tr("Stop"), 0, 0,
-                        this);
+    const QString title = BoardEditor::actionName(BoardEditor::Action::Autoroute);
+    QElapsedTimer clock;
+    clock.start();
+    QProgressDialog box(title, tr("Stop"), 0, 0, this);
     box.setWindowModality(Qt::WindowModal);
     box.setMinimumDuration(ROUTE_BOX_DELAY_MS);
     const AutorouteResult result =
@@ -1874,6 +1878,22 @@ void MainWindow::routeBoard(bool chosen)
     m_boardEditor->applyRouted(result.board);
     const QString routed = tr("Routed") + QStringLiteral(": %1").arg(result.routed);
     showStatus(result.stopped ? tr("Routing stopped") + QStringLiteral(". ") + routed : routed);
+    // What was done, in a box.
+    const auto row = [](const QString &name, const QString &value) {
+        return QStringLiteral("<tr><td>%1:</td><td align=\"right\">&nbsp;%2</td></tr>")
+            .arg(name.toHtmlEscaped(), value);
+    };
+    QString report;
+    if (result.stopped)
+        report += QStringLiteral("<p>%1.</p>").arg(tr("Routing stopped").toHtmlEscaped());
+    report += QStringLiteral("<table>") + row(tr("Connections"), QString::number(result.total))
+              + row(tr("Routed"), QString::number(result.routed))
+              + row(tr("Unrouted"), QString::number(result.unrouted))
+              + row(tr("Vias"), QString::number(result.vias))
+              + row(tr("Time"), QLocale().toString(clock.elapsed() / 1000.0, 'f', 1)
+                                    + QLatin1Char(' ') + tr("s"))
+              + QStringLiteral("</table>");
+    QMessageBox::information(this, title, report);
 }
 
 void MainWindow::fitView()

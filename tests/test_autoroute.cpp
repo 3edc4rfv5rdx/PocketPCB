@@ -93,8 +93,10 @@ private slots:
     {
         const Design design = twoParts();
         const AutorouteResult result = autorouted(design);
+        QCOMPARE(result.total, 1);
         QCOMPARE(result.routed, 1);
         QCOMPARE(result.unrouted, 0);
+        QCOMPARE(result.vias, 0);
         QVERIFY(!result.stopped);
         QVERIFY(ratsnest(result.board, design.library).isEmpty());
         QVERIFY(result.board.vias.isEmpty());

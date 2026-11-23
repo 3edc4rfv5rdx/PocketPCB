@@ -22,9 +22,12 @@ namespace ppcb {
 struct AutorouteResult
 {
     Board board;
-    // The connections laid, and those that found no way.
+    // The connections there were to lay at first, those laid, those still
+    // unrouted at the end, and the vias added.
+    int total = 0;
     int routed = 0;
     int unrouted = 0;
+    int vias = 0;
     // Stopped by 'progress' before all were tried.
     bool stopped = false;
 };

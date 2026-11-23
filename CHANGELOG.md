@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The autorouter ends with a box of the connections, those routed and unrouted, the vias and the time
 - N: The autorouter lays the unrouted connections of all nets or of the chosen ones, with as few vias as it can
 ## v0.11.285 (2026-11-23)
 - N: A track stretched after a part across copper of another net is deleted, its connection going back to the ratsnest
