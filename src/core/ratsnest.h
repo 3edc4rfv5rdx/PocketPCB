@@ -4,6 +4,7 @@
 #include "library.h"
 
 #include <QList>
+#include <QSet>
 
 namespace ppcb {
 
@@ -51,6 +52,10 @@ QList<NetPad> netPads(const Board &board, const Library &library);
 // joins what its ends lie on, on its side: a pad, a via, the end or the
 // middle of a track; a via joins both sides.
 QList<int> copperGroups(const Board &board, const QList<NetPad> &pads);
+// The tracks and the vias joined to the track or the via 'id' as
+// copperGroups() joins copper, through the pads of its net too: all that is
+// laid of its part of the net. Empty when there is no such track or via.
+QSet<ObjectId> joinedCopper(const Board &board, const Library &library, const ObjectId &id);
 
 // Where the pad at 'padAt' of a footprint stands on the board when the
 // footprint is placed by 'placement': flipped for the bottom side, turned,

@@ -241,8 +241,12 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     painter.setBrush(Qt::NoBrush);
     const double litWidth = LIT_LINE_PIXELS / painter.worldTransform().m11();
     const double endRadius = RATSNEST_END_PIXELS / painter.worldTransform().m11();
+    // And the unrouted connections of the copper chosen whole.
+    const QString joined = editor == nullptr ? QString() : editor->joinedChosenNet();
     for (const RatsnestLine &line : ratsnest(board, design.library)) {
-        if (m_ratsnestBright || lit.contains(line.net))
+        const bool bold =
+            m_ratsnestBright || lit.contains(line.net) || (!joined.isEmpty() && line.net == joined);
+        if (bold)
             painter.setPen(QPen(paintcolor::ratsnest(), litWidth));
         else
             painter.setPen(QPen(paintcolor::ratsnest(), 0));
@@ -501,7 +505,8 @@ void DesignViewItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     BoardEditor *board = activeBoardEditor();
     if (board != nullptr && event->button() == Qt::LeftButton) {
-        board->press(event->scenePos(), event->modifiers().testFlag(Qt::ControlModifier));
+        board->press(event->scenePos(), event->modifiers().testFlag(Qt::ControlModifier),
+                     event->modifiers().testFlag(Qt::ShiftModifier));
         event->accept();
         return;
     }

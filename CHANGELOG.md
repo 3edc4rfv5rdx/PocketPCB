@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Shift and a click on a track or a via chooses all the copper joined to it, through pads too, and shows the unrouted connections of its net bold
 - F: While tracks or vias are chosen, the mouse resting on copper only names its net instead of lighting it
 - N: Delete all tracks, vias too, in the menu of the empty board, asked first
 - N: Undo while laying a track takes back its last piece or via and goes on laying from the point before, and undoing a via brings its side back

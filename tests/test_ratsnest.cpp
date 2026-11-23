@@ -133,6 +133,47 @@ private slots:
         QCOMPARE(groups.at(0), groups.at(1));
     }
 
+    // Shift and a click: the copper joined to a track, through pads too.
+    void joinedCopperGoesThroughPads()
+    {
+        // Parts at (0, 0) and (20, 0): pads at -5, 5, 15 and 25 on x, the
+        // middle two on net A, joined by tracks through a via; and a track
+        // on its own from the last pad.
+        Board board;
+        board.placements = {placement(mm(0, 0), QString(), QStringLiteral("A")),
+                            placement(mm(20, 0), QStringLiteral("A"), QStringLiteral("B"))};
+        const auto track = [&board](BoardSide side, const Point &from, const Point &to,
+                                    const QString &net) {
+            Track result;
+            result.id = newObjectId();
+            result.side = side;
+            result.net = net;
+            result.width = MM / 2;
+            result.from = from;
+            result.to = to;
+            board.tracks.append(result);
+            return result.id;
+        };
+        const ObjectId first = track(BoardSide::Top, mm(5, 0), mm(10, 5), QStringLiteral("A"));
+        const ObjectId second = track(BoardSide::Bottom, mm(10, 5), mm(15, 0), QStringLiteral("A"));
+        // On from pad 1 of the second part, the other side of the pad.
+        const ObjectId beyond = track(BoardSide::Top, mm(15, 0), mm(15, 10), QStringLiteral("A"));
+        const ObjectId apart = track(BoardSide::Top, mm(25, 0), mm(30, 0), QStringLiteral("B"));
+        Via via;
+        via.id = newObjectId();
+        via.at = mm(10, 5);
+        via.size = MM;
+        via.drill = MM / 2;
+        board.vias = {via};
+
+        QCOMPARE(joinedCopper(board, library(), first),
+                 (QSet<ObjectId>{first, second, beyond, via.id}));
+        QCOMPARE(joinedCopper(board, library(), via.id),
+                 (QSet<ObjectId>{first, second, beyond, via.id}));
+        QCOMPARE(joinedCopper(board, library(), apart), QSet<ObjectId>{apart});
+        QVERIFY(joinedCopper(board, library(), ObjectId()).isEmpty());
+    }
+
     // A mounting hole with a pad on a net is one of its pads; one without
     // a pad, or without a net, is not.
     void holePadsAreOnTheirNets()

@@ -159,6 +159,10 @@ public:
     QSet<ObjectId> chosenTracks() const;
     // The nets of the pads of the placements chosen, lit on the board.
     QSet<QString> litNets() const;
+    // The net of the copper chosen, when it is all the copper joined to it
+    // (joinedCopper(), as Shift and a click choose): its unrouted
+    // connections are drawn bold. Empty otherwise.
+    QString joinedChosenNet() const;
     // The text chosen alone; null when none is.
     PlacementText chosenText() const { return m_active ? m_chosenText : PlacementText(); }
     // The lines from a placement's point to where its texts stand, to show
@@ -253,8 +257,9 @@ public:
     // added to what is chosen or taken away, and a frame adds what it holds.
     // A second click in a row is a press as well; in choosing, a corner
     // under it gets its radius typed and a side under it chooses the
-    // outline whole.
-    void press(const QPointF &at, bool adding = false);
+    // outline whole. With 'joined' (Shift) a track or a via clicked is
+    // chosen with all the copper joined to it (joinedCopper()).
+    void press(const QPointF &at, bool adding = false, bool joined = false);
     void move(const QPointF &at);
     void release(const QPointF &at);
     void doubleClick(const QPointF &at);
@@ -337,7 +342,7 @@ private:
     void layTrack(const Point &target, Action action, const std::optional<Via> &via);
     // A press in choosing on a placement's text, a hole or a placement;
     // false when there is none of them under 'at'.
-    bool pressChoosable(const QPointF &at, bool adding);
+    bool pressChoosable(const QPointF &at, bool adding, bool joined);
     // The hole under 'at', as the mouse reaches.
     ObjectId holeUnder(const QPointF &at) const;
     // The text of a placement, and the placement, under 'at', as far as

@@ -4,6 +4,7 @@
 #include "format.h"
 #include "outline.h"
 #include "paint.h"
+#include "ratsnest.h"
 
 #include <QApplication>
 #include <QCursor>
@@ -651,6 +652,22 @@ QSet<QString> BoardEditor::litNets() const
     return nets;
 }
 
+QString BoardEditor::joinedChosenNet() const
+{
+    const QSet<ObjectId> chosen = chosenTracks();
+    if (chosen.isEmpty())
+        return QString();
+    const Design &design = m_document->design();
+    const ObjectId any = *chosen.cbegin();
+    if (joinedCopper(design.board, design.library, any) != chosen)
+        return QString();
+    if (const Track *track = findById(design.board.tracks, any))
+        return track->net;
+    if (const Via *via = findById(design.board.vias, any))
+        return via->net;
+    return QString();
+}
+
 QList<QLineF> BoardEditor::textGuides() const
 {
     QList<QLineF> guides;
@@ -725,7 +742,7 @@ ObjectId BoardEditor::holeUnder(const QPointF &at) const
                   m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
 }
 
-bool BoardEditor::pressChoosable(const QPointF &at, bool adding)
+bool BoardEditor::pressChoosable(const QPointF &at, bool adding, bool joined)
 {
     const Design &design = m_document->design();
     const PlacementText text = textUnder(at);
@@ -755,13 +772,16 @@ bool BoardEditor::pressChoosable(const QPointF &at, bool adding)
     // Tracks and vias are chosen, not dragged.
     if (!copper.isNull()) {
         m_chosenText = PlacementText();
+        // With Shift, all the copper joined to it.
+        const QSet<ObjectId> taken =
+            joined ? joinedCopper(design.board, design.library, copper) : QSet<ObjectId>{copper};
         if (adding) {
             if (m_chosen.contains(copper))
-                m_chosen.remove(copper);
+                m_chosen.subtract(taken);
             else
-                m_chosen.insert(copper);
-        } else if (!m_chosen.contains(copper)) {
-            m_chosen = {copper};
+                m_chosen.unite(taken);
+        } else if (joined || !m_chosen.contains(copper)) {
+            m_chosen = taken;
             m_outlineChosen = false;
         }
         return true;
@@ -826,7 +846,7 @@ void BoardEditor::chooseOutline()
     emit changed();
 }
 
-void BoardEditor::press(const QPointF &at, bool adding)
+void BoardEditor::press(const QPointF &at, bool adding, bool joined)
 {
     if (!m_active)
         return;
@@ -859,7 +879,7 @@ void BoardEditor::press(const QPointF &at, bool adding)
     m_dragBase = m_document->design().board;
     m_dragCorner = outlineCornerAt(outline(), at, m_canvas->pixelsToMm(CanvasView::END_PIXELS));
     // A placement, its text or a hole lies over the sides of the outline.
-    if (m_dragCorner < 0 && pressChoosable(at, adding)) {
+    if (m_dragCorner < 0 && pressChoosable(at, adding, joined)) {
         emit changed();
         return;
     }

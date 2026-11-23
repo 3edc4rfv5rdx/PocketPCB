@@ -50,7 +50,11 @@ QList<NetPad> netPads(const Board &board, const Library &library)
     return pads;
 }
 
-QList<int> copperGroups(const Board &board, const QList<NetPad> &pads)
+namespace {
+
+// The group of copper of each of 'pads', then of each track, then of each
+// via of 'board', as copperGroups() tells them.
+QList<int> copperRoots(const Board &board, const QList<NetPad> &pads)
 {
     // Union-find over the pads, then the tracks, then the vias.
     const int padCount = int(pads.size());
@@ -105,10 +109,47 @@ QList<int> copperGroups(const Board &board, const QList<NetPad> &pads)
                 join(padCount + trackCount + v, p);
         }
     }
-    QList<int> groups;
-    for (int p = 0; p < padCount; ++p)
-        groups.append(find(p));
-    return groups;
+    QList<int> roots;
+    for (int i = 0; i < parent.size(); ++i)
+        roots.append(find(i));
+    return roots;
+}
+
+} // namespace
+
+QList<int> copperGroups(const Board &board, const QList<NetPad> &pads)
+{
+    return copperRoots(board, pads).mid(0, pads.size());
+}
+
+QSet<ObjectId> joinedCopper(const Board &board, const Library &library, const ObjectId &id)
+{
+    const QList<NetPad> pads = netPads(board, library);
+    const QList<int> roots = copperRoots(board, pads);
+    const int padCount = int(pads.size());
+    const int trackCount = int(board.tracks.size());
+    // The group of 'id'.
+    int group = -1;
+    for (int t = 0; t < trackCount; ++t) {
+        if (board.tracks.at(t).id == id)
+            group = roots.at(padCount + t);
+    }
+    for (int v = 0; v < board.vias.size(); ++v) {
+        if (board.vias.at(v).id == id)
+            group = roots.at(padCount + trackCount + v);
+    }
+    QSet<ObjectId> joined;
+    if (group < 0)
+        return joined;
+    for (int t = 0; t < trackCount; ++t) {
+        if (roots.at(padCount + t) == group)
+            joined.insert(board.tracks.at(t).id);
+    }
+    for (int v = 0; v < board.vias.size(); ++v) {
+        if (roots.at(padCount + trackCount + v) == group)
+            joined.insert(board.vias.at(v).id);
+    }
+    return joined;
 }
 
 RoutingProgress routingProgress(const Board &board, const Library &library)
