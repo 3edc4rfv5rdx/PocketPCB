@@ -4,6 +4,7 @@
 
 ## Unreleased
 - E: Tracks and vias chosen go along whole with the parts dragged also when the board outline is locked
+- E: With the silkscreen hidden, Undo no longer chooses the parts its step touched on the board
 - N: Shift and a click on a track or a via chooses all the copper joined to it, through pads too, and shows the unrouted connections of its net bold
 - F: While tracks or vias are chosen, the mouse resting on copper only names its net instead of lighting it
 - N: Delete all tracks, vias too, in the menu of the empty board, asked first

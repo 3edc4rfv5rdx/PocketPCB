@@ -1444,9 +1444,12 @@ void BoardEditor::setChosen(const QSet<ObjectId> &ids)
 {
     dropChosen();
     m_chosen = ids;
-    // Hidden tracks and vias are not chosen, after Undo either.
+    // Hidden tracks and vias, or parts with the silkscreen hidden, are not
+    // chosen, after Undo either.
     if (!m_tracksShown)
         m_chosen.subtract(chosenTracks());
+    if (!m_silkscreenShown)
+        m_chosen.subtract(chosenPlacements());
     emit changed();
 }
 
