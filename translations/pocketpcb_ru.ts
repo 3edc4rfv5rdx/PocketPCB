@@ -1647,6 +1647,14 @@
         <translation>Сдвинуть дорожку</translation>
     </message>
     <message>
+        <source>Spread tracks</source>
+        <translation>Раздвинуть дорожки</translation>
+    </message>
+    <message>
+        <source>The tracks have no more room to take</source>
+        <translation>Дорожкам больше некуда раздвигаться</translation>
+    </message>
+    <message>
         <source>The track would come too near another net</source>
         <translation>Дорожка подошла бы слишком близко к другой цепи</translation>
     </message>

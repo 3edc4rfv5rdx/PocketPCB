@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Spread tracks in the menu of the empty board moves pieces of tracks to the middle of their room, and the autorouter spreads what it lays
 - F: The autorouter keeps tracks away from other nets where there is room
 - E: A piece of track dragged keeps the pieces beside it on their ways, made longer or shorter, and pieces on one line become one
 - N: A piece of track is dragged across itself and a corner of a track is dragged, the pieces beside following

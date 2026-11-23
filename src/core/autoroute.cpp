@@ -177,6 +177,8 @@ public:
     }
 
     Board board() const { return m_board; }
+    // The step of the grid tracks are laid on.
+    Coord step() const { return m_step; }
 
     // The board's outline holds the point, or there is no outline.
     bool onBoard(const Point &at) const
@@ -229,6 +231,7 @@ private:
 
     const Design &m_design;
     Board m_board;
+    Coord m_step = 1;
     double m_room = 0;
     double m_edgeRoom = 0;
     QPainterPath m_outline;
@@ -241,6 +244,7 @@ void Router::buildGrid()
 {
     const Library &library = m_design.library;
     const Coord step = std::max<Coord>(m_design.project.boardGridStep / 2, 1);
+    m_step = step;
     QRectF bounds = m_board.outline.isEmpty() ? boardBounds(m_board, library)
                                               : m_outline.boundingRect();
     if (m_board.outline.isEmpty()) {
@@ -456,7 +460,13 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
         else
             failed.append(line);
     }
-    result.board = router.board();
+    // The tracks laid put in the middle of the room they run in.
+    QSet<ObjectId> laid;
+    for (const Track &track : router.board().tracks) {
+        if (findById(design.board.tracks, track.id) == nullptr)
+            laid.insert(track.id);
+    }
+    result.board = withTracksSpread(router.board(), design, router.step(), laid);
     // What is left to lay, however it is drawn now.
     result.unrouted = int(waiting(none).size());
     result.vias = int(result.board.vias.size() - design.board.vias.size());

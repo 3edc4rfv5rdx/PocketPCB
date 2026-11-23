@@ -81,6 +81,7 @@ public:
         TrackWidth,
         Autoroute,
         MoveTrack,
+        SpreadTracks,
         TrackSide,
     };
     static QString actionName(Action action);
@@ -197,6 +198,9 @@ public:
     void deleteChosen();
     // Every track and via of the board deleted as one step.
     void deleteAllTracks();
+    // The tracks of the board put in the middle of the room they run in
+    // (withTracksSpread()) on its grid, as one step.
+    void spreadTracks();
     // The nets of what is chosen: of the pads of the parts and holes, and of
     // the tracks and vias.
     QSet<QString> chosenNets() const;

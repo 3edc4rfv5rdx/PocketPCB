@@ -138,6 +138,14 @@ Board withTrackCornerMoved(const Board &board, const Library &library, const Obj
 // pad, a via or a fork gets a new piece to it; a free end just moves.
 Board withTrackPieceMoved(const Board &board, const Library &library, const ObjectId &id,
                           const Point &delta, Coord gridStep);
+// 'board' with its pieces of track 'ids' (every one when empty) moved across
+// themselves (withTrackPieceMoved()), a cell of 'gridStep' at a time and a
+// few cells at most, wherever that leaves them more room to the copper of
+// other nets on their side and to the edge of the board, keeping the
+// clearances: tracks put in the middle of the room they run in. Only a
+// piece between two corners (cornerNeighbour()) moves, so none is added.
+Board withTracksSpread(const Board &board, const Design &design, Coord gridStep,
+                       const QSet<ObjectId> &ids = {});
 // The tracks and the vias 'ids' moved by 'delta'.
 Board withTracksMoved(const Board &board, const QSet<ObjectId> &ids, const Point &delta);
 // The tracks 'ids' 'width' wide.

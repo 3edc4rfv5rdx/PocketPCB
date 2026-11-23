@@ -1099,6 +1099,12 @@ void MainWindow::showBoardMenu(const QPoint &globalPos)
         add("actionRatsnestArcs");
         menu.addSeparator();
         {
+            QAction *spread =
+                menu.addAction(BoardEditor::actionName(BoardEditor::Action::SpreadTracks));
+            spread->setEnabled(!m_document->design().board.tracks.isEmpty());
+            connect(spread, &QAction::triggered, m_boardEditor, &BoardEditor::spreadTracks);
+        }
+        {
             const QString title = BoardEditor::actionName(BoardEditor::Action::DeleteAllTracks);
             QAction *clear = menu.addAction(title + QStringLiteral("…"));
             const Board &board = m_document->design().board;

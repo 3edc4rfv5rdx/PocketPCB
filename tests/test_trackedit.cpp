@@ -432,6 +432,38 @@ private slots:
         QVERIFY(shortingTracks(moved, design, {across}).isEmpty());
     }
 
+    void tracksAreSpreadToTheMiddleOfTheirRoom()
+    {
+        // From pad 1 down to (-5, 10), right to (5, 10), down to (5, 20);
+        // a track of net C runs 1 mm below the middle piece.
+        Board board = boardWithPart();
+        const auto track = [&board](const Point &from, const Point &to, const QString &net) {
+            Track result;
+            result.id = newObjectId();
+            result.net = net;
+            result.width = MM / 2;
+            result.from = from;
+            result.to = to;
+            board.tracks.append(result);
+            return result.id;
+        };
+        const QString a = QStringLiteral("A");
+        track(mm(-5, 0), mm(-5, 10), a);
+        const ObjectId across = track(mm(-5, 10), mm(5, 10), a);
+        track(mm(5, 10), mm(5, 20), a);
+        track(mm(-3, 11), mm(3, 11), QStringLiteral("C"));
+        Design design = newDesign(QStringLiteral("t"));
+        design.library = library();
+
+        const Board spread = withTracksSpread(board, design, MM);
+        // Moved away from it, no piece added, nothing too near.
+        QCOMPARE(spread.tracks.size(), 4);
+        QVERIFY(findById(spread.tracks, across)->from.y < mm(0, 10).y);
+        QVERIFY(shortingTracks(spread, design, {across}).isEmpty());
+        // Only the pieces asked for move.
+        QCOMPARE(withTracksSpread(board, design, MM, {newObjectId()}), board);
+    }
+
     void tracksTakeTheClassOfTheirNet()
     {
         Design design = newDesign(QStringLiteral("t"));

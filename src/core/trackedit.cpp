@@ -6,11 +6,14 @@
 #include "ratsnest.h"
 
 #include <QLineF>
+#include <QPainterPath>
+#include <QPolygonF>
 #include <QRectF>
 
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
 #include <optional>
 #include <utility>
 
@@ -714,6 +717,150 @@ Board withTrackPieceMoved(const Board &board, const Library &library, const Obje
         added.append(joiner);
     }
     return withPiecesMerged(withPiecesReplaced(board, id, {moved}, gone, added), library);
+}
+
+namespace {
+
+// How far a piece is moved to spread the tracks, in cells, and how many
+// times the tracks are gone over.
+const int SPREAD_CELLS = 2;
+const int SPREAD_PASSES = 4;
+// The least more room, in millimetres, a move is made for.
+const double SPREAD_GAIN_MM = 0.01;
+
+// The room of 'track' of 'board': to the nearest copper of another net on
+// its side (the pads it ends on are its own), and to the edge 'edge' of the
+// board, held by 'outline' (none when empty), in millimetres.
+struct Room
+{
+    double copper = std::numeric_limits<double>::max();
+    double edge = std::numeric_limits<double>::max();
+};
+Room roomOf(const Board &board, const QList<PadPoint> &pads, const QPainterPath &outline,
+            const QPolygonF &edge, const Track &track)
+{
+    Room room;
+    const double half = nmToMm(track.width) / 2;
+    const QPointF a = toMm(track.from);
+    const QPointF b = toMm(track.to);
+    for (const Track &other : board.tracks) {
+        if (other.side == track.side && other.net != track.net)
+            room.copper = std::min(room.copper, piecesApart(a, b, toMm(other.from), toMm(other.to))
+                                                    - half - nmToMm(other.width) / 2);
+    }
+    for (const Via &via : board.vias) {
+        if (via.net != track.net)
+            room.copper = std::min(room.copper,
+                                   QLineF(nearestOnPiece(a, b, toMm(via.at)), toMm(via.at)).length()
+                                       - half - nmToMm(via.size) / 2);
+    }
+    for (const PadPoint &pad : pads) {
+        if (pad.on(track.side) && pad.net != track.net && pad.at != track.from
+            && pad.at != track.to)
+            room.copper = std::min(room.copper,
+                                   piecesApart(a, b, toMm(pad.axisFrom), toMm(pad.axisTo)) - half
+                                       - nmToMm(pad.radius));
+    }
+    if (!outline.isEmpty()) {
+        if (!outline.contains(a) || !outline.contains(b))
+            room.edge = -1;
+        for (int i = 0; i + 1 < edge.size(); ++i)
+            room.edge = std::min(room.edge, piecesApart(a, b, edge.at(i), edge.at(i + 1)) - half);
+    }
+    return room;
+}
+
+} // namespace
+
+Board withTracksSpread(const Board &board, const Design &design, Coord gridStep,
+                       const QSet<ObjectId> &ids)
+{
+    const Library &library = design.library;
+    const QList<PadPoint> pads = padPoints(board, library);
+    const QPainterPath outline = outlinePath(board.outline);
+    const QPolygonF edge = outline.toFillPolygon();
+    const double edgeClearance = nmToMm(design.project.rules.edgeClearance);
+    // The least room of the pieces of 'after' that are not as in 'before';
+    // nothing when one of them comes too near the edge.
+    const auto leastRoom = [&](const Board &before, const Board &after) -> std::optional<double> {
+        double least = std::numeric_limits<double>::max();
+        for (const Track &track : after.tracks) {
+            const Track *was = findById(before.tracks, track.id);
+            if (was != nullptr && was->from == track.from && was->to == track.to)
+                continue;
+            const Room room = roomOf(after, pads, outline, edge, track);
+            if (room.edge < edgeClearance)
+                return std::nullopt;
+            least = std::min({least, room.copper, room.edge});
+        }
+        return least;
+    };
+    Board result = board;
+    for (int pass = 0; pass < SPREAD_PASSES; ++pass) {
+        bool moved = false;
+        QList<ObjectId> pieces;
+        for (const Track &track : result.tracks) {
+            if (ids.isEmpty() || ids.contains(track.id))
+                pieces.append(track.id);
+        }
+        for (const ObjectId &id : std::as_const(pieces)) {
+            const Track *track = findById(result.tracks, id);
+            if (track == nullptr || cornerNeighbour(result, library, id, false).isNull()
+                || cornerNeighbour(result, library, id, true).isNull())
+                continue;
+            // A cell across it; a piece at another angle stays.
+            const Point way = track->to - track->from;
+            Point cell;
+            if (way.x == 0)
+                cell = Point{gridStep, 0};
+            else if (way.y == 0)
+                cell = Point{0, gridStep};
+            else if (std::llabs(way.x) == std::llabs(way.y))
+                cell = (way.x > 0) == (way.y > 0) ? Point{gridStep, -gridStep}
+                                                  : Point{gridStep, gridStep};
+            else
+                continue;
+            // The room it and the pieces beside it have now, and the best
+            // a move gives.
+            const QSet<ObjectId> beside{id, cornerNeighbour(result, library, id, false),
+                                        cornerNeighbour(result, library, id, true)};
+            double best = std::numeric_limits<double>::max();
+            for (const Track &piece : result.tracks) {
+                if (!beside.contains(piece.id))
+                    continue;
+                const Room room = roomOf(result, pads, outline, edge, piece);
+                best = std::min({best, room.copper, room.edge});
+            }
+            std::optional<Board> better;
+            for (const int sign : {1, -1}) {
+                for (int cells = 1; cells <= SPREAD_CELLS; ++cells) {
+                    const Coord by = sign * cells;
+                    const Board candidate = withTrackPieceMoved(
+                        result, library, id, Point{cell.x * by, cell.y * by}, gridStep);
+                    QSet<ObjectId> changed;
+                    for (const Track &piece : candidate.tracks) {
+                        const Track *was = findById(result.tracks, piece.id);
+                        if (was == nullptr || was->from != piece.from || was->to != piece.to)
+                            changed.insert(piece.id);
+                    }
+                    if (changed.isEmpty() || !shortingTracks(candidate, design, changed).isEmpty())
+                        continue;
+                    const std::optional<double> room = leastRoom(result, candidate);
+                    if (room && *room > best + SPREAD_GAIN_MM) {
+                        best = *room;
+                        better = candidate;
+                    }
+                }
+            }
+            if (better) {
+                result = *better;
+                moved = true;
+            }
+        }
+        if (!moved)
+            break;
+    }
+    return result;
 }
 
 Board withTracksMoved(const Board &board, const QSet<ObjectId> &ids, const Point &delta)

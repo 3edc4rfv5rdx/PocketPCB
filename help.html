@@ -252,7 +252,9 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
       <li><b>Unrouted as arcs</b> bends those lines, so that lines from one pad part.</li>
     </ul>
   </li>
-  <li>The menu of the empty board also has <b>Delete all tracks</b>, vias too, which asks first.</li>
+  <li>The menu of the empty board also has <b>Spread tracks</b>, which moves the pieces of tracks between
+    corners to the middle of the room they run in, and <b>Delete all tracks</b>, vias too, which asks
+    first.</li>
   <li>The status bar shows how many connections are unrouted, of all of them.</li>
 </ul>
 
@@ -340,7 +342,8 @@ choice.</p>
   <li>The <b>Autoroute</b> button lays the tracks of every connection still unrouted; its arrow offers
     <b>Route all</b> and <b>Route chosen</b> (the nets of the parts and tracks chosen).</li>
   <li>It lays as few vias as it can, on both sides of a board of two, keeping the clearance of the net
-    classes and of the edge, and keeps tracks away from other nets where there is room. Tracks already there stay as they are.</li>
+    classes and of the edge, and keeps tracks away from other nets where there is room. The tracks it laid are
+    then moved to the middle of the room they run in. Tracks already there stay as they are.</li>
   <li><kbd>Esc</kbd> or Stop in its box stops it, keeping what is laid. The whole run is one step of
     <kbd>Ctrl+Z</kbd>; at the end a box shows the connections there were, those routed and unrouted, the vias
     and the time.</li>

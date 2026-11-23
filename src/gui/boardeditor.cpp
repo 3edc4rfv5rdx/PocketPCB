@@ -124,6 +124,8 @@ QString BoardEditor::actionName(Action action)
         return tr("Autoroute");
     case Action::MoveTrack:
         return tr("Move track");
+    case Action::SpreadTracks:
+        return tr("Spread tracks");
     case Action::TrackWidth:
         return tr("Track width");
     case Action::TrackSide:
@@ -653,6 +655,20 @@ Board BoardEditor::trackDragged(const QPointF &at) const
     return withTrackPieceMoved(design.board, design.library, m_dragTrack,
                                m_canvas->snapped(at) - m_canvas->snapped(m_pressAt),
                                m_canvas->gridStep());
+}
+
+void BoardEditor::spreadTracks()
+{
+    if (!m_active || m_dragging)
+        return;
+    const Design &design = m_document->design();
+    const Board spread = withTracksSpread(design.board, design, design.project.boardGridStep);
+    if (spread == design.board) {
+        emit message(tr("The tracks have no more room to take"));
+        return;
+    }
+    applyBoard(Action::SpreadTracks, spread, {});
+    emit changed();
 }
 
 QSet<QString> BoardEditor::chosenNets() const

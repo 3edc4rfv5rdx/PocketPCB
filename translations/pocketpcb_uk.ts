@@ -1647,6 +1647,14 @@
         <translation>Зсунути доріжку</translation>
     </message>
     <message>
+        <source>Spread tracks</source>
+        <translation>Розсунути доріжки</translation>
+    </message>
+    <message>
+        <source>The tracks have no more room to take</source>
+        <translation>Доріжкам більше нікуди розсуватися</translation>
+    </message>
+    <message>
         <source>The track would come too near another net</source>
         <translation>Доріжка підійшла б надто близько до іншого кола</translation>
     </message>
