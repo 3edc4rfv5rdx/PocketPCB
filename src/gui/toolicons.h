@@ -50,5 +50,8 @@ QIcon toolIcon(ToolIcon icon, const QColor &color);
 // The layer button: two sheets, 'front' over 'back', framed in 'color'.
 QIcon layerIcon(const QColor &front, const QColor &back, const QColor &color);
 constexpr int TOOL_ICON_SIZE = 24;
+// A bold question mark of 'color' for a question box, 'size' pixels high,
+// sharp on a screen of 'ratio' pixels to one.
+QPixmap questionPixmap(const QColor &color, int size, qreal ratio);
 
 } // namespace ppcb

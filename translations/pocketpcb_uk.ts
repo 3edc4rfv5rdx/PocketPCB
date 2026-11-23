@@ -1595,6 +1595,10 @@
         <translation>Видалити доріжки</translation>
     </message>
     <message>
+        <source>Delete all tracks</source>
+        <translation>Видалити всі доріжки</translation>
+    </message>
+    <message>
         <source>Track width</source>
         <translation>Ширина доріжки</translation>
     </message>

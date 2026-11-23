@@ -1595,6 +1595,10 @@
         <translation>Удалить дорожки</translation>
     </message>
     <message>
+        <source>Delete all tracks</source>
+        <translation>Удалить все дорожки</translation>
+    </message>
+    <message>
         <source>Track width</source>
         <translation>Ширина дорожки</translation>
     </message>

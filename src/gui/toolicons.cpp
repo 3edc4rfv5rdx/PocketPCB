@@ -1,5 +1,6 @@
 #include "toolicons.h"
 
+#include <QFont>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
@@ -313,6 +314,22 @@ QIcon sharpIcon(const QColor &color, Drawing drawing)
 QIcon toolIcon(ToolIcon icon, const QColor &color)
 {
     return sharpIcon(color, [icon, &color](QPainter &painter) { draw(painter, icon, color); });
+}
+
+QPixmap questionPixmap(const QColor &color, int size, qreal ratio)
+{
+    QPixmap result(QSize(size, size) * ratio);
+    result.setDevicePixelRatio(ratio);
+    result.fill(Qt::transparent);
+    QPainter painter(&result);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    QFont font = painter.font();
+    font.setBold(true);
+    font.setPixelSize(size);
+    painter.setFont(font);
+    painter.setPen(color);
+    painter.drawText(QRect(0, 0, size, size), Qt::AlignCenter, QStringLiteral("?"));
+    return result;
 }
 
 QIcon layerIcon(const QColor &front, const QColor &back, const QColor &color)

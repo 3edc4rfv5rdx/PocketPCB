@@ -117,6 +117,8 @@ QString BoardEditor::actionName(Action action)
         return tr("Via to the other side");
     case Action::DeleteTracks:
         return tr("Delete tracks");
+    case Action::DeleteAllTracks:
+        return tr("Delete all tracks");
     case Action::TrackWidth:
         return tr("Track width");
     case Action::TrackSide:
@@ -614,6 +616,18 @@ void BoardEditor::deleteChosen()
                           : !holes.isEmpty() ? Action::DeleteHoles
                                              : Action::DeleteTracks;
     applyBoard(action, result, QSet<ObjectId>(holes).unite(parts).unite(tracks));
+    emit changed();
+}
+
+void BoardEditor::deleteAllTracks()
+{
+    if (!m_active || m_dragging)
+        return;
+    const Board &board = m_document->design().board;
+    if (board.tracks.isEmpty() && board.vias.isEmpty())
+        return;
+    m_chosen.subtract(chosenTracks());
+    applyBoard(Action::DeleteAllTracks, withoutAnyTracks(board), {});
     emit changed();
 }
 

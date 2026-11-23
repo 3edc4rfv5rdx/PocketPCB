@@ -91,6 +91,8 @@ const int HELD_ALPHA = 60;
 const int PRESSED_ALPHA = 90;
 // The arrow beside a button that has a menu, in pixels.
 const int MENU_ARROW_WIDTH = 12;
+// The question mark of a question asked before deleting much, in pixels.
+const int QUESTION_PIXELS = 48;
 // The gaps between the file buttons and Undo, and between the zoom buttons
 // and the modes, in pixels.
 const int GROUP_GAP = TOOL_ICON_SIZE;
@@ -1077,6 +1079,22 @@ void MainWindow::showBoardMenu(const QPoint &globalPos)
         add("actionHideTracks");
         add("actionShowUnrouted");
         add("actionRatsnestArcs");
+        menu.addSeparator();
+        {
+            const QString title = BoardEditor::actionName(BoardEditor::Action::DeleteAllTracks);
+            QAction *clear = menu.addAction(title + QStringLiteral("…"));
+            const Board &board = m_document->design().board;
+            clear->setEnabled(!board.tracks.isEmpty() || !board.vias.isEmpty());
+            connect(clear, &QAction::triggered, this, [this, title] {
+                QMessageBox box(QMessageBox::NoIcon, title,
+                                title + QLatin1Char('?'),
+                                QMessageBox::Yes | QMessageBox::No, this);
+                box.setIconPixmap(questionPixmap(paintcolor::deleteQuestion(), QUESTION_PIXELS,
+                                                 devicePixelRatioF()));
+                if (box.exec() == QMessageBox::Yes)
+                    m_boardEditor->deleteAllTracks();
+            });
+        }
         break;
     }
     menu.exec(globalPos);

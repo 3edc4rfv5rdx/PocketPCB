@@ -77,6 +77,7 @@ public:
         LayTrack,
         ViaAndOtherSide,
         DeleteTracks,
+        DeleteAllTracks,
         TrackWidth,
         TrackSide,
     };
@@ -188,6 +189,8 @@ public:
     // the placements chosen, which come and go with the schematic, are
     // packed off it to the right (withPlacementsPacked()). Locked ones stay.
     void deleteChosen();
+    // Every track and via of the board deleted as one step.
+    void deleteAllTracks();
 
     // What a short right click at 'at' is on, choosing it as a click
     // would, unless it is chosen already: a placement (also by one of its

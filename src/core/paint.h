@@ -77,6 +77,8 @@ inline QColor missing() { return QColor(220, 0, 0); }
 inline QColor selection() { return QColor(0, 120, 215); }
 // The net lit: under the mouse, or chosen in the table of nets.
 inline QColor litNet() { return QColor(255, 140, 0); }
+// The question mark of a question asked before deleting much.
+inline QColor deleteQuestion() { return QColor(255, 140, 0); }
 // The ring around a problem the rules check found.
 inline QColor ercMark() { return QColor(220, 0, 0); }
 } // namespace paintcolor
