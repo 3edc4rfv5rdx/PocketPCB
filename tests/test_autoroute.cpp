@@ -135,6 +135,38 @@ private slots:
         QVERIFY(below);
     }
 
+    void aConnectionGoesOnFromATrackInsteadOfBesideIt()
+    {
+        // A third pad of net A below between the two: its connection goes
+        // on from the copper laid, no piece over another.
+        Design design = twoParts();
+        design.board.placements.append(
+            placement(mm(20.32, 25.4), QStringLiteral("A"), QStringLiteral("Z")));
+        const AutorouteResult result = autorouted(design);
+        QCOMPARE(result.unrouted, 0);
+        const QList<Track> laid = newTracks(design.board, result.board);
+        for (int i = 0; i < laid.size(); ++i) {
+            for (int j = i + 1; j < laid.size(); ++j) {
+                const Track &a = laid.at(i);
+                const Track &b = laid.at(j);
+                if (a.side != b.side)
+                    continue;
+                // On one line and sharing more than a point.
+                const QLineF one(toMm(a.from), toMm(a.to));
+                const QLineF other(toMm(b.from), toMm(b.to));
+                const bool inLine =
+                    QLineF(one.p1(), other.p1()).length() + QLineF(one.p2(), other.p1()).length()
+                            - one.length()
+                        < 1e-6;
+                const bool inLine2 =
+                    QLineF(one.p1(), other.p2()).length() + QLineF(one.p2(), other.p2()).length()
+                            - one.length()
+                        < 1e-6;
+                QVERIFY2(!(inLine && inLine2), "a piece lies over another");
+            }
+        }
+    }
+
     void aWallOnTheTopIsPassedBelowWithoutVias()
     {
         Design design = twoParts();

@@ -301,7 +301,7 @@ bool Router::route(const RatsnestLine &line)
 {
     const Library &library = m_design.library;
     const QList<NetPad> pads = netPads(m_board, library);
-    const QList<int> groups = copperGroups(m_board, pads);
+    const QList<int> groups = copperRoots(m_board, pads);
     const auto padAt = [&pads, &line](const Point &at) {
         for (int i = 0; i < pads.size(); ++i) {
             if (pads.at(i).at == at && pads.at(i).net == line.net)
@@ -314,24 +314,50 @@ bool Router::route(const RatsnestLine &line)
     if (from < 0 || to < 0)
         return false;
 
-    // The nodes of the pads of the two groups of copper, which the way may
-    // start from and end on whatever lies round them, and the pads' middles.
+    // The copper of the two groups the line joins: the way may start from
+    // and end on any of it, the pads, the vias and the tracks laid, whatever
+    // lies round it, so a connection goes on from a track there instead of
+    // running beside it. Each node is tied to the point of copper it stands
+    // for, the middle of a pad, or itself on a track.
     QList<GridNode> starts;
     QList<GridNode> goals;
     QHash<qint64, Point> own;
+    const auto take = [&](int group, const Point &at, int layer, const Point &copper) {
+        if (layer < 0 || (group != groups.at(from) && group != groups.at(to)))
+            return;
+        const GridNode node = m_grid->nearest(at, layer);
+        if (!m_grid->contains(node) || own.contains(m_grid->key(node)))
+            return;
+        (group == groups.at(from) ? starts : goals).append(node);
+        own.insert(m_grid->key(node), copper);
+    };
     for (int i = 0; i < pads.size(); ++i) {
-        if (groups.at(i) != groups.at(from) && groups.at(i) != groups.at(to))
-            continue;
-        for (const BoardSide side : {BoardSide::Top, BoardSide::Bottom}) {
-            const int layer = layerOf(side);
-            if (layer < 0 || !(side == BoardSide::Top ? pads.at(i).top : pads.at(i).bottom))
-                continue;
-            const GridNode node = m_grid->nearest(pads.at(i).at, layer);
-            if (!m_grid->contains(node))
-                continue;
-            (groups.at(i) == groups.at(from) ? starts : goals).append(node);
-            own.insert(m_grid->key(node), pads.at(i).at);
+        if (pads.at(i).top)
+            take(groups.at(i), pads.at(i).at, layerOf(BoardSide::Top), pads.at(i).at);
+        if (pads.at(i).bottom)
+            take(groups.at(i), pads.at(i).at, layerOf(BoardSide::Bottom), pads.at(i).at);
+    }
+    const int trackCount = int(m_board.tracks.size());
+    for (int t = 0; t < trackCount; ++t) {
+        const Track &track = m_board.tracks.at(t);
+        const int group = groups.at(pads.size() + t);
+        const int layer = layerOf(track.side);
+        // Every node along a track on the grid, else its ends.
+        const Point way = track.to - track.from;
+        const Coord length = std::max(std::llabs(way.x), std::llabs(way.y));
+        const bool onGrid = (way.x == 0 || way.y == 0 || std::llabs(way.x) == std::llabs(way.y))
+                            && length % m_step == 0
+                            && m_grid->point(m_grid->nearest(track.from, 0)) == track.from;
+        const Coord count = onGrid && length > 0 ? length / m_step : 1;
+        for (Coord k = 0; k <= count; ++k) {
+            const Point at{track.from.x + way.x / count * k, track.from.y + way.y / count * k};
+            take(group, at, layer, onGrid ? m_grid->point(m_grid->nearest(at, layer)) : at);
         }
+    }
+    for (int v = 0; v < m_board.vias.size(); ++v) {
+        const int group = groups.at(pads.size() + trackCount + v);
+        for (int layer = 0; layer < m_grid->layers(); ++layer)
+            take(group, m_board.vias.at(v).at, layer, m_board.vias.at(v).at);
     }
 
     const int net = netIndex(line.net);

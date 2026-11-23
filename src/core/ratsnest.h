@@ -52,6 +52,9 @@ QList<NetPad> netPads(const Board &board, const Library &library);
 // joins what its ends lie on, on its side: a pad, a via, the end or the
 // middle of a track; a via joins both sides.
 QList<int> copperGroups(const Board &board, const QList<NetPad> &pads);
+// The same group for each of 'pads', then for each track, then for each via
+// of 'board', in their order.
+QList<int> copperRoots(const Board &board, const QList<NetPad> &pads);
 // The tracks and the vias joined to the track or the via 'id' as
 // copperGroups() joins copper, through the pads of its net too: all that is
 // laid of its part of the net. Empty when there is no such track or via.

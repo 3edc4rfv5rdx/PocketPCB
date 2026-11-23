@@ -50,10 +50,6 @@ QList<NetPad> netPads(const Board &board, const Library &library)
     return pads;
 }
 
-namespace {
-
-// The group of copper of each of 'pads', then of each track, then of each
-// via of 'board', as copperGroups() tells them.
 QList<int> copperRoots(const Board &board, const QList<NetPad> &pads)
 {
     // Union-find over the pads, then the tracks, then the vias.
@@ -114,8 +110,6 @@ QList<int> copperRoots(const Board &board, const QList<NetPad> &pads)
         roots.append(find(i));
     return roots;
 }
-
-} // namespace
 
 QList<int> copperGroups(const Board &board, const QList<NetPad> &pads)
 {
