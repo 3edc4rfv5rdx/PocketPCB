@@ -981,6 +981,10 @@
         <translation>Переходных</translation>
     </message>
     <message>
+        <source>Wire links</source>
+        <translation>Перемычек</translation>
+    </message>
+    <message>
         <source>Time</source>
         <translation>Время</translation>
     </message>

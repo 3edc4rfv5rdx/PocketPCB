@@ -26,6 +26,14 @@ inline bool operator==(const GridNode &a, const GridNode &b)
 }
 inline bool operator!=(const GridNode &a, const GridNode &b) { return !(a == b); }
 
+// A step of more than one node on a layer, over what lies between, such as a
+// wire link: the node it lands on and what it costs.
+struct GridJump
+{
+    GridNode to;
+    int cost = 0;
+};
+
 // What the grid is and what a way across it costs. A way costs the length
 // of its steps, the bends between them, what stepCost adds to each step and
 // what layerCost asks for each change of layer.
@@ -57,6 +65,10 @@ struct GridRouteRules
     // start that goes on from something already there; a negative value
     // leaves the start out. Unset: nothing.
     std::function<int(const GridNode &start)> startCost;
+    // The jumps a way may take from 'at' (GridJump); the node a jump lands
+    // on is the caller's to judge. The step after a jump is no turn. The search is sure to find the cheapest way only while a
+    // jump costs no less than the steps it leaps. Unset: none.
+    std::function<QList<GridJump>(const GridNode &at)> jumps;
     // How many nodes the search looks on from before it gives up.
     int maxExpanded = 1000000;
 };

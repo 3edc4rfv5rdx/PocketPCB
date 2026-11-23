@@ -19,6 +19,9 @@ QList<Point> trackCorners(const Point &from, const Point &to, bool diagonalFirst
 
 // The point of the straight piece 'from'-'to' nearest to 'at'.
 QPointF nearestOnPiece(const QPointF &from, const QPointF &to, const QPointF &at);
+// How far apart the pieces 'a'-'b' and 'c'-'d' are (millimetres): 0 when
+// they cross.
+double piecesApart(const QPointF &a, const QPointF &b, const QPointF &c, const QPointF &d);
 
 // Copper a track may start from or end on: a pad of a part, the pad of a
 // mounting hole, a via, or a point of a track.

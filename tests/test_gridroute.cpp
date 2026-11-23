@@ -65,6 +65,27 @@ class TestGridRoute : public QObject
     Q_OBJECT
 
 private slots:
+    void aJumpLeapsAWall()
+    {
+        // A wall across column 5 of a grid one row high: no way, but for a
+        // jump of three columns, which leaps it.
+        GridRouteRules rules = walled(10, 1, {node(5, 0)});
+        QVERIFY(gridRoute(rules, {node(0, 0)}, {node(9, 0)}).isEmpty());
+        rules.jumps = [](const GridNode &at) {
+            return QList<GridJump>{{GridNode{at.column + 3, at.row, at.layer}, 100}};
+        };
+        const QList<GridNode> path = gridRoute(rules, {node(0, 0)}, {node(9, 0)});
+        QVERIFY(!path.isEmpty());
+        QCOMPARE(path.last(), node(9, 0));
+        bool leapt = false;
+        for (int i = 1; i < path.size(); ++i)
+            leapt = leapt || std::abs(path.at(i).column - path.at(i - 1).column) > 1;
+        QVERIFY(leapt);
+        // Its ends are corners.
+        const QList<GridNode> corners = gridCorners(path);
+        QVERIFY(corners.size() >= 3);
+    }
+
     void straightOnAnEmptyGrid()
     {
         const GridRouteRules rules = walled(10, 5, {});

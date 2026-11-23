@@ -131,6 +131,8 @@ struct Via
 // A wire link: a bare wire on the side of the parts, soldered into a pad
 // with a hole at each end, joining them as a track would; what a board with
 // copper on one side has where a track cannot go.
+// The wire it is made of, across; it lies on the board between the parts.
+constexpr Coord WIRE_LINK_WIRE = 600000;
 struct WireLink
 {
     ObjectId id;

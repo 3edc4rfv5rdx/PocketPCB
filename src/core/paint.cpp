@@ -28,8 +28,6 @@ const double PLACEHOLDER_TEXT_HEIGHT = 1.27;
 // The line from a placement's text to the part on the silkscreen, in
 // millimetres: bolder than the drawings of the footprints.
 const double LEADER_LINE_WIDTH = 0.3;
-// The wire of a wire link, drawn on the silkscreen of the side of the parts.
-const double WIRE_LINK_WIDTH = 0.6;
 const double ORIGIN_MARK_SIZE = 0.8;
 // The pad number takes this share of the pad's smaller side.
 const double PAD_TEXT_SHARE = 0.45;
@@ -1600,7 +1598,7 @@ void paintBoard(QPainter &painter, const Board &board, const Library &library,
     }
     // The wires of wire links, on the side of the parts.
     if (shown.contains(BoardLayer::SilkscreenTop)) {
-        painter.setPen(QPen(paintcolor::silkscreenTop(), WIRE_LINK_WIDTH, Qt::SolidLine,
+        painter.setPen(QPen(paintcolor::silkscreenTop(), nmToMm(WIRE_LINK_WIRE), Qt::SolidLine,
                             Qt::RoundCap));
         for (const WireLink &link : board.links)
             painter.drawLine(toMm(link.from), toMm(link.to));

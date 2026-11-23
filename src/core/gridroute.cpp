@@ -176,6 +176,12 @@ private:
             const qint64 length = direction % 2 == 0 ? rules_.straightCost : rules_.diagonalCost;
             reach(State{next, direction}, cost + length + bend + extra, key);
         }
+        if (rules_.jumps) {
+            for (const GridJump &jump : rules_.jumps(state.node)) {
+                if (contains(jump.to) && jump.cost >= 0)
+                    reach(State{jump.to, NO_DIRECTION}, cost + jump.cost, key);
+            }
+        }
         if (!rules_.layerCost)
             return;
         for (int layer = 0; layer < rules_.layers; ++layer) {

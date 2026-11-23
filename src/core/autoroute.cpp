@@ -28,6 +28,13 @@ const int BEND45_COST = 2;
 const int BEND90_COST = 6;
 const int ACROSS_GRAIN_COST = 4;
 const int VIA_COST = 60 * STRAIGHT_COST;
+// A wire link, on a board with copper on one side: dearer than any way round,
+// laid only where a track cannot go; level or upright, its length a whole
+// number of these steps between the least and the most, in nanometres.
+const int LINK_COST = 300 * STRAIGHT_COST;
+const Coord LINK_PITCH = 2540000;
+const Coord LINK_SHORTEST = 2 * LINK_PITCH;
+const Coord LINK_LONGEST = 8 * LINK_PITCH;
 // Room kept from the copper of other nets beyond the clearance when there is
 // room for it, in millimetres, and what a step into it adds: tracks keep to
 // the middle of the room they run in, as the author moves them by hand.
@@ -227,6 +234,14 @@ private:
             m_grid->mark(layer, toMm(via.at), toMm(via.at), nmToMm(via.size) / 2 + m_room,
                          netIndex(via.net));
     }
+    void markLink(const WireLink &link)
+    {
+        for (const Point &end : {link.from, link.to}) {
+            for (int layer = 0; layer < m_grid->layers(); ++layer)
+                m_grid->mark(layer, toMm(end), toMm(end), nmToMm(link.size) / 2 + m_room,
+                             netIndex(link.net));
+        }
+    }
     void buildGrid();
 
     const Design &m_design;
@@ -402,9 +417,101 @@ bool Router::route(const RatsnestLine &line)
             return VIA_COST;
         };
     }
+    // On a board of one side a way may leap what is in it by a wire link,
+    // level or upright, between two pads with room round them. Its wire lies
+    // on the side of the parts: over no part, clear of every pad and hole
+    // but its own two, and of the other links.
+    const Rules &linkRules = m_design.project.rules;
+    const double linkPad = nmToMm(linkRules.linkSize) / 2;
+    const double wireHalf = nmToMm(WIRE_LINK_WIRE) / 2;
+    const double gap = nmToMm(linkRules.clearance);
+    QList<QRectF> bodies;
+    for (const Placement &placement : m_board.placements)
+        bodies.append(placementRect(placement, library));
+    const QList<PadPoint> padsThere = padPoints(m_board, library);
+    const auto linkClear = [&](const Point &a, const Point &b) {
+        const QPointF from = toMm(a);
+        const QPointF to = toMm(b);
+        const QLineF wire(from, to);
+        const auto apart = [&from, &to](const QPointF &p, const QPointF &q) {
+            return piecesApart(from, to, p, q);
+        };
+        for (const QRectF &body : std::as_const(bodies)) {
+            if (body.contains(from) || body.contains(to))
+                return false;
+            const QPointF corners[] = {body.topLeft(), body.topRight(), body.bottomRight(),
+                                       body.bottomLeft()};
+            for (int i = 0; i < 4; ++i) {
+                if (wire.intersects(QLineF(corners[i], corners[(i + 1) % 4]), nullptr)
+                    == QLineF::BoundedIntersection)
+                    return false;
+            }
+        }
+        for (const PadPoint &pad : padsThere) {
+            const QPointF p = toMm(pad.axisFrom);
+            const QPointF q = toMm(pad.axisTo);
+            const double radius = nmToMm(pad.radius);
+            // Its pads clear of the pad, and its wire.
+            for (const QPointF &end : {from, to}) {
+                if (piecesApart(end, end, p, q) < radius + linkPad + gap)
+                    return false;
+            }
+            if (apart(p, q) < radius + wireHalf + gap)
+                return false;
+        }
+        for (const MountingHole &hole : m_board.holes) {
+            const QPointF at = toMm(hole.at);
+            if (apart(at, at) < nmToMm(holeOuterDiameter(hole)) / 2 + linkPad + gap)
+                return false;
+        }
+        for (const WireLink &link : m_board.links) {
+            if (apart(toMm(link.from), toMm(link.to)) < 2 * linkPad + gap)
+                return false;
+        }
+        return true;
+    };
+    const auto padFits = [&grid, &open](const GridNode &at) {
+        for (int row = at.row - 1; row <= at.row + 1; ++row) {
+            for (int column = at.column - 1; column <= at.column + 1; ++column) {
+                if (!open(GridNode{column, row, at.layer}))
+                    return false;
+            }
+        }
+        return true;
+    };
+    if (grid.layers() == 1) {
+        rules.jumps = [this, &grid, &padFits, &linkClear](const GridNode &at) {
+            QList<GridJump> jumps;
+            if (!padFits(at))
+                return jumps;
+            const Point from = grid.point(at);
+            for (Coord length = LINK_SHORTEST; length <= LINK_LONGEST; length += LINK_PITCH) {
+                if (length % m_step != 0)
+                    continue;
+                const int cells = int(length / m_step);
+                for (const auto &[columns, rows] :
+                     {std::pair{1, 0}, std::pair{-1, 0}, std::pair{0, 1}, std::pair{0, -1}}) {
+                    const GridNode to{at.column + columns * cells, at.row + rows * cells, at.layer};
+                    if (!grid.contains(to) || !padFits(to) || !linkClear(from, grid.point(to)))
+                        continue;
+                    jumps.append(GridJump{to, LINK_COST + cells * STRAIGHT_COST});
+                }
+            }
+            return jumps;
+        };
+    }
     const QList<GridNode> path = gridRoute(rules, starts, goals);
     if (path.size() < 2)
         return false;
+    // Where the way leaps: from a node to the next one not beside it.
+    QHash<qint64, GridNode> leaps;
+    for (int i = 1; i < path.size(); ++i) {
+        const GridNode &a = path.at(i - 1);
+        const GridNode &b = path.at(i);
+        if (a.layer == b.layer
+            && std::max(std::abs(a.column - b.column), std::abs(a.row - b.row)) > 1)
+            leaps.insert(grid.key(a), b);
+    }
 
     // The way as tracks and vias of the class of the net, from the middle of
     // the pad to the middle of the pad.
@@ -431,6 +538,19 @@ bool Router::route(const RatsnestLine &line)
     for (int i = 1; i < corners.size(); ++i) {
         const GridNode &a = corners.at(i - 1);
         const GridNode &b = corners.at(i);
+        if (leaps.contains(grid.key(a)) && leaps.value(grid.key(a)) == b) {
+            WireLink link;
+            link.id = newObjectId();
+            link.from = grid.point(a);
+            link.to = grid.point(b);
+            link.net = line.net;
+            link.drill = boardRules.linkDrill;
+            link.size = boardRules.linkSize;
+            link.autorouted = true;
+            m_board.links.append(link);
+            markLink(link);
+            continue;
+        }
         if (a.layer == b.layer) {
             layTrack(grid.point(a), grid.point(b), b.layer);
             continue;
@@ -481,6 +601,10 @@ QSet<ObjectId> autoroutedOf(const Board &board)
     for (const Via &via : board.vias) {
         if (via.autorouted)
             laid.insert(via.id);
+    }
+    for (const WireLink &link : board.links) {
+        if (link.autorouted)
+            laid.insert(link.id);
     }
     return laid;
 }
@@ -563,6 +687,17 @@ std::optional<Board> ripUp(const Design &working, const Board &current, const Ra
         }
     }
     gone.intersect(laid);
+    // A wire link of the autorouter's goes with a track taken up from it.
+    for (const WireLink &link : with.links) {
+        if (!link.autorouted)
+            continue;
+        for (const Track &track : with.tracks) {
+            if (gone.contains(track.id)
+                && (track.from == link.from || track.to == link.from || track.from == link.to
+                    || track.to == link.to))
+                gone.insert(link.id);
+        }
+    }
     const Board after = withoutTracks(with, gone);
     if (!shortingTracks(after, working, way).isEmpty())
         return std::nullopt;
@@ -662,6 +797,7 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
     result.unrouted = int(waiting(none).size());
     result.routed = std::max(0, total - result.unrouted);
     result.vias = int(result.board.vias.size() - design.board.vias.size());
+    result.links = int(result.board.links.size() - design.board.links.size());
     return result;
 }
 

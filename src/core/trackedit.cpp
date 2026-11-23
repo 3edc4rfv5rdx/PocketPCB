@@ -46,6 +46,24 @@ QPointF nearestOnPiece(const QPointF &from, const QPointF &to, const QPointF &at
     return from + along * t;
 }
 
+double piecesApart(const QPointF &a, const QPointF &b, const QPointF &c, const QPointF &d)
+{
+    const auto cross = [](const QPointF &o, const QPointF &p, const QPointF &q) {
+        return (p.x() - o.x()) * (q.y() - o.y()) - (p.y() - o.y()) * (q.x() - o.x());
+    };
+    const double abc = cross(a, b, c);
+    const double abd = cross(a, b, d);
+    const double cda = cross(c, d, a);
+    const double cdb = cross(c, d, b);
+    if (((abc > 0 && abd < 0) || (abc < 0 && abd > 0))
+        && ((cda > 0 && cdb < 0) || (cda < 0 && cdb > 0)))
+        return 0;
+    const auto apart = [](const QPointF &from, const QPointF &to, const QPointF &at) {
+        return QLineF(nearestOnPiece(from, to, at), at).length();
+    };
+    return std::min({apart(a, b, c), apart(a, b, d), apart(c, d, a), apart(c, d, b)});
+}
+
 QList<Point> trackCorners(const Point &from, const Point &to, bool diagonalFirst)
 {
     const Coord dx = to.x - from.x;
@@ -216,25 +234,6 @@ QSet<ObjectId> tracksInside(const Board &board, const QRectF &rect)
 namespace {
 
 
-// How far apart the pieces 'a'-'b' and 'c'-'d' are, in millimetres: 0 when
-// they cross.
-double piecesApart(const QPointF &a, const QPointF &b, const QPointF &c, const QPointF &d)
-{
-    const auto cross = [](const QPointF &o, const QPointF &p, const QPointF &q) {
-        return (p.x() - o.x()) * (q.y() - o.y()) - (p.y() - o.y()) * (q.x() - o.x());
-    };
-    const double abc = cross(a, b, c);
-    const double abd = cross(a, b, d);
-    const double cda = cross(c, d, a);
-    const double cdb = cross(c, d, b);
-    if (((abc > 0 && abd < 0) || (abc < 0 && abd > 0))
-        && ((cda > 0 && cdb < 0) || (cda < 0 && cdb > 0)))
-        return 0;
-    const auto apart = [](const QPointF &from, const QPointF &to, const QPointF &at) {
-        return QLineF(nearestOnPiece(from, to, at), at).length();
-    };
-    return std::min({apart(a, b, c), apart(a, b, d), apart(c, d, a), apart(c, d, b)});
-}
 
 // 'at' lies on the piece of 'track' between its ends, not on an end.
 bool insidePiece(const Track &track, const Point &at)

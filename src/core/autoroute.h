@@ -16,19 +16,22 @@ namespace ppcb {
 // eight directions: from the pads of one group of copper to those of the
 // other, keeping the clearance of the net classes from copper of other
 // nets, from holes and from the edge of the board. On the top straight
-// pieces go level more cheaply, on the bottom upright, and a step nearer to
-// other copper than it need be costs more. The tracks laid are then spread
-// (withTracksSpread()); the tracks already there are kept as they are.
+// pieces go level more cheaply, on the bottom upright; on a board with copper
+// on one side a wire link leaps what a track cannot pass, dearer than any way
+// round. A step nearer to other copper than it need be costs more. The
+// tracks laid are then spread (withTracksSpread()); the tracks already there
+// are kept as they are.
 
 struct AutorouteResult
 {
     Board board;
     // The connections there were to lay at first, those laid, those still
-    // unrouted at the end, and the vias added.
+    // unrouted at the end, and the vias and the wire links added.
     int total = 0;
     int routed = 0;
     int unrouted = 0;
     int vias = 0;
+    int links = 0;
     // Stopped by 'progress' before all were tried.
     bool stopped = false;
 };

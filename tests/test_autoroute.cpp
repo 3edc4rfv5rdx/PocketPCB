@@ -188,10 +188,36 @@ private slots:
         QCOMPARE(result.unrouted, 1);
         QCOMPARE(result.board.tracks.size(), 2);
 
-        // Nor one on the only side of a board of one.
+        // On the only side of a board of one, a wire link leaps it.
         design.board.copper = CopperSides::Top;
         design.board.tracks = {wall(BoardSide::Top)};
-        QCOMPARE(autorouted(design).unrouted, 1);
+        const AutorouteResult leapt = autorouted(design);
+        QCOMPARE(leapt.unrouted, 0);
+        QCOMPARE(leapt.links, 1);
+        const WireLink &link = leapt.board.links.first();
+        QVERIFY(link.autorouted);
+        QCOMPARE(link.net, QStringLiteral("A"));
+        QVERIFY(link.from.y == link.to.y || link.from.x == link.to.x);
+        const Coord length = std::max(std::llabs(link.to.x - link.from.x),
+                                      std::llabs(link.to.y - link.from.y));
+        QCOMPARE(length % mmToNm(2.54), 0);
+        QVERIFY(length >= mmToNm(5.08) && length <= mmToNm(20.32));
+        // Its ends on either side of the wall; its wire over no part and
+        // clear of every pad.
+        QVERIFY((link.from.x < mmToNm(20)) != (link.to.x < mmToNm(20)));
+        const QLineF wireLine(toMm(link.from), toMm(link.to));
+        for (const Placement &placement : leapt.board.placements) {
+            const QRectF body = placementRect(placement, design.library);
+            QVERIFY(!body.contains(wireLine.p1()) && !body.contains(wireLine.p2()));
+            for (const NetPad &pad : netPads(leapt.board, design.library)) {
+                if (pad.at == link.from || pad.at == link.to)
+                    continue;
+                const QPointF at = toMm(pad.at);
+                QVERIFY(QLineF(nearestOnPiece(wireLine.p1(), wireLine.p2(), at), at).length()
+                        >= 0.8 + nmToMm(WIRE_LINK_WIRE) / 2);
+            }
+        }
+        QVERIFY(ratsnest(leapt.board, design.library).isEmpty());
     }
 
     void onlyTheNetsAskedForAreLaid()

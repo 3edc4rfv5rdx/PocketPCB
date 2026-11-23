@@ -981,6 +981,10 @@
         <translation>Перехідних</translation>
     </message>
     <message>
+        <source>Wire links</source>
+        <translation>Перемичок</translation>
+    </message>
+    <message>
         <source>Time</source>
         <translation>Час</translation>
     </message>
