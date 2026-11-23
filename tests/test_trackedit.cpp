@@ -385,8 +385,20 @@ private slots:
         QCOMPARE(movedAcross->from, mm(-5, 12));
         QCOMPARE(movedAcross->to, mm(5, 12));
         QCOMPARE(findById(moved.tracks, down)->to, mm(-5, 12));
-        QCOMPARE(findById(moved.tracks, up)->to, mm(5, 12));
+        QCOMPARE(findById(moved.tracks, up)->from, mm(5, 12));
         QCOMPARE(moved.tracks.size(), 3);
+
+        // A neighbour at 45 degrees keeps its way: made longer to meet the
+        // piece moved, no new corner.
+        Board slant = board;
+        for (Track &piece : slant.tracks) {
+            if (piece.id == up)
+                piece.to = mm(15, 20);
+        }
+        const Board along = withTrackPieceMoved(slant, library(), across, mm(0, 2), MM);
+        QCOMPARE(along.tracks.size(), 3);
+        QCOMPARE(findById(along.tracks, up)->from, mm(7, 12));
+        QCOMPARE(findById(along.tracks, across)->to, mm(7, 12));
 
         // The first piece moved sideways: its end on the pad gets a piece
         // to it.

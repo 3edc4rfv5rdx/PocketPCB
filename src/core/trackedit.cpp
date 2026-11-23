@@ -9,7 +9,9 @@
 #include <QRectF>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
+#include <optional>
 #include <utility>
 
 namespace ppcb {
@@ -554,6 +556,72 @@ bool padOrViaAt(const Board &board, const Library &library, BoardSide side, cons
               });
 }
 
+Coord dot(const Point &a, const Point &b)
+{
+    return a.x * b.x + a.y * b.y;
+}
+
+Coord cross(const Point &a, const Point &b)
+{
+    return a.x * b.y - a.y * b.x;
+}
+
+// Where the line through 'a' along 'alongA' meets the one through 'b' along
+// 'alongB'; nothing when they run alike.
+std::optional<Point> linesMeet(const Point &a, const Point &alongA, const Point &b,
+                               const Point &alongB)
+{
+    const double turn = double(cross(alongA, alongB));
+    if (turn == 0)
+        return std::nullopt;
+    const double part = double(cross(b - a, alongB)) / turn;
+    return Point{a.x + Coord(std::llround(part * double(alongA.x))),
+                 a.y + Coord(std::llround(part * double(alongA.y)))};
+}
+
+// 'board' with no piece twice, and with every two pieces of one track that
+// go on straight from each other, alone at their point with no pad and no
+// via there, made one.
+Board withPiecesMerged(const Board &board, const Library &library)
+{
+    Board result = board;
+    QList<Track> &tracks = result.tracks;
+    for (int i = 0; i < tracks.size(); ++i) {
+        for (int j = int(tracks.size()) - 1; j > i; --j) {
+            const Track &a = tracks.at(i);
+            const Track &b = tracks.at(j);
+            if (a.side == b.side && a.net == b.net
+                && ((a.from == b.from && a.to == b.to) || (a.from == b.to && a.to == b.from)))
+                tracks.removeAt(j);
+        }
+    }
+    for (bool merged = true; merged;) {
+        merged = false;
+        for (int i = 0; i < tracks.size() && !merged; ++i) {
+            for (const bool atTo : {false, true}) {
+                const Track &track = tracks.at(i);
+                const Point end = atTo ? track.to : track.from;
+                const QList<const Track *> others = piecesAt(result, track.side, end, track.id);
+                if (others.size() != 1 || padOrViaAt(result, library, track.side, end))
+                    continue;
+                const Track &other = *others.first();
+                const Point far = atTo ? track.from : track.to;
+                const Point otherFar = other.from == end ? other.to : other.from;
+                if (other.width != track.width || other.net != track.net
+                    || cross(far - end, otherFar - end) != 0 || dot(far - end, otherFar - end) >= 0)
+                    continue;
+                const ObjectId otherId = other.id;
+                tracks[i].from = far;
+                tracks[i].to = otherFar;
+                tracks.removeIf([&otherId](const Track &piece) { return piece.id == otherId; });
+                merged = true;
+                break;
+            }
+        }
+    }
+    return result;
+}
+
 } // namespace
 
 ObjectId cornerNeighbour(const Board &board, const Library &library, const ObjectId &id,
@@ -581,8 +649,10 @@ Board withTrackCornerMoved(const Board &board, const Library &library, const Obj
     const Point far = atTo ? track.from : track.to;
     const Point otherFar = other.from == corner ? other.to : other.from;
     // From the far end of the one through the corner to that of the other.
-    return withPiecesReplaced(board, id, piecesAlong(trackWay(far, to, anyAngle), track), {otherId},
-                              piecesAlong(trackWay(to, otherFar, anyAngle), other));
+    return withPiecesMerged(
+        withPiecesReplaced(board, id, piecesAlong(trackWay(far, to, anyAngle), track), {otherId},
+                           piecesAlong(trackWay(to, otherFar, anyAngle), other)),
+        library);
 }
 
 Board withTrackPieceMoved(const Board &board, const Library &library, const ObjectId &id,
@@ -608,29 +678,42 @@ Board withTrackPieceMoved(const Board &board, const Library &library, const Obje
     }
     if (across == Point())
         return board;
-    // Each end: the piece going on from it is laid again to the end moved;
-    // an end on a pad, a via or a fork gets a piece to it; a free one moves.
+    // Each end: the piece going on from it keeps its way, made longer or
+    // shorter to meet the piece moved; when it cannot (it runs along the
+    // piece, or would turn back), and at an end on a pad, a via or a fork, a
+    // piece straight across joins the old end to the new; a free end moves.
+    Track moved = track;
+    moved.from = track.from + across;
+    moved.to = track.to + across;
     QSet<ObjectId> gone;
     QList<Track> added;
     for (const bool atTo : {false, true}) {
         const Point end = atTo ? track.to : track.from;
+        Point &movedEnd = atTo ? moved.to : moved.from;
         const ObjectId otherId = cornerNeighbour(board, library, id, atTo);
         if (!otherId.isNull()) {
             const Track &other = *findById(board.tracks, otherId);
-            const Point otherFar = other.from == end ? other.to : other.from;
-            gone.insert(otherId);
-            added.append(piecesAlong(trackWay(otherFar, end + across, false), other));
-        } else if (padOrViaAt(board, library, track.side, end)
-                   || !piecesAt(board, track.side, end, id).isEmpty()) {
-            Track like = track;
-            like.id = newObjectId();
-            added.append(piecesAlong(trackWay(end, end + across, false), like));
+            const Point far = other.from == end ? other.to : other.from;
+            const std::optional<Point> meet = linesMeet(far, end - far, movedEnd, way);
+            if (meet && dot(*meet - far, end - far) >= 0) {
+                Track longer = other;
+                (other.from == end ? longer.from : longer.to) = *meet;
+                gone.insert(otherId);
+                added.append(longer);
+                movedEnd = *meet;
+                continue;
+            }
+        } else if (!padOrViaAt(board, library, track.side, end)
+                   && piecesAt(board, track.side, end, id).isEmpty()) {
+            continue;
         }
+        Track joiner = track;
+        joiner.id = newObjectId();
+        joiner.from = end;
+        joiner.to = movedEnd;
+        added.append(joiner);
     }
-    Track moved = track;
-    moved.from = track.from + across;
-    moved.to = track.to + across;
-    return withPiecesReplaced(board, id, {moved}, gone, added);
+    return withPiecesMerged(withPiecesReplaced(board, id, {moved}, gone, added), library);
 }
 
 Board withTracksMoved(const Board &board, const QSet<ObjectId> &ids, const Point &delta)
