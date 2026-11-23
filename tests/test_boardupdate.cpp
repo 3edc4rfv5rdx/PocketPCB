@@ -169,6 +169,44 @@ private slots:
         QCOMPARE(kept.at, mm(77, 33));
     }
 
+    void tracksGoOnToANewFootprint()
+    {
+        Design design = twoResistors();
+        // "wide" has pad 1 at (-5.08, 0) and no pad 2.
+        Footprint wide;
+        Pad pad;
+        pad.number = QStringLiteral("1");
+        pad.at = mm(-5.08, 0);
+        pad.sizeX = 1600000;
+        pad.sizeY = 1600000;
+        pad.hole = 800000;
+        wide.pads.append(pad);
+        design.library.footprints.insert(QStringLiteral("wide"), wide);
+        design.board = boardUpdatedFromSchematic(design).board;
+        const Placement r2 = *placementOf(design.board, QStringLiteral("R2"));
+        const auto track = [&design](const Point &from, const Point &to) {
+            Track result;
+            result.id = newObjectId();
+            result.from = from;
+            result.to = to;
+            design.board.tracks.append(result);
+            return result.id;
+        };
+        // Straight down from the pads, clear of the other part.
+        const Point below = placedPadPoint(r2, mm(-2.54, 0)) + mm(0, 10);
+        const ObjectId onFirst = track(below, placedPadPoint(r2, mm(-2.54, 0)));
+        track(placedPadPoint(r2, mm(2.54, 0)), placedPadPoint(r2, mm(2.54, 0)) + mm(0, 10));
+        design.schematic.sheets.first().components[0].footprint = QStringLiteral("wide");
+
+        // Pad 1 is still there, further out: the track stretches to it; the
+        // track from pad 2, which is gone, goes.
+        const Board board = boardUpdatedFromSchematic(design).board;
+        QCOMPARE(board.tracks.size(), 1);
+        QCOMPARE(board.tracks.first().id, onFirst);
+        QCOMPARE(board.tracks.first().from, below);
+        QCOMPARE(board.tracks.first().to, placedPadPoint(r2, mm(-5.08, 0)));
+    }
+
     void aRemovedPlacementTakesItsTracks()
     {
         Design design = twoResistors();

@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <utility>
 
 namespace ppcb {
 
@@ -185,6 +186,13 @@ struct PadPoint
     bool bottom = false;
     // The placement or the hole it is of.
     ObjectId owner;
+    // Its net, empty for none.
+    QString net;
+    // Its copper as a line with a round end of 'radius' on each: the long
+    // axis of a pill or a rectangle, the middle alone of a round pad.
+    Point axisFrom;
+    Point axisTo;
+    Coord radius = 0;
 
     bool on(BoardSide side) const { return side == BoardSide::Top ? top : bottom; }
 };
@@ -199,17 +207,44 @@ QList<PadPoint> padPoints(const Board &board, const Library &library)
             continue;
         for (const Pad &pad : footprint->pads) {
             const CopperSides sides = padCopperSides(pad.layers, placement.side);
+            const Coord narrow = std::min(pad.sizeX, pad.sizeY);
+            const Point half = pad.sizeX > pad.sizeY ? Point{(pad.sizeX - narrow) / 2, 0}
+                                                     : Point{0, (pad.sizeY - narrow) / 2};
             points.append(PadPoint{placedPadPoint(placement, pad.at),
                                    copperOn(sides, BoardSide::Top),
-                                   copperOn(sides, BoardSide::Bottom), placement.id});
+                                   copperOn(sides, BoardSide::Bottom), placement.id,
+                                   placement.padNets.value(pad.number),
+                                   placedPadPoint(placement, pad.at - half),
+                                   placedPadPoint(placement, pad.at + half), narrow / 2});
         }
     }
     for (const MountingHole &hole : board.holes) {
         if (hole.ring > 0)
             points.append(PadPoint{hole.at, holePadOn(board, hole, BoardSide::Top),
-                                   holePadOn(board, hole, BoardSide::Bottom), hole.id});
+                                   holePadOn(board, hole, BoardSide::Bottom), hole.id, hole.net,
+                                   hole.at, hole.at, holeOuterDiameter(hole) / 2});
     }
     return points;
+}
+
+// How far apart the pieces 'a'-'b' and 'c'-'d' are, in millimetres: 0 when
+// they cross.
+double piecesApart(const QPointF &a, const QPointF &b, const QPointF &c, const QPointF &d)
+{
+    const auto cross = [](const QPointF &o, const QPointF &p, const QPointF &q) {
+        return (p.x() - o.x()) * (q.y() - o.y()) - (p.y() - o.y()) * (q.x() - o.x());
+    };
+    const double abc = cross(a, b, c);
+    const double abd = cross(a, b, d);
+    const double cda = cross(c, d, a);
+    const double cdb = cross(c, d, b);
+    if (((abc > 0 && abd < 0) || (abc < 0 && abd > 0))
+        && ((cda > 0 && cdb < 0) || (cda < 0 && cdb > 0)))
+        return 0;
+    const auto apart = [](const QPointF &from, const QPointF &to, const QPointF &at) {
+        return QLineF(nearestOnPiece(from, to, at), at).length();
+    };
+    return std::min({apart(a, b, c), apart(a, b, d), apart(c, d, a), apart(c, d, b)});
 }
 
 // 'at' lies on the piece of 'track' between its ends, not on an end.
@@ -362,6 +397,96 @@ Board withTracksFollowingPads(const Board &before, const Board &after, const Lib
     }
     result.tracks.removeIf([](const Track &track) { return track.from == track.to; });
     return result;
+}
+
+Board withTracksOnNewFootprints(const Board &before, const Board &after, const Library &library,
+                                const QSet<ObjectId> &ids)
+{
+    const QList<PadPoint> pads = padPoints(before, library);
+    // Where the ends on the old pads go, and the runs from pads gone.
+    QList<std::pair<Point, Point>> moves;
+    QSet<ObjectId> gone;
+    for (const Placement &old : before.placements) {
+        const Placement *now = findById(after.placements, old.id);
+        if (!ids.contains(old.id) || now == nullptr)
+            continue;
+        const Footprint *was = library.findFootprint(old.footprint);
+        const Footprint *is = library.findFootprint(now->footprint);
+        if (was == nullptr || is == nullptr)
+            continue;
+        for (const Pad &pad : was->pads) {
+            const Point from = placedPadPoint(old, pad.at);
+            const auto same = std::find_if(is->pads.cbegin(), is->pads.cend(), [&pad](const Pad &p) {
+                return !pad.number.isEmpty() && p.number == pad.number;
+            });
+            if (same == is->pads.cend()) {
+                for (const Track &track : before.tracks) {
+                    if (track.from == from || track.to == from)
+                        gone.unite(runOf(before, pads, track.id));
+                }
+                continue;
+            }
+            const Point to = placedPadPoint(*now, same->at);
+            if (to != from)
+                moves.append({from, to});
+        }
+    }
+    Board result = withoutTracks(after, gone);
+    const auto moved = [&moves](const Point &end) {
+        for (const auto &[from, to] : moves) {
+            if (end == from)
+                return to;
+        }
+        return end;
+    };
+    for (Track &track : result.tracks) {
+        track.from = moved(track.from);
+        track.to = moved(track.to);
+    }
+    result.tracks.removeIf([](const Track &track) { return track.from == track.to; });
+    return result;
+}
+
+Board withoutShortingStretches(const Board &before, const Board &after, const Design &design)
+{
+    const QList<PadPoint> pads = padPoints(after, design.library);
+    QSet<ObjectId> gone;
+    for (const Track &track : after.tracks) {
+        const Track *was = findById(before.tracks, track.id);
+        if (was == nullptr || gone.contains(track.id) || track.to - track.from == was->to - was->from)
+            continue;
+        const NetClass *netClass = trackClass(design, track.net);
+        const double clearance =
+            nmToMm(netClass != nullptr ? netClass->clearance : design.project.rules.clearance);
+        const double half = nmToMm(track.width) / 2;
+        const QPointF a = toMm(track.from);
+        const QPointF b = toMm(track.to);
+        // Too near the copper of another net on its side.
+        bool shorts = false;
+        for (const Track &other : after.tracks) {
+            shorts = shorts
+                     || (other.side == track.side && other.net != track.net
+                         && piecesApart(a, b, toMm(other.from), toMm(other.to))
+                                < half + nmToMm(other.width) / 2 + clearance);
+        }
+        for (const Via &via : after.vias) {
+            shorts = shorts
+                     || (via.net != track.net
+                         && QLineF(nearestOnPiece(a, b, toMm(via.at)), toMm(via.at)).length()
+                                < half + nmToMm(via.size) / 2 + clearance);
+        }
+        // The pads it ends on are its own, whatever their nets.
+        for (const PadPoint &pad : pads) {
+            shorts = shorts
+                     || (pad.on(track.side) && pad.net != track.net && pad.at != track.from
+                         && pad.at != track.to
+                         && piecesApart(a, b, toMm(pad.axisFrom), toMm(pad.axisTo))
+                                < half + nmToMm(pad.radius) + clearance);
+        }
+        if (shorts)
+            gone.unite(runOf(after, pads, track.id));
+    }
+    return withoutTracks(after, gone);
 }
 
 Board withTracksMoved(const Board &board, const QSet<ObjectId> &ids, const Point &delta)

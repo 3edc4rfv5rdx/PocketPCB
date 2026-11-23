@@ -229,7 +229,8 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
 <ul>
   <li><b>Update board from schematic</b> (<kbd>F8</kbd>, or its button left of Lock) shows what will change and
     brings the board in line: new parts are packed to the right of the board, removed ones go with their tracks, values,
-    designators, footprints and nets follow; parts already placed stay where they are.</li>
+    designators, footprints and nets follow; parts already placed stay where they are. A part given another
+    footprint keeps its tracks on the pads of the same numbers, unless one would cross another net.</li>
   <li>Parts marked off-board in Properties (jacks, switches on the panel) do not come to the board.</li>
 </ul>
 
@@ -289,7 +290,7 @@ choice.</p>
 <ul>
   <li>Click, <kbd>Ctrl</kbd>+click or a frame to choose; drag to move along the grid; <kbd>R</kbd> turns by
     90&deg;, also while dragging. Tracks ending on the pads of a part or a hole follow it: their last piece
-    stretches.</li>
+    stretches. A track that would cross another net is deleted instead, and its connection shows as unrouted.</li>
   <li>Designators and values are dragged on their own; a chosen text shows a line to its part.</li>
   <li>The menu of a part: Rotate, Lock or Unlock, Show or Hide value, <b>Line to part</b> (a bold silkscreen line
     from the part to its texts), Show on schematic, Delete.</li>

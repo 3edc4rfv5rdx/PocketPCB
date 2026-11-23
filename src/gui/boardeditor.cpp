@@ -574,9 +574,13 @@ void BoardEditor::rotateChosen()
         one != nullptr
             ? one->at
             : m_canvas->snapped(placementsBounds(board, m_document->design().library, ids).center());
+    const Design &design = m_document->design();
     applyBoard(Action::RotateParts,
-               withTracksFollowingPads(board, withPlacementsRotated(board, ids, center),
-                                       m_document->design().library),
+               withoutShortingStretches(
+                   board,
+                   withTracksFollowingPads(board, withPlacementsRotated(board, ids, center),
+                                           design.library),
+                   design),
                ids);
 }
 
@@ -828,7 +832,10 @@ Board BoardEditor::draggedBoard(const QPointF &at) const
            });
     const QSet<ObjectId> carried = lockedChosen ? QSet<ObjectId>() : chosenTracks();
     moved = withTracksMoved(moved, carried, delta);
-    return withTracksFollowingPads(board, moved, m_document->design().library, carried);
+    const Design &design = m_document->design();
+    // One stretched onto copper of another net goes back to the ratsnest.
+    return withoutShortingStretches(
+        design.board, withTracksFollowingPads(board, moved, design.library, carried), design);
 }
 
 void BoardEditor::dropChosen()

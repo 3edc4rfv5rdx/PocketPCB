@@ -77,6 +77,21 @@ Board withoutAnyTracks(const Board &board);
 // with the parts, stay as they are in 'after'.
 Board withTracksFollowingPads(const Board &before, const Board &after, const Library &library,
                               const QSet<ObjectId> &carried = {});
+// 'after', a change of 'before' that gave the placements 'ids' other
+// footprints, with their tracks going along: an end on the middle of a pad
+// goes to the pad of the same number in the new footprint, the last piece
+// stretching (one shrunk to nothing goes), and the runs (trackRun()) from a
+// pad the new footprint lacks are deleted.
+Board withTracksOnNewFootprints(const Board &before, const Board &after, const Library &library,
+                                const QSet<ObjectId> &ids);
+// 'after', a change of 'before' that stretched tracks after pads moved
+// (withTracksFollowingPads(), withTracksOnNewFootprints()), without the runs
+// (trackRun()) of the tracks whose shape the change altered where they now
+// cross copper of another net on their side, or come nearer to it than the
+// clearance of their net's class: those connections go back to the
+// ratsnest instead of shorting. Tracks moved whole, or not there before,
+// are left alone. The classes and the footprints come from 'design'.
+Board withoutShortingStretches(const Board &before, const Board &after, const Design &design);
 // The tracks and the vias 'ids' moved by 'delta'.
 Board withTracksMoved(const Board &board, const QSet<ObjectId> &ids, const Point &delta);
 // The tracks 'ids' 'width' wide.

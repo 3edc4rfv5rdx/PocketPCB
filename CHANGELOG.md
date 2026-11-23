@@ -3,6 +3,8 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: A track stretched after a part across copper of another net is deleted, its connection going back to the ratsnest
+- N: Update board from schematic giving a part another footprint takes its tracks to the pads of the same numbers
 - F: The arrows of the sizes in Rectangular board step a cell of the grid
 - E: Ctrl+A on the board shows the hidden silkscreen and tracks again and chooses them all, so a board moved whole keeps its tracks
 - E: Tracks and vias chosen go along whole with the parts dragged also when the board outline is locked

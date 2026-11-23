@@ -317,6 +317,43 @@ private slots:
         QCOMPARE(along.tracks.at(1).to, mm(7, 0));
     }
 
+    void stretchedTracksDoNotShort()
+    {
+        // A track of net A from pad 1 at (-5, 0) down to (-5, 10), and an
+        // upright track of net C at x = -10.
+        Design design = newDesign(QStringLiteral("t"));
+        design.library = library();
+        Board board = boardWithPart();
+        Track own;
+        own.id = newObjectId();
+        own.net = QStringLiteral("A");
+        own.width = MM / 2;
+        own.from = mm(-5, 0);
+        own.to = mm(-5, 10);
+        Track foreign = own;
+        foreign.id = newObjectId();
+        foreign.net = QStringLiteral("C");
+        foreign.from = mm(-10, -5);
+        foreign.to = mm(-10, 20);
+        board.tracks = {own, foreign};
+        const QSet<ObjectId> part{board.placements.at(0).id};
+        const auto moved = [&](const Point &delta) {
+            const Board after = withTracksFollowingPads(
+                board, withPlacementsMoved(board, part, delta), design.library);
+            return withoutShortingStretches(board, after, design);
+        };
+
+        // Moved up a little: stretched clear of the other net, it stays.
+        QCOMPARE(moved(mm(0, -2)).tracks.size(), 2);
+        // Moved left: stretched across the track of net C, it goes.
+        const Board across = moved(mm(-10, 0));
+        QCOMPARE(across.tracks.size(), 1);
+        QCOMPARE(across.tracks.first().id, foreign.id);
+        // A track moved whole is left alone.
+        Board shifted = withTracksMoved(board, {own.id}, mm(-5, 0));
+        QCOMPARE(withoutShortingStretches(board, shifted, design).tracks.size(), 2);
+    }
+
     void tracksTakeTheClassOfTheirNet()
     {
         Design design = newDesign(QStringLiteral("t"));

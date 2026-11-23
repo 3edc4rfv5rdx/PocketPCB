@@ -148,6 +148,8 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
     update.board = withoutTracks(update.board, tracksOfPads(design.board, library, removed));
 
     QList<const Component *> added;
+    // The placements given other footprints: their tracks go along.
+    QSet<ObjectId> refooted;
     for (const Component *component : std::as_const(wanted)) {
         const auto found = std::find_if(placements.begin(), placements.end(),
                                         [component](const Placement &placement) {
@@ -174,6 +176,7 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
             changes.append(BoardChange{BoardChangeKind::Footprint, name, placement.footprint,
                                        component->footprint});
             placement.footprint = component->footprint;
+            refooted.insert(placement.id);
         }
         const QMap<QString, QString> padNets = padNetsOf(footprint, component->id, pinNets);
         if (placement.padNets != padNets) {
@@ -181,6 +184,12 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
             placement.padNets = padNets;
         }
     }
+
+    update.board = withTracksOnNewFootprints(design.board, update.board, library, refooted);
+    // A track stretched onto copper of another net goes back to the ratsnest.
+    Design updated = design;
+    updated.project = project;
+    update.board = withoutShortingStretches(design.board, update.board, updated);
 
     // The pads of the holes follow their nets, said once for each net.
     const QHash<QString, QString> holeNets = holeNetsFollowed(design.board, update.board);
