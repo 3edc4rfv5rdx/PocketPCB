@@ -23,7 +23,22 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
 <ul>
   <li><a href="#projects">Projects</a></li>
   <li><a href="#window">The window</a></li>
-  <li><a href="#schematic">Schematic</a></li>
+  <li><a href="#library">Library</a></li>
+  <li><a href="#schematic">Schematic</a>
+    <ul>
+      <li><a href="#sheets">Sheets</a></li>
+      <li><a href="#placing">Placing parts</a></li>
+      <li><a href="#choosing">Choosing and moving</a></li>
+      <li><a href="#wires">Wires</a></li>
+      <li><a href="#power">Power symbols, labels, no-connect marks</a></li>
+      <li><a href="#buses">Buses</a></li>
+      <li><a href="#values">Designators, values, properties</a></li>
+      <li><a href="#nets">Nets</a></li>
+      <li><a href="#erc">ERC</a></li>
+      <li><a href="#bom">BOM</a></li>
+      <li><a href="#print">Printing</a></li>
+    </ul>
+  </li>
   <li><a href="#board">Board</a>
     <ul>
       <li><a href="#update">From schematic to board</a></li>
@@ -34,50 +49,177 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
       <li><a href="#tracks">Tracks</a></li>
     </ul>
   </li>
+  <li><a href="#settings">Settings</a></li>
   <li><a href="#keys">Keys</a></li>
 </ul>
 
 <h2 id="projects">Projects</h2>
 <ul>
-  <li>A project is a folder with its project, schematic and board files and its own copy of the parts it uses.
-    Projects live in the <b>PocketPCB-Projects</b> folder beside the program unless you choose another
-    (Settings &gt; Projects folder).</li>
-  <li>The project is saved with <kbd>Ctrl+S</kbd> or the Save button, which stands on red while something is
-    not saved. Backup copies are kept, and the project is autosaved and offered back after a crash.</li>
-  <li><b>Recent projects</b> and <b>Project properties</b> are the second and third buttons on the strip.
-    A project opened while the board is shown opens on its board.</li>
-  <li>Project properties: the title block, the designator style (R, D, Q, U or GOST R, VD, VT, DD), which sides
-    of the board have copper (both, top only, bottom only), and the net classes (track width, clearance, via).</li>
+  <li>A project is a folder with its project, schematic and board files and its own copy of the parts it uses,
+    so it opens the same even when the library changes. Projects live in the <b>PocketPCB-Projects</b> folder
+    beside the program unless you choose another (Settings &gt; Projects folder).</li>
+  <li>File &gt; New project, Open project, Save (<kbd>Ctrl+S</kbd>), Save as (<kbd>Ctrl+Shift+S</kbd>, into a new
+    empty folder). The Save button stands on red while something is not saved; the bottom left corner of the
+    window also shows it, and a click there saves.</li>
+  <li>The last three versions of each file are kept in the project's <i>backup</i> folder. The project is
+    autosaved every five minutes and offered back when it is opened after a crash. You are asked before unsaved
+    changes are lost.</li>
+  <li><b>Recent projects</b> (a button on the strip, also in the File menu) opens one of the last ten.
+    A project opened while the board is shown opens on its board. Each page opens with the zoom and place it was
+    last looked at.</li>
+  <li><b>Project properties</b> (a button on the strip, also in the File menu):
+    <ul>
+      <li>General: the title block (an empty date shows the day of the last save), the designator style
+        (R, D, Q, U or GOST R, VD, VT, DD; a new style renames the parts, numbers kept), which sides of the board
+        have copper (both, top only, bottom only).</li>
+      <li>Net classes: add, rename, change and delete classes (track width, clearance, via), and choose the
+        default class and the class of power nets.</li>
+    </ul>
+  </li>
 </ul>
 
 <h2 id="window">The window</h2>
 <ul>
   <li>The menus open from the button at the left of the strip, or with <kbd>F10</kbd>.
-    Help &gt; User guide (<kbd>F1</kbd>) opens this page.</li>
-  <li>The strip of tools: file buttons, Undo and Redo, zoom; in the middle Lock and the tools of the page
-    shown; on the right the panels: Library, Properties, Nets, ERC, BOM.</li>
+    Help &gt; User guide (<kbd>F1</kbd>) opens this page, Help &gt; About names the version.</li>
+  <li>The strip of tools, left to right: the menu, Recent projects, Project properties, Save, Print and PDF of
+    the schematic; Undo and Redo; Zoom in, Zoom out, Fit the page, Fit the drawing, Actual size; in the middle
+    Lock and the tools of the page shown (the one on stands pressed); on the right the panels: Library,
+    Properties, Nets, ERC, BOM. Each tip names its key.</li>
   <li>Sheets of the schematic are tabs over the canvas; the board is the last tab.</li>
-  <li>A short right click opens the menu of what is under the mouse.</li>
-  <li><b>Lock</b> fixes what is chosen so that it cannot be moved or deleted until unlocked; locked parts and holes
-    are yellow on the board.</li>
+  <li>The wheel zooms, the right or middle button held pans. <kbd>Home</kbd> fits the page,
+    <kbd>Shift+Home</kbd> fits only what is drawn, <kbd>Ctrl+0</kbd> shows the real size
+    (set your screen's size in Settings &gt; Screen size for it to be exact).</li>
+  <li><kbd>N</kbd> / <kbd>Shift+N</kbd> change the grid step, shown in the status bar. View &gt; Grid style
+    (lines or dots) and View &gt; Cursor (arrow, small cross, full-window cross) choose how they look.</li>
+  <li>A short right click opens the menu of what is under the mouse. <kbd>Esc</kbd> stops what is going on,
+    and pressed again drops the choice.</li>
+  <li><b>Lock</b> fixes what is chosen so that it cannot be moved, turned or deleted until unlocked; locked
+    things are drawn yellow on the board.</li>
+  <li>Undo and Redo (<kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Shift+Z</kbd>) go to the sheet of the step and choose what it
+    changed.</li>
+</ul>
+
+<h2 id="library">Library</h2>
+<ul>
+  <li>The <b>Library</b> panel lists the built-in parts, your own and those of the project, grouped by what they
+    are (power symbols first, rare groups last), with a search field and a drawing of the symbol and footprint
+    of the part chosen.</li>
+  <li>Your own parts are JSON files in your library folder (File &gt; Open library folder); File &gt; Open library
+    file (<kbd>Ctrl+L</kbd>) shows a symbol or footprint file and redraws it each time the file is saved.</li>
+  <li>File &gt; Update parts from library lists the project's parts that differ from the library and updates
+    those you tick.</li>
 </ul>
 
 <h2 id="schematic">Schematic</h2>
+
+<h3 id="sheets">Sheets</h3>
 <ul>
-  <li>Parts come from the <b>Library</b> panel: search, then drag a part onto the sheet, or double click it and click on the sheet.</li>
-  <li>Choose with a click or a frame; drag to move (wires follow, <kbd>Shift</kbd> tears them off);
-    <kbd>R</kbd> rotates, <kbd>M</kbd> mirrors, <kbd>Del</kbd> deletes; copy, cut, paste and duplicate
-    work as usual.</li>
-  <li>Wires: <kbd>W</kbd>, click by click; <kbd>Space</kbd> turns the corner, <kbd>/</kbd> slants it.
-    Junction dots appear by themselves.</li>
-  <li>Power symbols: <kbd>P</kbd> or the Power button places the last one; its arrow chooses another.</li>
-  <li>Labels: <kbd>L</kbd>; labels with the same text are one net. Buses: <kbd>B</kbd>.
-    No-connect marks: <kbd>X</kbd>.</li>
-  <li>Double click a value, a net name or a label to edit it in place.</li>
-  <li>The <b>Properties</b> panel edits the designator, value, footprint and more of the parts chosen, several at once.</li>
-  <li>The <b>Nets</b> panel lists the nets and gives each a class. The <b>ERC</b> panel lists the problems of the
-    schematic, ringed in red on the sheet. The <b>BOM</b> panel lists the parts and writes TXT, CSV or PDF.</li>
-  <li>File &gt; Print schematic and Export schematic to PDF put the sheets on paper.</li>
+  <li>"+" after the tabs adds a sheet; a double click on a tab renames it; tabs are dragged to reorder.</li>
+  <li>The menu of a tab (or View &gt; Sheet) adds, renames and deletes a sheet and chooses its paper: A4 or A3,
+    landscape or portrait.</li>
+  <li>View &gt; Sheet background picks a pale colour for the paper; the sheet shows it as you move over the
+    table.</li>
+</ul>
+
+<h3 id="placing">Placing parts</h3>
+<ul>
+  <li>Drag a part from the Library panel onto the sheet, or double click it and click on the sheet as many times
+    as you need; <kbd>Esc</kbd> or a right click ends. The part is copied into the project and numbered on.</li>
+  <li><kbd>R</kbd> and <kbd>M</kbd> turn and mirror the part while it is still being placed.</li>
+  <li>A double click on a part on the sheet shows it in the Library panel.</li>
+</ul>
+
+<h3 id="choosing">Choosing and moving</h3>
+<ul>
+  <li>A click chooses, <kbd>Ctrl</kbd>+click adds or takes away, a frame chooses the parts whose drawing is
+    inside it; <kbd>Ctrl+A</kbd> chooses all. A click on one of several chosen keeps it alone.</li>
+  <li>Drag to move along the grid: wires follow, laid round the bodies of parts; <kbd>Shift</kbd> while
+    dragging tears them off. <kbd>R</kbd> turns, <kbd>M</kbd> mirrors, also while dragging; <kbd>Del</kbd>
+    deletes.</li>
+  <li>Copy (<kbd>Ctrl+C</kbd>), cut (<kbd>Ctrl+X</kbd>), paste (<kbd>Ctrl+V</kbd>) and duplicate
+    (<kbd>Ctrl+D</kbd>): what is pasted follows the cursor until a click, onto any sheet or project, its parts
+    numbered on.</li>
+  <li>Lock (the button, the menu or the Locked field in Properties) fixes parts and power symbols; their texts
+    still move.</li>
+</ul>
+
+<h3 id="wires">Wires</h3>
+<ul>
+  <li><kbd>W</kbd> draws a wire click by click; <kbd>Space</kbd> turns the corner the other way, <kbd>/</kbd>
+    (or <kbd>.</kbd>) slants it. A wire ends by itself on a pin or another wire. Junction dots appear by
+    themselves.</li>
+  <li>A click on a wire chooses the segment under it: drag it across or delete it. Taken near its end, a wire
+    drags that end alone. A double click chooses the whole wire, <kbd>Shift</kbd>+click every wire joined to
+    it.</li>
+  <li>A junction dot is dragged along its wire, the wires ending there following.</li>
+  <li>The menu of a point where wires cross offers <b>Join wires</b> (puts a dot there); that of a dot
+    offers <b>Separate wires</b>.</li>
+</ul>
+
+<h3 id="power">Power symbols, labels, no-connect marks</h3>
+<ul>
+  <li>Power symbols come from the Power group of the library, or from <kbd>P</kbd> and the Power button, which
+    place the last one again; the arrow beside the button chooses another. Symbols with the same net name are one
+    net. A double click edits the net name in place.</li>
+  <li>Labels: <kbd>L</kbd>, then a click asks for the text; the next one is offered numbered on (D0, D1 …).
+    Labels with the same text are one net. A label joining nothing is white on red. Its text is dragged away from
+    its point; a double click edits it.</li>
+  <li>No-connect marks: <kbd>X</kbd> on a free pin of a part; a mark on no pin is red. Marks go with the pin and
+    are deleted with the part.</li>
+</ul>
+
+<h3 id="buses">Buses</h3>
+<ul>
+  <li><kbd>B</kbd> draws a bus like a wire; it is named BUS1, BUS2 … and renamed with a double click
+    (for example D[0..7]).</li>
+  <li>A bus drawn to another branches off it and takes its name. <kbd>Shift</kbd>+click chooses a bus with its
+    branches. <b>Add name here</b> in its menu shows the name in one more place.</li>
+  <li>A wire drawn to a bus ends on it at 45&deg;; label the wire to say which line of the bus it is.</li>
+</ul>
+
+<h3 id="values">Designators, values, properties</h3>
+<ul>
+  <li>A click on a designator or a value chooses that text alone; drag it to move it. An empty value shows as
+    a grey VALUE mark (not on parts that need none, such as switches and connectors).</li>
+  <li>A double click on a value edits it in place; the menu of a part does it too.</li>
+  <li>The <b>Properties</b> panel edits the designator, value, footprint, off-board flag, lock, comment and,
+    for resistors, the rated power of the parts chosen, several at once. <kbd>Esc</kbd> in a field takes back
+    what was typed.</li>
+  <li>A resistor's power is marked inside its body with GOST designators, after the value with international
+    ones (unless most resistors have it).</li>
+</ul>
+
+<h3 id="nets">Nets</h3>
+<ul>
+  <li>Rest the mouse a second on a wire, pin, label or power symbol to light its whole net and see its name.</li>
+  <li>The <b>Nets</b> panel lists every net with its class and pins, with a filter. Choose a net's class there;
+    a chosen row lights its net. A grey name (TempN1 …) may still change; a net gets a lasting name (NN1 …)
+    once given a class or when the board is updated.</li>
+</ul>
+
+<h3 id="erc">ERC</h3>
+<ul>
+  <li>The <b>ERC</b> panel checks the schematic after every change: empty values, repeated designators, free
+    pins, misplaced no-connect marks, loose labels and wire ends, wires lying on wires or closing a loop, a two-pin
+    part shorted, a net with two names and so on.</li>
+  <li>While it is open the problems are ringed in red on the sheet; a problem chosen shows its place, and an empty
+    value opens for typing.</li>
+</ul>
+
+<h3 id="bom">BOM</h3>
+<ul>
+  <li>The <b>BOM</b> panel lists the parts, alike ones in one row, under group headings. The value and comment
+    are typed in the table; a double click on designators shows those parts.</li>
+  <li>Its buttons write the list as TXT, CSV or PDF into the project's <i>out</i> folder.</li>
+</ul>
+
+<h3 id="print">Printing</h3>
+<ul>
+  <li>File &gt; Print schematic (<kbd>Ctrl+P</kbd>) prints the sheet shown, all sheets or a range, black on white,
+    each fitted to the paper.</li>
+  <li>File &gt; Export schematic to PDF writes the sheet shown or all of them at 1:1 into the <i>out</i>
+    folder.</li>
 </ul>
 
 <h2 id="board">Board</h2>
@@ -86,70 +228,120 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
 <ul>
   <li><b>Update board from schematic</b> (<kbd>F8</kbd>, or its button left of Lock) shows what will change and
     brings the board in line: new parts are packed to the right of the board, removed ones go, values,
-    designators and nets follow.</li>
-  <li>Light green lines (the ratsnest) show which pads are still to be joined; a line goes out once a track joins its pads.</li>
+    designators, footprints and nets follow; parts already placed stay where they are.</li>
+  <li>Parts marked off-board in Properties (jacks, switches on the panel) do not come to the board.</li>
 </ul>
 
 <h3 id="view">Seeing the board</h3>
 <ul>
-  <li>The <b>Hide silkscreen</b> button, pressed, hides the white and grey drawing of the parts, their designators
-    and values; pads, holes and copper stay, and parts are not chosen then.</li>
-  <li>The <b>Show unrouted connections</b> button, pressed, draws every connection still to be routed bold,
-    with its ends marked.</li>
-  <li>View &gt; Unrouted connections as arcs bends those lines, so that lines from one pad part.
+  <li>Top copper is red, bottom copper blue, vias violet, silkscreen white (bottom grey), the outline lilac.
+    A cyan corner marks the origin of the coordinates.</li>
+  <li>Light green lines (the ratsnest) show which pads are still to be joined; a line goes out once tracks join
+    its pads. The nets of the parts chosen are lit brighter.</li>
+  <li>The <b>Hide silkscreen</b> button, pressed, hides the drawing of the parts and their texts; pads, holes and
+    copper stay, and parts are not chosen then.</li>
+  <li>The <b>Show unrouted connections</b> button, pressed, draws every connection still to be routed bold, with
+    its ends marked. View &gt; Unrouted connections as arcs bends those lines, so that lines from one pad part.
     The status bar shows how many connections are unrouted, of all of them.</li>
 </ul>
 
 <h3 id="outline">Outline</h3>
+<p>One button on the strip makes the outline; its arrow chooses what it does, and the button keeps the last
+choice.</p>
 <ul>
-  <li>The outline button makes a <b>Rectangular board</b>; its arrow also offers drawing an <b>Outline</b> corner
-    by corner and a <b>Cut-out</b> across the edge.</li>
-  <li>Drag a corner or an edge to change the board; double click a corner to round it; double click an edge
-    to choose the whole outline and move it.</li>
+  <li><b>Rectangular board</b> asks for the width and the height and makes the board from the origin.
+    It replaces the outline there was.</li>
+  <li><b>Outline</b> draws a board of any shape: click each corner on any grid point, the sides at any angle;
+    a click on the first corner closes it and the new outline replaces the old one. An outline that crosses
+    itself is refused. <kbd>Esc</kbd> drops the corners drawn.</li>
+  <li><b>Cut-out</b>: drag a rectangle across the edge to take that piece off the board, for a notch or a
+    cut corner. It must reach over the edge and must not cut the board in two; the status bar says why one is
+    refused.</li>
+  <li>While drawing or dragging, the coordinates of the corner stand beside it
+    (View &gt; Coordinates while drawing the board turns them off).</li>
+  <li>In Select the corner or edge under the mouse is lit:
+    <ul>
+      <li>drag a corner to move it along the grid;</li>
+      <li>drag an edge to move it, the edges beside it stretching after it (a level edge goes up or down, an
+        upright one sideways);</li>
+      <li>double click a corner, or choose Round board corner in its menu, and type the radius in millimetres
+        (0 makes it sharp again).</li>
+    </ul>
+  </li>
+  <li>A double click on an edge chooses the whole outline; drag it to move the board. <kbd>Ctrl+A</kbd> chooses
+    the outline with all parts and holes, to move everything together.</li>
+  <li>Lock (the button or the outline's menu) fixes the outline: it is not dragged, redrawn or cut until
+    unlocked.</li>
 </ul>
 
 <h3 id="parts">Parts</h3>
 <ul>
-  <li>Click, <kbd>Ctrl</kbd>+click or a frame to choose; drag to move; <kbd>R</kbd> to turn.</li>
-  <li>Designators and values are dragged on their own. The menu of a part shows or hides its value and draws
-    a line from its texts to it.</li>
+  <li>Click, <kbd>Ctrl</kbd>+click or a frame to choose; drag to move along the grid; <kbd>R</kbd> turns by
+    90&deg;, also while dragging.</li>
+  <li>Designators and values are dragged on their own; a chosen text shows a line to its part.</li>
+  <li>The menu of a part: Rotate, Lock or Unlock, Show or Hide value, <b>Line to part</b> (a bold silkscreen line
+    from the part to its texts), Show on schematic, Delete.</li>
   <li><kbd>Del</kbd> moves the parts chosen off the board, to the right of it: parts come and go with the
-    schematic.</li>
+    schematic. Locked parts stay.</li>
 </ul>
 
 <h3 id="holes">Mounting holes</h3>
 <ul>
-  <li>The <b>Hole</b> button places holes, a click each; its arrow chooses the diameter from the drill set of the
-    project, or another one.</li>
-  <li>The menu of a hole: diameter, copper pad (its diameter, 0 for none), plated, the side of the pad, its net,
-    lock, delete. A plated hole has a white wall; every hole has a cross in its middle.</li>
+  <li>The <b>Hole</b> button places holes, a click each on the grid; its arrow chooses the diameter from the
+    drill set of the project, or another one typed; the last one stays. <kbd>Esc</kbd> ends.</li>
+  <li>Holes are chosen, dragged and deleted like parts.</li>
+  <li>The menu of a hole: Lock, diameter, <b>Copper pad</b> (its diameter, 0 for none; it can go without
+    plating, for a board made at home), <b>Plated</b>, Pad side (both, top, bottom), <b>Pad net</b> (puts the pad
+    on a net, joining it to the ratsnest), Delete.</li>
+  <li>A plated hole has a white wall; every hole has a cross in its middle.</li>
 </ul>
 
 <h3 id="tracks">Tracks</h3>
 <ul>
   <li><b>Track</b> (<kbd>T</kbd>): click on a pad, a via or a track to start; each click lays a straight piece
-    and one at 45&deg;; a click on copper of the same net ends the track.</li>
-  <li><kbd>Space</kbd> puts the slanted piece first or last; hold <kbd>Shift</kbd> for any angle.</li>
+    and one at 45&deg;; a click on copper of the same net ends the track. The pads of the net are lit while you
+    lay it.</li>
+  <li><kbd>Space</kbd> puts the slanted piece first or last; hold <kbd>Shift</kbd> for one piece at any
+    angle.</li>
   <li><kbd>V</kbd> puts a via and goes on on the other side; without a track it switches the side.
     The side you work on is bright, the other darker. The <b>Layer</b> button does the same, and its arrow
     chooses the side.</li>
-  <li>The width comes from the class of the net. <kbd>Esc</kbd> or a right click ends the track.</li>
-  <li>A click on a track chooses it, a double click the whole track; <kbd>Del</kbd> removes it. Its menu sets
-    the width (any, typed under Other…) and the side.</li>
+  <li>The width comes from the class of the net. <kbd>Esc</kbd>, a right click or a double click ends the track;
+    <kbd>Esc</kbd> again leaves the tool.</li>
+  <li>A click on a track or via chooses it, a double click the whole track up to the pads, a frame those inside;
+    <kbd>Del</kbd> removes them. The menu of a track sets the width (any, typed under Other…) and the side.</li>
   <li>Rest the mouse on copper for a second to light its whole net and see its name.</li>
+</ul>
+
+<h2 id="settings">Settings</h2>
+<ul>
+  <li><b>Language</b>: the interface language, or the system's; taken at the next start.</li>
+  <li><b>Screen size</b>: the diagonal of your screen, or a line measured with a ruler, so that Actual size is
+    exact.</li>
+  <li><b>Wire routing</b>: Around obstacles (wires that follow a moved part take the cheapest way round) or
+    Simple.</li>
+  <li><b>Projects folder</b>: where new projects go and opening starts.</li>
+  <li><b>Keep a history of steps</b>: writes every step to a folder in your cache, to show what went wrong when
+    reporting a fault.</li>
 </ul>
 
 <h2 id="keys">Keys</h2>
 <table>
-  <tr><td><kbd>Ctrl+S</kbd></td><td>Save</td></tr>
+  <tr><td><kbd>Ctrl+S</kbd> / <kbd>Ctrl+Shift+S</kbd></td><td>Save / Save as</td></tr>
   <tr><td><kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Shift+Z</kbd></td><td>Undo / Redo</td></tr>
+  <tr><td><kbd>Ctrl+C</kbd>, <kbd>Ctrl+X</kbd>, <kbd>Ctrl+V</kbd>, <kbd>Ctrl+D</kbd></td><td>Copy, cut, paste, duplicate</td></tr>
+  <tr><td><kbd>Ctrl+P</kbd></td><td>Print schematic</td></tr>
+  <tr><td><kbd>Ctrl+L</kbd></td><td>Open library file</td></tr>
   <tr><td><kbd>Home</kbd> / <kbd>Shift+Home</kbd></td><td>Fit the page / fit the drawing</td></tr>
   <tr><td><kbd>Ctrl+0</kbd></td><td>Actual size</td></tr>
+  <tr><td><kbd>Ctrl++</kbd> / <kbd>Ctrl+-</kbd></td><td>Zoom in / out</td></tr>
   <tr><td><kbd>N</kbd> / <kbd>Shift+N</kbd></td><td>Next / previous grid step</td></tr>
   <tr><td><kbd>Esc</kbd></td><td>Stop what is going on, drop the choice</td></tr>
   <tr><td><kbd>Ctrl+A</kbd></td><td>Choose all</td></tr>
   <tr><td><kbd>R</kbd>, <kbd>M</kbd>, <kbd>Del</kbd></td><td>Rotate, mirror, delete</td></tr>
   <tr><td><kbd>W</kbd>, <kbd>B</kbd>, <kbd>L</kbd>, <kbd>P</kbd>, <kbd>X</kbd></td><td>Wire, bus, label, power symbol, no-connect</td></tr>
+  <tr><td><kbd>Space</kbd></td><td>Turn the corner of a wire; put the slanted piece of a track first or last</td></tr>
+  <tr><td><kbd>/</kbd> or <kbd>.</kbd></td><td>Slant the corner of a wire</td></tr>
   <tr><td><kbd>F8</kbd></td><td>Update board from schematic</td></tr>
   <tr><td><kbd>T</kbd>, <kbd>V</kbd></td><td>Track, via and other side</td></tr>
   <tr><td><kbd>F1</kbd></td><td>User guide</td></tr>
