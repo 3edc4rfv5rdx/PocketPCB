@@ -28,13 +28,14 @@ const int BEND45_COST = 2;
 const int BEND90_COST = 6;
 const int ACROSS_GRAIN_COST = 4;
 const int VIA_COST = 60 * STRAIGHT_COST;
-// A wire link, on a board with copper on one side: dearer than any way round,
-// laid only where a track cannot go; level or upright, its length a whole
-// number of these steps between the least and the most, in nanometres.
-const int LINK_COST = 300 * STRAIGHT_COST;
+// A wire link, on a board with copper on one side: looked for only when a
+// track finds no way, then as dear as this many steps; level or upright, its
+// length a whole number of these steps between the least and the most, in
+// nanometres.
+const int LINK_COST = 40 * STRAIGHT_COST;
 const Coord LINK_PITCH = 2540000;
 const Coord LINK_SHORTEST = 2 * LINK_PITCH;
-const Coord LINK_LONGEST = 8 * LINK_PITCH;
+const Coord LINK_LONGEST = 12 * LINK_PITCH;
 // Room kept from the copper of other nets beyond the clearance when there is
 // room for it, in millimetres, and what a step into it adds: tracks keep to
 // the middle of the room they run in, as the author moves them by hand.
@@ -424,9 +425,9 @@ bool Router::route(const RatsnestLine &line)
         };
     }
     // On a board of one side a way may leap what is in it by a wire link,
-    // level or upright, between two pads with room round them. Its wire lies
-    // on the side of the parts: over no part, clear of every pad and hole
-    // but its own two, and of the other links.
+    // level or upright, between two pads with room round them, outside the
+    // parts. Its wire lies on the side of the parts, clear of every pad and
+    // hole but its own two, and of the other links.
     const Rules &linkRules = m_design.project.rules;
     const double linkPad = nmToMm(linkRules.linkSize) / 2;
     const double wireHalf = nmToMm(WIRE_LINK_WIRE) / 2;
@@ -438,20 +439,14 @@ bool Router::route(const RatsnestLine &line)
     const auto linkClear = [&](const Point &a, const Point &b) {
         const QPointF from = toMm(a);
         const QPointF to = toMm(b);
-        const QLineF wire(from, to);
         const auto apart = [&from, &to](const QPointF &p, const QPointF &q) {
             return piecesApart(from, to, p, q);
         };
+        // Its pads not under a part; its wire may pass under one raised over
+        // the board, but not over a pad or a hole.
         for (const QRectF &body : std::as_const(bodies)) {
             if (body.contains(from) || body.contains(to))
                 return false;
-            const QPointF corners[] = {body.topLeft(), body.topRight(), body.bottomRight(),
-                                       body.bottomLeft()};
-            for (int i = 0; i < 4; ++i) {
-                if (wire.intersects(QLineF(corners[i], corners[(i + 1) % 4]), nullptr)
-                    == QLineF::BoundedIntersection)
-                    return false;
-            }
         }
         for (const PadPoint &pad : padsThere) {
             const QPointF p = toMm(pad.axisFrom);
@@ -485,7 +480,11 @@ bool Router::route(const RatsnestLine &line)
         }
         return true;
     };
-    if (grid.layers() == 1 && m_links) {
+    QList<GridNode> path = gridRoute(rules, starts, goals);
+    if (path.size() < 2 && grid.layers() == 1 && m_links) {
+        // Two links of one way a track apart: their pads and the room
+        // between them, in steps.
+        rules.jumpSpacing = int(std::ceil((2 * linkPad + gap) / nmToMm(m_step)));
         rules.jumps = [this, &grid, &padFits, &linkClear](const GridNode &at) {
             QList<GridJump> jumps;
             if (!padFits(at))
@@ -505,8 +504,8 @@ bool Router::route(const RatsnestLine &line)
             }
             return jumps;
         };
+        path = gridRoute(rules, starts, goals);
     }
-    const QList<GridNode> path = gridRoute(rules, starts, goals);
     if (path.size() < 2)
         return false;
     // Where the way leaps: from a node to the next one not beside it.

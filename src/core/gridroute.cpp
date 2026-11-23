@@ -28,6 +28,8 @@ struct State
 {
     GridNode node;
     int direction = NO_DIRECTION;
+    // Steps since the last jump, up to GridRouteRules::jumpSpacing.
+    int sinceJump = 0;
 };
 
 class Search
@@ -46,14 +48,20 @@ public:
         return (qint64(node.layer) * rules_.rows + node.row) * rules_.columns + node.column;
     }
 
+    // How many counts of steps since a jump a state may hold.
+    qint64 spacings() const { return qint64(rules_.jumpSpacing) + 1; }
+
     qint64 stateKey(const State &state) const
     {
-        return nodeKey(state.node) * (DIRECTIONS + 1) + (state.direction + 1);
+        return (nodeKey(state.node) * (DIRECTIONS + 1) + (state.direction + 1)) * spacings()
+               + state.sinceJump;
     }
 
     State stateOf(qint64 key) const
     {
         State state;
+        state.sinceJump = int(key % spacings());
+        key /= spacings();
         state.direction = int(key % (DIRECTIONS + 1)) - 1;
         qint64 node = key / (DIRECTIONS + 1);
         state.node.column = int(node % rules_.columns);
@@ -114,7 +122,7 @@ public:
                 continue;
             const qint64 cost = rules_.startCost ? rules_.startCost(start) : 0;
             if (cost >= 0)
-                reach(State{start, NO_DIRECTION}, cost, -1);
+                reach(State{start, NO_DIRECTION, rules_.jumpSpacing}, cost, -1);
         }
         int expanded = 0;
         while (!open_.empty()) {
@@ -174,12 +182,14 @@ private:
                     continue;
             }
             const qint64 length = direction % 2 == 0 ? rules_.straightCost : rules_.diagonalCost;
-            reach(State{next, direction}, cost + length + bend + extra, key);
+            reach(State{next, direction, std::min(state.sinceJump + 1, rules_.jumpSpacing)},
+                  cost + length + bend + extra, key);
         }
-        if (rules_.jumps) {
+        // A jump only so many steps after the last one.
+        if (rules_.jumps && state.sinceJump >= rules_.jumpSpacing) {
             for (const GridJump &jump : rules_.jumps(state.node)) {
                 if (contains(jump.to) && jump.cost >= 0)
-                    reach(State{jump.to, NO_DIRECTION}, cost + jump.cost, key);
+                    reach(State{jump.to, NO_DIRECTION, 0}, cost + jump.cost, key);
             }
         }
         if (!rules_.layerCost)
@@ -191,7 +201,7 @@ private:
             if (change < 0)
                 continue;
             const GridNode next{state.node.column, state.node.row, layer};
-            reach(State{next, NO_DIRECTION}, cost + change, key);
+            reach(State{next, NO_DIRECTION, state.sinceJump}, cost + change, key);
         }
     }
 

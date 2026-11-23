@@ -84,6 +84,22 @@ private slots:
         // Its ends are corners.
         const QList<GridNode> corners = gridCorners(path);
         QVERIFY(corners.size() >= 3);
+
+        // Two walls three apart: two jumps, at least two steps between them.
+        rules = walled(16, 1, {node(4, 0), node(9, 0)});
+        rules.jumps = [](const GridNode &at) {
+            return QList<GridJump>{{GridNode{at.column + 3, at.row, at.layer}, 100}};
+        };
+        rules.jumpSpacing = 2;
+        const QList<GridNode> spaced = gridRoute(rules, {node(0, 0)}, {node(15, 0)});
+        QVERIFY(!spaced.isEmpty());
+        int lastLanding = -100;
+        for (int i = 1; i < spaced.size(); ++i) {
+            if (std::abs(spaced.at(i).column - spaced.at(i - 1).column) <= 1)
+                continue;
+            QVERIFY(i - 1 - lastLanding >= 2);
+            lastLanding = i;
+        }
     }
 
     void straightOnAnEmptyGrid()

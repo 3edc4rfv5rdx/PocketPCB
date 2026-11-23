@@ -201,8 +201,8 @@ private slots:
         const Coord length = std::max(std::llabs(link.to.x - link.from.x),
                                       std::llabs(link.to.y - link.from.y));
         QCOMPARE(length % mmToNm(2.54), 0);
-        QVERIFY(length >= mmToNm(5.08) && length <= mmToNm(20.32));
-        // Its ends on either side of the wall; its wire over no part and
+        QVERIFY(length >= mmToNm(5.08) && length <= mmToNm(30.48));
+        // Its ends on either side of the wall, outside the parts; its wire
         // clear of every pad.
         QVERIFY((link.from.x < mmToNm(20)) != (link.to.x < mmToNm(20)));
         const QLineF wireLine(toMm(link.from), toMm(link.to));

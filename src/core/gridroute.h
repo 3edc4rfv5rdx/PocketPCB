@@ -69,6 +69,9 @@ struct GridRouteRules
     // on is the caller's to judge. The step after a jump is no turn. The search is sure to find the cheapest way only while a
     // jump costs no less than the steps it leaps. Unset: none.
     std::function<QList<GridJump>(const GridNode &at)> jumps;
+    // How many steps a way takes after a jump before it may jump again, so
+    // that what a jump leaves, such as the pads of a wire link, keeps apart.
+    int jumpSpacing = 0;
     // How many nodes the search looks on from before it gives up.
     int maxExpanded = 1000000;
 };
