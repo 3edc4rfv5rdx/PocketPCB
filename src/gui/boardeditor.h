@@ -441,6 +441,38 @@ private:
     BoardSide m_trackSide = BoardSide::Top;
     bool m_diagonalFirst = false;
     QPointF m_mouseAt;
+    // The points the track being laid went through, the start first, each
+    // with the side it goes on from and the project as it was there. An
+    // Undo gives back the project of the point before, whatever the limit
+    // of the history, so that is how it is told.
+    struct LaidPoint
+    {
+        Point at;
+        BoardSide side = BoardSide::Top;
+        Design design;
+    };
+    QList<LaidPoint> m_laid;
+    // A step of laying is being made: the change is its own.
+    bool m_layingStep = false;
+    // After a click or V laid a step: the point and the side laying goes on
+    // from are remembered, when the step changed the project.
+    void noteLaid();
+    // The project changed while laying: an Undo steps back to the point
+    // before; back past the start, or a Redo or another change, ends laying.
+    void laidChanged();
+    // The steps that put a via and went to the other side: the project and
+    // the side before and after each, the newest last.
+    struct ViaStep
+    {
+        Design before;
+        Design after;
+        BoardSide sideBefore = BoardSide::Top;
+        BoardSide sideAfter = BoardSide::Top;
+    };
+    QList<ViaStep> m_viaSteps;
+    // The project changed by Undo or Redo to one before or after a via
+    // step: the side is the one it had there.
+    void sideFollowed();
 };
 
 } // namespace ppcb

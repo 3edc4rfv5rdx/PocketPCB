@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Undo while laying a track takes back its last piece or via and goes on laying from the point before, and undoing a via brings its side back
 - E: A click on a wire chooses its segment only up to a pin or a joint lying on it, so Delete no longer takes the wire beyond them
 - N: Delete of parts and holes on the board, and Update board from schematic removing parts, delete their tracks, from each pad up to the next pad or fork
 - E: A double click on a track chooses it up to a pad or a fork instead of on through pads to other parts

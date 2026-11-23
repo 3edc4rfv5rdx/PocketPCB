@@ -18,6 +18,9 @@ namespace ppcb {
 
 namespace {
 
+// How many via steps the side is followed back through (sideFollowed()).
+const int VIA_STEPS_KEPT = 100;
+
 QList<OutlineCorner> sharpOutline(const QList<Point> &points)
 {
     QList<OutlineCorner> outline;
@@ -35,6 +38,8 @@ BoardEditor::BoardEditor(Document *document, CanvasView *canvas, QObject *parent
     , m_valueEdit(canvas)
 {
     connect(&m_valueEdit, &InPlaceEdit::accepted, this, &BoardEditor::valueTyped);
+    connect(m_document, &Document::designChanged, this, &BoardEditor::sideFollowed);
+    connect(m_document, &Document::designChanged, this, &BoardEditor::laidChanged);
     m_hoverTimer.setSingleShot(true);
     m_hoverTimer.setInterval(CanvasView::HOVER_DELAY_MS);
     connect(&m_hoverTimer, &QTimer::timeout, this, [this] {
@@ -241,10 +246,16 @@ void BoardEditor::viaAndOtherSide()
         via.net = m_trackNet;
         via.drill = netClass != nullptr ? netClass->viaDrill : rules.viaDrill;
         via.size = netClass != nullptr ? netClass->viaSize : rules.viaSize;
+        const Design before = m_document->design();
         layTrack(via.at, Action::ViaAndOtherSide, via);
         m_trackFrom = via.at;
+        m_viaSteps.append(ViaStep{before, m_document->design(), trackSide(), other});
+        if (m_viaSteps.size() > VIA_STEPS_KEPT)
+            m_viaSteps.removeFirst();
     }
     m_trackSide = other;
+    if (m_tool == Tool::Track && m_trackFrom)
+        noteLaid();
     emit message(sideName(other));
     emit changed();
 }
@@ -310,8 +321,48 @@ void BoardEditor::layTrack(const Point &target, Action action, const std::option
         board.vias.append(*via);
         ids.insert(via->id);
     }
-    if (!ids.isEmpty())
+    if (!ids.isEmpty()) {
+        m_layingStep = true;
         applyBoard(action, board, ids);
+        m_layingStep = false;
+    }
+}
+
+void BoardEditor::noteLaid()
+{
+    const Design &design = m_document->design();
+    if (m_trackFrom && !m_laid.isEmpty() && design != m_laid.last().design)
+        m_laid.append(LaidPoint{*m_trackFrom, trackSide(), design});
+}
+
+void BoardEditor::sideFollowed()
+{
+    if (m_layingStep)
+        return;
+    const Design &design = m_document->design();
+    for (auto step = m_viaSteps.crbegin(); step != m_viaSteps.crend(); ++step) {
+        if (design == step->before || design == step->after) {
+            m_trackSide = design == step->before ? step->sideBefore : step->sideAfter;
+            emit changed();
+            return;
+        }
+    }
+}
+
+void BoardEditor::laidChanged()
+{
+    if (m_layingStep || !m_trackFrom || m_laid.isEmpty())
+        return;
+    const Design &design = m_document->design();
+    while (!m_laid.isEmpty() && m_laid.last().design != design)
+        m_laid.removeLast();
+    if (m_laid.isEmpty()) {
+        m_trackFrom.reset();
+    } else {
+        m_trackFrom = m_laid.last().at;
+        m_trackSide = m_laid.last().side;
+    }
+    emit changed();
 }
 
 void BoardEditor::trackClick(const QPointF &at)
@@ -329,6 +380,7 @@ void BoardEditor::trackClick(const QPointF &at)
         if (!copper->on(trackSide()) && design.board.copper == CopperSides::Both)
             m_trackSide = trackSide() == BoardSide::Top ? BoardSide::Bottom : BoardSide::Top;
         m_trackFrom = copper->at;
+        m_laid = {LaidPoint{copper->at, trackSide(), design}};
         m_trackNet = copper->net;
         const NetClass *netClass = trackClass(design, m_trackNet);
         m_trackWidth =
@@ -351,10 +403,12 @@ void BoardEditor::trackClick(const QPointF &at)
     }
     layTrack(target, Action::LayTrack, std::nullopt);
     // On copper of its own side the track ends; else it goes on from there.
-    if (ending)
+    if (ending) {
         m_trackFrom.reset();
-    else
+    } else {
         m_trackFrom = target;
+        noteLaid();
+    }
     emit changed();
 }
 
