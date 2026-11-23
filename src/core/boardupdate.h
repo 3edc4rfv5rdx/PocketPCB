@@ -14,6 +14,7 @@ namespace ppcb {
 // the nets of its pads follow the component, named as withNetsNamedByPins()
 // names them. A component on the board whose
 // footprint the library lacks keeps its placement, if it has one, as it is.
+// A placement removed takes its tracks with it (tracksOfPads()).
 // The pads of mounting holes follow the nets they were on (holeNetsFollowed()).
 
 // The net each net of the holes of 'before' is on after the board became

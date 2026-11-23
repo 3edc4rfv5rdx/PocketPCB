@@ -228,7 +228,7 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
 <h3 id="update">From schematic to board</h3>
 <ul>
   <li><b>Update board from schematic</b> (<kbd>F8</kbd>, or its button left of Lock) shows what will change and
-    brings the board in line: new parts are packed to the right of the board, removed ones go, values,
+    brings the board in line: new parts are packed to the right of the board, removed ones go with their tracks, values,
     designators, footprints and nets follow; parts already placed stay where they are.</li>
   <li>Parts marked off-board in Properties (jacks, switches on the panel) do not come to the board.</li>
 </ul>
@@ -291,14 +291,14 @@ choice.</p>
   <li>The menu of a part: Rotate, Lock or Unlock, Show or Hide value, <b>Line to part</b> (a bold silkscreen line
     from the part to its texts), Show on schematic, Delete.</li>
   <li><kbd>Del</kbd> moves the parts chosen off the board, to the right of it: parts come and go with the
-    schematic. Locked parts stay.</li>
+    schematic. Locked parts stay. Their tracks are deleted: from each pad up to the next pad or fork.</li>
 </ul>
 
 <h3 id="holes">Mounting holes</h3>
 <ul>
   <li>The <b>Hole</b> button places holes, a click each on the grid; its arrow chooses the diameter from the
     drill set of the project, or another one typed; the last one stays. <kbd>Esc</kbd> ends.</li>
-  <li>Holes are chosen, dragged and deleted like parts.</li>
+  <li>Holes are chosen, dragged and deleted like parts; a hole deleted takes its tracks with it.</li>
   <li>The menu of a hole: Lock, diameter, <b>Copper pad</b> (its diameter, 0 for none; it can go without
     plating, for a board made at home), <b>Plated</b>, Pad side (both, top, bottom), <b>Pad net</b> (puts the pad
     on a net, joining it to the ratsnest), Delete.</li>
@@ -317,7 +317,8 @@ choice.</p>
     chooses the side.</li>
   <li>The width comes from the class of the net. <kbd>Esc</kbd>, a right click or a double click ends the track;
     <kbd>Esc</kbd> again leaves the tool.</li>
-  <li>A click on a track or via chooses it, a double click the whole track up to the pads, a frame those inside;
+  <li>A click on a track or via chooses it, a double click the whole track up to a pad or a fork
+    (where three tracks meet or one ends on the middle of another), a frame those inside;
     <kbd>Del</kbd> removes them. The menu of a track sets the width (any, typed under Other…) and the side.
     Tracks chosen together with parts go along whole when the parts are dragged.</li>
   <li>Rest the mouse on copper for a second to light its whole net and see its name.</li>

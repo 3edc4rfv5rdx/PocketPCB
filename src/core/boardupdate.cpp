@@ -4,6 +4,7 @@
 #include "grid.h"
 #include "netlist.h"
 #include "paint.h"
+#include "trackedit.h"
 
 #include <QHash>
 
@@ -133,14 +134,18 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
     update.project = project;
     QList<Placement> &placements = update.board.placements;
 
+    // A placement removed takes its tracks with it (tracksOfPads()).
+    QSet<ObjectId> removed;
     for (int i = int(placements.size()) - 1; i >= 0; --i) {
         const ObjectId &component = placements.at(i).component;
         if (!wantedIds.contains(component) && !leftAlone.contains(component)) {
             changes.append(BoardChange{BoardChangeKind::Remove, placements.at(i).designator,
                                        placements.at(i).footprint, QString()});
+            removed.insert(placements.at(i).id);
             placements.removeAt(i);
         }
     }
+    update.board = withoutTracks(update.board, tracksOfPads(design.board, library, removed));
 
     QList<const Component *> added;
     for (const Component *component : std::as_const(wanted)) {

@@ -540,7 +540,9 @@ void BoardEditor::deleteChosen()
         if (m_chosen.contains(placement.id) && !placement.locked)
             parts.insert(placement.id);
     }
-    const QSet<ObjectId> tracks = chosenTracks();
+    // The tracks of the parts and holes taken off go with them.
+    const QSet<ObjectId> tracks = chosenTracks().unite(
+        tracksOfPads(board, design.library, QSet<ObjectId>(parts).unite(holes)));
     if (holes.isEmpty() && parts.isEmpty() && tracks.isEmpty()) {
         if (!chosenPlacements().isEmpty())
             emit message(partLockedMessage());
@@ -970,7 +972,7 @@ void BoardEditor::doubleClick(const QPointF &at)
                                        m_canvas->pixelsToMm(CanvasView::HIT_PIXELS), trackSide());
         if (!track.isNull()) {
             dropChosen();
-            m_chosen = trackRun(design.board, track);
+            m_chosen = trackRun(design.board, design.library, track);
             emit changed();
             return;
         }

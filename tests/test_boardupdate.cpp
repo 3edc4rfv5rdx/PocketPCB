@@ -1,6 +1,7 @@
 #include "boardupdate.h"
 
 #include "outline.h"
+#include "ratsnest.h"
 
 #include <QtTest>
 
@@ -166,6 +167,30 @@ private slots:
         QCOMPARE(kept.value, QStringLiteral("2k2"));
         QCOMPARE(kept.id, movedId);
         QCOMPARE(kept.at, mm(77, 33));
+    }
+
+    void aRemovedPlacementTakesItsTracks()
+    {
+        Design design = twoResistors();
+        design.board = boardUpdatedFromSchematic(design).board;
+        // A track from each pad of R2, and one between two points apart.
+        const Placement &r2 = *placementOf(design.board, QStringLiteral("R2"));
+        const auto track = [&design](const Point &from, const Point &to) {
+            Track result;
+            result.id = newObjectId();
+            result.from = from;
+            result.to = to;
+            design.board.tracks.append(result);
+            return result.id;
+        };
+        track(placedPadPoint(r2, mm(-2.54, 0)), mm(50, 50));
+        track(placedPadPoint(r2, mm(2.54, 0)), mm(60, 50));
+        const ObjectId apart = track(mm(70, 70), mm(80, 70));
+        design.schematic.sheets.first().components.removeAt(0);
+
+        const Board board = boardUpdatedFromSchematic(design).board;
+        QCOMPARE(board.tracks.size(), 1);
+        QCOMPARE(board.tracks.first().id, apart);
     }
 
     void aPlacementWhoseFootprintIsMissingIsKept()

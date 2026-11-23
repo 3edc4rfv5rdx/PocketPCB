@@ -53,9 +53,18 @@ ObjectId trackAt(const Board &board, const QPointF &at, double reach, BoardSide 
 ObjectId viaAt(const Board &board, const QPointF &at, double reach);
 // The tracks and the vias lying wholly inside 'rect' (millimetres).
 QSet<ObjectId> tracksInside(const Board &board, const QRectF &rect);
-// The track 'id' and every track joined to it end to end on its side, or
-// through a via, up to the pads: the whole of a track as it was laid.
-QSet<ObjectId> trackRun(const Board &board, const ObjectId &id);
+// The track 'id' and the tracks going on from it end to end, on its side or
+// through a via, up to a pad of a part or a hole and up to a fork: a point
+// where three or more ends meet, or a piece with another track ending on
+// its middle, which stays out unless it is 'id' itself. The vias whose
+// tracks are all in it go with it: the whole of a track from pad to pad,
+// as it was laid.
+QSet<ObjectId> trackRun(const Board &board, const Library &library, const ObjectId &id);
+// The runs (trackRun()) of the tracks ending on the middle of a pad, on a
+// side it has copper on, of the placements or the holes 'ids': the tracks
+// that go with them when they are taken off the board.
+QSet<ObjectId> tracksOfPads(const Board &board, const Library &library,
+                            const QSet<ObjectId> &ids);
 // The board without the tracks and the vias 'ids'.
 Board withoutTracks(const Board &board, const QSet<ObjectId> &ids);
 // The board without any track or via, as it is shown while they are hidden.

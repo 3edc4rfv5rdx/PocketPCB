@@ -166,9 +166,9 @@ private slots:
 
         // The run: end to end on one side, through the via, not to the
         // track of the other side that only touches it.
-        QCOMPARE(trackRun(board, a), (QSet<ObjectId>{a, b, c, via.id}));
-        QCOMPARE(trackRun(board, apart), QSet<ObjectId>{apart});
-        QVERIFY(trackRun(board, ObjectId()).isEmpty());
+        QCOMPARE(trackRun(board, Library(), a), (QSet<ObjectId>{a, b, c, via.id}));
+        QCOMPARE(trackRun(board, Library(), apart), QSet<ObjectId>{apart});
+        QVERIFY(trackRun(board, Library(), ObjectId()).isEmpty());
 
         QCOMPARE(tracksInside(board, QRectF(-1, -1, 12, 2)), QSet<ObjectId>{a});
         QCOMPARE(tracksInside(board, QRectF(18.9, -1.1, 2.2, 2.2)), QSet<ObjectId>{via.id});
@@ -186,6 +186,69 @@ private slots:
         Board withPart = boardWithPart();
         QVERIFY(padAt(withPart, library(), QPointF(-5, 0), 0).has_value());
         QVERIFY(!padAt(withPart, library(), QPointF(0, 0), 0).has_value());
+    }
+
+    void runsStopAtPadsAndForks()
+    {
+        // The part's pad 1 at (-5, 0) and pad 2 at (5, 0), through and
+        // front; a track from pad 1 left to (-15, 0), on to (-15, 10).
+        Board board = boardWithPart();
+        const auto track = [&board](const Point &from, const Point &to) {
+            Track result;
+            result.id = newObjectId();
+            result.net = QStringLiteral("A");
+            result.from = from;
+            result.to = to;
+            board.tracks.append(result);
+            return result.id;
+        };
+        const ObjectId left = track(mm(-5, 0), mm(-15, 0));
+        const ObjectId down = track(mm(-15, 0), mm(-15, 10));
+        // Through pad 1 on to the right, and to pad 2.
+        const ObjectId across = track(mm(-5, 0), mm(0, 0));
+        const ObjectId toPad = track(mm(0, 0), mm(5, 0));
+        QCOMPARE(trackRun(board, library(), left), (QSet<ObjectId>{left, down}));
+        QCOMPARE(trackRun(board, library(), across), (QSet<ObjectId>{across, toPad}));
+
+        // Three ends at (-15, 10): a fork.
+        const ObjectId forkA = track(mm(-15, 10), mm(-25, 10));
+        const ObjectId forkB = track(mm(-15, 10), mm(-15, 20));
+        QCOMPARE(trackRun(board, library(), left), (QSet<ObjectId>{left, down}));
+        QCOMPARE(trackRun(board, library(), forkA), QSet<ObjectId>{forkA});
+
+        // A branch ending on the middle of 'forkB': the run of the branch
+        // stops there, and one coming into 'forkB' stops before it.
+        const ObjectId branch = track(mm(-15, 15), mm(-10, 15));
+        QCOMPARE(trackRun(board, library(), branch), QSet<ObjectId>{branch});
+        const ObjectId tail = track(mm(-15, 20), mm(-15, 30));
+        QCOMPARE(trackRun(board, library(), tail), QSet<ObjectId>{tail});
+        QCOMPARE(trackRun(board, library(), forkB), (QSet<ObjectId>{forkB, tail}));
+
+        // A via with a track not in the run stays out of it.
+        Via via;
+        via.id = newObjectId();
+        via.at = mm(-25, 10);
+        board.vias.append(via);
+        QCOMPARE(trackRun(board, library(), forkA), (QSet<ObjectId>{forkA, via.id}));
+        Track other;
+        other.id = newObjectId();
+        other.side = BoardSide::Bottom;
+        other.from = mm(-25, 10);
+        other.to = mm(-35, 10);
+        board.tracks.append(other);
+        QCOMPARE(trackRun(board, library(), forkA), (QSet<ObjectId>{forkA, other.id, via.id}));
+        board.tracks.last().to = mm(-25, 0);
+        Track third = other;
+        third.id = newObjectId();
+        third.to = mm(-25, 20);
+        board.tracks.append(third);
+        QCOMPARE(trackRun(board, library(), forkA), QSet<ObjectId>{forkA});
+
+        // The tracks of the part: those from its pads, up to the fork.
+        const QSet<ObjectId> part{board.placements.at(0).id};
+        QCOMPARE(tracksOfPads(board, library(), part),
+                 (QSet<ObjectId>{left, down, across, toPad}));
+        QVERIFY(tracksOfPads(board, library(), {}).isEmpty());
     }
 
     void tracksFollowTheirPads()

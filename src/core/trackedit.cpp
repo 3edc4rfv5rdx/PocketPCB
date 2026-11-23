@@ -175,37 +175,144 @@ QSet<ObjectId> tracksInside(const Board &board, const QRectF &rect)
     return inside;
 }
 
-QSet<ObjectId> trackRun(const Board &board, const ObjectId &id)
+namespace {
+
+// A point of copper a track end may lie on.
+struct PadPoint
+{
+    Point at;
+    bool top = false;
+    bool bottom = false;
+    // The placement or the hole it is of.
+    ObjectId owner;
+
+    bool on(BoardSide side) const { return side == BoardSide::Top ? top : bottom; }
+};
+
+// The middles of the pads of the placements and of the holes of 'board'.
+QList<PadPoint> padPoints(const Board &board, const Library &library)
+{
+    QList<PadPoint> points;
+    for (const Placement &placement : board.placements) {
+        const Footprint *footprint = library.findFootprint(placement.footprint);
+        if (footprint == nullptr)
+            continue;
+        for (const Pad &pad : footprint->pads) {
+            const CopperSides sides = padCopperSides(pad.layers, placement.side);
+            points.append(PadPoint{placedPadPoint(placement, pad.at),
+                                   copperOn(sides, BoardSide::Top),
+                                   copperOn(sides, BoardSide::Bottom), placement.id});
+        }
+    }
+    for (const MountingHole &hole : board.holes) {
+        if (hole.ring > 0)
+            points.append(PadPoint{hole.at, holePadOn(board, hole, BoardSide::Top),
+                                   holePadOn(board, hole, BoardSide::Bottom), hole.id});
+    }
+    return points;
+}
+
+// 'at' lies on the piece of 'track' between its ends, not on an end.
+bool insidePiece(const Track &track, const Point &at)
+{
+    if (at == track.from || at == track.to)
+        return false;
+    const Point along = track.to - track.from;
+    const Point to = at - track.from;
+    if (along.x * to.y - along.y * to.x != 0)
+        return false;
+    return std::min(track.from.x, track.to.x) <= at.x && at.x <= std::max(track.from.x, track.to.x)
+           && std::min(track.from.y, track.to.y) <= at.y
+           && at.y <= std::max(track.from.y, track.to.y);
+}
+
+QSet<ObjectId> runOf(const Board &board, const QList<PadPoint> &pads, const ObjectId &id)
 {
     QSet<ObjectId> run;
     if (findById(board.tracks, id) == nullptr)
         return run;
-    // Where the run may go on: the ends of its tracks, by side; a via
-    // carries an end to both sides.
+    const auto viaAtPoint = [&board](const Point &at) {
+        return std::any_of(board.vias.cbegin(), board.vias.cend(),
+                           [&at](const Via &via) { return via.at == at; });
+    };
+    // A piece another track ends on the middle of is a fork.
+    const auto forked = [&board, &viaAtPoint](const Track &piece) {
+        return std::any_of(board.tracks.cbegin(), board.tracks.cend(), [&](const Track &other) {
+            if (other.id == piece.id)
+                return false;
+            for (const Point &end : {other.from, other.to}) {
+                if ((other.side == piece.side || viaAtPoint(end)) && insidePiece(piece, end))
+                    return true;
+            }
+            return false;
+        });
+    };
     QList<ObjectId> open = {id};
     run.insert(id);
     while (!open.isEmpty()) {
         const Track &track = *findById(board.tracks, open.takeLast());
         for (const Point &end : {track.from, track.to}) {
-            const bool via = std::any_of(board.vias.cbegin(), board.vias.cend(),
-                                         [&end](const Via &v) { return v.at == end; });
+            // A pad ends the run.
+            if (std::any_of(pads.cbegin(), pads.cend(), [&](const PadPoint &pad) {
+                    return pad.at == end && pad.on(track.side);
+                }))
+                continue;
+            // What goes on from here: on its side, or through a via on both.
+            const bool via = viaAtPoint(end);
+            QList<const Track *> next;
             for (const Track &other : board.tracks) {
-                if (run.contains(other.id) || (other.side != track.side && !via)
-                    || (other.from != end && other.to != end))
-                    continue;
-                run.insert(other.id);
-                open.append(other.id);
+                if (other.id != track.id && (other.side == track.side || via)
+                    && (other.from == end || other.to == end))
+                    next.append(&other);
+            }
+            // At a fork, or into a piece with a fork on it, the run stops.
+            if (next.size() != 1 || forked(*next.first()))
+                continue;
+            if (!run.contains(next.first()->id)) {
+                run.insert(next.first()->id);
+                open.append(next.first()->id);
             }
         }
     }
-    // The vias on its ends.
+    // The vias all of whose tracks are in it.
     for (const Via &via : board.vias) {
+        bool touched = false;
+        bool whole = true;
         for (const Track &track : board.tracks) {
-            if (run.contains(track.id) && (track.from == via.at || track.to == via.at))
-                run.insert(via.id);
+            if (track.from != via.at && track.to != via.at)
+                continue;
+            touched = touched || run.contains(track.id);
+            whole = whole && run.contains(track.id);
         }
+        if (touched && whole)
+            run.insert(via.id);
     }
     return run;
+}
+
+} // namespace
+
+QSet<ObjectId> trackRun(const Board &board, const Library &library, const ObjectId &id)
+{
+    return runOf(board, padPoints(board, library), id);
+}
+
+QSet<ObjectId> tracksOfPads(const Board &board, const Library &library,
+                            const QSet<ObjectId> &ids)
+{
+    const QList<PadPoint> pads = padPoints(board, library);
+    QSet<ObjectId> tracks;
+    for (const Track &track : board.tracks) {
+        if (tracks.contains(track.id))
+            continue;
+        const bool onPad = std::any_of(pads.cbegin(), pads.cend(), [&](const PadPoint &pad) {
+            return ids.contains(pad.owner) && pad.on(track.side)
+                   && (pad.at == track.from || pad.at == track.to);
+        });
+        if (onPad)
+            tracks.unite(runOf(board, pads, track.id));
+    }
+    return tracks;
 }
 
 Board withoutTracks(const Board &board, const QSet<ObjectId> &ids)
