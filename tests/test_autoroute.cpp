@@ -218,6 +218,10 @@ private slots:
             }
         }
         QVERIFY(ratsnest(leapt.board, design.library).isEmpty());
+        // Asked for no links, it does not leap.
+        const AutorouteResult kept = autorouted(design, {}, {}, false);
+        QCOMPARE(kept.links, 0);
+        QCOMPARE(kept.unrouted, 1);
     }
 
     void onlyTheNetsAskedForAreLaid()

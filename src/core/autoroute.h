@@ -40,8 +40,9 @@ struct AutorouteResult
 // every net when it is empty. Connections with a pad off the outline are
 // left. 'progress', when set, is asked before each connection with how many
 // are done and how many there were at first; false stops the routing,
-// keeping what is laid.
+// keeping what is laid. Without 'links' no wire link is laid.
 AutorouteResult autorouted(const Design &design, const QSet<QString> &nets = {},
-                           const std::function<bool(int done, int total)> &progress = {});
+                           const std::function<bool(int done, int total)> &progress = {},
+                           bool links = true);
 
 } // namespace ppcb

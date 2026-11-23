@@ -1659,6 +1659,14 @@
         <translation>Раздвинуть дорожки</translation>
     </message>
     <message>
+        <source>Replace with track</source>
+        <translation>Заменить дорожкой</translation>
+    </message>
+    <message>
+        <source>There is no way for a track there</source>
+        <translation>Там дорожке не пройти</translation>
+    </message>
+    <message>
         <source>The tracks have no more room to take</source>
         <translation>Дорожкам больше некуда раздвигаться</translation>
     </message>

@@ -1,5 +1,6 @@
 #include "boardeditor.h"
 
+#include "autoroute.h"
 #include "canvasview.h"
 #include "format.h"
 #include "outline.h"
@@ -126,6 +127,8 @@ QString BoardEditor::actionName(Action action)
         return tr("Move track");
     case Action::SpreadTracks:
         return tr("Spread tracks");
+    case Action::ReplaceLinks:
+        return tr("Replace with track");
     case Action::TrackWidth:
         return tr("Track width");
     case Action::TrackSide:
@@ -685,6 +688,48 @@ void BoardEditor::spreadTracksOf(const QSet<ObjectId> &ids)
         return;
     }
     applyBoard(Action::SpreadTracks, spread, {});
+    emit changed();
+}
+
+bool BoardEditor::linksChosen() const
+{
+    const QList<WireLink> &links = m_document->design().board.links;
+    return std::any_of(links.cbegin(), links.cend(),
+                       [this](const WireLink &link) { return m_chosen.contains(link.id); });
+}
+
+void BoardEditor::replaceChosenLinks()
+{
+    if (!m_active || m_dragging)
+        return;
+    const Design &design = m_document->design();
+    QSet<ObjectId> links;
+    QSet<QString> nets;
+    for (const WireLink &link : design.board.links) {
+        if (m_chosen.contains(link.id)) {
+            links.insert(link.id);
+            nets.insert(link.net);
+        }
+    }
+    nets.remove(QString());
+    if (links.isEmpty())
+        return;
+    // The connections of those nets still to be made, before and after.
+    const auto unrouted = [&design, &nets](const Board &board) {
+        int count = 0;
+        for (const RatsnestLine &line : ratsnest(board, design.library))
+            count += nets.contains(line.net) ? 1 : 0;
+        return count;
+    };
+    Design without = design;
+    without.board = withoutTracks(design.board, links);
+    const AutorouteResult result = autorouted(without, nets, {}, false);
+    if (unrouted(result.board) > unrouted(design.board)) {
+        emit message(tr("There is no way for a track there"));
+        return;
+    }
+    m_chosen.subtract(links);
+    applyBoard(Action::ReplaceLinks, result.board, {});
     emit changed();
 }
 

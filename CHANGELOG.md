@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Replace with track in the menu of a wire link lays its connection as a track when there is a way
 - N: On a board with copper on one side the autorouter lays wire links where tracks cannot go, their wires over no part and clear of pads, holes and other links, and its box counts them
 - N: Wire links on the board: a wire between two pads with holes, chosen, deleted and joining its pads as a track
 - F: The autorouter ends on the board with the fewest unrouted it reached while taking connections up

@@ -1081,6 +1081,12 @@ void MainWindow::showBoardMenu(const QPoint &globalPos)
             menu.addAction(BoardEditor::actionName(BoardEditor::Action::SpreadTracks));
         spread->setEnabled(tracks);
         connect(spread, &QAction::triggered, m_boardEditor, &BoardEditor::spreadChosenTracks);
+        if (m_boardEditor->linksChosen()) {
+            QAction *replace =
+                menu.addAction(BoardEditor::actionName(BoardEditor::Action::ReplaceLinks));
+            connect(replace, &QAction::triggered, m_boardEditor,
+                    &BoardEditor::replaceChosenLinks);
+        }
         menu.addSeparator();
         add("actionDelete");
         break;

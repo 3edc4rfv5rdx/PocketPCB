@@ -82,6 +82,7 @@ public:
         Autoroute,
         MoveTrack,
         SpreadTracks,
+        ReplaceLinks,
         TrackSide,
     };
     static QString actionName(Action action);
@@ -203,6 +204,12 @@ public:
     void spreadTracks();
     // The same for the tracks chosen alone.
     void spreadChosenTracks();
+    // The wire links chosen taken off and their connections laid by the
+    // autorouter as tracks, with no link, as one step; nothing changes, said
+    // in the status bar, when that leaves a connection unrouted.
+    void replaceChosenLinks();
+    // Some of what is chosen is a wire link.
+    bool linksChosen() const;
     // That for the tracks 'ids', every one when empty.
     void spreadTracksOf(const QSet<ObjectId> &ids);
     // The nets of what is chosen: of the pads of the parts and holes, and of
