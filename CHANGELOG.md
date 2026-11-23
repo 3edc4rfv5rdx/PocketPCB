@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+## v0.11.285 (2026-11-23)
 - N: A track stretched after a part across copper of another net is deleted, its connection going back to the ratsnest
 - N: Update board from schematic giving a part another footprint takes its tracks to the pads of the same numbers
 - F: The arrows of the sizes in Rectangular board step a cell of the grid
