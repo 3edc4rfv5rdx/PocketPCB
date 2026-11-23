@@ -1504,6 +1504,16 @@ QRectF boardBounds(const Board &board, const Library &library)
     return bounds.rect();
 }
 
+QRectF layoutBounds(const Board &board, const Library &library)
+{
+    if (board.placements.isEmpty() && board.tracks.isEmpty() && board.vias.isEmpty()
+        && board.holes.isEmpty() && board.graphics.isEmpty() && board.zones.isEmpty())
+        return boardBounds(board, library);
+    Board laid = board;
+    laid.outline.clear();
+    return boardBounds(laid, library);
+}
+
 QColor boardLayerColor(BoardLayer layer)
 {
     switch (layer) {

@@ -222,6 +222,10 @@ QLineF leaderLine(const Placement &placement, ComponentText text);
 
 // A rectangle that holds everything paintBoard() draws; never empty.
 QRectF boardBounds(const Board &board, const Library &library);
+// A rectangle that holds what is laid on the board, without its outline:
+// parts (those off the board too), tracks, vias, holes, drawings and zones;
+// boardBounds() when nothing but the outline is there.
+QRectF layoutBounds(const Board &board, const Library &library);
 // The board as seen from the top: bottom copper under top copper, the
 // silkscreen and the outline over them. What lies on the bottom side is
 // mirrored, texts included, as it is on the real board. Footprints come

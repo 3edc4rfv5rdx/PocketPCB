@@ -84,13 +84,16 @@ QRectF DesignViewItem::pageBounds() const
 QRectF DesignViewItem::drawingBounds() const
 {
     const Design &design = m_document->design();
-    if (m_page == boardPage())
-        return boardBounds(design.board, design.library);
-    const Sheet &sheet = design.schematic.sheets.at(m_page);
-    QRectF bounds =
-        sheetDrawingBounds(sheet, design.library, powerShown(design.project, design.schematic));
-    if (bounds.isNull())
-        return paperRect(sheet);
+    QRectF bounds;
+    if (m_page == boardPage()) {
+        bounds = layoutBounds(design.board, design.library);
+    } else {
+        const Sheet &sheet = design.schematic.sheets.at(m_page);
+        bounds = sheetDrawingBounds(sheet, design.library,
+                                    powerShown(design.project, design.schematic));
+        if (bounds.isNull())
+            return paperRect(sheet);
+    }
     const double growX = qMax(0.0, FIT_DRAWING_MIN_SIZE - bounds.width()) / 2;
     const double growY = qMax(0.0, FIT_DRAWING_MIN_SIZE - bounds.height()) / 2;
     return bounds.adjusted(-growX, -growY, growX, growY);

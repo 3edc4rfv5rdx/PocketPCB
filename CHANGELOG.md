@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Fit the drawing on the board shows the parts and the copper, those off the board too, without the outline
 - F: Show unrouted connections and Unrouted connections as arcs are named Bold unrouted and Unrouted as arcs
 - N: Hide tracks hides the tracks and vias on the board, and with Hide silkscreen and Show unrouted connections stands in View and the menu of the empty board instead of on the strip
 - F: The user guide describes every feature, the board outline in full

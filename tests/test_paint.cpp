@@ -881,6 +881,30 @@ private slots:
         QVERIFY(boardBounds(placed, Library()).contains(QPointF(20, 0)));
     }
 
+    void layoutBoundsLeaveTheOutlineOut()
+    {
+        // Nothing but the outline: the outline.
+        const Board bare = boardWithOutline(0);
+        QCOMPARE(layoutBounds(bare, Library()), boardBounds(bare, Library()));
+
+        // A via inside the outline: it alone, the outline left out.
+        Board board = bare;
+        Via via;
+        via.at = Point{2000000, 0};
+        via.size = 2000000;
+        via.drill = 1000000;
+        board.vias.append(via);
+        QCOMPARE(layoutBounds(board, Library()), QRectF(1, -1, 2, 2));
+
+        // A part off the board, to its right, counts too.
+        Board placed = boardWithPad(90, BoardSide::Top);
+        placed.outline = bare.outline;
+        placed.placements[0].at = Point{20000000, 0};
+        const QRectF bounds = layoutBounds(placed, padLibrary());
+        QVERIFY(bounds.contains(QPointF(20, 3)));
+        QVERIFY(!bounds.contains(QPointF(-7, 0)));
+    }
+
     // What the project library lacks is a red square with a question mark,
     // where the symbol or the footprint would be.
     void missingLibraryItemsAreMarked()
