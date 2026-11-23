@@ -635,10 +635,11 @@ QSet<QString> BoardEditor::litNets() const
 {
     QSet<QString> nets;
     // The pads of the track's net while it is laid, and the net the mouse
-    // stays on.
+    // stays on, unless tracks or vias are chosen: they stand out alone then,
+    // the net named in the tip only.
     if (m_active && m_tool == Tool::Track && m_trackFrom && !m_trackNet.isEmpty())
         nets.insert(m_trackNet);
-    if (!m_hoveredNet.isEmpty())
+    if (!m_hoveredNet.isEmpty() && chosenTracks().isEmpty())
         nets.insert(m_hoveredNet);
     const QSet<ObjectId> chosen = chosenPlacements();
     for (const Placement &placement : m_document->design().board.placements) {

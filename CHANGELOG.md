@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: While tracks or vias are chosen, the mouse resting on copper only names its net instead of lighting it
 - N: Delete all tracks, vias too, in the menu of the empty board, asked first
 - N: Undo while laying a track takes back its last piece or via and goes on laying from the point before, and undoing a via brings its side back
 - E: A click on a wire chooses its segment only up to a pin or a joint lying on it, so Delete no longer takes the wire beyond them
