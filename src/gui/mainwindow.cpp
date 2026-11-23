@@ -552,9 +552,9 @@ void MainWindow::createMenus()
     connect(rectangleAction, &QAction::triggered, this, &MainWindow::makeRectangleBoard);
     addBoardAction(BoardEditor::Action::PlaceHole, "actionPlaceHole",
                    &BoardEditor::startPlacingHoles);
-    addBoardAction(BoardEditor::Action::LayTrack, "actionLayTrack",
-                   &BoardEditor::startLayingTracks)
-        ->setShortcut(QKeySequence(Qt::Key_T));
+    QAction *layTrack = addBoardAction(BoardEditor::Action::LayTrack, "actionLayTrack",
+                                       &BoardEditor::startLayingTracks);
+    layTrack->setShortcut(QKeySequence(Qt::Key_T));
     addBoardAction(BoardEditor::Action::ViaAndOtherSide, "actionVia",
                    &BoardEditor::viaAndOtherSide)
         ->setShortcut(QKeySequence(Qt::Key_V));
@@ -690,6 +690,38 @@ void MainWindow::createMenus()
         AppSettings::setDrawingCoordinatesShown(on);
         m_designItem->setDrawingCoordinatesShown(on);
     });
+
+    // What the board shows, on the screen only. The silkscreen of both
+    // sides hidden: pads, holes and copper stay.
+    QAction *silkscreen = viewMenu->addAction(tr("Hide silkscreen"));
+    silkscreen->setObjectName(QStringLiteral("actionSilkscreen"));
+    silkscreen->setCheckable(true);
+    silkscreen->setChecked(!m_designItem->boardLayers().contains(BoardLayer::SilkscreenTop));
+    connect(silkscreen, &QAction::toggled, this, [this](bool hidden) {
+        const bool shown = !hidden;
+        BoardLayerSet layers = m_designItem->boardLayers();
+        layers.set(BoardLayer::SilkscreenTop, shown);
+        layers.set(BoardLayer::SilkscreenBottom, shown);
+        m_designItem->setBoardLayers(layers);
+        m_boardEditor->setSilkscreenShown(shown);
+    });
+    // The tracks and vias hidden for a while, to see what is still to be
+    // joined; laying a track shows them again.
+    QAction *hideTracks = viewMenu->addAction(tr("Hide tracks"));
+    hideTracks->setObjectName(QStringLiteral("actionHideTracks"));
+    hideTracks->setCheckable(true);
+    connect(hideTracks, &QAction::toggled, this, [this](bool hidden) {
+        m_boardEditor->setTracksShown(!hidden);
+        updateTools();
+    });
+    connect(layTrack, &QAction::triggered, hideTracks,
+            [hideTracks] { hideTracks->setChecked(false); });
+    // What is still to be joined, bold and with its ends marked.
+    QAction *unrouted = viewMenu->addAction(tr("Show unrouted connections"));
+    unrouted->setObjectName(QStringLiteral("actionShowUnrouted"));
+    unrouted->setCheckable(true);
+    connect(unrouted, &QAction::toggled, this,
+            [this](bool bright) { m_designItem->setRatsnestBright(bright); });
 
     QAction *arcsAction = viewMenu->addAction(tr("Unrouted connections as arcs"));
     arcsAction->setObjectName(QStringLiteral("actionRatsnestArcs"));
@@ -1040,8 +1072,12 @@ void MainWindow::showBoardMenu(const QPoint &globalPos)
         }
         break;
     case BoardEditor::MenuTarget::None:
-        // Nothing on the empty board yet.
-        return;
+        // What the board shows.
+        add("actionSilkscreen");
+        add("actionHideTracks");
+        add("actionShowUnrouted");
+        add("actionRatsnestArcs");
+        break;
     }
     menu.exec(globalPos);
 }
@@ -1633,33 +1669,9 @@ void MainWindow::createToolBar()
     });
     layerButton->setMenu(layerMenu);
     layerButton->setPopupMode(QToolButton::MenuButtonPopup);
-    // The silkscreen of both sides hidden or shown, on the screen only;
-    // pads, holes and copper stay. Pressed while it is hidden.
-    QAction *silkscreen = new QAction(tr("Hide silkscreen"), this);
-    silkscreen->setObjectName(QStringLiteral("actionSilkscreen"));
-    silkscreen->setIcon(toolIcon(ToolIcon::Silkscreen, color));
-    silkscreen->setCheckable(true);
-    silkscreen->setChecked(!m_designItem->boardLayers().contains(BoardLayer::SilkscreenTop));
-    connect(silkscreen, &QAction::toggled, this, [this](bool hidden) {
-        const bool shown = !hidden;
-        BoardLayerSet layers = m_designItem->boardLayers();
-        layers.set(BoardLayer::SilkscreenTop, shown);
-        layers.set(BoardLayer::SilkscreenBottom, shown);
-        m_designItem->setBoardLayers(layers);
-        m_boardEditor->setSilkscreenShown(shown);
-    });
-    bar->addAction(silkscreen);
-    m_boardActions.append(silkscreen);
-    // What is still to be joined, bold and with its ends marked, while
-    // pressed; on the screen only.
-    QAction *unrouted = new QAction(tr("Show unrouted connections"), this);
-    unrouted->setObjectName(QStringLiteral("actionShowUnrouted"));
-    unrouted->setIcon(toolIcon(ToolIcon::Unrouted, color));
-    unrouted->setCheckable(true);
-    connect(unrouted, &QAction::toggled, this,
-            [this](bool bright) { m_designItem->setRatsnestBright(bright); });
-    bar->addAction(unrouted);
-    m_boardActions.append(unrouted);
+    // What is shown of the board, in View and the menu of the empty board.
+    for (const char *name : {"actionSilkscreen", "actionHideTracks", "actionShowUnrouted"})
+        m_boardActions.append(findChild<QAction *>(QLatin1String(name)));
     auto *holeButton = qobject_cast<QToolButton *>(bar->widgetForAction(placeHole));
     Q_ASSERT(holeButton != nullptr);
     QMenu *holeMenu = new QMenu(this);

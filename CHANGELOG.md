@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Hide tracks hides the tracks and vias on the board, and with Hide silkscreen and Show unrouted connections stands in View and the menu of the empty board instead of on the strip
 - F: The user guide describes every feature, the board outline in full
 - N: The status bar on the board shows the unrouted connections of all, and View can draw them as arcs
 - N: A Show unrouted connections button draws every ratsnest line bold with its ends marked

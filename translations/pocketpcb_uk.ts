@@ -933,6 +933,10 @@
         <translation>Сховати шовкографію</translation>
     </message>
     <message>
+        <source>Hide tracks</source>
+        <translation>Сховати доріжки</translation>
+    </message>
+    <message>
         <source>Show unrouted connections</source>
         <translation>Показати нерозведені зв&apos;язки</translation>
     </message>

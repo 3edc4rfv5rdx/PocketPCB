@@ -933,6 +933,10 @@
         <translation>Спрятать шелкографию</translation>
     </message>
     <message>
+        <source>Hide tracks</source>
+        <translation>Спрятать дорожки</translation>
+    </message>
+    <message>
         <source>Show unrouted connections</source>
         <translation>Показать неразведённые связи</translation>
     </message>

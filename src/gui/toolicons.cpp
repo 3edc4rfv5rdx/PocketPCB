@@ -173,25 +173,6 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         dot(painter, {19, 5}, color);
         break;
     }
-    case ToolIcon::Silkscreen:
-        // The drawing of a chip on the silkscreen: its body with the notch,
-        // and its designator over it.
-        painter.drawPolyline(polygon({{10, 9}, {5, 9}, {5, 21}, {19, 21}, {19, 9}, {14, 9}}));
-        painter.drawArc(QRectF(10, 7, 4, 4), 180 * 16, 180 * 16);
-        painter.drawLine(QPointF(6, 3), QPointF(9, 3));
-        painter.drawLine(QPointF(7.5, 3), QPointF(7.5, 6));
-        painter.drawLine(QPointF(12, 3), QPointF(12, 6));
-        painter.drawLine(QPointF(15, 3), QPointF(18, 6));
-        break;
-    case ToolIcon::Unrouted:
-        // Two pads still to be joined: a thin straight line between them.
-        painter.drawRect(QRectF(3, 15, 6, 6));
-        painter.drawRect(QRectF(15, 3, 6, 6));
-        painter.save();
-        painter.setPen(QPen(color, 1, Qt::DashLine));
-        painter.drawLine(QPointF(9, 15), QPointF(15, 9));
-        painter.restore();
-        break;
     case ToolIcon::UpdateBoard:
         // A sheet, an arrow down and right from it, and a board with two pads.
         painter.drawRect(QRectF(3, 3, 9, 7));

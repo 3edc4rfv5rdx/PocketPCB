@@ -119,6 +119,11 @@ public:
     // While the silkscreen is hidden, parts and their texts are not chosen;
     // hiding it drops them from what is chosen.
     void setSilkscreenShown(bool shown);
+    // While the tracks and the vias are hidden, they are not chosen and the
+    // mouse resting on them lights nothing; hiding them drops them from what
+    // is chosen and ends laying tracks.
+    bool tracksShown() const { return m_tracksShown; }
+    void setTracksShown(bool shown);
     // Space: the piece at 45 degrees goes first or last.
     void swapTrackCorner();
     // Drawing the outline or a cut-out, placing holes or laying tracks is
@@ -425,6 +430,7 @@ private:
 
     Coord m_holeDrill = DEFAULT_HOLE_DRILL;
     bool m_silkscreenShown = true;
+    bool m_tracksShown = true;
 
     // Laying tracks: the last point laid (none before the first click),
     // the net, the width and the side of the track, its corner, and where

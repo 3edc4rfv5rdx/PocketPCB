@@ -613,6 +613,20 @@ void BoardEditor::setSilkscreenShown(bool shown)
     }
 }
 
+void BoardEditor::setTracksShown(bool shown)
+{
+    m_tracksShown = shown;
+    if (!shown) {
+        if (m_tool == Tool::Track)
+            chooseSelectTool();
+        m_chosen.subtract(chosenTracks());
+        m_hoverTimer.stop();
+        m_pendingNet.clear();
+        setHoveredNet(QString());
+    }
+    emit changed();
+}
+
 PlacementText BoardEditor::textUnder(const QPointF &at) const
 {
     if (!m_silkscreenShown)
@@ -651,7 +665,7 @@ bool BoardEditor::pressChoosable(const QPointF &at, bool adding)
     const double reach = m_canvas->pixelsToMm(CanvasView::HIT_PIXELS);
     const ObjectId hole = holeUnder(at);
     ObjectId copper;
-    if (hole.isNull() && !padAt(design.board, design.library, at, 0)) {
+    if (m_tracksShown && hole.isNull() && !padAt(design.board, design.library, at, 0)) {
         copper = viaAt(design.board, at, reach);
         if (copper.isNull())
             copper = trackAt(design.board, at, reach, trackSide());
@@ -882,7 +896,8 @@ void BoardEditor::release(const QPointF &at)
                                            ? placementsInside(design.board, design.library, m_frame)
                                            : QSet<ObjectId>())
                                           .unite(holesInside(design.board, m_frame))
-                                          .unite(tracksInside(design.board, m_frame));
+                                          .unite(m_tracksShown ? tracksInside(design.board, m_frame)
+                                                               : QSet<ObjectId>());
         if (m_frameAdding)
             m_chosen.unite(inside);
         else
@@ -931,7 +946,7 @@ void BoardEditor::doubleClick(const QPointF &at)
     }
     // A track off the pads chooses the whole of it.
     const Design &design = m_document->design();
-    if (!padAt(design.board, design.library, at, 0)) {
+    if (m_tracksShown && !padAt(design.board, design.library, at, 0)) {
         const ObjectId track = trackAt(design.board, at,
                                        m_canvas->pixelsToMm(CanvasView::HIT_PIXELS), trackSide());
         if (!track.isNull()) {
@@ -978,7 +993,8 @@ BoardEditor::MenuTarget BoardEditor::chooseForMenu(const QPointF &at)
     m_menuAt = at;
     const ObjectId hole = text.isNull() ? holeUnder(at) : ObjectId();
     ObjectId copper;
-    if (text.isNull() && hole.isNull() && !padAt(design.board, design.library, at, 0)) {
+    if (m_tracksShown && text.isNull() && hole.isNull()
+        && !padAt(design.board, design.library, at, 0)) {
         const double reach = m_canvas->pixelsToMm(CanvasView::HIT_PIXELS);
         copper = viaAt(design.board, at, reach);
         if (copper.isNull())
@@ -1075,8 +1091,11 @@ void BoardEditor::editMenuTrackWidth()
 void BoardEditor::hoverNet(const QPointF &at)
 {
     const Design &design = m_document->design();
-    const std::optional<CopperPoint> copper = copperAt(
-        design.board, design.library, at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
+    // Only the copper shown: hidden tracks and vias light nothing.
+    const double reach = m_canvas->pixelsToMm(CanvasView::HIT_PIXELS);
+    const std::optional<CopperPoint> copper =
+        m_tracksShown ? copperAt(design.board, design.library, at, reach)
+                      : copperAt(withoutAnyTracks(design.board), design.library, at, reach);
     const QString net = copper ? copper->net : QString();
     if (!net.isEmpty() && net == m_hoveredNet) {
         // Shown again after it went out by itself or with a click.
@@ -1309,6 +1328,9 @@ void BoardEditor::setChosen(const QSet<ObjectId> &ids)
 {
     dropChosen();
     m_chosen = ids;
+    // Hidden tracks and vias are not chosen, after Undo either.
+    if (!m_tracksShown)
+        m_chosen.subtract(chosenTracks());
     emit changed();
 }
 

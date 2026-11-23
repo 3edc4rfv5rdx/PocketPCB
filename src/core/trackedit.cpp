@@ -216,6 +216,14 @@ Board withoutTracks(const Board &board, const QSet<ObjectId> &ids)
     return result;
 }
 
+Board withoutAnyTracks(const Board &board)
+{
+    Board result = board;
+    result.tracks.clear();
+    result.vias.clear();
+    return result;
+}
+
 Board withTracksWidth(const Board &board, const QSet<ObjectId> &ids, Coord width)
 {
     Board result = board;

@@ -202,7 +202,11 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
         editor != nullptr && board.copper == CopperSides::Both
             ? std::optional<BoardSide>(editor->trackSide())
             : std::nullopt;
-    paintBoard(painter, board, design.library, m_boardLayers, true, bright);
+    // Hidden tracks and vias are left out of the drawing, not out of the
+    // ratsnest: what they join stays joined.
+    const bool tracksShown = editor == nullptr || editor->tracksShown();
+    const Board shown = tracksShown ? board : withoutAnyTracks(board);
+    paintBoard(painter, shown, design.library, m_boardLayers, true, bright);
     // The pads still to be joined, as the board stands now; the nets of the
     // parts chosen, and the net the mouse stays on, are lit: their pads,
     // vias, tracks and lines.
@@ -221,11 +225,11 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
         }
     }
     // Its vias and tracks too.
-    for (const Via &via : board.vias) {
+    for (const Via &via : shown.vias) {
         if (lit.contains(via.net))
             painter.drawEllipse(toMm(via.at), nmToMm(via.size) / 2, nmToMm(via.size) / 2);
     }
-    for (const Track &track : board.tracks) {
+    for (const Track &track : shown.tracks) {
         if (!lit.contains(track.net))
             continue;
         painter.setPen(QPen(litColor, nmToMm(track.width), Qt::SolidLine, Qt::RoundCap));

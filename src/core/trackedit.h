@@ -58,6 +58,8 @@ QSet<ObjectId> tracksInside(const Board &board, const QRectF &rect);
 QSet<ObjectId> trackRun(const Board &board, const ObjectId &id);
 // The board without the tracks and the vias 'ids'.
 Board withoutTracks(const Board &board, const QSet<ObjectId> &ids);
+// The board without any track or via, as it is shown while they are hidden.
+Board withoutAnyTracks(const Board &board);
 // The tracks 'ids' 'width' wide.
 Board withTracksWidth(const Board &board, const QSet<ObjectId> &ids, Coord width);
 // The tracks 'ids' moved to 'side'.
