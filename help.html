@@ -277,7 +277,7 @@ choice.</p>
     </ul>
   </li>
   <li>A double click on an edge chooses the whole outline; drag it to move the board. <kbd>Ctrl+A</kbd> chooses
-    the outline with all parts and holes, to move everything together.</li>
+    the outline with all parts, holes, tracks and vias, to move everything together.</li>
   <li>Lock (the button or the outline's menu) fixes the outline: it is not dragged, redrawn or cut until
     unlocked.</li>
 </ul>
@@ -285,7 +285,8 @@ choice.</p>
 <h3 id="parts">Parts</h3>
 <ul>
   <li>Click, <kbd>Ctrl</kbd>+click or a frame to choose; drag to move along the grid; <kbd>R</kbd> turns by
-    90&deg;, also while dragging.</li>
+    90&deg;, also while dragging. Tracks ending on the pads of a part or a hole follow it: their last piece
+    stretches.</li>
   <li>Designators and values are dragged on their own; a chosen text shows a line to its part.</li>
   <li>The menu of a part: Rotate, Lock or Unlock, Show or Hide value, <b>Line to part</b> (a bold silkscreen line
     from the part to its texts), Show on schematic, Delete.</li>
@@ -317,7 +318,8 @@ choice.</p>
   <li>The width comes from the class of the net. <kbd>Esc</kbd>, a right click or a double click ends the track;
     <kbd>Esc</kbd> again leaves the tool.</li>
   <li>A click on a track or via chooses it, a double click the whole track up to the pads, a frame those inside;
-    <kbd>Del</kbd> removes them. The menu of a track sets the width (any, typed under Other…) and the side.</li>
+    <kbd>Del</kbd> removes them. The menu of a track sets the width (any, typed under Other…) and the side.
+    Tracks chosen together with parts go along whole when the parts are dragged.</li>
   <li>Rest the mouse on copper for a second to light its whole net and see its name.</li>
 </ul>
 

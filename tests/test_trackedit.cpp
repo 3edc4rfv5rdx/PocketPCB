@@ -1,5 +1,8 @@
 #include "trackedit.h"
 
+#include "boardedit.h"
+#include "ratsnest.h"
+
 #include <QtTest>
 
 using namespace ppcb;
@@ -183,6 +186,72 @@ private slots:
         Board withPart = boardWithPart();
         QVERIFY(padAt(withPart, library(), QPointF(-5, 0), 0).has_value());
         QVERIFY(!padAt(withPart, library(), QPointF(0, 0), 0).has_value());
+    }
+
+    void tracksFollowTheirPads()
+    {
+        // A track on pad 1 (through, net A) and one on pad 2 (front, net B).
+        Board board = boardWithPart();
+        Track onThrough;
+        onThrough.id = newObjectId();
+        onThrough.net = QStringLiteral("A");
+        onThrough.side = BoardSide::Bottom;
+        onThrough.from = mm(-5, 0);
+        onThrough.to = mm(-5, 10);
+        Track onFront;
+        onFront.id = newObjectId();
+        onFront.net = QStringLiteral("B");
+        onFront.from = mm(5, 10);
+        onFront.to = mm(5, 0);
+        board.tracks = {onThrough, onFront};
+        const QSet<ObjectId> part{board.placements.at(0).id};
+
+        // Moved: the ends on the pads go with them, the others stay.
+        const Board moved = withTracksFollowingPads(
+            board, withPlacementsMoved(board, part, mm(2, 0)), library());
+        QCOMPARE(moved.tracks.at(0).from, mm(-3, 0));
+        QCOMPARE(moved.tracks.at(0).to, mm(-5, 10));
+        QCOMPARE(moved.tracks.at(1).from, mm(5, 10));
+        QCOMPARE(moved.tracks.at(1).to, mm(7, 0));
+
+        // Turned about the part's point: the end goes where pad 1 is now.
+        const Board rotated = withPlacementsRotated(board, part, Point());
+        const Board turned = withTracksFollowingPads(board, rotated, library());
+        QCOMPARE(turned.tracks.at(0).from, placedPadPoint(rotated.placements.at(0), mm(-5, 0)));
+        QVERIFY(turned.tracks.at(0).from != mm(-5, 0));
+
+        // A track of another net, or on a side the pad lacks, stays.
+        Board others = board;
+        others.tracks[0].net = QStringLiteral("B");
+        others.tracks[1].side = BoardSide::Bottom;
+        const Board kept = withTracksFollowingPads(
+            others, withPlacementsMoved(others, part, mm(2, 0)), library());
+        QCOMPARE(kept.tracks.at(0).from, mm(-5, 0));
+        QCOMPARE(kept.tracks.at(1).to, mm(5, 0));
+
+        // A piece whose pad lands on its other end goes.
+        const Board shrunk = withTracksFollowingPads(
+            board, withPlacementsMoved(board, part, mm(0, 10)), library());
+        QVERIFY(shrunk.tracks.isEmpty());
+
+        // A pad left where the moved one was holds the ends on it.
+        Board twin = board;
+        Placement still = board.placements.at(0);
+        still.id = newObjectId();
+        twin.placements.append(still);
+        const Board held = withTracksFollowingPads(
+            twin, withPlacementsMoved(twin, part, mm(2, 0)), library());
+        QCOMPARE(held.tracks.at(0).from, mm(-5, 0));
+
+        // A track carried whole with the part is not stretched again.
+        const QSet<ObjectId> carried{onThrough.id};
+        const Board along = withTracksFollowingPads(
+            board,
+            withTracksMoved(withPlacementsMoved(board, part, mm(2, 0)), carried, mm(2, 0)),
+            library(), carried);
+        QCOMPARE(along.tracks.at(0).from, mm(-3, 0));
+        QCOMPARE(along.tracks.at(0).to, mm(-3, 10));
+        QCOMPARE(along.tracks.at(1).to, mm(7, 0));
     }
 
     void tracksTakeTheClassOfTheirNet()

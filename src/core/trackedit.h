@@ -60,6 +60,16 @@ QSet<ObjectId> trackRun(const Board &board, const ObjectId &id);
 Board withoutTracks(const Board &board, const QSet<ObjectId> &ids);
 // The board without any track or via, as it is shown while they are hidden.
 Board withoutAnyTracks(const Board &board);
+// 'after', a change of 'before' that moved or turned parts or holes, with
+// the ends of its tracks that lay on the middle of a pad of their net and
+// side in 'before' moved to where that pad is now: the last piece of a
+// track stretches after its part. A pad left where it was holds the ends on
+// it; a piece shrunk to nothing goes. The tracks 'carried', moved whole
+// with the parts, stay as they are in 'after'.
+Board withTracksFollowingPads(const Board &before, const Board &after, const Library &library,
+                              const QSet<ObjectId> &carried = {});
+// The tracks and the vias 'ids' moved by 'delta'.
+Board withTracksMoved(const Board &board, const QSet<ObjectId> &ids, const Point &delta);
 // The tracks 'ids' 'width' wide.
 Board withTracksWidth(const Board &board, const QSet<ObjectId> &ids, Coord width);
 // The tracks 'ids' moved to 'side'.

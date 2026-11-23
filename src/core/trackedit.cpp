@@ -224,6 +224,55 @@ Board withoutAnyTracks(const Board &board)
     return result;
 }
 
+Board withTracksFollowingPads(const Board &before, const Board &after, const Library &library,
+                              const QSet<ObjectId> &carried)
+{
+    // The same pads in the same order, as only their places changed.
+    const QList<NetPad> was = netPads(before, library);
+    const QList<NetPad> now = netPads(after, library);
+    if (was.size() != now.size())
+        return after;
+    const auto followed = [&was, &now](const Track &track, const Point &end) {
+        std::optional<Point> moved;
+        for (int i = 0; i < was.size(); ++i) {
+            const NetPad &pad = was.at(i);
+            const bool onSide = track.side == BoardSide::Top ? pad.top : pad.bottom;
+            if (pad.at != end || pad.net != track.net || !onSide || now.at(i).net != pad.net)
+                continue;
+            if (now.at(i).at == pad.at)
+                return end;
+            if (!moved)
+                moved = now.at(i).at;
+        }
+        return moved.value_or(end);
+    };
+    Board result = after;
+    for (Track &track : result.tracks) {
+        if (carried.contains(track.id))
+            continue;
+        track.from = followed(track, track.from);
+        track.to = followed(track, track.to);
+    }
+    result.tracks.removeIf([](const Track &track) { return track.from == track.to; });
+    return result;
+}
+
+Board withTracksMoved(const Board &board, const QSet<ObjectId> &ids, const Point &delta)
+{
+    Board result = board;
+    for (Track &track : result.tracks) {
+        if (ids.contains(track.id)) {
+            track.from = track.from + delta;
+            track.to = track.to + delta;
+        }
+    }
+    for (Via &via : result.vias) {
+        if (ids.contains(via.id))
+            via.at = via.at + delta;
+    }
+    return result;
+}
+
 Board withTracksWidth(const Board &board, const QSet<ObjectId> &ids, Coord width)
 {
     Board result = board;

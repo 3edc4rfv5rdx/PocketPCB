@@ -11,6 +11,7 @@
 #include <QLineF>
 #include <QToolTip>
 
+#include <algorithm>
 #include <utility>
 
 namespace ppcb {
@@ -498,7 +499,9 @@ void BoardEditor::rotateChosen()
         return;
     if (m_dragging) {
         if (m_dragPlacements && !m_dragWhole) {
-            m_dragBase = withPlacementsRotated(m_dragBase, ids, m_dragAnchor);
+            m_dragBase = withTracksFollowingPads(
+                m_dragBase, withPlacementsRotated(m_dragBase, ids, m_dragAnchor),
+                m_document->design().library);
             m_movedBoard = draggedBoard(m_lastAt);
             emit changed();
         }
@@ -514,7 +517,10 @@ void BoardEditor::rotateChosen()
         one != nullptr
             ? one->at
             : m_canvas->snapped(placementsBounds(board, m_document->design().library, ids).center());
-    applyBoard(Action::RotateParts, withPlacementsRotated(board, ids, center), ids);
+    applyBoard(Action::RotateParts,
+               withTracksFollowingPads(board, withPlacementsRotated(board, ids, center),
+                                       m_document->design().library),
+               ids);
 }
 
 void BoardEditor::deleteChosen()
@@ -718,7 +724,20 @@ Board BoardEditor::draggedBoard(const QPointF &at) const
     moved = withHolesMoved(moved, chosenHoles(), delta);
     if (outlineChosen() && !isOutlineLocked())
         moved.outline = outlineMoved(board.outline, delta);
-    return moved;
+    // The tracks and vias chosen go along whole, unless something chosen
+    // is locked and stays; the tracks on the pads moved stretch after them.
+    const bool lockedChosen =
+        (outlineChosen() && isOutlineLocked())
+        || std::any_of(board.placements.cbegin(), board.placements.cend(),
+                       [this](const Placement &placement) {
+                           return placement.locked && m_chosen.contains(placement.id);
+                       })
+        || std::any_of(board.holes.cbegin(), board.holes.cend(), [this](const MountingHole &hole) {
+               return hole.locked && m_chosen.contains(hole.id);
+           });
+    const QSet<ObjectId> carried = lockedChosen ? QSet<ObjectId>() : chosenTracks();
+    moved = withTracksMoved(moved, carried, delta);
+    return withTracksFollowingPads(board, moved, m_document->design().library, carried);
 }
 
 void BoardEditor::dropChosen()
@@ -978,6 +997,12 @@ void BoardEditor::chooseAll()
         m_chosen.insert(placement.id);
     for (const MountingHole &hole : m_document->design().board.holes)
         m_chosen.insert(hole.id);
+    if (m_tracksShown) {
+        for (const Track &track : m_document->design().board.tracks)
+            m_chosen.insert(track.id);
+        for (const Via &via : m_document->design().board.vias)
+            m_chosen.insert(via.id);
+    }
     emit changed();
 }
 
