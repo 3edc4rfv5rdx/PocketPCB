@@ -99,6 +99,9 @@ struct Rules
     // A new via: diameters of the hole and of the copper.
     Coord viaDrill = 0;
     Coord viaSize = 0;
+    // A new wire link: diameters of its holes and of its pads.
+    Coord linkDrill = 0;
+    Coord linkSize = 0;
     // The least copper around the hole of a pad.
     Coord annularRing = 0;
     // Copper to the edge of the board.

@@ -47,6 +47,14 @@ QList<NetPad> netPads(const Board &board, const Library &library)
                                hole.net, holePadOn(board, hole, BoardSide::Top),
                                holePadOn(board, hole, BoardSide::Bottom)});
     }
+    for (const WireLink &link : board.links) {
+        if (link.net.isEmpty())
+            continue;
+        for (const Point &end : {link.from, link.to})
+            pads.append(NetPad{end, link.size, link.size, link.net,
+                               copperOn(board.copper, BoardSide::Top),
+                               copperOn(board.copper, BoardSide::Bottom)});
+    }
     return pads;
 }
 
@@ -97,6 +105,21 @@ QList<int> copperRoots(const Board &board, const QList<NetPad> &pads)
                     join(padCount + t, padCount + o);
             }
         }
+    }
+    // A wire link joins the pads at its ends.
+    for (const WireLink &link : board.links) {
+        int from = -1;
+        int to = -1;
+        for (int p = 0; p < padCount; ++p) {
+            if (pads.at(p).net != link.net)
+                continue;
+            if (from < 0 && pads.at(p).at == link.from)
+                from = p;
+            if (to < 0 && pads.at(p).at == link.to)
+                to = p;
+        }
+        if (from >= 0 && to >= 0)
+            join(from, to);
     }
     // A via on a pad joins it.
     for (int v = 0; v < board.vias.size(); ++v) {

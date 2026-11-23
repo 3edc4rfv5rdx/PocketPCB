@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Wire links on the board: a wire between two pads with holes, chosen, deleted and joining its pads as a track
 - F: The autorouter ends on the board with the fewest unrouted it reached while taking connections up
 - E: Spreading tracks no longer moves a piece onto copper of its own net it is not joined to
 - N: The autorouter takes up the tracks it laid that are in the way of a connection with no way, and lays them again

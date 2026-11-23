@@ -74,7 +74,11 @@ std::optional<CopperPoint> copperAt(const Board &board, const Library &library, 
 ObjectId trackAt(const Board &board, const QPointF &at, double reach, BoardSide first);
 // The via under 'at', within 'reach' of its edge; null when there is none.
 ObjectId viaAt(const Board &board, const QPointF &at, double reach);
-// The tracks and the vias lying wholly inside 'rect' (millimetres).
+// The wire link with a pad under 'at', within 'reach' of its edge; null when
+// there is none.
+ObjectId linkAt(const Board &board, const QPointF &at, double reach);
+// The tracks, the vias and the wire links lying wholly inside 'rect'
+// (millimetres).
 QSet<ObjectId> tracksInside(const Board &board, const QRectF &rect);
 // The track 'id' and the tracks going on from it end to end, on its side or
 // through a via, up to a pad of a part or a hole and up to a fork: a point
@@ -88,9 +92,10 @@ QSet<ObjectId> trackRun(const Board &board, const Library &library, const Object
 // that go with them when they are taken off the board.
 QSet<ObjectId> tracksOfPads(const Board &board, const Library &library,
                             const QSet<ObjectId> &ids);
-// The board without the tracks and the vias 'ids'.
+// The board without the tracks, the vias and the wire links 'ids'.
 Board withoutTracks(const Board &board, const QSet<ObjectId> &ids);
-// The board without any track or via, as it is shown while they are hidden.
+// The board without any track, via or wire link, as it is shown while they
+// are hidden.
 Board withoutAnyTracks(const Board &board);
 // 'after', a change of 'before' that moved or turned parts or holes, with
 // the ends of its tracks that lay on the middle of a pad of their net and
@@ -146,7 +151,7 @@ Board withTrackPieceMoved(const Board &board, const Library &library, const Obje
 // piece between two corners (cornerNeighbour()) moves, so none is added.
 Board withTracksSpread(const Board &board, const Design &design, Coord gridStep,
                        const QSet<ObjectId> &ids = {});
-// The tracks and the vias 'ids' moved by 'delta'.
+// The tracks, the vias and the wire links 'ids' moved by 'delta'.
 Board withTracksMoved(const Board &board, const QSet<ObjectId> &ids, const Point &delta);
 // The tracks and the vias 'ids' as laid by hand: no longer the
 // autorouter's (Track::autorouted).

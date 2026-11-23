@@ -32,6 +32,7 @@ const char KEY_OUTLINE_LOCKED[] = "outlineLocked";
 const char KEY_PLACEMENTS[] = "placements";
 const char KEY_TRACKS[] = "tracks";
 const char KEY_VIAS[] = "vias";
+const char KEY_LINKS[] = "wireLinks";
 const char KEY_HOLES[] = "holes";
 const char KEY_GRAPHICS[] = "graphics";
 const char KEY_ZONES[] = "zones";
@@ -258,6 +259,41 @@ QJsonObject viaToJson(const Via &via)
     return object;
 }
 
+QJsonObject linkToJson(const WireLink &link)
+{
+    QJsonObject object;
+    object.insert(QLatin1String(KEY_ID), idToJson(link.id));
+    object.insert(QLatin1String(KEY_NET), link.net);
+    object.insert(QLatin1String(KEY_FROM), pointToJson(link.from));
+    object.insert(QLatin1String(KEY_TO), pointToJson(link.to));
+    object.insert(QLatin1String(KEY_DRILL), mmToJson(link.drill));
+    object.insert(QLatin1String(KEY_SIZE), mmToJson(link.size));
+    if (link.autorouted)
+        object.insert(QLatin1String(KEY_AUTOROUTED), true);
+    return object;
+}
+
+WireLink linkFromJson(const QJsonObject &object, const QString &where, ReadContext &context)
+{
+    JsonReader &reader = context.reader;
+    WireLink link;
+    link.id = reader.uniqueId(object, KEY_ID, where, context.ids);
+    link.net = reader.string(object, KEY_NET, where);
+    link.from = reader.point(object, KEY_FROM, where);
+    link.to = reader.point(object, KEY_TO, where);
+    link.drill = reader.positiveMm(object, KEY_DRILL, where);
+    link.size = reader.positiveMm(object, KEY_SIZE, where);
+    if (object.contains(QLatin1String(KEY_AUTOROUTED)))
+        link.autorouted = reader.boolean(object, KEY_AUTOROUTED, where);
+    if (reader.ok() && link.from == link.to)
+        reader.fail(JsonReader::pathOf(where, KEY_TO),
+                    JsonReader::tr("the ends of a wire link coincide"));
+    if (reader.ok() && link.drill >= link.size)
+        reader.fail(JsonReader::pathOf(where, KEY_DRILL),
+                    JsonReader::tr("the hole must be smaller than the pad"));
+    return link;
+}
+
 Via viaFromJson(const QJsonObject &object, const QString &where, ReadContext &context)
 {
     JsonReader &reader = context.reader;
@@ -395,6 +431,12 @@ bool operator==(const Track &a, const Track &b)
            && a.from == b.from && a.to == b.to && a.autorouted == b.autorouted;
 }
 
+bool operator==(const WireLink &a, const WireLink &b)
+{
+    return a.id == b.id && a.from == b.from && a.to == b.to && a.net == b.net
+           && a.drill == b.drill && a.size == b.size && a.autorouted == b.autorouted;
+}
+
 bool operator==(const Via &a, const Via &b)
 {
     return a.id == b.id && a.at == b.at && a.net == b.net && a.drill == b.drill
@@ -455,7 +497,8 @@ bool operator==(const Board &a, const Board &b)
     return a.copper == b.copper && a.outline == b.outline
            && a.outlineLocked == b.outlineLocked
            && a.placements == b.placements && a.tracks == b.tracks && a.vias == b.vias
-           && a.holes == b.holes && a.graphics == b.graphics && a.zones == b.zones;
+           && a.links == b.links && a.holes == b.holes && a.graphics == b.graphics
+           && a.zones == b.zones;
 }
 
 QJsonObject boardToJson(const Board &board)
@@ -467,6 +510,7 @@ QJsonObject boardToJson(const Board &board)
     root.insert(QLatin1String(KEY_PLACEMENTS), listToJson(board.placements, placementToJson));
     root.insert(QLatin1String(KEY_TRACKS), listToJson(board.tracks, trackToJson));
     root.insert(QLatin1String(KEY_VIAS), listToJson(board.vias, viaToJson));
+    root.insert(QLatin1String(KEY_LINKS), listToJson(board.links, linkToJson));
     root.insert(QLatin1String(KEY_HOLES), listToJson(board.holes, holeToJson));
     root.insert(QLatin1String(KEY_GRAPHICS), listToJson(board.graphics, boardGraphicToJson));
     root.insert(QLatin1String(KEY_ZONES), listToJson(board.zones, zoneToJson));
@@ -490,6 +534,9 @@ Board boardFromJson(const QJsonObject &root, JsonReader &reader)
                                                placementFromJson);
     board.tracks = listFromJson<Track>(root, KEY_TRACKS, QString(), context, trackFromJson);
     board.vias = listFromJson<Via>(root, KEY_VIAS, QString(), context, viaFromJson);
+    // Optional: files written before them have none.
+    if (root.contains(QLatin1String(KEY_LINKS)))
+        board.links = listFromJson<WireLink>(root, KEY_LINKS, QString(), context, linkFromJson);
     board.holes = listFromJson<MountingHole>(root, KEY_HOLES, QString(), context, holeFromJson);
     board.graphics = listFromJson<BoardGraphic>(root, KEY_GRAPHICS, QString(), context,
                                                 boardGraphicFromJson);

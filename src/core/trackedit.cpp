@@ -114,6 +114,18 @@ std::optional<CopperPoint> copperAt(const Board &board, const Library &library, 
         setSides(point, board, CopperSides::Both);
         return point;
     }
+    // The pads of wire links.
+    for (auto it = board.links.crbegin(); it != board.links.crend(); ++it) {
+        for (const Point &end : {it->to, it->from}) {
+            if (QLineF(toMm(end), at).length() > nmToMm(it->size) / 2 + reach)
+                continue;
+            CopperPoint point;
+            point.at = end;
+            point.net = it->net;
+            setSides(point, board, CopperSides::Both);
+            return point;
+        }
+    }
     // The ends of tracks, then any point of them.
     const auto trackPoint = [&board](const Track &track, const Point &where) {
         CopperPoint point;
@@ -162,6 +174,17 @@ ObjectId viaAt(const Board &board, const QPointF &at, double reach)
     return ObjectId();
 }
 
+ObjectId linkAt(const Board &board, const QPointF &at, double reach)
+{
+    for (auto it = board.links.crbegin(); it != board.links.crend(); ++it) {
+        for (const Point &end : {it->to, it->from}) {
+            if (QLineF(toMm(end), at).length() <= nmToMm(it->size) / 2 + reach)
+                return it->id;
+        }
+    }
+    return ObjectId();
+}
+
 QSet<ObjectId> tracksInside(const Board &board, const QRectF &rect)
 {
     QSet<ObjectId> inside;
@@ -178,6 +201,14 @@ QSet<ObjectId> tracksInside(const Board &board, const QRectF &rect)
         const QPointF middle = toMm(via.at);
         if (rect.contains(QRectF(middle - QPointF(half, half), middle + QPointF(half, half))))
             inside.insert(via.id);
+    }
+    for (const WireLink &link : board.links) {
+        const double half = nmToMm(link.size) / 2;
+        const QRectF covered = QRectF(toMm(link.from), toMm(link.to))
+                                   .normalized()
+                                   .adjusted(-half, -half, half, half);
+        if (rect.contains(covered))
+            inside.insert(link.id);
     }
     return inside;
 }
@@ -311,6 +342,13 @@ QList<PadPoint> padPoints(const Board &board, const Library &library)
                                    holePadOn(board, hole, BoardSide::Bottom), hole.id, hole.net,
                                    hole.at, hole.at, holeOuterDiameter(hole) / 2});
     }
+    // The pads at the ends of wire links, through the board.
+    for (const WireLink &link : board.links) {
+        for (const Point &end : {link.from, link.to})
+            points.append(PadPoint{end, copperOn(board.copper, BoardSide::Top),
+                                   copperOn(board.copper, BoardSide::Bottom), link.id, link.net,
+                                   end, end, link.size / 2});
+    }
     return points;
 }
 
@@ -342,6 +380,7 @@ Board withoutTracks(const Board &board, const QSet<ObjectId> &ids)
     Board result = board;
     result.tracks.removeIf([&ids](const Track &track) { return ids.contains(track.id); });
     result.vias.removeIf([&ids](const Via &via) { return ids.contains(via.id); });
+    result.links.removeIf([&ids](const WireLink &link) { return ids.contains(link.id); });
     return result;
 }
 
@@ -350,6 +389,7 @@ Board withoutAnyTracks(const Board &board)
     Board result = board;
     result.tracks.clear();
     result.vias.clear();
+    result.links.clear();
     return result;
 }
 
@@ -891,6 +931,12 @@ Board withTracksMoved(const Board &board, const QSet<ObjectId> &ids, const Point
         if (ids.contains(via.id))
             via.at = via.at + delta;
     }
+    for (WireLink &link : result.links) {
+        if (ids.contains(link.id)) {
+            link.from = link.from + delta;
+            link.to = link.to + delta;
+        }
+    }
     return result;
 }
 
@@ -904,6 +950,10 @@ Board withTracksByHand(const Board &board, const QSet<ObjectId> &ids)
     for (Via &via : result.vias) {
         if (ids.contains(via.id))
             via.autorouted = false;
+    }
+    for (WireLink &link : result.links) {
+        if (ids.contains(link.id))
+            link.autorouted = false;
     }
     return result;
 }

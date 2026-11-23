@@ -158,7 +158,7 @@ public:
     QSet<ObjectId> chosenPlacements() const;
     // The holes chosen, of those the board has.
     QSet<ObjectId> chosenHoles() const;
-    // The tracks and the vias chosen, of those the board has.
+    // The tracks, the vias and the wire links chosen, of those the board has.
     QSet<ObjectId> chosenTracks() const;
     // The nets of the pads of the placements chosen, lit on the board.
     QSet<QString> litNets() const;

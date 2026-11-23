@@ -361,6 +361,19 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
             painter.drawEllipse(toMm(via.at), radius, radius);
         }
     }
+    // A wire link chosen: its pads and its wire.
+    for (const WireLink &link : shown.links) {
+        if (!chosenTracks.contains(link.id))
+            continue;
+        const double radius = nmToMm(link.size) / 2 + pixel * CHOSEN_TRACK_PIXELS;
+        painter.setPen(Qt::NoPen);
+        painter.drawEllipse(toMm(link.from), radius, radius);
+        painter.drawEllipse(toMm(link.to), radius, radius);
+        painter.setPen(QPen(bandColor, 2 * pixel * CHOSEN_TRACK_PIXELS, Qt::SolidLine,
+                            Qt::RoundCap));
+        painter.drawLine(toMm(link.from), toMm(link.to));
+    }
+    painter.setPen(Qt::NoPen);
     // The track being laid, in its side's copper, a little see-through.
     for (const Track &track : editor->trackPreview()) {
         QColor copper = boardLayerColor(copperLayer(track.side));

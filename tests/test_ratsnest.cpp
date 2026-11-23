@@ -174,6 +174,25 @@ private slots:
         QVERIFY(joinedCopper(board, library(), ObjectId()).isEmpty());
     }
 
+    // A wire link joins the pads at its ends; they are pads of its net too.
+    void wireLinksJoinTheirEnds()
+    {
+        Board board;
+        board.placements = {placement(mm(0, 0), QStringLiteral("A"), QString()),
+                            placement(mm(30, 0), QStringLiteral("A"), QString())};
+        QCOMPARE(ratsnest(board, library()).size(), 1);
+        WireLink link;
+        link.id = newObjectId();
+        link.net = QStringLiteral("A");
+        link.from = mm(-5, 0);
+        link.to = mm(25, 0);
+        link.drill = MM;
+        link.size = 2 * MM;
+        board.links = {link};
+        QVERIFY(ratsnest(board, library()).isEmpty());
+        QCOMPARE(netPads(board, library()).size(), 4);
+    }
+
     // A mounting hole with a pad on a net is one of its pads; one without
     // a pad, or without a net, is not.
     void holePadsAreOnTheirNets()

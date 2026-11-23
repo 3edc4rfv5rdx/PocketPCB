@@ -539,6 +539,10 @@ QSet<ObjectId> BoardEditor::chosenTracks() const
         if (m_chosen.contains(via.id))
             chosen.insert(via.id);
     }
+    for (const WireLink &link : board.links) {
+        if (m_chosen.contains(link.id))
+            chosen.insert(link.id);
+    }
     return chosen;
 }
 
@@ -848,6 +852,8 @@ bool BoardEditor::pressChoosable(const QPointF &at, bool adding, bool joined)
     ObjectId copper;
     if (m_tracksShown && hole.isNull() && !padAt(design.board, design.library, at, 0)) {
         copper = viaAt(design.board, at, reach);
+        if (copper.isNull())
+            copper = linkAt(design.board, at, reach);
         if (copper.isNull())
             copper = trackAt(design.board, at, reach, trackSide());
     }
@@ -1217,6 +1223,8 @@ void BoardEditor::chooseAll()
         m_chosen.insert(track.id);
     for (const Via &via : m_document->design().board.vias)
         m_chosen.insert(via.id);
+    for (const WireLink &link : m_document->design().board.links)
+        m_chosen.insert(link.id);
     emit changed();
 }
 
@@ -1236,6 +1244,8 @@ BoardEditor::MenuTarget BoardEditor::chooseForMenu(const QPointF &at)
         && !padAt(design.board, design.library, at, 0)) {
         const double reach = m_canvas->pixelsToMm(CanvasView::HIT_PIXELS);
         copper = viaAt(design.board, at, reach);
+        if (copper.isNull())
+            copper = linkAt(design.board, at, reach);
         if (copper.isNull())
             copper = trackAt(design.board, at, reach, trackSide());
     }

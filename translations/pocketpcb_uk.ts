@@ -288,6 +288,10 @@
         <translation>кінці доріжки збігаються</translation>
     </message>
     <message>
+        <source>the ends of a wire link coincide</source>
+        <translation>кінці перемички збігаються</translation>
+    </message>
+    <message>
         <source>the hole must be smaller than the via</source>
         <translation>отвір має бути меншим за перехідний</translation>
     </message>

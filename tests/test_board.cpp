@@ -74,6 +74,16 @@ Board fullBoard()
     via.autorouted = true;
     board.vias.append(via);
 
+    WireLink link;
+    link.id = id(0x35);
+    link.from = Point{20 * MM, 8 * MM};
+    link.to = Point{20 * MM, 18 * MM};
+    link.net = QStringLiteral("GND");
+    link.drill = 800000;
+    link.size = 1800000;
+    link.autorouted = true;
+    board.links.append(link);
+
     MountingHole hole;
     hole.id = id(0x41);
     hole.at = Point{3 * MM, 3 * MM};
@@ -235,6 +245,15 @@ private slots:
         CHANGED(other.vias[0].autorouted = false);
         CHANGED(other.vias[0].size += 1);
         CHANGED(other.vias.clear());
+
+        CHANGED(other.links[0].id = id(1));
+        CHANGED(other.links[0].from.x += 1);
+        CHANGED(other.links[0].to.y += 1);
+        CHANGED(other.links[0].net.clear());
+        CHANGED(other.links[0].drill += 1);
+        CHANGED(other.links[0].size += 1);
+        CHANGED(other.links[0].autorouted = false);
+        CHANGED(other.links.clear());
 
         CHANGED(other.holes[0].id = id(1));
         CHANGED(other.holes[0].at.y += 1);
@@ -405,6 +424,19 @@ private slots:
         const Board back = readBack(root, error);
         QVERIFY2(error.isEmpty(), qPrintable(error));
         QVERIFY(!back.holes.at(0).locked);
+    }
+
+    void wireLinksAreOptional()
+    {
+        // A file written before wire links has none.
+        QJsonObject root = boardToJson(fullBoard());
+        root.remove(QStringLiteral("wireLinks"));
+        QVERIFY(errorOf(root).isEmpty());
+        // A link's holes are smaller than its pads, and its ends apart.
+        QVERIFY(errorOfChange("wireLinks", 0, "drill", 2.0)
+                    .startsWith(QStringLiteral("wireLinks[0].drill")));
+        QVERIFY(errorOfChange("wireLinks", 0, "to", QJsonArray{20.0, 8.0})
+                    .startsWith(QStringLiteral("wireLinks[0].to")));
     }
 
     void everyListMustBePresent()

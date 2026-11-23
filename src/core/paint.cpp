@@ -28,6 +28,8 @@ const double PLACEHOLDER_TEXT_HEIGHT = 1.27;
 // The line from a placement's text to the part on the silkscreen, in
 // millimetres: bolder than the drawings of the footprints.
 const double LEADER_LINE_WIDTH = 0.3;
+// The wire of a wire link, drawn on the silkscreen of the side of the parts.
+const double WIRE_LINK_WIDTH = 0.6;
 const double ORIGIN_MARK_SIZE = 0.8;
 // The pad number takes this share of the pad's smaller side.
 const double PAD_TEXT_SHARE = 0.45;
@@ -1490,6 +1492,10 @@ QRectF boardBounds(const Board &board, const Library &library)
     }
     for (const Via &via : board.vias)
         bounds.add(squareAround(toMm(via.at), nmToMm(via.size)));
+    for (const WireLink &link : board.links) {
+        bounds.add(squareAround(toMm(link.from), nmToMm(link.size)));
+        bounds.add(squareAround(toMm(link.to), nmToMm(link.size)));
+    }
     for (const MountingHole &hole : board.holes)
         bounds.add(squareAround(toMm(hole.at), nmToMm(holeOuterDiameter(hole))));
     for (const BoardGraphic &item : board.graphics) {
@@ -1567,6 +1573,17 @@ void paintBoard(QPainter &painter, const Board &board, const Library &library,
         paintRing(painter, toMm(via.at), nmToMm(via.size), nmToMm(via.drill), paintcolor::via(),
                   throughShown(shown));
     }
+    // The pads of wire links, through the board as those of parts are.
+    const QColor linkPad =
+        board.copper == CopperSides::Both
+            ? paintcolor::padBoth()
+            : shownCopper(board.copper == CopperSides::Bottom ? BoardSide::Bottom : BoardSide::Top,
+                          bright);
+    for (const WireLink &link : board.links) {
+        for (const Point &end : {link.from, link.to})
+            paintRing(painter, toMm(end), nmToMm(link.size), nmToMm(link.drill), linkPad,
+                      throughShown(shown));
+    }
     for (const MountingHole &hole : board.holes)
         paintMountingHole(painter, board, hole, shown, lockedMarked, bright);
 
@@ -1580,6 +1597,13 @@ void paintBoard(QPainter &painter, const Board &board, const Library &library,
     for (const BoardGraphic &item : board.graphics) {
         if (shown.contains(silkscreenLayer(item.side)))
             paintBoardGraphic(painter, item);
+    }
+    // The wires of wire links, on the side of the parts.
+    if (shown.contains(BoardLayer::SilkscreenTop)) {
+        painter.setPen(QPen(paintcolor::silkscreenTop(), WIRE_LINK_WIDTH, Qt::SolidLine,
+                            Qt::RoundCap));
+        for (const WireLink &link : board.links)
+            painter.drawLine(toMm(link.from), toMm(link.to));
     }
 
     if (shown.contains(BoardLayer::Outline)) {

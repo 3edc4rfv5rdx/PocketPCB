@@ -93,6 +93,8 @@ Project fullProject()
     project.rules.clearance = 450000;
     project.rules.viaDrill = 700000;
     project.rules.viaSize = 1800000;
+    project.rules.linkDrill = 900000;
+    project.rules.linkSize = 1900000;
     project.rules.annularRing = 550000;
     project.rules.edgeClearance = 900000;
     project.rules.maskExpansion = 150000;
@@ -248,6 +250,8 @@ private slots:
         CHANGED(other.rules.clearance += 1);
         CHANGED(other.rules.viaDrill += 1);
         CHANGED(other.rules.viaSize += 1);
+        CHANGED(other.rules.linkDrill += 1);
+        CHANGED(other.rules.linkSize += 1);
         CHANGED(other.rules.annularRing += 1);
         CHANGED(other.rules.edgeClearance += 1);
         CHANGED(other.rules.maskExpansion += 1);

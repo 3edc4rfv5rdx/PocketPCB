@@ -128,6 +128,22 @@ struct Via
     bool autorouted = false;
 };
 
+// A wire link: a bare wire on the side of the parts, soldered into a pad
+// with a hole at each end, joining them as a track would; what a board with
+// copper on one side has where a track cannot go.
+struct WireLink
+{
+    ObjectId id;
+    Point from;
+    Point to;
+    QString net;
+    // Diameters of the holes and of the pads.
+    Coord drill = 0;
+    Coord size = 0;
+    // As Track::autorouted.
+    bool autorouted = false;
+};
+
 // Where copper is: on both sides, or on one; of the board, or of the pad
 // of a mounting hole.
 enum class CopperSides { Both, Top, Bottom };
@@ -189,6 +205,7 @@ struct Board
     QList<Placement> placements;
     QList<Track> tracks;
     QList<Via> vias;
+    QList<WireLink> links;
     QList<MountingHole> holes;
     QList<BoardGraphic> graphics;
     QList<Zone> zones;
@@ -198,6 +215,7 @@ bool operator==(const OutlineCorner &a, const OutlineCorner &b);
 bool operator==(const Placement &a, const Placement &b);
 bool operator==(const Track &a, const Track &b);
 bool operator==(const Via &a, const Via &b);
+bool operator==(const WireLink &a, const WireLink &b);
 bool operator==(const MountingHole &a, const MountingHole &b);
 bool operator==(const BoardGraphic &a, const BoardGraphic &b);
 bool operator==(const Zone &a, const Zone &b);

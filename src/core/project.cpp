@@ -46,6 +46,8 @@ const char KEY_TRACK_WIDTH[] = "trackWidth";
 const char KEY_CLEARANCE[] = "clearance";
 const char KEY_VIA_DRILL[] = "viaDrill";
 const char KEY_VIA_SIZE[] = "viaSize";
+const char KEY_LINK_DRILL[] = "wireLinkDrill";
+const char KEY_LINK_SIZE[] = "wireLinkSize";
 
 const char KEY_SET[] = "set";
 const char KEY_TRACK_WIDTHS[] = "trackWidths";
@@ -74,6 +76,9 @@ const Coord LUT_VIA_SIZE = 2000000;
 const Coord LUT_ANNULAR_RING = 600000;
 const Coord LUT_EDGE_CLEARANCE = 1000000;
 const Coord MASK_EXPANSION = 100000;
+// A wire link's holes take a 0.6 mm wire, in either rule set.
+const Coord LINK_DRILL = 800000;
+const Coord LINK_SIZE = 1800000;
 const Coord POWER_TRACK_WIDTH = 1500000;
 // A factory drills any diameter; these are the common ones. Toner transfer
 // is drilled at home with the drills one has.
@@ -227,6 +232,8 @@ QJsonObject rulesToJson(const Rules &rules)
     object.insert(QLatin1String(KEY_CLEARANCE), mmToJson(rules.clearance));
     object.insert(QLatin1String(KEY_VIA_DRILL), mmToJson(rules.viaDrill));
     object.insert(QLatin1String(KEY_VIA_SIZE), mmToJson(rules.viaSize));
+    object.insert(QLatin1String(KEY_LINK_DRILL), mmToJson(rules.linkDrill));
+    object.insert(QLatin1String(KEY_LINK_SIZE), mmToJson(rules.linkSize));
     object.insert(QLatin1String(KEY_ANNULAR_RING), mmToJson(rules.annularRing));
     object.insert(QLatin1String(KEY_EDGE_CLEARANCE), mmToJson(rules.edgeClearance));
     object.insert(QLatin1String(KEY_MASK_EXPANSION), mmToJson(rules.maskExpansion));
@@ -285,6 +292,16 @@ Rules rulesFromJson(const QJsonObject &root, JsonReader &reader)
     }
     rules.clearance = reader.positiveMm(object, KEY_CLEARANCE, where);
     viaFromJson(object, where, reader, rules.viaDrill, rules.viaSize);
+    // Files written before wire links take the usual ones.
+    rules.linkDrill = LINK_DRILL;
+    rules.linkSize = LINK_SIZE;
+    if (object.contains(QLatin1String(KEY_LINK_DRILL)))
+        rules.linkDrill = reader.positiveMm(object, KEY_LINK_DRILL, where);
+    if (object.contains(QLatin1String(KEY_LINK_SIZE)))
+        rules.linkSize = reader.positiveMm(object, KEY_LINK_SIZE, where);
+    if (reader.ok() && rules.linkDrill >= rules.linkSize)
+        reader.fail(JsonReader::pathOf(where, KEY_LINK_DRILL),
+                    JsonReader::tr("the hole must be smaller than the pad"));
     rules.annularRing = reader.nonNegativeMm(object, KEY_ANNULAR_RING, where);
     rules.edgeClearance = reader.nonNegativeMm(object, KEY_EDGE_CLEARANCE, where);
     rules.maskExpansion = reader.nonNegativeMm(object, KEY_MASK_EXPANSION, where);
@@ -418,6 +435,8 @@ Rules productionRules()
     rules.clearance = PRODUCTION_CLEARANCE;
     rules.viaDrill = PRODUCTION_VIA_DRILL;
     rules.viaSize = PRODUCTION_VIA_SIZE;
+    rules.linkDrill = LINK_DRILL;
+    rules.linkSize = LINK_SIZE;
     rules.annularRing = PRODUCTION_ANNULAR_RING;
     rules.edgeClearance = PRODUCTION_EDGE_CLEARANCE;
     rules.maskExpansion = MASK_EXPANSION;
@@ -435,6 +454,8 @@ Rules lutRules()
     rules.clearance = LUT_CLEARANCE;
     rules.viaDrill = LUT_VIA_DRILL;
     rules.viaSize = LUT_VIA_SIZE;
+    rules.linkDrill = LINK_DRILL;
+    rules.linkSize = LINK_SIZE;
     rules.annularRing = LUT_ANNULAR_RING;
     rules.edgeClearance = LUT_EDGE_CLEARANCE;
     rules.maskExpansion = MASK_EXPANSION;
@@ -461,6 +482,7 @@ bool operator==(const Rules &a, const Rules &b)
     return a.set == b.set && a.trackWidths == b.trackWidths
            && a.defaultTrackWidth == b.defaultTrackWidth && a.clearance == b.clearance
            && a.viaDrill == b.viaDrill && a.viaSize == b.viaSize
+           && a.linkDrill == b.linkDrill && a.linkSize == b.linkSize
            && a.annularRing == b.annularRing && a.edgeClearance == b.edgeClearance
            && a.maskExpansion == b.maskExpansion && a.viasCovered == b.viasCovered
            && a.drills == b.drills && a.drillsOnly == b.drillsOnly

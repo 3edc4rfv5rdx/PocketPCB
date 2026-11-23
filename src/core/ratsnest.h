@@ -44,13 +44,14 @@ struct NetPad
     bool bottom = true;
 };
 // The pads of the placements of 'board' that are on a net, then the pads
-// of its mounting holes that are.
+// of its mounting holes that are, then those at the ends of its wire links.
 QList<NetPad> netPads(const Board &board, const Library &library);
 
 // The group of copper each of 'pads' is in: pads joined by the tracks and
 // vias of 'board' have one number, pads not joined different ones. A track
 // joins what its ends lie on, on its side: a pad, a via, the end or the
-// middle of a track; a via joins both sides.
+// middle of a track; a via joins both sides, and a wire link the pads at
+// its ends.
 QList<int> copperGroups(const Board &board, const QList<NetPad> &pads);
 // The same group for each of 'pads', then for each track, then for each via
 // of 'board', in their order.

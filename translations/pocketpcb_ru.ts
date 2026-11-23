@@ -288,6 +288,10 @@
         <translation>концы дорожки совпадают</translation>
     </message>
     <message>
+        <source>the ends of a wire link coincide</source>
+        <translation>концы перемычки совпадают</translation>
+    </message>
+    <message>
         <source>the hole must be smaller than the via</source>
         <translation>отверстие должно быть меньше переходного</translation>
     </message>
