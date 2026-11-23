@@ -659,10 +659,23 @@ Board BoardEditor::trackDragged(const QPointF &at) const
 
 void BoardEditor::spreadTracks()
 {
+    spreadTracksOf({});
+}
+
+void BoardEditor::spreadChosenTracks()
+{
+    const QSet<ObjectId> chosen = chosenTracks();
+    if (!chosen.isEmpty())
+        spreadTracksOf(chosen);
+}
+
+void BoardEditor::spreadTracksOf(const QSet<ObjectId> &ids)
+{
     if (!m_active || m_dragging)
         return;
     const Design &design = m_document->design();
-    const Board spread = withTracksSpread(design.board, design, design.project.boardGridStep);
+    const Board spread =
+        withTracksSpread(design.board, design, design.project.boardGridStep, ids);
     if (spread == design.board) {
         emit message(tr("The tracks have no more room to take"));
         return;

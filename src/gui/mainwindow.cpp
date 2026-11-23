@@ -1077,6 +1077,10 @@ void MainWindow::showBoardMenu(const QPoint &globalPos)
                         [this, side] { m_boardEditor->setChosenTracksSide(side); });
             }
         }
+        QAction *spread =
+            menu.addAction(BoardEditor::actionName(BoardEditor::Action::SpreadTracks));
+        spread->setEnabled(tracks);
+        connect(spread, &QAction::triggered, m_boardEditor, &BoardEditor::spreadChosenTracks);
         menu.addSeparator();
         add("actionDelete");
         break;

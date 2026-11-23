@@ -201,6 +201,10 @@ public:
     // The tracks of the board put in the middle of the room they run in
     // (withTracksSpread()) on its grid, as one step.
     void spreadTracks();
+    // The same for the tracks chosen alone.
+    void spreadChosenTracks();
+    // That for the tracks 'ids', every one when empty.
+    void spreadTracksOf(const QSet<ObjectId> &ids);
     // The nets of what is chosen: of the pads of the parts and holes, and of
     // the tracks and vias.
     QSet<QString> chosenNets() const;
