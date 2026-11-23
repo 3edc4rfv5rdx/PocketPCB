@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The arrows of the sizes in Rectangular board step a cell of the grid
 - E: Ctrl+A on the board shows the hidden silkscreen and tracks again and chooses them all, so a board moved whole keeps its tracks
 - E: Tracks and vias chosen go along whole with the parts dragged also when the board outline is locked
 - E: With the silkscreen hidden, Undo no longer chooses the parts its step touched on the board

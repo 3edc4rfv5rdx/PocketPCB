@@ -1816,7 +1816,7 @@ void MainWindow::makeRectangleBoard()
     const QRectF bounds = m_boardEditor->outlineBounds();
     const Coord width = bounds.isEmpty() ? DEFAULT_BOARD_WIDTH : mmToNm(bounds.width());
     const Coord height = bounds.isEmpty() ? DEFAULT_BOARD_HEIGHT : mmToNm(bounds.height());
-    RectangleBoardDialog dialog(width, height, this);
+    RectangleBoardDialog dialog(width, height, m_canvas->gridStep(), this);
     if (dialog.exec() == QDialog::Accepted)
         m_boardEditor->makeRectangleBoard(dialog.boardWidth(), dialog.boardHeight());
 }

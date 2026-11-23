@@ -2,6 +2,7 @@
 
 #include "boardeditor.h"
 #include "format.h"
+#include "grid.h"
 
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
@@ -11,22 +12,22 @@ namespace ppcb {
 
 namespace {
 
-// The sides of the board, in millimetres: the least and the largest typed,
-// the step of the arrows.
+// The sides of the board, in millimetres: the least and the largest typed.
 const double MIN_SIDE_MM = 1;
 const double MAX_SIDE_MM = 1000;
-const double SIDE_STEP_MM = 1;
 
 } // namespace
 
-RectangleBoardDialog::RectangleBoardDialog(Coord width, Coord height, QWidget *parent)
+RectangleBoardDialog::RectangleBoardDialog(Coord width, Coord height, Coord gridStep,
+                                           QWidget *parent)
     : QDialog(parent)
 {
     setWindowTitle(BoardEditor::actionName(BoardEditor::Action::RectangleBoard));
-    m_width = mmSizeBox(width, MIN_SIDE_MM, MAX_SIDE_MM, SIDE_STEP_MM, this);
+    const double cell = nmToMm(gridStep > 0 ? gridStep : DEFAULT_BOARD_GRID_STEP);
+    m_width = mmSizeBox(width, MIN_SIDE_MM, MAX_SIDE_MM, cell, this);
     m_width->setObjectName(QStringLiteral("boardWidth"));
     m_width->setSuffix(QLatin1Char(' ') + mmUnit());
-    m_height = mmSizeBox(height, MIN_SIDE_MM, MAX_SIDE_MM, SIDE_STEP_MM, this);
+    m_height = mmSizeBox(height, MIN_SIDE_MM, MAX_SIDE_MM, cell, this);
     m_height->setObjectName(QStringLiteral("boardHeight"));
     m_height->setSuffix(QLatin1Char(' ') + mmUnit());
 
