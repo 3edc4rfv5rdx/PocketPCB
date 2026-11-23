@@ -514,9 +514,15 @@ void MainWindow::createMenus()
     selectAllAction->setObjectName(QStringLiteral("actionSelectAll"));
     selectAllAction->setShortcut(QKeySequence::SelectAll);
     connect(selectAllAction, &QAction::triggered, this, [this] {
-        if (m_boardEditor->isActive())
+        if (m_boardEditor->isActive()) {
+            // What is chosen all is shown: the silkscreen and the tracks come
+            // back.
+            for (const char *name : {"actionSilkscreen", "actionHideTracks"}) {
+                if (QAction *hide = findChild<QAction *>(QLatin1String(name)))
+                    hide->setChecked(false);
+            }
             m_boardEditor->chooseAll();
-        else
+        } else
             m_sheetEditor->selectAll();
     });
     // Locks or unlocks what is chosen, whatever it is; pressed while it is

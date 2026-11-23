@@ -1088,12 +1088,11 @@ void BoardEditor::chooseAll()
         m_chosen.insert(placement.id);
     for (const MountingHole &hole : m_document->design().board.holes)
         m_chosen.insert(hole.id);
-    if (m_tracksShown) {
-        for (const Track &track : m_document->design().board.tracks)
-            m_chosen.insert(track.id);
-        for (const Via &via : m_document->design().board.vias)
-            m_chosen.insert(via.id);
-    }
+    // Hidden or not: hiding only takes them out of sight for a while.
+    for (const Track &track : m_document->design().board.tracks)
+        m_chosen.insert(track.id);
+    for (const Via &via : m_document->design().board.vias)
+        m_chosen.insert(via.id);
     emit changed();
 }
 

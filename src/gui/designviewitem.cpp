@@ -345,7 +345,8 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     const QSet<ObjectId> chosenTracks = editor->chosenTracks();
     QColor bandColor = paintcolor::selection();
     bandColor.setAlpha(CHOSEN_TRACK_ALPHA);
-    for (const Track &track : board.tracks) {
+    // Of those shown: hidden ones stay out of sight, chosen or not.
+    for (const Track &track : shown.tracks) {
         if (!chosenTracks.contains(track.id))
             continue;
         painter.setPen(QPen(bandColor, nmToMm(track.width) + 2 * pixel * CHOSEN_TRACK_PIXELS,
@@ -354,7 +355,7 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     }
     painter.setPen(Qt::NoPen);
     painter.setBrush(bandColor);
-    for (const Via &via : board.vias) {
+    for (const Via &via : shown.vias) {
         if (chosenTracks.contains(via.id)) {
             const double radius = nmToMm(via.size) / 2 + pixel * CHOSEN_TRACK_PIXELS;
             painter.drawEllipse(toMm(via.at), radius, radius);

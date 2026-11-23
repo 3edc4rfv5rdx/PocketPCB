@@ -1,4 +1,4 @@
 base_version=0.11
-build=281
-version=0.11.281
+build=282
+version=0.11.282
 build_date=2026-11-23
