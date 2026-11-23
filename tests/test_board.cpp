@@ -62,6 +62,7 @@ Board fullBoard()
     track.width = 500000;
     track.from = Point{5 * MM, 5 * MM};
     track.to = Point{12 * MM, 8 * MM}; // any angle is allowed
+    track.autorouted = true;
     board.tracks.append(track);
 
     Via via;
@@ -70,6 +71,7 @@ Board fullBoard()
     via.net = QStringLiteral("GND");
     via.drill = 600000;
     via.size = 1200000;
+    via.autorouted = true;
     board.vias.append(via);
 
     MountingHole hole;
@@ -223,12 +225,14 @@ private slots:
         CHANGED(other.tracks[0].width += 1);
         CHANGED(other.tracks[0].from.x += 1);
         CHANGED(other.tracks[0].to.y += 1);
+        CHANGED(other.tracks[0].autorouted = false);
         CHANGED(other.tracks.clear());
 
         CHANGED(other.vias[0].id = id(1));
         CHANGED(other.vias[0].at.x += 1);
         CHANGED(other.vias[0].net.clear());
         CHANGED(other.vias[0].drill += 1);
+        CHANGED(other.vias[0].autorouted = false);
         CHANGED(other.vias[0].size += 1);
         CHANGED(other.vias.clear());
 

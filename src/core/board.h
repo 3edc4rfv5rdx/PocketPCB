@@ -110,6 +110,9 @@ struct Track
     Coord width = 0;
     Point from;
     Point to;
+    // Laid by the autorouter and not touched by hand since: the autorouter
+    // may take it up again. Not written when false.
+    bool autorouted = false;
 };
 
 // A via: a round pad with a hole, on both copper layers.
@@ -121,6 +124,8 @@ struct Via
     // Diameters of the hole and of the copper.
     Coord drill = 0;
     Coord size = 0;
+    // As Track::autorouted.
+    bool autorouted = false;
 };
 
 // Where copper is: on both sides, or on one; of the board, or of the pad

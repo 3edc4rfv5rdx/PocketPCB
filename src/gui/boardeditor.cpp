@@ -1136,7 +1136,7 @@ void BoardEditor::release(const QPointF &at)
         if (!shortingTracks(moved, design, changedTracks).isEmpty())
             emit message(tr("The track would come too near another net"));
         else if (moved != design.board)
-            applyBoard(Action::MoveTrack, moved, {taken});
+            applyBoard(Action::MoveTrack, withTracksByHand(moved, changedTracks), {taken});
         emit changed();
         return;
     }
@@ -1300,7 +1300,7 @@ void BoardEditor::setChosenTracksWidth(Coord width)
     const Board &board = m_document->design().board;
     const Board changedBoard = withTracksWidth(board, ids, width);
     if (width > 0 && changedBoard != board)
-        applyBoard(Action::TrackWidth, changedBoard, ids);
+        applyBoard(Action::TrackWidth, withTracksByHand(changedBoard, ids), ids);
 }
 
 void BoardEditor::setChosenTracksSide(BoardSide side)
@@ -1309,7 +1309,7 @@ void BoardEditor::setChosenTracksSide(BoardSide side)
     const Board &board = m_document->design().board;
     const Board changedBoard = withTracksSide(board, ids, side);
     if (changedBoard != board)
-        applyBoard(Action::TrackSide, changedBoard, ids);
+        applyBoard(Action::TrackSide, withTracksByHand(changedBoard, ids), ids);
 }
 
 void BoardEditor::editMenuTrackWidth()

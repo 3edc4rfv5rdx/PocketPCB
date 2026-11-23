@@ -52,6 +52,7 @@ const char KEY_VALUE_AT[] = "valueAt";
 const char KEY_SHOW_REF[] = "showRef";
 const char KEY_SHOW_VALUE[] = "showValue";
 const char KEY_LOCKED[] = "locked";
+const char KEY_AUTOROUTED[] = "auto";
 const char KEY_REF_LINE[] = "refLine";
 const char KEY_VALUE_LINE[] = "valueLine";
 const char KEY_NETS[] = "nets";
@@ -221,6 +222,8 @@ QJsonObject trackToJson(const Track &track)
     object.insert(QLatin1String(KEY_WIDTH), mmToJson(track.width));
     object.insert(QLatin1String(KEY_FROM), pointToJson(track.from));
     object.insert(QLatin1String(KEY_TO), pointToJson(track.to));
+    if (track.autorouted)
+        object.insert(QLatin1String(KEY_AUTOROUTED), true);
     return object;
 }
 
@@ -234,6 +237,9 @@ Track trackFromJson(const QJsonObject &object, const QString &where, ReadContext
     track.width = reader.positiveMm(object, KEY_WIDTH, where);
     track.from = reader.point(object, KEY_FROM, where);
     track.to = reader.point(object, KEY_TO, where);
+    // Optional: laid by hand when it is not there.
+    if (object.contains(QLatin1String(KEY_AUTOROUTED)))
+        track.autorouted = reader.boolean(object, KEY_AUTOROUTED, where);
     if (reader.ok() && track.from == track.to)
         reader.fail(JsonReader::pathOf(where, KEY_TO), JsonReader::tr("the ends of a track coincide"));
     return track;
@@ -247,6 +253,8 @@ QJsonObject viaToJson(const Via &via)
     object.insert(QLatin1String(KEY_NET), via.net);
     object.insert(QLatin1String(KEY_DRILL), mmToJson(via.drill));
     object.insert(QLatin1String(KEY_SIZE), mmToJson(via.size));
+    if (via.autorouted)
+        object.insert(QLatin1String(KEY_AUTOROUTED), true);
     return object;
 }
 
@@ -259,6 +267,8 @@ Via viaFromJson(const QJsonObject &object, const QString &where, ReadContext &co
     via.net = reader.string(object, KEY_NET, where);
     via.drill = reader.positiveMm(object, KEY_DRILL, where);
     via.size = reader.positiveMm(object, KEY_SIZE, where);
+    if (object.contains(QLatin1String(KEY_AUTOROUTED)))
+        via.autorouted = reader.boolean(object, KEY_AUTOROUTED, where);
     if (reader.ok() && via.drill >= via.size) {
         reader.fail(JsonReader::pathOf(where, KEY_DRILL),
                     JsonReader::tr("the hole must be smaller than the via"));
@@ -382,13 +392,13 @@ bool operator==(const Placement &a, const Placement &b)
 bool operator==(const Track &a, const Track &b)
 {
     return a.id == b.id && a.side == b.side && a.net == b.net && a.width == b.width
-           && a.from == b.from && a.to == b.to;
+           && a.from == b.from && a.to == b.to && a.autorouted == b.autorouted;
 }
 
 bool operator==(const Via &a, const Via &b)
 {
     return a.id == b.id && a.at == b.at && a.net == b.net && a.drill == b.drill
-           && a.size == b.size;
+           && a.size == b.size && a.autorouted == b.autorouted;
 }
 
 Coord holeOuterDiameter(const MountingHole &hole)

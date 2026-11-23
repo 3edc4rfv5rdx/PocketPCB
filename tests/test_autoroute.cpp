@@ -106,6 +106,7 @@ private slots:
         const double clearance = nmToMm(design.project.rules.clearance);
         for (const Track &track : newTracks(design.board, result.board)) {
             QCOMPARE(track.net, QStringLiteral("A"));
+            QVERIFY(track.autorouted);
             const double apart =
                 QLineF(nearestOnPiece(toMm(track.from), toMm(track.to), pad), pad).length();
             QVERIFY(apart >= 0.8 + nmToMm(track.width) / 2 + clearance - 1e-6);

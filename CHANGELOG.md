@@ -3,6 +3,8 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: The autorouter takes up the tracks it laid that are in the way of a connection with no way, and lays them again
+- N: Tracks and vias laid by the autorouter are marked as its own until changed by hand
 - N: Spread tracks in the menu of a track spreads the tracks chosen
 - E: The autorouter goes on from the tracks of a net laid already instead of laying another over them
 - N: Spread tracks in the menu of the empty board moves pieces of tracks to the middle of their room, and the autorouter spreads what it lays

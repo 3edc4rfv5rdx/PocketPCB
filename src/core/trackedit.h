@@ -148,6 +148,9 @@ Board withTracksSpread(const Board &board, const Design &design, Coord gridStep,
                        const QSet<ObjectId> &ids = {});
 // The tracks and the vias 'ids' moved by 'delta'.
 Board withTracksMoved(const Board &board, const QSet<ObjectId> &ids, const Point &delta);
+// The tracks and the vias 'ids' as laid by hand: no longer the
+// autorouter's (Track::autorouted).
+Board withTracksByHand(const Board &board, const QSet<ObjectId> &ids);
 // The tracks 'ids' 'width' wide.
 Board withTracksWidth(const Board &board, const QSet<ObjectId> &ids, Coord width);
 // The tracks 'ids' moved to 'side'.

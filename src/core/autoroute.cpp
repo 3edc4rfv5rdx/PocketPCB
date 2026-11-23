@@ -421,6 +421,7 @@ bool Router::route(const RatsnestLine &line)
         track.width = width;
         track.from = a;
         track.to = b;
+        track.autorouted = true;
         m_board.tracks.append(track);
         markTrack(track);
     };
@@ -440,6 +441,7 @@ bool Router::route(const RatsnestLine &line)
         via.net = line.net;
         via.drill = netClass != nullptr ? netClass->viaDrill : boardRules.viaDrill;
         via.size = netClass != nullptr ? netClass->viaSize : boardRules.viaSize;
+        via.autorouted = true;
         m_board.vias.append(via);
         markVia(via);
     }
@@ -450,29 +452,180 @@ bool Router::route(const RatsnestLine &line)
 
 } // namespace
 
+namespace {
+
+// How often one connection may be laid by taking others up, and how many
+// times that may be done in a run for each connection there was at first.
+const int RIP_UPS_PER_LINE = 2;
+const int RIP_UPS_PER_CONNECTION = 3;
+
+QString lineKey(const RatsnestLine &line)
+{
+    return QStringLiteral("%1 %2 %3 %4 %5")
+        .arg(line.net)
+        .arg(line.from.x)
+        .arg(line.from.y)
+        .arg(line.to.x)
+        .arg(line.to.y);
+}
+
+// The tracks and the vias of 'board' the autorouter laid and no hand has
+// touched since: those it may take up again.
+QSet<ObjectId> autoroutedOf(const Board &board)
+{
+    QSet<ObjectId> laid;
+    for (const Track &track : board.tracks) {
+        if (track.autorouted)
+            laid.insert(track.id);
+    }
+    for (const Via &via : board.vias) {
+        if (via.autorouted)
+            laid.insert(via.id);
+    }
+    return laid;
+}
+
+// 'line' laid on 'working', its board as 'current' has it, by taking up the
+// connections the autorouter laid (autoroutedOf()) that are in its way: it is
+// laid on the board without them, and those its way comes too near are taken
+// up whole, from pad to pad or fork, to be laid again. Tracks laid by hand
+// are never taken up. The board, or nothing when the line has no way even so.
+std::optional<Board> ripUp(const Design &working, const Board &current, const RatsnestLine &line)
+{
+    const QSet<ObjectId> laid = autoroutedOf(current);
+    Design bare = working;
+    bare.board = withoutTracks(current, laid);
+    Router probe(bare);
+    if (!probe.route(line))
+        return std::nullopt;
+    // The way found, put on the board as it is.
+    Board with = current;
+    QSet<ObjectId> way;
+    for (const Track &track : probe.board().tracks) {
+        if (findById(bare.board.tracks, track.id) == nullptr) {
+            with.tracks.append(track);
+            way.insert(track.id);
+        }
+    }
+    QList<Via> wayVias;
+    for (const Via &via : probe.board().vias) {
+        if (findById(bare.board.vias, via.id) == nullptr) {
+            with.vias.append(via);
+            wayVias.append(via);
+        }
+    }
+    // What of other nets the autorouter laid comes too near it: tracks, and
+    // vias near its tracks or its vias near their tracks.
+    QSet<ObjectId> others;
+    for (const Track &track : current.tracks) {
+        if (laid.contains(track.id) && track.net != line.net)
+            others.insert(track.id);
+    }
+    QSet<ObjectId> inTheWay = shortingTracks(with, working, others);
+    const NetClass *netClass = trackClass(working, line.net);
+    const double clearance =
+        nmToMm(netClass != nullptr ? netClass->clearance : working.project.rules.clearance);
+    for (const Via &via : current.vias) {
+        if (!laid.contains(via.id) || via.net == line.net)
+            continue;
+        for (const Track &track : with.tracks) {
+            if (!way.contains(track.id))
+                continue;
+            const QPointF at = toMm(via.at);
+            if (QLineF(nearestOnPiece(toMm(track.from), toMm(track.to), at), at).length()
+                < nmToMm(track.width) / 2 + nmToMm(via.size) / 2 + clearance)
+                inTheWay.insert(via.id);
+        }
+    }
+    for (const Via &via : wayVias) {
+        for (const Track &track : current.tracks) {
+            const QPointF at = toMm(via.at);
+            if (others.contains(track.id)
+                && QLineF(nearestOnPiece(toMm(track.from), toMm(track.to), at), at).length()
+                       < nmToMm(track.width) / 2 + nmToMm(via.size) / 2 + clearance)
+                inTheWay.insert(track.id);
+        }
+    }
+    if (inTheWay.isEmpty())
+        return std::nullopt;
+    // Taken up whole: each track with its run, each via with the runs of the
+    // tracks on it, of what the autorouter laid.
+    QSet<ObjectId> gone;
+    for (const ObjectId &id : std::as_const(inTheWay)) {
+        if (const Via *via = findById(with.vias, id)) {
+            gone.insert(id);
+            for (const Track &track : with.tracks) {
+                if (others.contains(track.id) && (track.from == via->at || track.to == via->at))
+                    gone.unite(trackRun(with, working.library, track.id));
+            }
+        } else {
+            gone.unite(trackRun(with, working.library, id));
+        }
+    }
+    gone.intersect(laid);
+    const Board after = withoutTracks(with, gone);
+    if (!shortingTracks(after, working, way).isEmpty())
+        return std::nullopt;
+    return after;
+}
+
+} // namespace
+
 AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
                            const std::function<bool(int done, int total)> &progress)
 {
-    Router router(design);
+    // The board as laid so far is the router's; 'working' has it after each
+    // connection taken up, to lay the rest on.
+    Design working = design;
+    std::optional<Router> router;
+    router.emplace(working);
     AutorouteResult result;
     QList<RatsnestLine> failed;
     const QList<RatsnestLine> none;
     // The connections still to be laid, but for those in 'skipped'.
     const auto waiting = [&](const QList<RatsnestLine> &skipped) {
         QList<RatsnestLine> lines;
-        for (const RatsnestLine &line : ratsnest(router.board(), design.library)) {
+        for (const RatsnestLine &line : ratsnest(router->board(), design.library)) {
             if ((nets.isEmpty() || nets.contains(line.net)) && !skipped.contains(line)
-                && router.onBoard(line.from) && router.onBoard(line.to))
+                && router->onBoard(line.from) && router->onBoard(line.to))
                 lines.append(line);
         }
         return lines;
     };
     const int total = int(waiting(none).size());
     result.total = total;
-    for (QList<RatsnestLine> lines = waiting(failed); !lines.isEmpty(); lines = waiting(failed)) {
-        if (progress && !progress(result.routed + int(failed.size()), total)) {
+    QHash<QString, int> rippedFor;
+    int ripUps = 0;
+    for (;;) {
+        const QList<RatsnestLine> lines = waiting(failed);
+        if (progress
+            && !progress(std::max(0, total - int(lines.size()) - int(failed.size())), total)) {
             result.stopped = true;
             break;
+        }
+        if (lines.isEmpty()) {
+            // All tried: one that found no way is laid by taking up others.
+            bool laid = false;
+            for (const RatsnestLine &line : std::as_const(failed)) {
+                if (rippedFor.value(lineKey(line)) >= RIP_UPS_PER_LINE
+                    || ripUps >= RIP_UPS_PER_CONNECTION * total)
+                    continue;
+                ++rippedFor[lineKey(line)];
+                ++ripUps;
+                const std::optional<Board> board =
+                    ripUp(working, router->board(), line);
+                if (!board)
+                    continue;
+                working.board = *board;
+                router.emplace(working);
+                // What failed may find a way now.
+                failed.clear();
+                laid = true;
+                break;
+            }
+            if (!laid)
+                break;
+            continue;
         }
         // The shortest first.
         const auto length = [](const RatsnestLine &line) {
@@ -481,20 +634,20 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
         const RatsnestLine line = *std::min_element(
             lines.cbegin(), lines.cend(),
             [&length](const RatsnestLine &a, const RatsnestLine &b) { return length(a) < length(b); });
-        if (router.route(line))
-            ++result.routed;
-        else
+        if (!router->route(line))
             failed.append(line);
     }
     // The tracks laid put in the middle of the room they run in.
     QSet<ObjectId> laid;
-    for (const Track &track : router.board().tracks) {
+    for (const Track &track : router->board().tracks) {
         if (findById(design.board.tracks, track.id) == nullptr)
             laid.insert(track.id);
     }
-    result.board = withTracksSpread(router.board(), design, router.step(), laid);
-    // What is left to lay, however it is drawn now.
+    result.board = withTracksSpread(router->board(), design, router->step(), laid);
+    // What is left to lay, however it is drawn now, and what was laid of
+    // what there was.
     result.unrouted = int(waiting(none).size());
+    result.routed = std::max(0, total - result.unrouted);
     result.vias = int(result.board.vias.size() - design.board.vias.size());
     return result;
 }

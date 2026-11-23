@@ -879,6 +879,20 @@ Board withTracksMoved(const Board &board, const QSet<ObjectId> &ids, const Point
     return result;
 }
 
+Board withTracksByHand(const Board &board, const QSet<ObjectId> &ids)
+{
+    Board result = board;
+    for (Track &track : result.tracks) {
+        if (ids.contains(track.id))
+            track.autorouted = false;
+    }
+    for (Via &via : result.vias) {
+        if (ids.contains(via.id))
+            via.autorouted = false;
+    }
+    return result;
+}
+
 Board withTracksWidth(const Board &board, const QSet<ObjectId> &ids, Coord width)
 {
     Board result = board;
