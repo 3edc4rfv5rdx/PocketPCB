@@ -937,12 +937,12 @@
         <translation>Спрятать дорожки</translation>
     </message>
     <message>
-        <source>Show unrouted connections</source>
-        <translation>Показать неразведённые связи</translation>
+        <source>Bold unrouted</source>
+        <translation>Неразведённые жирно</translation>
     </message>
     <message>
-        <source>Unrouted connections as arcs</source>
-        <translation>Неразведённые связи дугами</translation>
+        <source>Unrouted as arcs</source>
+        <translation>Неразведённые дугами</translation>
     </message>
     <message>
         <source>Unrouted</source>

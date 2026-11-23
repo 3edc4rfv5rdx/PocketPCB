@@ -717,13 +717,13 @@ void MainWindow::createMenus()
     connect(layTrack, &QAction::triggered, hideTracks,
             [hideTracks] { hideTracks->setChecked(false); });
     // What is still to be joined, bold and with its ends marked.
-    QAction *unrouted = viewMenu->addAction(tr("Show unrouted connections"));
+    QAction *unrouted = viewMenu->addAction(tr("Bold unrouted"));
     unrouted->setObjectName(QStringLiteral("actionShowUnrouted"));
     unrouted->setCheckable(true);
     connect(unrouted, &QAction::toggled, this,
             [this](bool bright) { m_designItem->setRatsnestBright(bright); });
 
-    QAction *arcsAction = viewMenu->addAction(tr("Unrouted connections as arcs"));
+    QAction *arcsAction = viewMenu->addAction(tr("Unrouted as arcs"));
     arcsAction->setObjectName(QStringLiteral("actionRatsnestArcs"));
     arcsAction->setCheckable(true);
     arcsAction->setChecked(AppSettings::ratsnestArcs());

@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Show unrouted connections and Unrouted connections as arcs are named Bold unrouted and Unrouted as arcs
 - N: Hide tracks hides the tracks and vias on the board, and with Hide silkscreen and Show unrouted connections stands in View and the menu of the empty board instead of on the strip
 - F: The user guide describes every feature, the board outline in full
 - N: The status bar on the board shows the unrouted connections of all, and View can draw them as arcs
