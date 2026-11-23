@@ -596,6 +596,10 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
     result.total = total;
     QHash<QString, int> rippedFor;
     int ripUps = 0;
+    // The board with the fewest connections that found no way when all were
+    // tried: taking others up may first leave more, then fewer.
+    std::optional<Board> best;
+    int bestFailed = 0;
     for (;;) {
         const QList<RatsnestLine> lines = waiting(failed);
         if (progress
@@ -604,7 +608,12 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
             break;
         }
         if (lines.isEmpty()) {
-            // All tried: one that found no way is laid by taking up others.
+            // All tried: the best so far is kept, and one that found no way
+            // is laid by taking up others.
+            if (!best || int(failed.size()) < bestFailed) {
+                best = router->board();
+                bestFailed = int(failed.size());
+            }
             bool laid = false;
             for (const RatsnestLine &line : std::as_const(failed)) {
                 if (rippedFor.value(lineKey(line)) >= RIP_UPS_PER_LINE
@@ -612,8 +621,7 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
                     continue;
                 ++rippedFor[lineKey(line)];
                 ++ripUps;
-                const std::optional<Board> board =
-                    ripUp(working, router->board(), line);
+                const std::optional<Board> board = ripUp(working, router->board(), line);
                 if (!board)
                     continue;
                 working.board = *board;
@@ -636,6 +644,11 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
             [&length](const RatsnestLine &a, const RatsnestLine &b) { return length(a) < length(b); });
         if (!router->route(line))
             failed.append(line);
+    }
+    // The best board, should taking others up have left more at the end.
+    if (best && !result.stopped && int(failed.size()) > bestFailed) {
+        working.board = *best;
+        router.emplace(working);
     }
     // The tracks laid put in the middle of the room they run in.
     QSet<ObjectId> laid;
