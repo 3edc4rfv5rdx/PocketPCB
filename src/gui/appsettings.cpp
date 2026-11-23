@@ -44,8 +44,6 @@ const int DEFAULT_AUTOSAVE_MINUTES = 5;
 
 // Inside the user's data folder.
 const char USER_LIBRARY_FOLDER[] = "library";
-// In the user's cache folder.
-const char STEP_HISTORY_FOLDER[] = "history";
 // Beside the program (programFolder()).
 const char PROJECTS_FOLDER[] = "PocketPCB-Projects";
 // Names the AppImage file the program runs from.
@@ -244,12 +242,6 @@ bool AppSettings::keepStepHistory()
 void AppSettings::setKeepStepHistory(bool on)
 {
     writeValue(KEY_STEP_HISTORY, on);
-}
-
-QString AppSettings::stepHistoryFolder()
-{
-    const QString cache = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-    return QDir(cache).filePath(QLatin1String(STEP_HISTORY_FOLDER));
 }
 
 QString AppSettings::lastLibraryFolder()

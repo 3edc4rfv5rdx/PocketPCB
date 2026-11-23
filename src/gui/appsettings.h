@@ -65,12 +65,11 @@ public:
     static bool ratsnestArcs();
     static void setRatsnestArcs(bool on);
 
-    // Whether every step made is written into stepHistoryFolder(), for
-    // finding out what went wrong in one (see writeStep()); off by default.
+    // Whether every step made in a saved project is written into its history
+    // folder (DesignFiles::historyPath()), for finding out what went wrong in
+    // one (see writeStep()); off by default.
     static bool keepStepHistory();
     static void setKeepStepHistory(bool on);
-    // "history" in the user's cache folder: ~/.cache/PocketPCB/history.
-    static QString stepHistoryFolder();
 
     // The user's library: a folder with symbols/, footprints/ and parts/.
     // By default "library" in the user's data folder; set in the file by

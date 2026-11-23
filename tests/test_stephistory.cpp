@@ -75,7 +75,9 @@ private slots:
         const QStringList files = stepFiles(folder);
         QCOMPARE(files.size(), STEP_HISTORY_KEPT);
         QCOMPARE(files.first(), QStringLiteral("000003 Wire.json"));
-        QCOMPARE(files.last(), QStringLiteral("000102 Wire.json"));
+        const QString last =
+            QStringLiteral("%1 Wire.json").arg(STEP_HISTORY_KEPT + 2, 6, 10, QLatin1Char('0'));
+        QCOMPARE(files.last(), last);
     }
 };
 

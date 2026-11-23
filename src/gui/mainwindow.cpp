@@ -2006,9 +2006,10 @@ void MainWindow::storeViews()
 
 void MainWindow::recordStep(const QString &text, int page, const Design &before)
 {
-    if (!AppSettings::keepStepHistory())
+    // Into the project's folder, once it has one.
+    if (!AppSettings::keepStepHistory() || m_document->projectPath().isEmpty())
         return;
-    const QString folder = AppSettings::stepHistoryFolder();
+    const QString folder = DesignFiles::historyPath(m_document->projectPath());
     if (!writeStep(folder, text, page, m_document->projectPath(), AppSettings::wireRouting(),
                    before.schematic, m_document->design().schematic, before.board,
                    m_document->design().board))

@@ -19,6 +19,9 @@ extern const char FILE_EXT_BOARD[];
 extern const char PROJECT_LIBRARY_FOLDER[];
 // The folder of the backup copies of the project's files, beside it too.
 extern const char PROJECT_BACKUP_FOLDER[];
+// The folder of the history of the project's steps (writeStep()), beside it
+// too.
+extern const char PROJECT_HISTORY_FOLDER[];
 // The folder of the autosaved copy of the project, beside it too.
 extern const char PROJECT_AUTOSAVE_FOLDER[];
 // The folder of the files made from the project, beside it too.
@@ -219,6 +222,8 @@ public:
     static QString boardPath(const QString &projectPath, const Project &project);
     static QString libraryPath(const QString &projectPath);
     static QString backupPath(const QString &projectPath);
+    // Where the history of the project's steps goes (writeStep()).
+    static QString historyPath(const QString &projectPath);
     // Where the files made from the project go: the BOM, later Gerber.
     static QString outputPath(const QString &projectPath);
     // The project file of the autosaved copy: the project's own name inside
