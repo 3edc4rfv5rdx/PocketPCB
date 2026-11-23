@@ -5,6 +5,7 @@
 
 #include <QColor>
 #include <QLineF>
+#include <QPainterPath>
 #include <QPointF>
 #include <QPolygonF>
 #include <QRectF>
@@ -222,6 +223,9 @@ QRectF placementTextRect(const Placement &placement, ComponentText text);
 // millimetres. Null otherwise, or when the text covers that point.
 QLineF leaderLine(const Placement &placement, ComponentText text);
 
+// The closed outline of the board, its corners rounded; empty for a board
+// without one.
+QPainterPath outlinePath(const QList<OutlineCorner> &outline);
 // A rectangle that holds everything paintBoard() draws; never empty.
 QRectF boardBounds(const Board &board, const Library &library);
 // A rectangle that holds what is laid on the board, without its outline:

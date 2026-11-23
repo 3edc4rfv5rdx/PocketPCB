@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 
+#include "autoroute.h"
 #include "boardeditor.h"
 #include "bompanel.h"
 #include "canvasview.h"
@@ -52,6 +53,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QProgressDialog>
 #include <QPainter>
 #include <QPixmap>
 #include <QPushButton>
@@ -91,6 +93,8 @@ const int HELD_ALPHA = 60;
 const int PRESSED_ALPHA = 90;
 // The arrow beside a button that has a menu, in pixels.
 const int MENU_ARROW_WIDTH = 12;
+// How long the autorouter runs before its progress box shows, milliseconds.
+const int ROUTE_BOX_DELAY_MS = 500;
 // The question mark of a question asked before deleting much, in pixels.
 const int QUESTION_PIXELS = 48;
 // The gaps between the file buttons and Undo, and between the zoom buttons
@@ -566,6 +570,12 @@ void MainWindow::createMenus()
     addBoardAction(BoardEditor::Action::ViaAndOtherSide, "actionVia",
                    &BoardEditor::viaAndOtherSide)
         ->setShortcut(QKeySequence(Qt::Key_V));
+    QAction *routeAll = editMenu->addAction(tr("Route all"));
+    routeAll->setObjectName(QStringLiteral("actionRouteAll"));
+    connect(routeAll, &QAction::triggered, this, [this] { routeBoard(false); });
+    QAction *routeChosen = editMenu->addAction(tr("Route chosen"));
+    routeChosen->setObjectName(QStringLiteral("actionRouteChosen"));
+    connect(routeChosen, &QAction::triggered, this, [this] { routeBoard(true); });
 
     QMenu *viewMenu = m_mainMenu->addMenu(tr("&View"));
 
@@ -1693,6 +1703,22 @@ void MainWindow::createToolBar()
     });
     layerButton->setMenu(layerMenu);
     layerButton->setPopupMode(QToolButton::MenuButtonPopup);
+    // The autorouter: the button lays every net, its arrow chooses which.
+    QAction *autoroute =
+        new QAction(BoardEditor::actionName(BoardEditor::Action::Autoroute), this);
+    autoroute->setObjectName(QStringLiteral("actionAutoroute"));
+    autoroute->setIcon(toolIcon(ToolIcon::Autoroute, color));
+    connect(autoroute, &QAction::triggered, this, [this] { routeBoard(false); });
+    bar->addAction(autoroute);
+    QMenu *routeMenu = new QMenu(this);
+    routeMenu->addActions({findChild<QAction *>(QStringLiteral("actionRouteAll")),
+                           findChild<QAction *>(QStringLiteral("actionRouteChosen"))});
+    auto *routeButton = qobject_cast<QToolButton *>(bar->widgetForAction(autoroute));
+    Q_ASSERT(routeButton != nullptr);
+    routeButton->setMenu(routeMenu);
+    routeButton->setPopupMode(QToolButton::MenuButtonPopup);
+    for (const char *name : {"actionAutoroute", "actionRouteAll", "actionRouteChosen"})
+        m_boardActions.append(findChild<QAction *>(QLatin1String(name)));
     // What is shown of the board, in View and the menu of the empty board.
     for (const char *name : {"actionSilkscreen", "actionHideTracks", "actionShowUnrouted"})
         m_boardActions.append(findChild<QAction *>(QLatin1String(name)));
@@ -1819,6 +1845,35 @@ void MainWindow::makeRectangleBoard()
     RectangleBoardDialog dialog(width, height, m_canvas->gridStep(), this);
     if (dialog.exec() == QDialog::Accepted)
         m_boardEditor->makeRectangleBoard(dialog.boardWidth(), dialog.boardHeight());
+}
+
+void MainWindow::routeBoard(bool chosen)
+{
+    if (!m_boardEditor->isActive())
+        return;
+    QSet<QString> nets;
+    if (chosen) {
+        nets = m_boardEditor->chosenNets();
+        if (nets.isEmpty()) {
+            showStatus(tr("Choose parts or tracks to route"));
+            return;
+        }
+    }
+    QProgressDialog box(BoardEditor::actionName(BoardEditor::Action::Autoroute), tr("Stop"), 0, 0,
+                        this);
+    box.setWindowModality(Qt::WindowModal);
+    box.setMinimumDuration(ROUTE_BOX_DELAY_MS);
+    const AutorouteResult result =
+        autorouted(m_document->design(), nets, [&box](int done, int total) {
+            box.setMaximum(total);
+            box.setValue(done);
+            QCoreApplication::processEvents();
+            return !box.wasCanceled();
+        });
+    box.reset();
+    m_boardEditor->applyRouted(result.board);
+    const QString routed = tr("Routed") + QStringLiteral(": %1").arg(result.routed);
+    showStatus(result.stopped ? tr("Routing stopped") + QStringLiteral(". ") + routed : routed);
 }
 
 void MainWindow::fitView()

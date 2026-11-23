@@ -27,6 +27,7 @@ enum class ToolIcon {
     RectangleBoard,
     Hole,
     Track,
+    Autoroute,
     UpdateBoard,
     Lock,
     Rotate,

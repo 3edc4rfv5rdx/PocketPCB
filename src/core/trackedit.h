@@ -35,6 +35,29 @@ struct CopperPoint
     bool on(BoardSide side) const { return side == BoardSide::Top ? top : bottom; }
 };
 
+// The copper of a pad of a part or of a mounting hole, where track ends
+// lie and what tracks of other nets keep off.
+struct PadPoint
+{
+    Point at;
+    bool top = false;
+    bool bottom = false;
+    // The placement or the hole it is of.
+    ObjectId owner;
+    // Its net, empty for none.
+    QString net;
+    // Its copper as a line with a round end of 'radius' on each: the long
+    // axis of a pill or a rectangle, the middle alone of a round pad.
+    Point axisFrom;
+    Point axisTo;
+    Coord radius = 0;
+
+    bool on(BoardSide side) const { return side == BoardSide::Top ? top : bottom; }
+};
+
+// The pads of the placements and of the holes with a pad of 'board'.
+QList<PadPoint> padPoints(const Board &board, const Library &library);
+
 // The pad of a part under 'at' (millimetres), or within 'reach' of it, the
 // last placed first; nothing when there is none.
 std::optional<CopperPoint> padAt(const Board &board, const Library &library, const QPointF &at,

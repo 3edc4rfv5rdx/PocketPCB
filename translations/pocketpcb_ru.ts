@@ -945,6 +945,30 @@
         <translation>Неразведённые дугами</translation>
     </message>
     <message>
+        <source>Route all</source>
+        <translation>Развести всё</translation>
+    </message>
+    <message>
+        <source>Route chosen</source>
+        <translation>Развести выбранное</translation>
+    </message>
+    <message>
+        <source>Choose parts or tracks to route</source>
+        <translation>Выберите детали или дорожки для разводки</translation>
+    </message>
+    <message>
+        <source>Stop</source>
+        <translation>Стоп</translation>
+    </message>
+    <message>
+        <source>Routed</source>
+        <translation>Разведено</translation>
+    </message>
+    <message>
+        <source>Routing stopped</source>
+        <translation>Разводка прервана</translation>
+    </message>
+    <message>
         <source>Unrouted</source>
         <translation>Не разведено</translation>
     </message>
@@ -1597,6 +1621,10 @@
     <message>
         <source>Delete all tracks</source>
         <translation>Удалить все дорожки</translation>
+    </message>
+    <message>
+        <source>Autoroute</source>
+        <translation>Автотрассировка</translation>
     </message>
     <message>
         <source>Track width</source>

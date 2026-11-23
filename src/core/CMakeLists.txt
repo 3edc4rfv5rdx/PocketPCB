@@ -1,6 +1,7 @@
 # Logic library: data model and all logic. QtCore/QtGui only, never QtWidgets.
 add_library(pocketpcb_core STATIC
     units.h units.cpp
+    autoroute.h autoroute.cpp
     version.h version.cpp
     board.h board.cpp
     boardedit.h boardedit.cpp

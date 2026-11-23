@@ -47,6 +47,7 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
       <li><a href="#parts">Parts</a></li>
       <li><a href="#holes">Mounting holes</a></li>
       <li><a href="#tracks">Tracks</a></li>
+      <li><a href="#autoroute">Autorouter</a></li>
     </ul>
   </li>
   <li><a href="#settings">Settings</a></li>
@@ -329,6 +330,16 @@ choice.</p>
     Tracks chosen together with parts go along whole when the parts are dragged.</li>
   <li>Rest the mouse on copper for a second to light its whole net and see its name; while tracks are chosen,
     only the name shows.</li>
+</ul>
+
+<h3 id="autoroute">Autorouter</h3>
+<ul>
+  <li>The <b>Autoroute</b> button lays the tracks of every connection still unrouted; its arrow offers
+    <b>Route all</b> and <b>Route chosen</b> (the nets of the parts and tracks chosen).</li>
+  <li>It lays as few vias as it can, on both sides of a board of two, keeping the clearance of the net
+    classes and of the edge. Tracks already there stay as they are.</li>
+  <li><kbd>Esc</kbd> or Stop in its box stops it, keeping what is laid. The whole run is one step of
+    <kbd>Ctrl+Z</kbd>; the status bar says how many connections it laid.</li>
 </ul>
 
 <h2 id="settings">Settings</h2>

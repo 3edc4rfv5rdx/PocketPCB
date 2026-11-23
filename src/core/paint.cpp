@@ -895,7 +895,8 @@ QList<QPointF> cornerPoints(const QPointF &from, const QPointF &corner, const QP
     return points;
 }
 
-// The closed outline of the board; empty for a board without one.
+} // namespace
+
 QPainterPath outlinePath(const QList<OutlineCorner> &outline)
 {
     QPainterPath path;
@@ -916,6 +917,8 @@ QPainterPath outlinePath(const QList<OutlineCorner> &outline)
         path.closeSubpath();
     return path;
 }
+
+namespace {
 
 void paintTracks(QPainter &painter, const Board &board, BoardSide side,
                  const BoardLayerSet &shown, std::optional<BoardSide> bright)

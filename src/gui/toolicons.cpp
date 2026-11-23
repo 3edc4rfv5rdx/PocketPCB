@@ -174,6 +174,19 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         dot(painter, {19, 5}, color);
         break;
     }
+    case ToolIcon::Autoroute: {
+        // A track from pad to pad laid round a square in its way.
+        painter.drawRect(QRectF(9, 9, 8, 8));
+        QPen track = painter.pen();
+        track.setWidthF(BUS_WIDTH);
+        painter.save();
+        painter.setPen(track);
+        painter.drawPolyline(polygon({{4, 20}, {4, 7}, {7, 4}, {20, 4}}));
+        painter.restore();
+        dot(painter, {4, 20}, color);
+        dot(painter, {20, 4}, color);
+        break;
+    }
     case ToolIcon::UpdateBoard:
         // A sheet, an arrow down and right from it, and a board with two pads.
         painter.drawRect(QRectF(3, 3, 9, 7));

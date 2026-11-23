@@ -120,6 +120,8 @@ QString BoardEditor::actionName(Action action)
         return tr("Delete tracks");
     case Action::DeleteAllTracks:
         return tr("Delete all tracks");
+    case Action::Autoroute:
+        return tr("Autoroute");
     case Action::TrackWidth:
         return tr("Track width");
     case Action::TrackSide:
@@ -634,6 +636,41 @@ void BoardEditor::deleteAllTracks()
     m_chosen.subtract(chosenTracks());
     applyBoard(Action::DeleteAllTracks, withoutAnyTracks(board), {});
     emit changed();
+}
+
+QSet<QString> BoardEditor::chosenNets() const
+{
+    QSet<QString> nets;
+    const Board &board = m_document->design().board;
+    const QSet<ObjectId> placements = chosenPlacements();
+    for (const Placement &placement : board.placements) {
+        if (placements.contains(placement.id)) {
+            for (const QString &net : placement.padNets)
+                nets.insert(net);
+        }
+    }
+    const QSet<ObjectId> holes = chosenHoles();
+    for (const MountingHole &hole : board.holes) {
+        if (holes.contains(hole.id))
+            nets.insert(hole.net);
+    }
+    const QSet<ObjectId> tracks = chosenTracks();
+    for (const Track &track : board.tracks) {
+        if (tracks.contains(track.id))
+            nets.insert(track.net);
+    }
+    for (const Via &via : board.vias) {
+        if (tracks.contains(via.id))
+            nets.insert(via.net);
+    }
+    nets.remove(QString());
+    return nets;
+}
+
+void BoardEditor::applyRouted(const Board &board)
+{
+    if (m_active && board != m_document->design().board)
+        applyBoard(Action::Autoroute, board, {});
 }
 
 QSet<QString> BoardEditor::litNets() const

@@ -146,6 +146,9 @@ private:
     void chooseSelectTool();
     // Asks for the size of a rectangular board and makes the outline one.
     void makeRectangleBoard();
+    // Runs the autorouter over every net, or over the nets of what is chosen,
+    // as one step; Esc or Stop in its progress box stops it.
+    void routeBoard(bool chosen);
     // The whole page, or the library file, fills the canvas.
     void fitView();
     // What is drawn on the page, without the empty paper round it, or the

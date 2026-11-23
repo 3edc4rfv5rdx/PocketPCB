@@ -79,6 +79,7 @@ public:
         DeleteTracks,
         DeleteAllTracks,
         TrackWidth,
+        Autoroute,
         TrackSide,
     };
     static QString actionName(Action action);
@@ -195,6 +196,11 @@ public:
     void deleteChosen();
     // Every track and via of the board deleted as one step.
     void deleteAllTracks();
+    // The nets of what is chosen: of the pads of the parts and holes, and of
+    // the tracks and vias.
+    QSet<QString> chosenNets() const;
+    // 'board', laid by the autorouter, made the board as one step.
+    void applyRouted(const Board &board);
 
     // What a short right click at 'at' is on, choosing it as a click
     // would, unless it is chosen already: a placement (also by one of its

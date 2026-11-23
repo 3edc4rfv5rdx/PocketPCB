@@ -178,54 +178,6 @@ QSet<ObjectId> tracksInside(const Board &board, const QRectF &rect)
 
 namespace {
 
-// A point of copper a track end may lie on.
-struct PadPoint
-{
-    Point at;
-    bool top = false;
-    bool bottom = false;
-    // The placement or the hole it is of.
-    ObjectId owner;
-    // Its net, empty for none.
-    QString net;
-    // Its copper as a line with a round end of 'radius' on each: the long
-    // axis of a pill or a rectangle, the middle alone of a round pad.
-    Point axisFrom;
-    Point axisTo;
-    Coord radius = 0;
-
-    bool on(BoardSide side) const { return side == BoardSide::Top ? top : bottom; }
-};
-
-// The middles of the pads of the placements and of the holes of 'board'.
-QList<PadPoint> padPoints(const Board &board, const Library &library)
-{
-    QList<PadPoint> points;
-    for (const Placement &placement : board.placements) {
-        const Footprint *footprint = library.findFootprint(placement.footprint);
-        if (footprint == nullptr)
-            continue;
-        for (const Pad &pad : footprint->pads) {
-            const CopperSides sides = padCopperSides(pad.layers, placement.side);
-            const Coord narrow = std::min(pad.sizeX, pad.sizeY);
-            const Point half = pad.sizeX > pad.sizeY ? Point{(pad.sizeX - narrow) / 2, 0}
-                                                     : Point{0, (pad.sizeY - narrow) / 2};
-            points.append(PadPoint{placedPadPoint(placement, pad.at),
-                                   copperOn(sides, BoardSide::Top),
-                                   copperOn(sides, BoardSide::Bottom), placement.id,
-                                   placement.padNets.value(pad.number),
-                                   placedPadPoint(placement, pad.at - half),
-                                   placedPadPoint(placement, pad.at + half), narrow / 2});
-        }
-    }
-    for (const MountingHole &hole : board.holes) {
-        if (hole.ring > 0)
-            points.append(PadPoint{hole.at, holePadOn(board, hole, BoardSide::Top),
-                                   holePadOn(board, hole, BoardSide::Bottom), hole.id, hole.net,
-                                   hole.at, hole.at, holeOuterDiameter(hole) / 2});
-    }
-    return points;
-}
 
 // How far apart the pieces 'a'-'b' and 'c'-'d' are, in millimetres: 0 when
 // they cross.
@@ -326,6 +278,35 @@ QSet<ObjectId> runOf(const Board &board, const QList<PadPoint> &pads, const Obje
 }
 
 } // namespace
+
+QList<PadPoint> padPoints(const Board &board, const Library &library)
+{
+    QList<PadPoint> points;
+    for (const Placement &placement : board.placements) {
+        const Footprint *footprint = library.findFootprint(placement.footprint);
+        if (footprint == nullptr)
+            continue;
+        for (const Pad &pad : footprint->pads) {
+            const CopperSides sides = padCopperSides(pad.layers, placement.side);
+            const Coord narrow = std::min(pad.sizeX, pad.sizeY);
+            const Point half = pad.sizeX > pad.sizeY ? Point{(pad.sizeX - narrow) / 2, 0}
+                                                     : Point{0, (pad.sizeY - narrow) / 2};
+            points.append(PadPoint{placedPadPoint(placement, pad.at),
+                                   copperOn(sides, BoardSide::Top),
+                                   copperOn(sides, BoardSide::Bottom), placement.id,
+                                   placement.padNets.value(pad.number),
+                                   placedPadPoint(placement, pad.at - half),
+                                   placedPadPoint(placement, pad.at + half), narrow / 2});
+        }
+    }
+    for (const MountingHole &hole : board.holes) {
+        if (hole.ring > 0)
+            points.append(PadPoint{hole.at, holePadOn(board, hole, BoardSide::Top),
+                                   holePadOn(board, hole, BoardSide::Bottom), hole.id, hole.net,
+                                   hole.at, hole.at, holeOuterDiameter(hole) / 2});
+    }
+    return points;
+}
 
 QSet<ObjectId> trackRun(const Board &board, const Library &library, const ObjectId &id)
 {
