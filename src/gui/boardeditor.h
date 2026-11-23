@@ -80,6 +80,7 @@ public:
         DeleteAllTracks,
         TrackWidth,
         Autoroute,
+        MoveTrack,
         TrackSide,
     };
     static QString actionName(Action action);
@@ -407,6 +408,12 @@ private:
     // 'm_dragAnchor', the point of the one taken, which lands on the grid.
     bool m_dragPlacements = false;
     bool m_dragText = false;
+    // A piece of track taken: dragged across itself, or by its corner at
+    // its start (0) or its end (1); -1 for the piece.
+    ObjectId m_dragTrack;
+    int m_dragTrackCorner = -1;
+    // The board with the piece or the corner taken where 'at' puts it.
+    Board trackDragged(const QPointF &at) const;
     Point m_dragAnchor;
     std::optional<Board> m_movedBoard;
     // The board the drag starts from, with the turns made while dragging,

@@ -115,6 +115,29 @@ Board withTracksOnNewFootprints(const Board &before, const Board &after, const L
 // ratsnest instead of shorting. Tracks moved whole, or not there before,
 // are left alone. The classes and the footprints come from 'design'.
 Board withoutShortingStretches(const Board &before, const Board &after, const Design &design);
+// Of the tracks 'ids' of 'board', those that cross copper of another net on
+// their side, or come nearer to it than the clearance of their net's class;
+// the pads a track ends on are its own.
+QSet<ObjectId> shortingTracks(const Board &board, const Design &design, const QSet<ObjectId> &ids);
+
+// Dragging tracks. The other piece of track ending where the end 'atTo'
+// (else the start) of the track 'id' is, on its side, when the two alone
+// meet there with no pad and no via: a corner of one track. Null otherwise.
+ObjectId cornerNeighbour(const Board &board, const Library &library, const ObjectId &id,
+                         bool atTo);
+// The corner at that end of the track 'id' (cornerNeighbour()) moved to
+// 'to', the two pieces laid again to it from their far ends: straight and at
+// 45 degrees (trackCorners()), or straight with 'anyAngle'. The board as it
+// is when there is no such corner.
+Board withTrackCornerMoved(const Board &board, const Library &library, const ObjectId &id,
+                           bool atTo, const Point &to, bool anyAngle);
+// The piece 'id' moved across itself by 'delta': a level piece up or down, an
+// upright one sideways, one at 45 degrees by whole cells of 'gridStep'
+// across it, another by 'delta' as it is. A piece going on from an end is
+// laid again to it from its far end, straight and at 45 degrees; an end on a
+// pad, a via or a fork gets a new piece to it; a free end just moves.
+Board withTrackPieceMoved(const Board &board, const Library &library, const ObjectId &id,
+                          const Point &delta, Coord gridStep);
 // The tracks and the vias 'ids' moved by 'delta'.
 Board withTracksMoved(const Board &board, const QSet<ObjectId> &ids, const Point &delta);
 // The tracks 'ids' 'width' wide.

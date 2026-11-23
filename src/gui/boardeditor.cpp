@@ -122,6 +122,8 @@ QString BoardEditor::actionName(Action action)
         return tr("Delete all tracks");
     case Action::Autoroute:
         return tr("Autoroute");
+    case Action::MoveTrack:
+        return tr("Move track");
     case Action::TrackWidth:
         return tr("Track width");
     case Action::TrackSide:
@@ -638,6 +640,21 @@ void BoardEditor::deleteAllTracks()
     emit changed();
 }
 
+Board BoardEditor::trackDragged(const QPointF &at) const
+{
+    const Design &design = m_document->design();
+    if (m_dragTrackCorner >= 0) {
+        // Shift: the two pieces straight to the corner, at any angle.
+        const bool anyAngle =
+            QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier);
+        return withTrackCornerMoved(design.board, design.library, m_dragTrack,
+                                    m_dragTrackCorner == 1, m_canvas->snapped(at), anyAngle);
+    }
+    return withTrackPieceMoved(design.board, design.library, m_dragTrack,
+                               m_canvas->snapped(at) - m_canvas->snapped(m_pressAt),
+                               m_canvas->gridStep());
+}
+
 QSet<QString> BoardEditor::chosenNets() const
 {
     QSet<QString> nets;
@@ -810,7 +827,7 @@ bool BoardEditor::pressChoosable(const QPointF &at, bool adding, bool joined)
                                             : placementUnder(at);
     if (hit.isNull())
         return false;
-    // Tracks and vias are chosen, not dragged.
+    // Vias are chosen, not dragged; a piece of track is dragged alone.
     if (!copper.isNull()) {
         m_chosenText = PlacementText();
         // With Shift, all the copper joined to it.
@@ -824,6 +841,19 @@ bool BoardEditor::pressChoosable(const QPointF &at, bool adding, bool joined)
         } else if (joined || !m_chosen.contains(copper)) {
             m_chosen = taken;
             m_outlineChosen = false;
+        }
+        // A piece of track is dragged across itself, or by a corner taken
+        // near it.
+        if (!adding && !joined && findById(design.board.tracks, copper) != nullptr) {
+            m_dragTrack = copper;
+            const Track &track = *findById(design.board.tracks, copper);
+            const double near = m_canvas->pixelsToMm(CanvasView::END_PIXELS);
+            for (const bool atTo : {false, true}) {
+                const Point end = atTo ? track.to : track.from;
+                if (QLineF(at, toMm(end)).length() <= near
+                    && !cornerNeighbour(design.board, design.library, copper, atTo).isNull())
+                    m_dragTrackCorner = atTo ? 1 : 0;
+            }
         }
         return true;
     }
@@ -852,6 +882,8 @@ Board BoardEditor::draggedBoard(const QPointF &at) const
     const Point delta = m_canvas->snapped(toMm(m_dragAnchor) + (at - m_pressAt)) - m_dragAnchor;
     if (m_dragText)
         return withPlacementTextMoved(board, m_chosenText, delta);
+    if (!m_dragTrack.isNull())
+        return trackDragged(at);
     Board moved = withPlacementsMoved(board, chosenPlacements(), delta);
     moved = withHolesMoved(moved, chosenHoles(), delta);
     if (outlineChosen() && !isOutlineLocked())
@@ -965,7 +997,7 @@ void BoardEditor::move(const QPointF &at)
         }
         return;
     }
-    const bool takes = m_dragPlacements || m_dragText;
+    const bool takes = m_dragPlacements || m_dragText || !m_dragTrack.isNull();
     if (!m_pressed || (!takes && !m_pressEmpty && m_dragCorner < 0 && m_dragSide < 0))
         return;
     if (!m_dragging) {
@@ -985,7 +1017,7 @@ void BoardEditor::move(const QPointF &at)
             const QSet<ObjectId> holes = chosenHoles();
             const bool holesGo =
                 !holes.isEmpty() && !areHolesLocked(m_document->design().board, holes);
-            if (!m_dragText && !outlineGoes && !placementsGo && !holesGo) {
+            if (!m_dragText && m_dragTrack.isNull() && !outlineGoes && !placementsGo && !holesGo) {
                 if (!m_lockTold) {
                     if (!placements.isEmpty())
                         emit message(partLockedMessage());
@@ -1057,6 +1089,25 @@ void BoardEditor::release(const QPointF &at)
         else
             m_chosen = inside;
         dropDrag();
+        emit changed();
+        return;
+    }
+    if (m_movedBoard && !m_dragTrack.isNull()) {
+        // A track that would come too near another net is not moved.
+        const Board moved = *m_movedBoard;
+        const Design &design = m_document->design();
+        QSet<ObjectId> changedTracks;
+        for (const Track &track : moved.tracks) {
+            const Track *was = findById(design.board.tracks, track.id);
+            if (was == nullptr || was->from != track.from || was->to != track.to)
+                changedTracks.insert(track.id);
+        }
+        const ObjectId taken = m_dragTrack;
+        dropDrag();
+        if (!shortingTracks(moved, design, changedTracks).isEmpty())
+            emit message(tr("The track would come too near another net"));
+        else if (moved != design.board)
+            applyBoard(Action::MoveTrack, moved, {taken});
         emit changed();
         return;
     }
@@ -1716,6 +1767,8 @@ void BoardEditor::dropDrag()
     m_preview.reset();
     m_dragPlacements = false;
     m_dragText = false;
+    m_dragTrack = ObjectId();
+    m_dragTrackCorner = -1;
     m_movedBoard.reset();
     m_framing = false;
     m_pressEmpty = false;

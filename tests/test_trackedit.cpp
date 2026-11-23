@@ -354,6 +354,72 @@ private slots:
         QCOMPARE(withoutShortingStretches(board, shifted, design).tracks.size(), 2);
     }
 
+    void tracksAreDraggedByPiecesAndCorners()
+    {
+        // From pad 1 at (-5, 0) down to (-5, 10), right to (5, 10), up to
+        // (5, 20): pieces 'down', 'across', 'up'.
+        Board board = boardWithPart();
+        const auto track = [&board](const Point &from, const Point &to) {
+            Track result;
+            result.id = newObjectId();
+            result.net = QStringLiteral("A");
+            result.width = MM / 2;
+            result.from = from;
+            result.to = to;
+            board.tracks.append(result);
+            return result.id;
+        };
+        const ObjectId down = track(mm(-5, 0), mm(-5, 10));
+        const ObjectId across = track(mm(-5, 10), mm(5, 10));
+        const ObjectId up = track(mm(5, 10), mm(5, 20));
+
+        // Corners: between two pieces only, not on the pad.
+        QCOMPARE(cornerNeighbour(board, library(), down, true), across);
+        QVERIFY(cornerNeighbour(board, library(), down, false).isNull());
+        QVERIFY(cornerNeighbour(board, library(), up, true).isNull());
+
+        // The middle piece moved down by 2 (sideways is not across it): the
+        // pieces on either side reach it.
+        const Board moved = withTrackPieceMoved(board, library(), across, mm(3, 2), MM);
+        const Track *movedAcross = findById(moved.tracks, across);
+        QCOMPARE(movedAcross->from, mm(-5, 12));
+        QCOMPARE(movedAcross->to, mm(5, 12));
+        QCOMPARE(findById(moved.tracks, down)->to, mm(-5, 12));
+        QCOMPARE(findById(moved.tracks, up)->to, mm(5, 12));
+        QCOMPARE(moved.tracks.size(), 3);
+
+        // The first piece moved sideways: its end on the pad gets a piece
+        // to it.
+        const Board shifted = withTrackPieceMoved(board, library(), down, mm(-2, 0), MM);
+        QCOMPARE(shifted.tracks.size(), 4);
+        QCOMPARE(findById(shifted.tracks, down)->from, mm(-7, 0));
+        bool toPad = false;
+        for (const Track &piece : shifted.tracks)
+            toPad = toPad || (piece.from == mm(-5, 0) && piece.to == mm(-7, 0));
+        QVERIFY(toPad);
+
+        // The corner at (-5, 10) moved to (-3, 12): straight and at 45
+        // degrees from the pad, and on to (5, 10).
+        const Board cornered = withTrackCornerMoved(board, library(), down, true, mm(-3, 12), false);
+        for (const Track &piece : cornered.tracks) {
+            const Point way = piece.to - piece.from;
+            QVERIFY(way.x == 0 || way.y == 0 || std::llabs(way.x) == std::llabs(way.y));
+        }
+        QVERIFY(std::any_of(cornered.tracks.cbegin(), cornered.tracks.cend(),
+                            [](const Track &piece) { return piece.to == mm(-3, 12); }));
+        // At any angle: two pieces straight to it.
+        const Board slanted = withTrackCornerMoved(board, library(), down, true, mm(-3, 12), true);
+        QCOMPARE(slanted.tracks.size(), 3);
+        QCOMPARE(findById(slanted.tracks, down)->to, mm(-3, 12));
+
+        // Up by 9, past pad 2 of net B at (5, 0): it shorts.
+        Design design = newDesign(QStringLiteral("t"));
+        design.library = library();
+        const Board onPad = withTrackPieceMoved(board, library(), across, mm(0, -9), MM);
+        QCOMPARE(shortingTracks(onPad, design, {across}), QSet<ObjectId>{across});
+        QVERIFY(shortingTracks(moved, design, {across}).isEmpty());
+    }
+
     void tracksTakeTheClassOfTheirNet()
     {
         Design design = newDesign(QStringLiteral("t"));

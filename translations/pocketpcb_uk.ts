@@ -1643,6 +1643,14 @@
         <translation>Автотрасування</translation>
     </message>
     <message>
+        <source>Move track</source>
+        <translation>Зсунути доріжку</translation>
+    </message>
+    <message>
+        <source>The track would come too near another net</source>
+        <translation>Доріжка підійшла б надто близько до іншого кола</translation>
+    </message>
+    <message>
         <source>Track width</source>
         <translation>Ширина доріжки</translation>
     </message>
