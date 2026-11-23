@@ -33,6 +33,7 @@ const char KEY_PLACEMENTS[] = "placements";
 const char KEY_TRACKS[] = "tracks";
 const char KEY_VIAS[] = "vias";
 const char KEY_LINKS[] = "wireLinks";
+const char KEY_INSULATED[] = "insulated";
 const char KEY_HOLES[] = "holes";
 const char KEY_GRAPHICS[] = "graphics";
 const char KEY_ZONES[] = "zones";
@@ -268,6 +269,8 @@ QJsonObject linkToJson(const WireLink &link)
     object.insert(QLatin1String(KEY_TO), pointToJson(link.to));
     object.insert(QLatin1String(KEY_DRILL), mmToJson(link.drill));
     object.insert(QLatin1String(KEY_SIZE), mmToJson(link.size));
+    if (link.insulated)
+        object.insert(QLatin1String(KEY_INSULATED), true);
     if (link.autorouted)
         object.insert(QLatin1String(KEY_AUTOROUTED), true);
     return object;
@@ -283,6 +286,8 @@ WireLink linkFromJson(const QJsonObject &object, const QString &where, ReadConte
     link.to = reader.point(object, KEY_TO, where);
     link.drill = reader.positiveMm(object, KEY_DRILL, where);
     link.size = reader.positiveMm(object, KEY_SIZE, where);
+    if (object.contains(QLatin1String(KEY_INSULATED)))
+        link.insulated = reader.boolean(object, KEY_INSULATED, where);
     if (object.contains(QLatin1String(KEY_AUTOROUTED)))
         link.autorouted = reader.boolean(object, KEY_AUTOROUTED, where);
     if (reader.ok() && link.from == link.to)
@@ -434,7 +439,8 @@ bool operator==(const Track &a, const Track &b)
 bool operator==(const WireLink &a, const WireLink &b)
 {
     return a.id == b.id && a.from == b.from && a.to == b.to && a.net == b.net
-           && a.drill == b.drill && a.size == b.size && a.autorouted == b.autorouted;
+           && a.drill == b.drill && a.size == b.size && a.insulated == b.insulated
+           && a.autorouted == b.autorouted;
 }
 
 bool operator==(const Via &a, const Via &b)

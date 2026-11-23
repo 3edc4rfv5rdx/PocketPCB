@@ -81,6 +81,7 @@ Board fullBoard()
     link.net = QStringLiteral("GND");
     link.drill = 800000;
     link.size = 1800000;
+    link.insulated = true;
     link.autorouted = true;
     board.links.append(link);
 
@@ -253,6 +254,7 @@ private slots:
         CHANGED(other.links[0].drill += 1);
         CHANGED(other.links[0].size += 1);
         CHANGED(other.links[0].autorouted = false);
+        CHANGED(other.links[0].insulated = false);
         CHANGED(other.links.clear());
 
         CHANGED(other.holes[0].id = id(1));

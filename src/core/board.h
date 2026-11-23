@@ -142,6 +142,9 @@ struct WireLink
     // Diameters of the holes and of the pads.
     Coord drill = 0;
     Coord size = 0;
+    // An insulated, flexible wire, any way and length, over parts and other
+    // links; else bare and straight. Not written when false.
+    bool insulated = false;
     // As Track::autorouted.
     bool autorouted = false;
 };

@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Insulated wire links, any way and up to 150 mm long, which the autorouter lays where neither a track nor a bare link can go
 - F: The autorouter looks for wire links only where a track finds no way, lays them up to 30.48 mm long, and lets their wires pass under raised parts
 - N: Replace with track in the menu of a wire link lays its connection as a track when there is a way
 - E: Two wire links of one connection are laid a track apart instead of with their pads on top of each other

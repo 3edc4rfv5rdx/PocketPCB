@@ -36,6 +36,12 @@ const int LINK_COST = 40 * STRAIGHT_COST;
 const Coord LINK_PITCH = 2540000;
 const Coord LINK_SHORTEST = 2 * LINK_PITCH;
 const Coord LINK_LONGEST = 12 * LINK_PITCH;
+// An insulated link, any way and length up to this, when neither a track nor
+// a bare link finds a way, dearer than a bare one; it lands within this many
+// millimetres of what it goes to.
+const int SOFT_COST = 80 * STRAIGHT_COST;
+const Coord SOFT_LONGEST = 150 * NM_PER_MM;
+const double SOFT_LANDING_MM = 8.0;
 // Room kept from the copper of other nets beyond the clearance when there is
 // room for it, in millimetres, and what a step into it adds: tracks keep to
 // the middle of the room they run in, as the author moves them by hand.
@@ -436,37 +442,52 @@ bool Router::route(const RatsnestLine &line)
     for (const Placement &placement : m_board.placements)
         bodies.append(placementRect(placement, library));
     const QList<PadPoint> padsThere = padPoints(m_board, library);
-    const auto linkClear = [&](const Point &a, const Point &b) {
-        const QPointF from = toMm(a);
-        const QPointF to = toMm(b);
-        const auto apart = [&from, &to](const QPointF &p, const QPointF &q) {
-            return piecesApart(from, to, p, q);
-        };
-        // Its pads not under a part; its wire may pass under one raised over
-        // the board, but not over a pad or a hole.
+    // Where a pad of a link may go: not under a part, clear of every pad,
+    // hole and link pad there is.
+    const auto endClear = [&](const QPointF &end) {
         for (const QRectF &body : std::as_const(bodies)) {
-            if (body.contains(from) || body.contains(to))
+            if (body.contains(end))
                 return false;
         }
         for (const PadPoint &pad : padsThere) {
-            const QPointF p = toMm(pad.axisFrom);
-            const QPointF q = toMm(pad.axisTo);
-            const double radius = nmToMm(pad.radius);
-            // Its pads clear of the pad, and its wire.
-            for (const QPointF &end : {from, to}) {
-                if (piecesApart(end, end, p, q) < radius + linkPad + gap)
+            if (piecesApart(end, end, toMm(pad.axisFrom), toMm(pad.axisTo))
+                < nmToMm(pad.radius) + linkPad + gap)
+                return false;
+        }
+        for (const MountingHole &hole : m_board.holes) {
+            if (QLineF(end, toMm(hole.at)).length()
+                < nmToMm(holeOuterDiameter(hole)) / 2 + linkPad + gap)
+                return false;
+        }
+        for (const WireLink &link : m_board.links) {
+            for (const Point &other : {link.from, link.to}) {
+                if (QLineF(end, toMm(other)).length() < 2 * linkPad + gap)
                     return false;
             }
-            if (apart(p, q) < radius + wireHalf + gap)
+        }
+        return true;
+    };
+    // A bare link: its pads, and its wire, which may pass under a part
+    // raised over the board, but not over a pad, a hole or another link.
+    const auto linkClear = [&](const Point &a, const Point &b) {
+        const QPointF from = toMm(a);
+        const QPointF to = toMm(b);
+        if (!endClear(from) || !endClear(to))
+            return false;
+        const auto apart = [&from, &to](const QPointF &p, const QPointF &q) {
+            return piecesApart(from, to, p, q);
+        };
+        for (const PadPoint &pad : padsThere) {
+            if (apart(toMm(pad.axisFrom), toMm(pad.axisTo)) < nmToMm(pad.radius) + wireHalf + gap)
                 return false;
         }
         for (const MountingHole &hole : m_board.holes) {
             const QPointF at = toMm(hole.at);
-            if (apart(at, at) < nmToMm(holeOuterDiameter(hole)) / 2 + linkPad + gap)
+            if (apart(at, at) < nmToMm(holeOuterDiameter(hole)) / 2 + wireHalf + gap)
                 return false;
         }
         for (const WireLink &link : m_board.links) {
-            if (apart(toMm(link.from), toMm(link.to)) < 2 * linkPad + gap)
+            if (apart(toMm(link.from), toMm(link.to)) < 2 * wireHalf + gap)
                 return false;
         }
         return true;
@@ -501,6 +522,42 @@ bool Router::route(const RatsnestLine &line)
                         continue;
                     jumps.append(GridJump{to, LINK_COST + cells * STRAIGHT_COST});
                 }
+            }
+            return jumps;
+        };
+        path = gridRoute(rules, starts, goals);
+    }
+    if (path.size() < 2 && grid.layers() == 1 && m_links) {
+        // Still no way: an insulated link too, from where its pad fits to
+        // one of the places round the goal where one does, any way, up to
+        // its longest.
+        QList<GridNode> landings;
+        QSet<qint64> looked;
+        const int round = int(std::ceil(SOFT_LANDING_MM / nmToMm(m_step)));
+        for (const GridNode &goal : std::as_const(goals)) {
+            for (int row = goal.row - round; row <= goal.row + round; ++row) {
+                for (int column = goal.column - round; column <= goal.column + round; ++column) {
+                    const GridNode node{column, row, goal.layer};
+                    if (!grid.contains(node) || looked.contains(grid.key(node)))
+                        continue;
+                    looked.insert(grid.key(node));
+                    if (padFits(node) && endClear(toMm(grid.point(node))))
+                        landings.append(node);
+                }
+            }
+        }
+        const auto rigid = rules.jumps;
+        rules.jumps = [this, &grid, &padFits, &endClear, &landings, rigid](const GridNode &at) {
+            QList<GridJump> jumps = rigid(at);
+            const QPointF from = toMm(grid.point(at));
+            if (!padFits(at) || !endClear(from))
+                return jumps;
+            for (const GridNode &to : landings) {
+                const double length = QLineF(from, toMm(grid.point(to))).length();
+                if (length < nmToMm(LINK_SHORTEST) || length > nmToMm(SOFT_LONGEST))
+                    continue;
+                const int steps = int(std::ceil(length / nmToMm(m_step)));
+                jumps.append(GridJump{to, SOFT_COST + steps * DIAGONAL_COST});
             }
             return jumps;
         };
@@ -551,6 +608,11 @@ bool Router::route(const RatsnestLine &line)
             link.net = line.net;
             link.drill = boardRules.linkDrill;
             link.size = boardRules.linkSize;
+            // Bare when it could be: level or upright, of a bare one's length.
+            const Point way = link.to - link.from;
+            const Coord length = std::max(std::llabs(way.x), std::llabs(way.y));
+            link.insulated = (way.x != 0 && way.y != 0) || length > LINK_LONGEST
+                             || length % LINK_PITCH != 0 || !linkClear(link.from, link.to);
             link.autorouted = true;
             m_board.links.append(link);
             markLink(link);

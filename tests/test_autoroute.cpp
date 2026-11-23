@@ -224,6 +224,31 @@ private slots:
         QCOMPARE(kept.unrouted, 1);
     }
 
+    void anInsulatedLinkCrossesWhatABareOneCannot()
+    {
+        // A board of one side 80 mm wide; pad 1 of net A at (7.62, 15.24) and
+        // at (68.58, 15.24); between them a band of tracks of net W 35 mm
+        // wide, too wide for a bare link.
+        Design design = twoParts();
+        design.board.copper = CopperSides::Top;
+        design.board.outline = rectangleOutline(Point(), mmToNm(80), mmToNm(30));
+        design.board.placements[1].at = mm(71.12, 15.24);
+        for (int x = 15; x <= 50; ++x) {
+            Track band = wall(BoardSide::Top);
+            band.from = mm(x, 0);
+            band.to = mm(x, 30);
+            design.board.tracks.append(band);
+        }
+        const AutorouteResult result = autorouted(design);
+        QCOMPARE(result.unrouted, 0);
+        QCOMPARE(result.links, 1);
+        const WireLink &link = result.board.links.first();
+        QVERIFY(link.insulated);
+        QVERIFY(QLineF(toMm(link.from), toMm(link.to)).length() <= 150);
+        QVERIFY(std::min(link.from.x, link.to.x) < mmToNm(15)
+                && std::max(link.from.x, link.to.x) > mmToNm(50));
+    }
+
     void onlyTheNetsAskedForAreLaid()
     {
         const Design design = twoParts();

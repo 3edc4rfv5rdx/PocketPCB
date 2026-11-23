@@ -1598,10 +1598,12 @@ void paintBoard(QPainter &painter, const Board &board, const Library &library,
     }
     // The wires of wire links, on the side of the parts.
     if (shown.contains(BoardLayer::SilkscreenTop)) {
-        painter.setPen(QPen(paintcolor::silkscreenTop(), nmToMm(WIRE_LINK_WIRE), Qt::SolidLine,
-                            Qt::RoundCap));
-        for (const WireLink &link : board.links)
+        // An insulated one dashed.
+        for (const WireLink &link : board.links) {
+            painter.setPen(QPen(paintcolor::silkscreenTop(), nmToMm(WIRE_LINK_WIRE),
+                                link.insulated ? Qt::DashLine : Qt::SolidLine, Qt::RoundCap));
             painter.drawLine(toMm(link.from), toMm(link.to));
+        }
     }
 
     if (shown.contains(BoardLayer::Outline)) {
