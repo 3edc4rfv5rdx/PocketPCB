@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: Choosing copper on one side in Project properties deletes the other side's tracks and the vias after asking, instead of leaving them joining pads
 - E: Update board refuses while a label or power symbol gives another net's name, instead of joining the two nets on the board
 - E: Saving no longer deletes library files in the autosave folder that the autosave did not write
 ## v0.12.313 (2026-11-23)

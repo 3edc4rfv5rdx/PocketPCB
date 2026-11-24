@@ -1,4 +1,5 @@
 #include "ratsnest.h"
+#include "trackedit.h"
 
 #include <QtTest>
 
@@ -131,6 +132,51 @@ private slots:
         const QList<int> groups = copperGroups(board, netPads(board, library()));
         QCOMPARE(groups.size(), 2);
         QCOMPARE(groups.at(0), groups.at(1));
+    }
+
+    // On a board with copper on the top only, a bottom track and a via join
+    // nothing, whatever lies on the board.
+    void copperOffTheBoardsSidesJoinsNothing()
+    {
+        Board board;
+        board.placements = {placement(mm(0, 0), QString(), QStringLiteral("A")),
+                            placement(mm(20, 0), QStringLiteral("A"), QString())};
+        const auto track = [](BoardSide side, const Point &from, const Point &to) {
+            Track result;
+            result.id = newObjectId();
+            result.side = side;
+            result.net = QStringLiteral("A");
+            result.width = MM / 2;
+            result.from = from;
+            result.to = to;
+            return result;
+        };
+        board.tracks = {track(BoardSide::Bottom, mm(5, 0), mm(15, 0))};
+        QVERIFY(ratsnest(board, library()).isEmpty());
+        QVERIFY(offSideCopper(board).isEmpty());
+        board.copper = CopperSides::Top;
+        QCOMPARE(ratsnest(board, library()).size(), 1);
+        QCOMPARE(offSideCopper(board), QSet<ObjectId>{board.tracks.at(0).id});
+
+        // Top to a via, bottom on to the other pad: only the top piece counts.
+        board.copper = CopperSides::Both;
+        board.tracks = {track(BoardSide::Top, mm(5, 0), mm(10, 5)),
+                        track(BoardSide::Bottom, mm(10, 5), mm(15, 0))};
+        Via via;
+        via.id = newObjectId();
+        via.at = mm(10, 5);
+        via.size = MM;
+        via.drill = MM / 2;
+        board.vias = {via};
+        QVERIFY(ratsnest(board, library()).isEmpty());
+        board.copper = CopperSides::Top;
+        QCOMPARE(ratsnest(board, library()).size(), 1);
+        QCOMPARE(offSideCopper(board), (QSet<ObjectId>{board.tracks.at(1).id, via.id}));
+        // Taken off, the board is as the ratsnest saw it.
+        const Board cleared = withoutTracks(board, offSideCopper(board));
+        QCOMPARE(cleared.tracks.size(), 1);
+        QVERIFY(cleared.vias.isEmpty());
+        QCOMPARE(ratsnest(cleared, library()).size(), 1);
     }
 
     // Shift and a click: the copper joined to a track, through pads too.

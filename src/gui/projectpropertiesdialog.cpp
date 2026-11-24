@@ -1,9 +1,11 @@
 #include "projectpropertiesdialog.h"
 
+#include "boardeditor.h"
 #include "format.h"
 #include "netspanel.h"
 #include "sheetedit.h"
 #include "sheeteditor.h"
+#include "trackedit.h"
 
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -298,6 +300,26 @@ void ProjectPropertiesDialog::accept()
         if (!kept.contains(netClass.name) && isNetClassUsed(m_design, netClass.name))
             deletedUsed.append(netClass.name);
     }
+    Board sided = m_design.board;
+    sided.copper = CopperSides(m_sidesBox->currentIndex());
+    const QSet<ObjectId> off = offSideCopper(sided);
+    if (!off.isEmpty()) {
+        int tracks = 0;
+        for (const Track &track : sided.tracks)
+            tracks += off.contains(track.id) ? 1 : 0;
+        const int vias = int(off.size()) - tracks;
+        QString question = tr("Tracks and vias on copper the board no longer has will be deleted")
+                           + QLatin1Char('.');
+        if (tracks > 0)
+            question += QLatin1Char('\n') + BoardEditor::tracksCountName() + QStringLiteral(": ")
+                        + QString::number(tracks);
+        if (vias > 0)
+            question += QLatin1Char('\n') + BoardEditor::viasCountName() + QStringLiteral(": ")
+                        + QString::number(vias);
+        question += QLatin1Char('\n') + tr("Delete them") + QLatin1Char('?');
+        if (QMessageBox::question(this, title(), question) != QMessageBox::Yes)
+            return;
+    }
     if (!deletedUsed.isEmpty()) {
         const QString question =
             tr("Nets of the deleted classes will take the default or the power class")
@@ -325,7 +347,9 @@ Design ProjectPropertiesDialog::design() const
     block.date = m_dateEdit->text().trimmed();
     block.note = m_noteEdit->text().trimmed();
 
+    // Copper the board has no side for any more goes (asked in accept()).
     result.board.copper = CopperSides(m_sidesBox->currentIndex());
+    result.board = withoutTracks(result.board, offSideCopper(result.board));
 
     const DesignatorStyle style = DesignatorStyle(m_styleBox->currentIndex());
     if (style != result.project.designatorStyle) {

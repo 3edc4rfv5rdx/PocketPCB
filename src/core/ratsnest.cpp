@@ -86,8 +86,12 @@ QList<int> copperRoots(const Board &board, const QList<NetPad> &pads)
         return QLineF(nearestOnPiece(toMm(track.from), toMm(track.to), toMm(at)), toMm(at))
             .length();
     };
+    // Copper on a side the board has none on joins nothing (offSideCopper()).
+    const QSet<ObjectId> off = offSideCopper(board);
     for (int t = 0; t < trackCount; ++t) {
         const Track &track = board.tracks.at(t);
+        if (off.contains(track.id))
+            continue;
         for (const Point &end : {track.from, track.to}) {
             for (int p = 0; p < padCount; ++p) {
                 const NetPad &pad = pads.at(p);
@@ -95,12 +99,13 @@ QList<int> copperRoots(const Board &board, const QList<NetPad> &pads)
                     join(padCount + t, p);
             }
             for (int v = 0; v < board.vias.size(); ++v) {
-                if (near(end, board.vias.at(v).at, board.vias.at(v).size / 2))
+                if (!off.contains(board.vias.at(v).id)
+                    && near(end, board.vias.at(v).at, board.vias.at(v).size / 2))
                     join(padCount + t, padCount + trackCount + v);
             }
             for (int o = 0; o < trackCount; ++o) {
                 const Track &other = board.tracks.at(o);
-                if (o != t && other.side == track.side
+                if (o != t && other.side == track.side && !off.contains(other.id)
                     && toTrack(other, end) <= nmToMm(other.width) / 2)
                     join(padCount + t, padCount + o);
             }
@@ -123,6 +128,8 @@ QList<int> copperRoots(const Board &board, const QList<NetPad> &pads)
     }
     // A via on a pad joins it.
     for (int v = 0; v < board.vias.size(); ++v) {
+        if (off.contains(board.vias.at(v).id))
+            continue;
         for (int p = 0; p < padCount; ++p) {
             if (onPad(pads.at(p), board.vias.at(v).at))
                 join(padCount + trackCount + v, p);

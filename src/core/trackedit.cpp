@@ -374,6 +374,20 @@ QSet<ObjectId> tracksOfPads(const Board &board, const Library &library,
     return tracks;
 }
 
+QSet<ObjectId> offSideCopper(const Board &board)
+{
+    QSet<ObjectId> off;
+    for (const Track &track : board.tracks) {
+        if (!copperOn(board.copper, track.side))
+            off.insert(track.id);
+    }
+    if (board.copper != CopperSides::Both) {
+        for (const Via &via : board.vias)
+            off.insert(via.id);
+    }
+    return off;
+}
+
 Board withoutTracks(const Board &board, const QSet<ObjectId> &ids)
 {
     Board result = board;

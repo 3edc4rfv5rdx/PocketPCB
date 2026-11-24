@@ -90,6 +90,9 @@ public:
     static QString diameterHint();
     // "Top layer", "Bottom layer".
     static QString sideName(BoardSide side);
+    // "Tracks" and "Vias" before a count of them, as in "Vias: 3".
+    static QString tracksCountName();
+    static QString viasCountName();
 
     // While the board is shown. Leaving it drops what is being drawn or
     // dragged and goes back to choosing.

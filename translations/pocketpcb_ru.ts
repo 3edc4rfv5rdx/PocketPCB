@@ -977,10 +977,6 @@
         <translation>Соединений</translation>
     </message>
     <message>
-        <source>Vias</source>
-        <translation>Переходных</translation>
-    </message>
-    <message>
         <source>Wire links</source>
         <translation>Перемычек</translation>
     </message>
@@ -1299,6 +1295,14 @@
     <message>
         <source>Bottom only</source>
         <translation>Только низ</translation>
+    </message>
+    <message>
+        <source>Tracks and vias on copper the board no longer has will be deleted</source>
+        <translation>Дорожки и переходные отверстия на меди, которой у платы больше нет, будут удалены</translation>
+    </message>
+    <message>
+        <source>Delete them</source>
+        <translation>Удалить их</translation>
     </message>
 </context>
 <context>
@@ -1685,6 +1689,14 @@
     <message>
         <source>Type the width in millimetres</source>
         <translation>Введите ширину в миллиметрах</translation>
+    </message>
+    <message>
+        <source>Tracks</source>
+        <translation>Дорожек</translation>
+    </message>
+    <message>
+        <source>Vias</source>
+        <translation>Переходных</translation>
     </message>
 </context>
 <context>

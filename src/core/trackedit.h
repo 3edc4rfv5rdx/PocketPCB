@@ -95,6 +95,9 @@ QSet<ObjectId> trackRun(const Board &board, const Library &library, const Object
 // that go with them when they are taken off the board.
 QSet<ObjectId> tracksOfPads(const Board &board, const Library &library,
                             const QSet<ObjectId> &ids);
+// The tracks on a side 'board' has no copper on and, on a board with copper
+// on one side only, every via: copper that joins nothing there.
+QSet<ObjectId> offSideCopper(const Board &board);
 // The board without the tracks, the vias and the wire links 'ids'.
 Board withoutTracks(const Board &board, const QSet<ObjectId> &ids);
 // The board without any track, via or wire link, as it is shown while they

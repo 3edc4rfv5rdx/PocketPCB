@@ -146,6 +146,16 @@ QString BoardEditor::sideName(BoardSide side)
     return side == BoardSide::Top ? tr("Top layer") : tr("Bottom layer");
 }
 
+QString BoardEditor::tracksCountName()
+{
+    return tr("Tracks");
+}
+
+QString BoardEditor::viasCountName()
+{
+    return tr("Vias");
+}
+
 void BoardEditor::setTrackSide(BoardSide side)
 {
     if (side != trackSide())
