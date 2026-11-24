@@ -2,6 +2,8 @@
 
 #include "wiringdetail.h"
 
+#include <QHash>
+
 #include <algorithm>
 #include <optional>
 
@@ -115,7 +117,10 @@ static Sheet segmentMoved(const Sheet &sheet, const Library &library, const Obje
     upToSegment.points = p.mid(0, index + 1);
     const Wire &was = sheet.wires.at(at);
     const QList<Point> now = result.wires.at(at).points;
-    const auto goesTo = [&](const Point &end) -> std::optional<Point> {
+    // The wires both of whose ends go by one shift, by their index: they are
+    // shifted whole, and the ends of wires on them go along by that shift.
+    QHash<int, Point> shifted;
+    const auto goesTo = [&](const Point &end, int self) -> std::optional<Point> {
         // What holds an end of the wire does not go with it.
         if ((aHeld && end == a) || (bHeld && end == b))
             return std::nullopt;
@@ -123,8 +128,28 @@ static Sheet segmentMoved(const Sheet &sheet, const Library &library, const Obje
             return end + d;
         if (isOnWire(was, end) && !isOnWire(now, end))
             return isOnWire(upToSegment, end) ? na : nb;
+        for (auto it = shifted.cbegin(); it != shifted.cend(); ++it) {
+            if (it.key() != self && isOnWire(sheet.wires.at(it.key()), end))
+                return end + it.value();
+        }
         return std::nullopt;
     };
+    // Shifted whole, a wire takes along the ends on it, which may shift
+    // another whole: until none more does.
+    for (bool more = true; more;) {
+        more = false;
+        for (int i = 0; i < sheet.wires.size(); ++i) {
+            const Wire &other = sheet.wires.at(i);
+            if (i == at || shifted.contains(i) || other.points.size() < 2)
+                continue;
+            const std::optional<Point> first = goesTo(other.points.first(), i);
+            const std::optional<Point> last = goesTo(other.points.last(), i);
+            if (first && last && *first - other.points.first() == *last - other.points.last()) {
+                shifted.insert(i, *first - other.points.first());
+                more = true;
+            }
+        }
+    }
     // What they keep off: the wire where it is now, not where it was, and
     // of the wires that go with it only those laid already, where they are
     // laid: one still where it was would count as a way already there.
@@ -132,7 +157,7 @@ static Sheet segmentMoved(const Sheet &sheet, const Library &library, const Obje
     for (int i = 0; i < result.wires.size(); ++i) {
         const Wire &other = result.wires.at(i);
         if (i != at && other.points.size() >= 2
-            && (goesTo(other.points.first()) || goesTo(other.points.last())))
+            && (goesTo(other.points.first(), i) || goesTo(other.points.last(), i)))
             around = around.without(other.id);
     }
     for (int i = 0; i < result.wires.size(); ++i) {
@@ -143,8 +168,8 @@ static Sheet segmentMoved(const Sheet &sheet, const Library &library, const Obje
             continue;
         const Point firstEnd = other.points.first();
         const Point lastEnd = other.points.last();
-        const std::optional<Point> first = goesTo(firstEnd);
-        const std::optional<Point> last = goesTo(lastEnd);
+        const std::optional<Point> first = goesTo(firstEnd, i);
+        const std::optional<Point> last = goesTo(lastEnd, i);
         if (!first && !last)
             continue;
         if (first && last && *first - firstEnd == *last - lastEnd) {

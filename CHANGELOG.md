@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: Dragging a wire segment keeps joined the wires ending on a wire it carries along
 - E: Route chosen no longer takes up the autorouted tracks of nets that were not chosen
 - E: A connection the autorouter lays by taking others up keeps the wire links of its way, and takes up what is in their way
 - E: The board status total of connections no longer grows with each wire link

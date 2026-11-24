@@ -459,6 +459,39 @@ private slots:
                  QList<Point>({mm(5, 0), mm(7, 0), mm(7, -9), mm(8, -10)}));
     }
 
+    // A segment carries a wire whose both ends lie on it, whole; a wire
+    // ending on the middle of that one goes along and stays joined, one only
+    // crossing it does not become joined.
+    void wiresOnACarriedWireStayJoined()
+    {
+        const Library library;
+        for (const WireRouting routing : {WireRouting::Hand, WireRouting::Grid}) {
+            Sheet sheet;
+            sheet.wires = {wire({mm(0, 0), mm(20, 0)}),
+                           wire({mm(5, 0), mm(5, 10), mm(15, 10), mm(15, 0)}),
+                           wire({mm(10, 10), mm(10, 20)})};
+            const ObjectId carried = sheet.wires.at(1).id;
+            const ObjectId onIt = sheet.wires.at(2).id;
+            QVERIFY(joinedWires(sheet, onIt).contains(carried));
+            const Sheet moved =
+                withSegmentMoved(sheet, library, sheet.wires.first().id, 0, mm(0, 15), routing);
+            const Wire *was = findById(moved.wires, carried);
+            QVERIFY(was != nullptr);
+            QCOMPARE(was->points, QList<Point>({mm(5, 15), mm(5, 25), mm(15, 25), mm(15, 15)}));
+            QVERIFY2(joinedWires(moved, onIt).contains(carried), routing == WireRouting::Hand
+                                                                     ? "hand"
+                                                                     : "grid");
+
+            // Crossing it, not ending on it: nothing joins them.
+            Sheet crossing = sheet;
+            crossing.wires[2].points = {mm(10, 5), mm(10, 20)};
+            QVERIFY(!joinedWires(crossing, onIt).contains(carried));
+            const Sheet apart =
+                withSegmentMoved(crossing, library, crossing.wires.first().id, 0, mm(0, 15), routing);
+            QVERIFY(!joinedWires(apart, onIt).contains(carried));
+        }
+    }
+
     void pointsOnWires()
     {
         const Wire w = wire({mm(0, 0), mm(10, 0), mm(15, 5)});
