@@ -70,6 +70,11 @@ struct BoardUpdate
     // In the order of the designators (designatorLess()); for one
     // placement, its kinds in the order of BoardChangeKind.
     QList<BoardChange> changes;
+    // The names each given to more than one net with pins, such as a name
+    // of the nets table that a label or a power symbol gives another net
+    // (naturalLess() order). While there are any the update is refused:
+    // 'board' and 'project' are those of the design and 'changes' is empty.
+    QStringList sharedNames;
 };
 
 // The board of 'design' brought in line with its schematic. New placements

@@ -19,6 +19,8 @@ public:
     static QString title();
     // Said instead of the dialog when nothing would change.
     static QString nothingToUpdate();
+    // Said instead of the dialog when nets share a name (BoardUpdate::sharedNames).
+    static QString sharedNamesText(const QStringList &names);
     // "R1: value 1k → 2k2": a change as the list shows it.
     static QString changeText(const BoardChange &change);
 };

@@ -281,6 +281,40 @@ private slots:
                  QStringLiteral("NN2"));
     }
 
+    // A name of the nets table given by a label to another net would make
+    // the two one net on the board: the update is refused.
+    void netsSharingANameAreNotPutOnTheBoard()
+    {
+        Design design = twoResistors();
+        QList<Component> &components = design.schematic.sheets[0].components;
+        components << part(QStringLiteral("R3"), mm(30, 0)) << part(QStringLiteral("R4"), mm(40, 0));
+        design.project.netsByPins = {
+            NetByPins{QStringLiteral("NN1"),
+                      {PinRef{components.at(1).id, QStringLiteral("2")},
+                       PinRef{components.at(0).id, QStringLiteral("1")}}}};
+        Label label;
+        label.id = newObjectId();
+        label.text = QStringLiteral("NN1");
+        label.at = mm(35, 0);
+        design.schematic.sheets[0].labels.append(label);
+
+        const BoardUpdate update = boardUpdatedFromSchematic(design);
+        QCOMPARE(update.sharedNames, QStringList{QStringLiteral("NN1")});
+        QVERIFY(update.changes.isEmpty());
+        QVERIFY(update.board == design.board);
+        QVERIFY(update.project == design.project);
+
+        // Named otherwise, the two nets go on the board apart.
+        design.schematic.sheets[0].labels[0].text = QStringLiteral("CLK");
+        const BoardUpdate named = boardUpdatedFromSchematic(design);
+        QVERIFY(named.sharedNames.isEmpty());
+        const Placement *r1 = placementOf(named.board, QStringLiteral("R1"));
+        const Placement *r3 = placementOf(named.board, QStringLiteral("R3"));
+        QVERIFY(r1 != nullptr && r3 != nullptr);
+        QCOMPARE(r1->padNets.value(QStringLiteral("2")), QStringLiteral("NN1"));
+        QCOMPARE(r3->padNets.value(QStringLiteral("2")), QStringLiteral("CLK"));
+    }
+
     void netsOfPadsFollowTheSchematic()
     {
         Design design = twoResistors();

@@ -1709,6 +1709,14 @@
         <translation>Плата соответствует схеме</translation>
     </message>
     <message>
+        <source>Different nets have one name</source>
+        <translation>Разные цепи имеют одно имя</translation>
+    </message>
+    <message>
+        <source>Give the label or the power symbol another name, ERC shows where</source>
+        <translation>Дайте метке или символу питания другое имя, ERC покажет где</translation>
+    </message>
+    <message>
         <source>These changes will be made on the board</source>
         <translation>На плате будут сделаны такие изменения</translation>
     </message>

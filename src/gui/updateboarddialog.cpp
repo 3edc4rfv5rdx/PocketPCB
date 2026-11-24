@@ -48,6 +48,14 @@ QString UpdateBoardDialog::nothingToUpdate()
     return tr("The board matches the schematic");
 }
 
+QString UpdateBoardDialog::sharedNamesText(const QStringList &names)
+{
+    return tr("Different nets have one name") + QStringLiteral(": ")
+           + names.join(QStringLiteral(", ")) + QStringLiteral(".\n")
+           + tr("Give the label or the power symbol another name, ERC shows where")
+           + QLatin1Char('.');
+}
+
 QString UpdateBoardDialog::changeText(const BoardChange &change)
 {
     const QString arrow = QStringLiteral(" → ");

@@ -1427,6 +1427,11 @@ void MainWindow::updatePartsFromLibrary()
 void MainWindow::updateBoardFromSchematic()
 {
     const BoardUpdate update = boardUpdatedFromSchematic(m_document->design());
+    if (!update.sharedNames.isEmpty()) {
+        QMessageBox::warning(this, UpdateBoardDialog::title(),
+                             UpdateBoardDialog::sharedNamesText(update.sharedNames));
+        return;
+    }
     if (update.changes.isEmpty()) {
         QMessageBox::information(this, UpdateBoardDialog::title(),
                                  UpdateBoardDialog::nothingToUpdate() + QLatin1Char('.'));

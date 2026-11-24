@@ -94,10 +94,28 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
     // edited, then the nets are found again by those names.
     const Project project =
         withNetsNamedByPins(design.project, nets(design.schematic, library, design.project));
+    // Two nets with pins under one name would be one net on the board: the
+    // update waits until a label or a power symbol is named otherwise.
     QHash<QString, QString> pinNets;
+    QHash<QString, int> netsOfName;
     for (const Net &net : nets(design.schematic, library, project)) {
+        if (!net.pins.isEmpty())
+            ++netsOfName[net.name];
         for (const NetPin &pin : net.pins)
             pinNets.insert(pinKey(pin.component, pin.number), net.name);
+    }
+    QStringList sharedNames;
+    for (auto it = netsOfName.cbegin(); it != netsOfName.cend(); ++it) {
+        if (it.value() > 1)
+            sharedNames.append(it.key());
+    }
+    if (!sharedNames.isEmpty()) {
+        std::sort(sharedNames.begin(), sharedNames.end(), naturalLess);
+        BoardUpdate refused;
+        refused.board = design.board;
+        refused.project = design.project;
+        refused.sharedNames = sharedNames;
+        return refused;
     }
 
     // The components that belong on the board, in the order of the sheets.
