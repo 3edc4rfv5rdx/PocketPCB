@@ -74,7 +74,15 @@ struct GridRouteRules
     int jumpSpacing = 0;
     // How many nodes the search looks on from before it gives up.
     int maxExpanded = 1000000;
+    // Asked before the first node the search looks on from and then after
+    // every GRID_KEEP_GOING_EVERY of them: false stops it, finding no way.
+    // Unset: never asked.
+    std::function<bool()> keepGoing;
 };
+
+// How many nodes the search looks on from between two questions of
+// GridRouteRules::keepGoing.
+constexpr int GRID_KEEP_GOING_EVERY = 1024;
 
 // The nodes of the cheapest way from one of 'starts' to one of 'goals', both
 // ends included: a start alone when it is a goal too. A step on the same

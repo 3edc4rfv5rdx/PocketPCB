@@ -177,11 +177,13 @@ class Router
 {
 public:
     // With 'links' a board with copper on one side gets wire links where a
-    // track cannot go.
-    Router(const Design &design, bool links)
+    // track cannot go. 'keepGoing', when set, is asked as a search goes on
+    // (GridRouteRules::keepGoing): false stops it, the line finding no way.
+    Router(const Design &design, bool links, const std::function<bool()> &keepGoing = {})
         : m_design(design)
         , m_board(design.board)
         , m_links(links)
+        , m_keepGoing(keepGoing)
     {
         const Rules &rules = design.project.rules;
         Coord width = rules.defaultTrackWidth;
@@ -262,6 +264,7 @@ private:
     Board m_board;
     Coord m_step = 1;
     bool m_links = true;
+    std::function<bool()> m_keepGoing;
     double m_room = 0;
     double m_edgeRoom = 0;
     QPainterPath m_outline;
@@ -398,6 +401,7 @@ bool Router::route(const RatsnestLine &line)
         return own.contains(grid.key(node)) || grid.usable(node, net);
     };
     GridRouteRules rules;
+    rules.keepGoing = m_keepGoing;
     rules.columns = grid.columns();
     rules.rows = grid.rows();
     rules.layers = grid.layers();
@@ -706,12 +710,12 @@ QSet<ObjectId> autoroutedOf(const Board &board)
 // up whole, from pad to pad or fork, to be laid again. Tracks laid by hand
 // are never taken up. The board, or nothing when the line has no way even so.
 std::optional<Board> ripUp(const Design &working, const Board &current, const RatsnestLine &line,
-                           bool links)
+                           bool links, const std::function<bool()> &keepGoing)
 {
     const QSet<ObjectId> laid = autoroutedOf(current);
     Design bare = working;
     bare.board = withoutTracks(current, laid);
-    Router probe(bare, links);
+    Router probe(bare, links, keepGoing);
     if (!probe.route(line))
         return std::nullopt;
     // The way found, put on the board as it is.
@@ -804,8 +808,17 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
     // The board as laid so far is the router's; 'working' has it after each
     // connection taken up, to lay the rest on.
     Design working = design;
+    // Asked while a search goes on too, so that a long one stops as soon:
+    // once told to stop, the routing does.
+    int done = 0;
+    int total = 0;
+    bool stop = false;
+    const std::function<bool()> keepGoing = [&]() {
+        stop = stop || (progress && !progress(done, total));
+        return !stop;
+    };
     std::optional<Router> router;
-    router.emplace(working, links);
+    router.emplace(working, links, keepGoing);
     AutorouteResult result;
     QList<RatsnestLine> failed;
     const QList<RatsnestLine> none;
@@ -819,7 +832,7 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
         }
         return lines;
     };
-    const int total = int(waiting(none).size());
+    total = int(waiting(none).size());
     result.total = total;
     QHash<QString, int> rippedFor;
     int ripUps = 0;
@@ -829,8 +842,8 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
     int bestFailed = 0;
     for (;;) {
         const QList<RatsnestLine> lines = waiting(failed);
-        if (progress
-            && !progress(std::max(0, total - int(lines.size()) - int(failed.size())), total)) {
+        done = std::max(0, total - int(lines.size()) - int(failed.size()));
+        if (!keepGoing()) {
             result.stopped = true;
             break;
         }
@@ -849,14 +862,20 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
                 ++rippedFor[lineKey(line)];
                 ++ripUps;
                 const std::optional<Board> board =
-                    ripUp(working, router->board(), line, links);
+                    ripUp(working, router->board(), line, links, keepGoing);
+                if (stop)
+                    break;
                 if (!board)
                     continue;
                 working.board = *board;
-                router.emplace(working, links);
+                router.emplace(working, links, keepGoing);
                 // What failed may find a way now.
                 failed.clear();
                 laid = true;
+                break;
+            }
+            if (stop) {
+                result.stopped = true;
                 break;
             }
             if (!laid)
@@ -870,13 +889,13 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
         const RatsnestLine line = *std::min_element(
             lines.cbegin(), lines.cend(),
             [&length](const RatsnestLine &a, const RatsnestLine &b) { return length(a) < length(b); });
-        if (!router->route(line))
+        if (!router->route(line) && !stop)
             failed.append(line);
     }
     // The best board, should taking others up have left more at the end.
     if (best && !result.stopped && int(failed.size()) > bestFailed) {
         working.board = *best;
-        router.emplace(working, links);
+        router.emplace(working, links, keepGoing);
     }
     // The tracks laid put in the middle of the room they run in.
     QSet<ObjectId> laid;

@@ -272,6 +272,23 @@ private slots:
         QCOMPARE(result.unrouted, 1);
         QCOMPARE(result.board, design.board);
     }
+
+    // Stop asked while a connection is being searched: it is left as it was,
+    // and nothing else is tried.
+    void routingStopsInTheMiddleOfASearch()
+    {
+        const Design design = twoParts();
+        int asked = 0;
+        const AutorouteResult result = autorouted(design, {}, [&asked](int, int) {
+            ++asked;
+            return asked < 2;
+        });
+        QCOMPARE(asked, 2);
+        QVERIFY(result.stopped);
+        QCOMPARE(result.routed, 0);
+        QCOMPARE(result.unrouted, 1);
+        QCOMPARE(result.board, design.board);
+    }
 };
 
 QTEST_APPLESS_MAIN(TestAutoroute)

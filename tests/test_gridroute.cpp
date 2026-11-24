@@ -324,6 +324,40 @@ private slots:
         QVERIFY(!gridRoute(rules, {node(0, 0)}, {node(49, 49)}).isEmpty());
     }
 
+    // Told to stop, the search stops within the nodes between two questions,
+    // long before it would give up, and finds no way.
+    void stopsWhenTold()
+    {
+        // A goal walled off: the search looks at every node it can reach.
+        QList<GridNode> wall;
+        for (int row = 0; row < 200; ++row)
+            wall.append(node(150, row));
+        GridRouteRules rules = walled(200, 200, wall);
+        int steps = 0;
+        const auto counted = rules.stepCost;
+        rules.stepCost = [&steps, counted](const GridNode &from, const GridNode &to) {
+            ++steps;
+            return counted(from, to);
+        };
+        QVERIFY(gridRoute(rules, {node(0, 0)}, {node(199, 199)}).isEmpty());
+        const int all = steps;
+
+        steps = 0;
+        int asked = 0;
+        rules.keepGoing = [&asked]() { return ++asked < 3; };
+        QVERIFY(gridRoute(rules, {node(0, 0)}, {node(199, 199)}).isEmpty());
+        QCOMPARE(asked, 3);
+        // Four steps at most from each node looked on from.
+        QVERIFY(steps <= 4 * 2 * GRID_KEEP_GOING_EVERY);
+        QVERIFY(steps < all / 4);
+
+        // Asked before the first node: nothing is looked at.
+        steps = 0;
+        rules.keepGoing = []() { return false; };
+        QVERIFY(gridRoute(rules, {node(0, 0)}, {node(10, 0)}).isEmpty());
+        QCOMPARE(steps, 0);
+    }
+
     // The same call gives the same way, and so does the call with the goals
     // in another order.
     void sameWayEachTime()

@@ -135,6 +135,9 @@ public:
             const State state = stateOf(key);
             if (goalKeys_.contains(nodeKey(state.node)))
                 return pathTo(key);
+            if (rules_.keepGoing && expanded % GRID_KEEP_GOING_EVERY == 0
+                && !rules_.keepGoing())
+                return {};
             if (++expanded > rules_.maxExpanded)
                 return {};
             expand(state, cost, key);
