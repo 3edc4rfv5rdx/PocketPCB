@@ -82,6 +82,37 @@ QList<Track> newTracks(const Board &before, const Board &board)
     return tracks;
 }
 
+// Every end of the new tracks of 'board' lies on copper of its net: a pad,
+// the pad of a wire link, a via or another track.
+bool newTracksJoined(const Board &before, const Board &board, const Library &library)
+{
+    const QList<NetPad> pads = netPads(board, library);
+    for (const Track &track : newTracks(before, board)) {
+        for (const Point &end : {track.from, track.to}) {
+            const QPointF at = toMm(end);
+            bool joined = false;
+            for (const NetPad &pad : pads) {
+                joined = joined
+                         || (pad.net == track.net
+                             && QLineF(toMm(pad.at), at).length()
+                                    <= nmToMm(std::max(pad.sizeX, pad.sizeY)) / 2);
+            }
+            for (const Via &via : board.vias)
+                joined = joined || (via.net == track.net && via.at == end);
+            for (const Track &other : board.tracks) {
+                joined = joined
+                         || (other.id != track.id && other.net == track.net
+                             && QLineF(nearestOnPiece(toMm(other.from), toMm(other.to), at), at)
+                                    .length()
+                                    <= nmToMm(other.width) / 2);
+            }
+            if (!joined)
+                return false;
+        }
+    }
+    return true;
+}
+
 } // namespace
 
 class TestAutoroute : public QObject
@@ -247,6 +278,49 @@ private slots:
         QVERIFY(QLineF(toMm(link.from), toMm(link.to)).length() <= 150);
         QVERIFY(std::min(link.from.x, link.to.x) < mmToNm(15)
                 && std::max(link.from.x, link.to.x) > mmToNm(50));
+    }
+
+    // Pad 1 of net A shut in by a ring the autorouter laid for net B, and a
+    // wall of net W laid by hand across a board of one side: A is laid by
+    // taking the ring up and leaping the wall by a wire link, which the
+    // board keeps wherever the routing stops.
+    void aWayFoundByTakingUpKeepsItsWireLinks()
+    {
+        Design design = twoParts();
+        design.board.copper = CopperSides::Top;
+        design.board.tracks = {wall(BoardSide::Top)};
+        const QList<Point> ring = {mm(6, 13.64), mm(9.24, 13.64), mm(9.24, 16.84), mm(6, 16.84)};
+        for (int i = 0; i < ring.size(); ++i) {
+            Track piece;
+            piece.id = newObjectId();
+            piece.side = BoardSide::Top;
+            piece.net = QStringLiteral("B");
+            piece.width = mmToNm(0.25);
+            piece.from = ring.at(i);
+            piece.to = ring.at((i + 1) % ring.size());
+            piece.autorouted = true;
+            design.board.tracks.append(piece);
+        }
+
+        const AutorouteResult result = autorouted(design);
+        QCOMPARE(result.unrouted, 0);
+        QVERIFY(result.links >= 1);
+        QVERIFY(ratsnest(result.board, design.library).isEmpty());
+        QVERIFY(findById(result.board.tracks, design.board.tracks.first().id) != nullptr);
+        QVERIFY(newTracksJoined(design.board, result.board, design.library));
+
+        // Stopped at any point, what is laid is joined: no track ends where
+        // a link was to be.
+        for (int stopAt = 1;; ++stopAt) {
+            QVERIFY(stopAt < 10000);
+            int asked = 0;
+            const AutorouteResult stopped =
+                autorouted(design, {}, [&asked, stopAt](int, int) { return ++asked < stopAt; });
+            QVERIFY2(newTracksJoined(design.board, stopped.board, design.library),
+                     qPrintable(QString::number(stopAt)));
+            if (!stopped.stopped)
+                break;
+        }
     }
 
     void onlyTheNetsAskedForAreLaid()

@@ -704,6 +704,50 @@ QSet<ObjectId> autoroutedOf(const Board &board)
     return laid;
 }
 
+// The tracks, the vias and the wire links of other nets on 'board' that the
+// wire link 'link' comes nearer to than 'clearance', as the router keeps a
+// link: its pads from copper, and its wire, when bare, from the pads and the
+// wires of other links; and the bare links of other nets whose wire passes
+// over its pads.
+QSet<ObjectId> linkMeets(const Board &board, const WireLink &link, double clearance)
+{
+    const double pad = nmToMm(link.size) / 2;
+    const double wireHalf = nmToMm(WIRE_LINK_WIRE) / 2;
+    const QPointF from = toMm(link.from);
+    const QPointF to = toMm(link.to);
+    const auto nearPads = [&](const QPointF &a, const QPointF &b, double reach) {
+        return piecesApart(from, from, a, b) < pad + reach + clearance
+               || piecesApart(to, to, a, b) < pad + reach + clearance;
+    };
+    QSet<ObjectId> met;
+    for (const Track &track : board.tracks) {
+        if (track.net != link.net
+            && nearPads(toMm(track.from), toMm(track.to), nmToMm(track.width) / 2))
+            met.insert(track.id);
+    }
+    for (const Via &via : board.vias) {
+        if (via.net != link.net && nearPads(toMm(via.at), toMm(via.at), nmToMm(via.size) / 2))
+            met.insert(via.id);
+    }
+    for (const WireLink &other : board.links) {
+        if (other.id == link.id || other.net == link.net)
+            continue;
+        const QPointF otherFrom = toMm(other.from);
+        const QPointF otherTo = toMm(other.to);
+        const double otherPad = nmToMm(other.size) / 2;
+        const bool meets =
+            nearPads(otherFrom, otherFrom, otherPad) || nearPads(otherTo, otherTo, otherPad)
+            || (!link.insulated
+                && (piecesApart(from, to, otherFrom, otherFrom) < otherPad + wireHalf + clearance
+                    || piecesApart(from, to, otherTo, otherTo) < otherPad + wireHalf + clearance
+                    || piecesApart(from, to, otherFrom, otherTo) < 2 * wireHalf + clearance))
+            || (!other.insulated && nearPads(otherFrom, otherTo, wireHalf));
+        if (meets)
+            met.insert(other.id);
+    }
+    return met;
+}
+
 // 'line' laid on 'working', its board as 'current' has it, by taking up the
 // connections the autorouter laid (autoroutedOf()) that are in its way: it is
 // laid on the board without them, and those its way comes too near are taken
@@ -732,6 +776,13 @@ std::optional<Board> ripUp(const Design &working, const Board &current, const Ra
         if (findById(bare.board.vias, via.id) == nullptr) {
             with.vias.append(via);
             wayVias.append(via);
+        }
+    }
+    QList<WireLink> wayLinks;
+    for (const WireLink &link : probe.board().links) {
+        if (findById(bare.board.links, link.id) == nullptr) {
+            with.links.append(link);
+            wayLinks.append(link);
         }
     }
     // What of other nets the autorouter laid comes too near it: tracks, and
@@ -766,13 +817,42 @@ std::optional<Board> ripUp(const Design &working, const Board &current, const Ra
                 inTheWay.insert(track.id);
         }
     }
+    // The wire links of the way, kept from copper of other nets as the
+    // router keeps them (linkMeets()): the autorouter's that they come too
+    // near are in the way, and those of the way's tracks come too near.
+    const double linkClearance = nmToMm(working.project.rules.clearance);
+    for (const WireLink &link : wayLinks) {
+        for (const ObjectId &id : linkMeets(with, link, linkClearance)) {
+            if (laid.contains(id))
+                inTheWay.insert(id);
+        }
+    }
+    for (const WireLink &other : current.links) {
+        if (!laid.contains(other.id) || other.net == line.net)
+            continue;
+        const QSet<ObjectId> met = linkMeets(with, other, linkClearance);
+        const bool wayMet =
+            met.intersects(way)
+            || std::any_of(wayVias.cbegin(), wayVias.cend(),
+                           [&met](const Via &via) { return met.contains(via.id); });
+        if (wayMet)
+            inTheWay.insert(other.id);
+    }
     if (inTheWay.isEmpty())
         return std::nullopt;
-    // Taken up whole: each track with its run, each via with the runs of the
-    // tracks on it, of what the autorouter laid.
+    // Taken up whole: each track with its run, each via or wire link with the
+    // runs of the tracks on it, of what the autorouter laid.
     QSet<ObjectId> gone;
     for (const ObjectId &id : std::as_const(inTheWay)) {
-        if (const Via *via = findById(with.vias, id)) {
+        if (const WireLink *link = findById(with.links, id)) {
+            gone.insert(id);
+            for (const Track &track : with.tracks) {
+                if (others.contains(track.id)
+                    && (track.from == link->from || track.to == link->from
+                        || track.from == link->to || track.to == link->to))
+                    gone.unite(trackRun(with, working.library, track.id));
+            }
+        } else if (const Via *via = findById(with.vias, id)) {
             gone.insert(id);
             for (const Track &track : with.tracks) {
                 if (others.contains(track.id) && (track.from == via->at || track.to == via->at))
@@ -797,6 +877,10 @@ std::optional<Board> ripUp(const Design &working, const Board &current, const Ra
     const Board after = withoutTracks(with, gone);
     if (!shortingTracks(after, working, way).isEmpty())
         return std::nullopt;
+    for (const WireLink &link : wayLinks) {
+        if (!linkMeets(after, link, linkClearance).isEmpty())
+            return std::nullopt;
+    }
     return after;
 }
 
