@@ -512,6 +512,46 @@ private slots:
         QVERIFY(isGarbage(foreign));
     }
 
+    void droppingTheAutosaveKeepsForeignLibraryFiles()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("amp.ppcb"));
+        const QDir library(dir.filePath(QStringLiteral("autosave/library")));
+        QString error;
+        Document document;
+        QVERIFY2(document.saveAs(path, error), qPrintable(error));
+        // Not library files at all, and one that is but no autosave wrote.
+        QStringList foreign;
+        for (const QString &kind :
+             {QStringLiteral("symbols"), QStringLiteral("footprints"), QStringLiteral("parts")}) {
+            QVERIFY(library.mkpath(kind));
+            foreign.append(library.filePath(kind + QStringLiteral("/keep.json")));
+            QVERIFY(writeGarbage(foreign.last()));
+        }
+        LibraryItem other;
+        other.kind = LibraryKind::Symbol;
+        other.symbol.showPinNames = !other.symbol.showPinNames;
+        const QString otherPath = library.filePath(QStringLiteral("symbols/other.json"));
+        QVERIFY2(LibraryFile::write(otherPath, other, error), qPrintable(error));
+
+        Design design = document.design();
+        design.library.symbols.insert(QStringLiteral("own"), Symbol());
+        document.change(QStringLiteral("Add symbol"), design);
+        QVERIFY2(document.autosave(error), qPrintable(error));
+        const QString own = library.filePath(QStringLiteral("symbols/own.json"));
+        QVERIFY(QFile::exists(own));
+        QVERIFY2(document.save(error), qPrintable(error));
+
+        QVERIFY(!Document::hasAutosave(path));
+        QVERIFY(!QFile::exists(own));
+        for (const QString &file : std::as_const(foreign))
+            QVERIFY2(isGarbage(file), qPrintable(file));
+        LibraryItem item;
+        QVERIFY2(LibraryFile::read(otherPath, item, error), qPrintable(error));
+        QVERIFY(item.symbol == other.symbol);
+    }
+
     void droppingOneAutosaveKeepsAnotherProjects()
     {
         QTemporaryDir dir;

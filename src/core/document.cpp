@@ -7,6 +7,8 @@
 #include <QSet>
 #include <QFileInfo>
 
+#include <algorithm>
+
 namespace ppcb {
 
 namespace {
@@ -58,12 +60,34 @@ void removeFileIn(QDir folder, const QString &name)
         folder.remove(name);
 }
 
+// Removes from the library folder 'library', of the kind 'subfolder', the
+// files of 'onDisk' whose content is an item of 'owned' of that name: what
+// an autosave wrote. A file with other content is not the autosave's.
+template <typename Item>
+void removeOwnedItems(const QDir &library, const char *subfolder,
+                      const QMap<QString, Item> &onDisk,
+                      const QList<const QMap<QString, Item> *> &owned)
+{
+    QDir items(library.filePath(QLatin1String(subfolder)));
+    for (auto it = onDisk.constBegin(); it != onDisk.constEnd(); ++it) {
+        const bool ours = std::any_of(owned.cbegin(), owned.cend(), [&it](const auto *map) {
+            const auto found = map->constFind(it.key());
+            return found != map->constEnd() && *found == it.value();
+        });
+        if (ours)
+            items.remove(it.key() + QLatin1String(LIBRARY_FILE_EXT));
+    }
+    library.rmdir(QLatin1String(subfolder));
+}
+
 // Removes what an autosave wrote for the project whose copy is 'copyPath':
 // the copy's project file and the schematic and board files it names (else
-// 'fallback' names them), and the library files of the copies when no
-// other project's copy is left beside it. Folders go only when left empty,
-// so whatever else lies in them stays.
-void removeAutosaveCopy(const QString &copyPath, const Project &fallback)
+// 'fallback' names them), and, when no other project's copy is left beside
+// it, the library files that hold an item of one of 'owned' as it is there:
+// those the copies wrote. Folders go only when left empty, so whatever else
+// lies in them stays.
+void removeAutosaveCopy(const QString &copyPath, const Project &fallback,
+                        const QList<const Library *> &owned)
 {
     const QFileInfo copy(copyPath);
     const QDir folder = copy.dir();
@@ -81,15 +105,19 @@ void removeAutosaveCopy(const QString &copyPath, const Project &fallback)
         {QStringLiteral("*") + QLatin1String(FILE_EXT_PROJECT)}, QDir::Files);
     if (otherCopies.isEmpty()) {
         const QDir library(folder.filePath(QLatin1String(PROJECT_LIBRARY_FOLDER)));
-        for (const char *kind :
-             {LIBRARY_SYMBOLS_FOLDER, LIBRARY_FOOTPRINTS_FOLDER, LIBRARY_PARTS_FOLDER}) {
-            QDir items(library.filePath(QLatin1String(kind)));
-            const QStringList files = items.entryList(
-                {QStringLiteral("*") + QLatin1String(LIBRARY_FILE_EXT)}, QDir::Files);
-            for (const QString &file : files)
-                items.remove(file);
-            library.rmdir(QLatin1String(kind));
+        QStringList problems;
+        const Library onDisk = LibraryFolder::read(library.path(), problems);
+        QList<const QMap<QString, Symbol> *> symbols;
+        QList<const QMap<QString, Footprint> *> footprints;
+        QList<const QMap<QString, Part> *> parts;
+        for (const Library *items : owned) {
+            symbols.append(&items->symbols);
+            footprints.append(&items->footprints);
+            parts.append(&items->parts);
         }
+        removeOwnedItems(library, LIBRARY_SYMBOLS_FOLDER, onDisk.symbols, symbols);
+        removeOwnedItems(library, LIBRARY_FOOTPRINTS_FOLDER, onDisk.footprints, footprints);
+        removeOwnedItems(library, LIBRARY_PARTS_FOLDER, onDisk.parts, parts);
         folder.rmdir(QLatin1String(PROJECT_LIBRARY_FOLDER));
     }
     QDir parent = folder;
@@ -254,10 +282,14 @@ bool Document::autosave(QString &error)
 
 void Document::dropAutosave()
 {
+    // The library of the copy is the one last autosaved, or, for a copy left
+    // by an earlier session, most likely the project's own.
+    const Design autosaved = m_autosaved;
     m_autosaved = Design();
     if (m_projectPath.isEmpty())
         return;
-    removeAutosaveCopy(DesignFiles::autosaveProjectPath(m_projectPath), m_design.project);
+    removeAutosaveCopy(DesignFiles::autosaveProjectPath(m_projectPath), m_design.project,
+                       {&autosaved.library, &m_design.library});
 }
 
 bool Document::hasAutosave(const QString &projectPath)
