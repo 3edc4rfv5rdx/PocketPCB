@@ -684,21 +684,25 @@ QString lineKey(const RatsnestLine &line)
         .arg(line.to.y);
 }
 
-// The tracks and the vias of 'board' the autorouter laid and no hand has
-// touched since: those it may take up again.
-QSet<ObjectId> autoroutedOf(const Board &board)
+// The tracks, the vias and the wire links of 'board' the autorouter laid and
+// no hand has touched since, of the nets 'nets' (of every net when it is
+// empty): those it may take up again, as it lays those nets again.
+QSet<ObjectId> autoroutedOf(const Board &board, const QSet<QString> &nets)
 {
+    const auto ours = [&nets](bool autorouted, const QString &net) {
+        return autorouted && (nets.isEmpty() || nets.contains(net));
+    };
     QSet<ObjectId> laid;
     for (const Track &track : board.tracks) {
-        if (track.autorouted)
+        if (ours(track.autorouted, track.net))
             laid.insert(track.id);
     }
     for (const Via &via : board.vias) {
-        if (via.autorouted)
+        if (ours(via.autorouted, via.net))
             laid.insert(via.id);
     }
     for (const WireLink &link : board.links) {
-        if (link.autorouted)
+        if (ours(link.autorouted, link.net))
             laid.insert(link.id);
     }
     return laid;
@@ -749,14 +753,16 @@ QSet<ObjectId> linkMeets(const Board &board, const WireLink &link, double cleara
 }
 
 // 'line' laid on 'working', its board as 'current' has it, by taking up the
-// connections the autorouter laid (autoroutedOf()) that are in its way: it is
-// laid on the board without them, and those its way comes too near are taken
-// up whole, from pad to pad or fork, to be laid again. Tracks laid by hand
-// are never taken up. The board, or nothing when the line has no way even so.
+// connections the autorouter laid of the nets 'nets' (autoroutedOf()) that
+// are in its way: it is laid on the board without them, and those its way
+// comes too near are taken up whole, from pad to pad or fork, to be laid
+// again. Tracks laid by hand, and those of nets not asked for, are never
+// taken up. The board, or nothing when the line has no way even so.
 std::optional<Board> ripUp(const Design &working, const Board &current, const RatsnestLine &line,
-                           bool links, const std::function<bool()> &keepGoing)
+                           const QSet<QString> &nets, bool links,
+                           const std::function<bool()> &keepGoing)
 {
-    const QSet<ObjectId> laid = autoroutedOf(current);
+    const QSet<ObjectId> laid = autoroutedOf(current, nets);
     Design bare = working;
     bare.board = withoutTracks(current, laid);
     Router probe(bare, links, keepGoing);
@@ -865,7 +871,7 @@ std::optional<Board> ripUp(const Design &working, const Board &current, const Ra
     gone.intersect(laid);
     // A wire link of the autorouter's goes with a track taken up from it.
     for (const WireLink &link : with.links) {
-        if (!link.autorouted)
+        if (!laid.contains(link.id))
             continue;
         for (const Track &track : with.tracks) {
             if (gone.contains(track.id)
@@ -946,7 +952,7 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
                 ++rippedFor[lineKey(line)];
                 ++ripUps;
                 const std::optional<Board> board =
-                    ripUp(working, router->board(), line, links, keepGoing);
+                    ripUp(working, router->board(), line, nets, links, keepGoing);
                 if (stop)
                     break;
                 if (!board)

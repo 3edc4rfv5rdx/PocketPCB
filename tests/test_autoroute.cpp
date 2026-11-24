@@ -82,6 +82,29 @@ QList<Track> newTracks(const Board &before, const Board &board)
     return tracks;
 }
 
+// The board of twoParts() with copper on the top only, a wall of net W laid
+// by hand across it (wall()), and pad 1 of net A shut in by a ring of
+// tracks of net B the autorouter laid.
+Design shutInByARing()
+{
+    Design design = twoParts();
+    design.board.copper = CopperSides::Top;
+    design.board.tracks = {wall(BoardSide::Top)};
+    const QList<Point> ring = {mm(6, 13.64), mm(9.24, 13.64), mm(9.24, 16.84), mm(6, 16.84)};
+    for (int i = 0; i < ring.size(); ++i) {
+        Track piece;
+        piece.id = newObjectId();
+        piece.side = BoardSide::Top;
+        piece.net = QStringLiteral("B");
+        piece.width = mmToNm(0.25);
+        piece.from = ring.at(i);
+        piece.to = ring.at((i + 1) % ring.size());
+        piece.autorouted = true;
+        design.board.tracks.append(piece);
+    }
+    return design;
+}
+
 // Every end of the new tracks of 'board' lies on copper of its net: a pad,
 // the pad of a wire link, a via or another track.
 bool newTracksJoined(const Board &before, const Board &board, const Library &library)
@@ -286,22 +309,7 @@ private slots:
     // board keeps wherever the routing stops.
     void aWayFoundByTakingUpKeepsItsWireLinks()
     {
-        Design design = twoParts();
-        design.board.copper = CopperSides::Top;
-        design.board.tracks = {wall(BoardSide::Top)};
-        const QList<Point> ring = {mm(6, 13.64), mm(9.24, 13.64), mm(9.24, 16.84), mm(6, 16.84)};
-        for (int i = 0; i < ring.size(); ++i) {
-            Track piece;
-            piece.id = newObjectId();
-            piece.side = BoardSide::Top;
-            piece.net = QStringLiteral("B");
-            piece.width = mmToNm(0.25);
-            piece.from = ring.at(i);
-            piece.to = ring.at((i + 1) % ring.size());
-            piece.autorouted = true;
-            design.board.tracks.append(piece);
-        }
-
+        const Design design = shutInByARing();
         const AutorouteResult result = autorouted(design);
         QCOMPARE(result.unrouted, 0);
         QVERIFY(result.links >= 1);
@@ -319,6 +327,24 @@ private slots:
             QVERIFY2(newTracksJoined(design.board, stopped.board, design.library),
                      qPrintable(QString::number(stopAt)));
             if (!stopped.stopped)
+                break;
+        }
+    }
+
+    // Routing A alone leaves the ring of B that shuts it in, and says A is
+    // unrouted, wherever it stops.
+    void noneButTheNetsAskedForAreTakenUp()
+    {
+        const Design design = shutInByARing();
+        for (int stopAt = 1;; ++stopAt) {
+            QVERIFY(stopAt < 10000);
+            int asked = 0;
+            const AutorouteResult result = autorouted(
+                design, {QStringLiteral("A")}, [&asked, stopAt](int, int) { return ++asked < stopAt; });
+            QCOMPARE(result.board.tracks, design.board.tracks);
+            QCOMPARE(result.board.links, design.board.links);
+            QCOMPARE(result.unrouted, 1);
+            if (!result.stopped)
                 break;
         }
     }
