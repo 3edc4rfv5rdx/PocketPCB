@@ -234,9 +234,13 @@ private slots:
         link.to = mm(25, 0);
         link.drill = MM;
         link.size = 2 * MM;
+        QCOMPARE(routingProgress(board, library()).total, 1);
         board.links = {link};
         QVERIFY(ratsnest(board, library()).isEmpty());
         QCOMPARE(netPads(board, library()).size(), 4);
+        // The link's pads are not connections of their own.
+        QCOMPARE(routingProgress(board, library()).total, 1);
+        QCOMPARE(routingProgress(board, library()).unrouted, 0);
     }
 
     // A mounting hole with a pad on a net is one of its pads; one without

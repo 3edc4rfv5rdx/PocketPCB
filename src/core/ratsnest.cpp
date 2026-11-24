@@ -178,8 +178,10 @@ QSet<ObjectId> joinedCopper(const Board &board, const Library &library, const Ob
 
 RoutingProgress routingProgress(const Board &board, const Library &library)
 {
+    Board withoutLinks = board;
+    withoutLinks.links.clear();
     QHash<QString, int> padsOfNet;
-    for (const NetPad &pad : netPads(board, library))
+    for (const NetPad &pad : netPads(withoutLinks, library))
         ++padsOfNet[pad.net];
     RoutingProgress progress;
     for (const int count : std::as_const(padsOfNet))

@@ -24,7 +24,8 @@ bool operator==(const RatsnestLine &a, const RatsnestLine &b);
 QList<RatsnestLine> ratsnest(const Board &board, const Library &library);
 
 // How far the routing is: the connections still to be made (the lines of
-// the ratsnest) and all there are, one fewer than the pads of each net.
+// the ratsnest) and all there are, one fewer than the pads of each net; the
+// pads of wire links are not counted, as they only join the others.
 struct RoutingProgress
 {
     int unrouted = 0;
