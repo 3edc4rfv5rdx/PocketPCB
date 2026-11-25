@@ -22,7 +22,8 @@ QSet<ObjectId> placementsInside(const Board &board, const Library &library, cons
 // The rectangle holding the placements 'ids'; empty when there are none.
 QRectF placementsBounds(const Board &board, const Library &library, const QSet<ObjectId> &ids);
 
-// A text a placement shows on the silkscreen: its designator or its value.
+// A text a placement shows on the silkscreen: its designator or its value;
+// or the designator of a wire link, its owner then the link.
 struct PlacementText
 {
     ObjectId owner;
@@ -32,10 +33,11 @@ struct PlacementText
 };
 bool operator==(const PlacementText &a, const PlacementText &b);
 
-// The text shown under 'at' (millimetres), the one drawn last of several;
-// null when there is none.
+// The text shown under 'at' (millimetres), the one drawn last of several
+// (those of wire links over those of placements); null when there is none.
 PlacementText placementTextAt(const Board &board, const QPointF &at);
-// Where that text stands; the origin when the board has no such placement.
+// Where that text stands; the origin when the board has no such placement
+// or link.
 Point placementTextPoint(const Board &board, const PlacementText &text);
 
 // The placements 'ids' moved by 'delta', their texts with them.
@@ -44,7 +46,8 @@ Board withPlacementsMoved(const Board &board, const QSet<ObjectId> &ids, const P
 // about 'center', their texts going round them. Turning four times gives
 // the board back.
 Board withPlacementsRotated(const Board &board, const QSet<ObjectId> &ids, const Point &center);
-// The text moved by 'delta' away from where it stands; its placement stays.
+// The text moved by 'delta' away from where it stands; its placement or
+// link stays.
 Board withPlacementTextMoved(const Board &board, const PlacementText &text, const Point &delta);
 // The gap between placements packed, and between them and the board, in
 // nanometres.

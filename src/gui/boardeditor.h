@@ -58,6 +58,7 @@ public:
         MoveParts,
         RotateParts,
         MovePartText,
+        MoveLinkText,
         LockParts,
         UnlockParts,
         ShowValue,

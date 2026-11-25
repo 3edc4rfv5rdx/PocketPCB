@@ -79,6 +79,8 @@ Board fullBoard()
     link.from = Point{20 * MM, 8 * MM};
     link.to = Point{20 * MM, 18 * MM};
     link.net = QStringLiteral("GND");
+    link.designator = QStringLiteral("JP1");
+    link.textAt = Point{1 * MM, -2 * MM};
     link.drill = 800000;
     link.size = 1800000;
     link.insulated = true;
@@ -251,6 +253,8 @@ private slots:
         CHANGED(other.links[0].from.x += 1);
         CHANGED(other.links[0].to.y += 1);
         CHANGED(other.links[0].net.clear());
+        CHANGED(other.links[0].designator.clear());
+        CHANGED(other.links[0].textAt.x += 1);
         CHANGED(other.links[0].drill += 1);
         CHANGED(other.links[0].size += 1);
         CHANGED(other.links[0].autorouted = false);

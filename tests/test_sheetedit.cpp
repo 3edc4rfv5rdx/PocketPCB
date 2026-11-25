@@ -810,6 +810,10 @@ private slots:
         QCOMPARE(nextDesignator(schematic, QStringLiteral("R")), QStringLiteral("R4"));
         // RV1 is not an R.
         QCOMPARE(nextDesignator(schematic, QStringLiteral("RV")), QStringLiteral("RV1"));
+        // The designators of the board's wire links are taken too.
+        QCOMPARE(nextDesignator(schematic, QStringLiteral("R"),
+                                {QStringLiteral("R4"), QStringLiteral("RV5")}),
+                 QStringLiteral("R5"));
 
         Part part;
         part.prefix = QStringLiteral("D");

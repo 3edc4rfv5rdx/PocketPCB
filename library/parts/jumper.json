@@ -4,7 +4,7 @@
   "symbol": "jumper",
   "footprints": ["link-10.16", "link-7.62", "link-15.24"],
   "prefix": "JP",
-  "prefixGost": "X",
+  "prefixGost": "XN",
   "value": "",
   "connector": false,
   "noValue": true,

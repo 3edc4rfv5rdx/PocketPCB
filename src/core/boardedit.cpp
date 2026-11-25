@@ -76,6 +76,10 @@ bool operator==(const PlacementText &a, const PlacementText &b)
 
 PlacementText placementTextAt(const Board &board, const QPointF &at)
 {
+    for (auto it = board.links.crbegin(); it != board.links.crend(); ++it) {
+        if (!it->designator.isEmpty() && linkTextRect(*it).contains(at))
+            return PlacementText{it->id, ComponentText::Designator};
+    }
     for (auto it = board.placements.crbegin(); it != board.placements.crend(); ++it) {
         for (const ComponentText text : {ComponentText::Value, ComponentText::Designator}) {
             // A text not shown has a rectangle of no size, which still holds
@@ -90,6 +94,8 @@ PlacementText placementTextAt(const Board &board, const QPointF &at)
 
 Point placementTextPoint(const Board &board, const PlacementText &text)
 {
+    if (const WireLink *link = findById(board.links, text.owner))
+        return linkTextPoint(*link);
     const Placement *placement = findById(board.placements, text.owner);
     return placement == nullptr ? Point() : placementTextPoint(*placement, text.text);
 }
@@ -127,6 +133,10 @@ Board withPlacementTextMoved(const Board &board, const PlacementText &text, cons
         Point &offset =
             text.text == ComponentText::Designator ? placement.refAt : placement.valueAt;
         offset = offset + delta;
+    }
+    for (WireLink &link : result.links) {
+        if (link.id == text.owner)
+            link.textAt = link.textAt + delta;
     }
     return result;
 }

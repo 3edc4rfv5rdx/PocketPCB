@@ -630,24 +630,35 @@ Schematic withDesignatorStyle(const Schematic &schematic, const Library &library
     return result;
 }
 
-QString nextDesignator(const Schematic &schematic, const QString &prefix)
+QString nextDesignator(const Schematic &schematic, const QString &prefix,
+                       const QStringList &alsoTaken)
 {
     QSet<int> taken;
+    const auto take = [&taken, &prefix](const QString &designator) {
+        if (!designator.startsWith(prefix))
+            return;
+        bool ok = false;
+        const int number = designator.mid(prefix.size()).toInt(&ok);
+        // "R1" is taken for "R", but "RV1" is not.
+        if (ok && number > 0 && designator == prefix + QString::number(number))
+            taken.insert(number);
+    };
     for (const Sheet &sheet : schematic.sheets) {
-        for (const Component &component : sheet.components) {
-            if (!component.designator.startsWith(prefix))
-                continue;
-            bool ok = false;
-            const int number = component.designator.mid(prefix.size()).toInt(&ok);
-            // "R1" is taken for "R", but "RV1" is not.
-            if (ok && number > 0 && component.designator == prefix + QString::number(number))
-                taken.insert(number);
-        }
+        for (const Component &component : sheet.components)
+            take(component.designator);
     }
+    for (const QString &designator : alsoTaken)
+        take(designator);
     int number = 1;
     while (taken.contains(number))
         ++number;
     return prefix + QString::number(number);
+}
+
+QString linkPrefix(DesignatorStyle style)
+{
+    // As library/parts/jumper.json has them.
+    return style == DesignatorStyle::Gost ? QStringLiteral("XN") : QStringLiteral("JP");
 }
 
 Component newComponent(const Library &library, const QString &partName, const QString &footprint)
@@ -981,7 +992,7 @@ Sheet withObjectsAdded(const Sheet &sheet, const Sheet &piece)
 }
 
 Sheet numberedOn(const Sheet &piece, const Schematic &schematic, const Library &library,
-                 DesignatorStyle style)
+                 DesignatorStyle style, const QStringList &alsoTaken)
 {
     Sheet result = piece;
     // The schematic with the components numbered so far, so that two of
@@ -992,7 +1003,7 @@ Sheet numberedOn(const Sheet &piece, const Schematic &schematic, const Library &
         const Part *part = library.findPart(component.part);
         if (part == nullptr)
             continue;
-        component.designator = nextDesignator(taken, designatorPrefix(*part, style));
+        component.designator = nextDesignator(taken, designatorPrefix(*part, style), alsoTaken);
         taken.sheets.last().components.append(component);
     }
     return result;

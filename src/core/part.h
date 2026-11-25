@@ -56,6 +56,8 @@ QString romanNumeral(int number);
 // The name of the part group 'key' in the interface language: the key
 // itself for one the program does not know, "Other" for an empty one.
 QString partGroupName(const QString &key);
+// The group no part has: the board's wire links in the bill of materials.
+extern const char LINK_GROUP[];
 // The place of the part group 'key' in the library panel: the program's
 // groups in their order, then the groups it does not know, no group last.
 int partGroupRank(const QString &key);

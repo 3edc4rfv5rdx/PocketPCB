@@ -130,6 +130,40 @@ private slots:
                                                     "R1, R2  2\n"));
     }
 
+    // Wire links of one kind and length make one row: a bare one as long
+    // as its holes are apart, an insulated one with room to go round and a
+    // lead at each end, rounded up to 5 mm.
+    void wireLinksMakeRowsByLength()
+    {
+        QCOMPARE(insulatedLinkLength(mmToNm(25)), mmToNm(40));
+        QCOMPARE(insulatedLinkLength(mmToNm(30)), mmToNm(50));
+        Board board;
+        const auto add = [&board](quint64 id, const QString &designator, Point to, bool insulated) {
+            WireLink link;
+            link.id = ObjectId{id};
+            link.designator = designator;
+            link.to = to;
+            link.insulated = insulated;
+            board.links.append(link);
+        };
+        add(1, QStringLiteral("JP3"), Point{mmToNm(5.08), 0}, false);
+        add(2, QStringLiteral("JP2"), Point{0, mmToNm(10.16)}, false);
+        add(3, QStringLiteral("JP1"), Point{0, mmToNm(5.08)}, false);
+        add(4, QStringLiteral("JP4"), Point{mmToNm(18), mmToNm(24)}, true);
+        const QList<BomRow> rows = linkRows(board);
+        QCOMPARE(rows.size(), 3);
+        QCOMPARE(rows.at(0).designators,
+                 QStringList({QStringLiteral("JP1"), QStringLiteral("JP3")}));
+        QCOMPARE(rows.at(0).ids, QSet<ObjectId>({ObjectId{1}, ObjectId{3}}));
+        QCOMPARE(rows.at(0).length, mmToNm(5.08));
+        QVERIFY(rows.at(0).link && !rows.at(0).insulated);
+        QCOMPARE(rows.at(0).group, QString::fromLatin1(LINK_GROUP));
+        QCOMPARE(rows.at(1).designators, QStringList({QStringLiteral("JP2")}));
+        QCOMPARE(rows.at(1).length, mmToNm(10.16));
+        QVERIFY(rows.at(2).insulated);
+        QCOMPARE(rows.at(2).length, mmToNm(50));
+    }
+
     // A group heading is not measured, starts with "=== " and gets an empty
     // line before it unless it follows the rule.
     void plainTextSetsGroupHeadingsApart()

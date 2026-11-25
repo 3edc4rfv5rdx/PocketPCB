@@ -250,6 +250,8 @@ private slots:
         QCOMPARE(leapt.links, 1);
         const WireLink &link = leapt.board.links.first();
         QVERIFY(link.autorouted);
+        // Named as the wire link parts of the schematic are.
+        QCOMPARE(link.designator, QStringLiteral("JP1"));
         QCOMPARE(link.net, QStringLiteral("A"));
         QVERIFY(link.from.y == link.to.y || link.from.x == link.to.x);
         const Coord length = std::max(std::llabs(link.to.x - link.from.x),

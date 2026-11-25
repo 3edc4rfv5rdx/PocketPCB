@@ -139,6 +139,14 @@ struct WireLink
     Point from;
     Point to;
     QString net;
+    // JP1, or XN1 in GOST style (linkPrefix()), numbered with the wire link
+    // parts of the schematic; printed on the silkscreen. Empty for one laid
+    // before links had designators, until the next autorouting names it.
+    // Not written when empty.
+    QString designator;
+    // Where the designator stands, from its own place beside the middle of
+    // the wire (linkTextPoint()): moved by hand. Not written when zero.
+    Point textAt;
     // Diameters of the holes and of the pads.
     Coord drill = 0;
     Coord size = 0;

@@ -398,6 +398,8 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     const PlacementText text = editor->chosenText();
     if (const Placement *owner = findById(board.placements, text.owner))
         painter.drawRect(placementTextRect(*owner, text.text));
+    if (const WireLink *owner = findById(board.links, text.owner))
+        painter.drawRect(linkTextRect(*owner));
     for (const QLineF &guide : editor->textGuides())
         painter.drawLine(guide);
     const QRectF frame = editor->chooserFrame();

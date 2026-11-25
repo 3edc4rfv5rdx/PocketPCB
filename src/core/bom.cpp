@@ -3,6 +3,7 @@
 #include <QMap>
 
 #include <algorithm>
+#include <cmath>
 
 namespace ppcb {
 
@@ -35,6 +36,13 @@ QPair<QString, qint64> designatorParts(const QString &designator)
     const qint64 number = designator.mid(i).toLongLong(&ok);
     return qMakePair(designator.left(i), ok ? number : qint64(-1));
 }
+
+// An insulated link's wire: the way between its holes and this share more,
+// as it goes round parts, a lead to solder at each end, rounded up to
+// whole steps.
+const double INSULATED_SPARE_SHARE = 0.2;
+constexpr Coord INSULATED_LEAD = 5000000;
+constexpr Coord INSULATED_ROUNDING = 5000000;
 
 const QChar CSV_SEPARATOR = QLatin1Char(',');
 const QChar CSV_QUOTE = QLatin1Char('"');
@@ -99,6 +107,43 @@ QList<BomRow> bomRows(const Schematic &schematic, const Library &library)
     };
     std::stable_sort(rows.begin(), rows.end(), [&rank](const BomRow &a, const BomRow &b) {
         return rank(a) < rank(b);
+    });
+    return rows;
+}
+
+Coord insulatedLinkLength(Coord apart)
+{
+    const double wire =
+        double(apart) * (1 + INSULATED_SPARE_SHARE) + 2.0 * double(INSULATED_LEAD);
+    return Coord(std::ceil(wire / double(INSULATED_ROUNDING))) * INSULATED_ROUNDING;
+}
+
+QList<BomRow> linkRows(const Board &board)
+{
+    QList<BomRow> rows;
+    for (const WireLink &link : board.links) {
+        const Point way = link.to - link.from;
+        const Coord apart = Coord(std::llround(std::hypot(double(way.x), double(way.y))));
+        const Coord length = link.insulated ? insulatedLinkLength(apart) : apart;
+        auto row = std::find_if(rows.begin(), rows.end(), [&](const BomRow &r) {
+            return r.insulated == link.insulated && r.length == length;
+        });
+        if (row == rows.end()) {
+            BomRow added;
+            added.group = QLatin1String(LINK_GROUP);
+            added.link = true;
+            added.insulated = link.insulated;
+            added.length = length;
+            rows.append(added);
+            row = rows.end() - 1;
+        }
+        row->designators.append(link.designator);
+        row->ids.insert(link.id);
+    }
+    for (BomRow &row : rows)
+        std::sort(row.designators.begin(), row.designators.end(), designatorLess);
+    std::sort(rows.begin(), rows.end(), [](const BomRow &a, const BomRow &b) {
+        return designatorLess(a.designators.value(0), b.designators.value(0));
     });
     return rows;
 }

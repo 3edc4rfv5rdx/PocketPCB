@@ -879,6 +879,25 @@ private slots:
         QVERIFY(!boardBounds(placed, padLibrary()).contains(QPointF(0, 0)));
         // One the library lacks counts as the square drawn in its place.
         QVERIFY(boardBounds(placed, Library()).contains(QPointF(20, 0)));
+
+        // The designator of a wire link: above a level one, right of an
+        // upright one, clear of its pads.
+        Board linked;
+        WireLink link;
+        link.to = Point{10160000, 0};
+        link.size = 1800000;
+        link.designator = QStringLiteral("JP1");
+        linked.links = {link};
+        const QRectF level = boardBounds(linked, Library());
+        QVERIFY(level.top() < -0.9 - 1.27);
+        QCOMPARE(level.bottom(), 0.9);
+        linked.links[0].to = Point{0, 10160000};
+        const QRectF upright = boardBounds(linked, Library());
+        QVERIFY(upright.right() > 0.9 + 1.27);
+        QCOMPARE(upright.left(), -0.9);
+        // None drawn for one without a designator.
+        linked.links[0].designator.clear();
+        QCOMPARE(boardBounds(linked, Library()).right(), 0.9);
     }
 
     void layoutBoundsLeaveTheOutlineOut()

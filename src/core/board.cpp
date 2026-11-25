@@ -34,6 +34,8 @@ const char KEY_TRACKS[] = "tracks";
 const char KEY_VIAS[] = "vias";
 const char KEY_LINKS[] = "wireLinks";
 const char KEY_INSULATED[] = "insulated";
+// Optional: a wire link's designator where it was laid.
+const char KEY_TEXT_AT[] = "textAt";
 const char KEY_HOLES[] = "holes";
 const char KEY_GRAPHICS[] = "graphics";
 const char KEY_ZONES[] = "zones";
@@ -267,6 +269,10 @@ QJsonObject linkToJson(const WireLink &link)
     object.insert(QLatin1String(KEY_NET), link.net);
     object.insert(QLatin1String(KEY_FROM), pointToJson(link.from));
     object.insert(QLatin1String(KEY_TO), pointToJson(link.to));
+    if (!link.designator.isEmpty())
+        object.insert(QLatin1String(KEY_DESIGNATOR), link.designator);
+    if (link.textAt != Point())
+        object.insert(QLatin1String(KEY_TEXT_AT), pointToJson(link.textAt));
     object.insert(QLatin1String(KEY_DRILL), mmToJson(link.drill));
     object.insert(QLatin1String(KEY_SIZE), mmToJson(link.size));
     if (link.insulated)
@@ -284,6 +290,10 @@ WireLink linkFromJson(const QJsonObject &object, const QString &where, ReadConte
     link.net = reader.string(object, KEY_NET, where);
     link.from = reader.point(object, KEY_FROM, where);
     link.to = reader.point(object, KEY_TO, where);
+    if (object.contains(QLatin1String(KEY_DESIGNATOR)))
+        link.designator = reader.string(object, KEY_DESIGNATOR, where);
+    if (object.contains(QLatin1String(KEY_TEXT_AT)))
+        link.textAt = reader.point(object, KEY_TEXT_AT, where);
     link.drill = reader.positiveMm(object, KEY_DRILL, where);
     link.size = reader.positiveMm(object, KEY_SIZE, where);
     if (object.contains(QLatin1String(KEY_INSULATED)))
@@ -439,8 +449,9 @@ bool operator==(const Track &a, const Track &b)
 bool operator==(const WireLink &a, const WireLink &b)
 {
     return a.id == b.id && a.from == b.from && a.to == b.to && a.net == b.net
-           && a.drill == b.drill && a.size == b.size && a.insulated == b.insulated
-           && a.autorouted == b.autorouted;
+           && a.designator == b.designator && a.textAt == b.textAt && a.drill == b.drill
+           && a.size == b.size
+           && a.insulated == b.insulated && a.autorouted == b.autorouted;
 }
 
 bool operator==(const Via &a, const Via &b)

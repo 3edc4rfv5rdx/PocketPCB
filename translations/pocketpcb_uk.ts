@@ -20,6 +20,14 @@
         <translation>Потужність резисторів, якщо не вказано інше</translation>
     </message>
     <message>
+        <source>Insulated wire</source>
+        <translation>Ізольований дріт</translation>
+    </message>
+    <message>
+        <source>Bare wire</source>
+        <translation>Голий дріт</translation>
+    </message>
+    <message>
         <source>Export TXT</source>
         <translation>Зберегти TXT</translation>
     </message>
@@ -440,6 +448,10 @@
     <message>
         <source>Vacuum tubes</source>
         <translation>Електронні лампи</translation>
+    </message>
+    <message>
+        <source>Wire links</source>
+        <translation>Перемички дротяні</translation>
     </message>
     <message>
         <source>Batteries</source>
@@ -1533,6 +1545,10 @@
     <message>
         <source>Move part text</source>
         <translation>Перемістити напис деталі</translation>
+    </message>
+    <message>
+        <source>Move wire link designator</source>
+        <translation>Зсунути позначення перемички</translation>
     </message>
     <message>
         <source>Show value</source>

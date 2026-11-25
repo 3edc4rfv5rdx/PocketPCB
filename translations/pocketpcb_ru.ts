@@ -20,6 +20,14 @@
         <translation>Мощность резисторов, если не указано иное</translation>
     </message>
     <message>
+        <source>Insulated wire</source>
+        <translation>Изолированный провод</translation>
+    </message>
+    <message>
+        <source>Bare wire</source>
+        <translation>Голый провод</translation>
+    </message>
+    <message>
         <source>Export TXT</source>
         <translation>Сохранить TXT</translation>
     </message>
@@ -440,6 +448,10 @@
     <message>
         <source>Vacuum tubes</source>
         <translation>Электронные лампы</translation>
+    </message>
+    <message>
+        <source>Wire links</source>
+        <translation>Перемычки проволочные</translation>
     </message>
     <message>
         <source>Batteries</source>
@@ -1533,6 +1545,10 @@
     <message>
         <source>Move part text</source>
         <translation>Переместить надпись детали</translation>
+    </message>
+    <message>
+        <source>Move wire link designator</source>
+        <translation>Переместить обозначение перемычки</translation>
     </message>
     <message>
         <source>Show value</source>

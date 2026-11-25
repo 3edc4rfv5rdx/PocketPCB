@@ -178,10 +178,11 @@ Sheet withNewIds(const Sheet &piece);
 // 'sheet' with the objects of 'piece' added after its own.
 Sheet withObjectsAdded(const Sheet &sheet, const Sheet &piece);
 // 'piece' with its components numbered on after those of 'schematic' and
-// after each other, by the prefix their part has in 'library'. A component
-// whose part 'library' lacks keeps its designator.
+// after each other, by the prefix their part has in 'library', skipping
+// the designators in 'alsoTaken' (those of the board's wire links). A
+// component whose part 'library' lacks keeps its designator.
 Sheet numberedOn(const Sheet &piece, const Schematic &schematic, const Library &library,
-                 DesignatorStyle style);
+                 DesignatorStyle style, const QStringList &alsoTaken = {});
 
 // Placing parts.
 
@@ -200,8 +201,14 @@ QString designatorPrefix(const Part &part, DesignatorStyle style);
 Schematic withDesignatorStyle(const Schematic &schematic, const Library &library,
                               DesignatorStyle from, DesignatorStyle to);
 // The first designator with 'prefix' no component of the schematic has,
-// on any sheet: R1, then R2, and a gap left by a deleted R3 is filled.
-QString nextDesignator(const Schematic &schematic, const QString &prefix);
+// on any sheet, nor is in 'alsoTaken': R1, then R2, and a gap left by a
+// deleted R3 is filled.
+QString nextDesignator(const Schematic &schematic, const QString &prefix,
+                       const QStringList &alsoTaken = {});
+// The designator prefix of the board's wire links in 'style': that of the
+// library's wire link part ("jumper"), so that the links laid on the board
+// and those drawn on the schematic are numbered as one.
+QString linkPrefix(DesignatorStyle style);
 // A component of the part 'partName' of 'library', not placed yet: a new id,
 // at the origin, with the symbol's text places, the part's value and
 // 'footprint'. It stays off the board when the part has no footprints.

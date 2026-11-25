@@ -1,4 +1,5 @@
 #include "boardedit.h"
+#include "trackedit.h"
 
 #include <QtTest>
 
@@ -90,6 +91,35 @@ private slots:
         QCOMPARE(placementTextAt(board, QPointF(0, 3)),
                  (PlacementText{r1, ComponentText::Value}));
         QCOMPARE(placementTextPoint(board, designator), mm(0, -3));
+    }
+
+    // A wire link's designator is found over the parts, moved alone, and
+    // goes along with its link.
+    void aWireLinkDesignatorIsFoundAndMoved()
+    {
+        Board board = twoPlacements();
+        WireLink link;
+        link.id = ObjectId{0x77};
+        link.from = mm(-5, -3);
+        link.to = mm(5, -3);
+        link.size = mmToNm(1.8);
+        link.designator = QStringLiteral("JP1");
+        board.links = {link};
+        const PlacementText text{link.id, ComponentText::Designator};
+        const Point at = placementTextPoint(board, text);
+        QCOMPARE(at.x, 0);
+        QVERIFY(at.y < mmToNm(-3));
+        QCOMPARE(placementTextAt(board, toMm(at)), text);
+        const Board moved = withPlacementTextMoved(board, text, mm(1, -1));
+        QCOMPARE(moved.links.at(0).textAt, mm(1, -1));
+        QCOMPARE(moved.links.at(0).from, link.from);
+        QCOMPARE(placementTextPoint(moved, text), at + mm(1, -1));
+        // The link moved, its designator with it.
+        const Board carried = withTracksMoved(moved, {link.id}, mm(0, 10));
+        QCOMPARE(placementTextPoint(carried, text), at + mm(1, 9));
+        // None without a designator.
+        board.links[0].designator.clear();
+        QCOMPARE(placementTextAt(board, toMm(at)), PlacementText());
     }
 
     void placementsAreMovedAndTurnedWithTheirTexts()

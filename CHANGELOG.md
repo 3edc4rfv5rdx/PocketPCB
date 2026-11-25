@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Wire links get designators (JP1, XN1 in GOST) on the silkscreen, dragged aside like part texts, and are listed in the BOM by wire length
 - E: An autoroute that lays nothing no longer moves the tracks already on the board
 - E: Dragging a wire segment keeps joined the wires ending on a wire it carries along
 - E: Route chosen no longer takes up the autorouted tracks of nets that were not chosen

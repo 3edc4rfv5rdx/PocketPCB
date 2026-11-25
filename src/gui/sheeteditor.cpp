@@ -3,6 +3,7 @@
 #include "canvasview.h"
 #include "format.h"
 #include "sheetedit.h"
+#include "trackedit.h"
 #include "wiring.h"
 
 #include <QApplication>
@@ -1243,7 +1244,8 @@ void SheetEditor::updateFloating()
     // Numbered as it would be if placed now: the project's own parts say
     // the prefixes.
     const Sheet numbered = numberedOn(m_floating, design.schematic, m_placeLibrary,
-                                      design.project.designatorStyle);
+                                      design.project.designatorStyle,
+                                      linkDesignators(design.board));
     m_placed = movedObjects(numbered, objectIds(numbered), m_floatAt);
     m_preview = withObjectsAdded(*sheet, m_placed);
     emit changed();

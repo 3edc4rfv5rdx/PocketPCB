@@ -1073,6 +1073,30 @@ QRectF squareAround(const QPointF &center, double size)
     return circleRect(center, size / 2);
 }
 
+// The room between a wire link and its designator.
+const double LINK_TEXT_GAP = 0.3;
+
+// Where the designator of 'link' is centred unless moved: beside the
+// middle of its wire, above a level or slanted one, right of an upright
+// one, clear of its pads.
+QPointF linkTextPlace(const WireLink &link)
+{
+    const QPointF from = toMm(link.from);
+    const QPointF to = toMm(link.to);
+    const double length = QLineF(from, to).length();
+    // The side away from the wire: up the sheet, or right.
+    QPointF away((from.y() - to.y()) / length, (to.x() - from.x()) / length);
+    if (away.y() > 0 || (qFuzzyIsNull(away.y()) && away.x() < 0))
+        away = -away;
+    const QRectF text =
+        textBounds(QPointF(0, 0), link.designator, PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center);
+    // How far the text reaches towards the wire from its middle.
+    const double reach =
+        std::abs(away.x()) * text.width() / 2 + std::abs(away.y()) * text.height() / 2;
+    const double clear = std::max(nmToMm(link.size), nmToMm(WIRE_LINK_WIRE)) / 2;
+    return (from + to) / 2 + away * (clear + LINK_TEXT_GAP + reach);
+}
+
 } // namespace
 
 QPointF toMm(const Point &point)
@@ -1460,6 +1484,18 @@ QRectF placementTextRect(const Placement &placement, ComponentText text)
                       TextAlign::Center);
 }
 
+Point linkTextPoint(const WireLink &link)
+{
+    const QPointF place = linkTextPlace(link);
+    return Point{mmToNm(place.x()), mmToNm(place.y())} + link.textAt;
+}
+
+QRectF linkTextRect(const WireLink &link)
+{
+    return textBounds(toMm(linkTextPoint(link)), link.designator, PLACEHOLDER_TEXT_HEIGHT,
+                      TextAlign::Center);
+}
+
 QLineF leaderLine(const Placement &placement, ComponentText text)
 {
     const bool wanted =
@@ -1493,6 +1529,8 @@ QRectF boardBounds(const Board &board, const Library &library)
     for (const WireLink &link : board.links) {
         bounds.add(squareAround(toMm(link.from), nmToMm(link.size)));
         bounds.add(squareAround(toMm(link.to), nmToMm(link.size)));
+        if (!link.designator.isEmpty())
+            bounds.add(linkTextRect(link));
     }
     for (const MountingHole &hole : board.holes)
         bounds.add(squareAround(toMm(hole.at), nmToMm(holeOuterDiameter(hole))));
@@ -1604,6 +1642,9 @@ void paintBoard(QPainter &painter, const Board &board, const Library &library,
                                 link.insulated ? Qt::DashLine : Qt::SolidLine, Qt::RoundCap));
             painter.drawLine(toMm(link.from), toMm(link.to));
         }
+        for (const WireLink &link : board.links)
+            drawText(painter, toMm(linkTextPoint(link)), link.designator,
+                     PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center, paintcolor::silkscreenTop());
     }
 
     if (shown.contains(BoardLayer::Outline)) {

@@ -7,6 +7,8 @@
 
 namespace ppcb {
 
+const char LINK_GROUP[] = "links";
+
 namespace {
 
 const char KEY_SYMBOL[] = "symbol";
@@ -52,6 +54,8 @@ const struct
     {"special", QT_TRANSLATE_NOOP("ppcb::Part", "Special semiconductors")},
     {"rf", QT_TRANSLATE_NOOP("ppcb::Part", "RF and microwave")},
     {"tubes", QT_TRANSLATE_NOOP("ppcb::Part", "Vacuum tubes")},
+    // No part has it: the board's wire links in the bill of materials.
+    {LINK_GROUP, QT_TRANSLATE_NOOP("ppcb::Part", "Wire links")},
 };
 const char OTHER_GROUP_NAME[] = QT_TRANSLATE_NOOP("ppcb::Part", "Other");
 

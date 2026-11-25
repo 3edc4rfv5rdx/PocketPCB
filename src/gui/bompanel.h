@@ -12,7 +12,8 @@ namespace ppcb {
 
 class Document;
 
-// The bill of materials of the project (bomRows()) as a table, built anew
+// The bill of materials of the project (bomRows(), then the board's wire
+// links, linkRows()) as a table, built anew
 // after every change: designators, value, how many, footprint and comment,
 // a heading line over each group of parts. The rated power most components
 // have is said once below the table; another one follows the value. The
@@ -46,6 +47,8 @@ private:
     // The line below the table naming the rated power most components
     // have (commonPowerMw()); empty when none has one.
     QString powerNote() const;
+    // The value of a row of wire links: the kind of wire and its length.
+    static QString linkValue(const BomRow &row);
     // The heading and the lines as the table shows them, a group heading
     // as a line of one field (see csvOf()).
     QList<QStringList> table() const;

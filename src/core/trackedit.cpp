@@ -1,9 +1,11 @@
 #include "trackedit.h"
 
+#include "bom.h"
 #include "grid.h"
 #include "netlist.h"
 #include "paint.h"
 #include "ratsnest.h"
+#include "sheetedit.h"
 
 #include <QLineF>
 #include <QPainterPath>
@@ -969,6 +971,69 @@ Board withTracksByHand(const Board &board, const QSet<ObjectId> &ids)
             link.autorouted = false;
     }
     return result;
+}
+
+QStringList linkDesignators(const Board &board)
+{
+    QStringList designators;
+    for (const WireLink &link : board.links) {
+        if (!link.designator.isEmpty())
+            designators.append(link.designator);
+    }
+    return designators;
+}
+
+Board withLinkDesignators(const Board &board, const Schematic &schematic, DesignatorStyle style)
+{
+    Board result = board;
+    QStringList taken = linkDesignators(board);
+    for (WireLink &link : result.links) {
+        if (!link.designator.isEmpty())
+            continue;
+        link.designator = nextDesignator(schematic, linkPrefix(style), taken);
+        taken.append(link.designator);
+    }
+    return result;
+}
+
+Board withLinkDesignatorStyle(const Board &board, const Schematic &schematic,
+                              DesignatorStyle from, DesignatorStyle to)
+{
+    const QString oldPrefix = linkPrefix(from);
+    const QString newPrefix = linkPrefix(to);
+    if (oldPrefix == newPrefix)
+        return board;
+    QSet<QString> taken;
+    for (const Sheet &sheet : schematic.sheets) {
+        for (const Component &component : sheet.components)
+            taken.insert(component.designator);
+    }
+    Board result = board;
+    // Those switched, in the order of designatorLess(), so that the first
+    // of two that would meet keeps its number.
+    QList<WireLink *> switched;
+    for (WireLink &link : result.links) {
+        const QString &designator = link.designator;
+        if (designator.startsWith(oldPrefix) && designator.size() > oldPrefix.size()
+            && designator.at(oldPrefix.size()).isDigit())
+            switched.append(&link);
+        else if (!designator.isEmpty())
+            taken.insert(designator);
+    }
+    std::stable_sort(switched.begin(), switched.end(), [](const WireLink *a, const WireLink *b) {
+        return designatorLess(a->designator, b->designator);
+    });
+    for (WireLink *link : std::as_const(switched)) {
+        const QString designator = newPrefix + link->designator.mid(oldPrefix.size());
+        // A repeated one waits for a free number.
+        if (taken.contains(designator)) {
+            link->designator.clear();
+        } else {
+            link->designator = designator;
+            taken.insert(designator);
+        }
+    }
+    return withLinkDesignators(result, schematic, to);
 }
 
 Board withTracksWidth(const Board &board, const QSet<ObjectId> &ids, Coord width)

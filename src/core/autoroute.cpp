@@ -996,6 +996,9 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
     // None laid, none spread: an empty set would spread every track there is.
     result.board = laid.isEmpty() ? router->board()
                                   : withTracksSpread(router->board(), design, router->step(), laid);
+    // The links laid named, and those laid before links had names.
+    result.board =
+        withLinkDesignators(result.board, design.schematic, design.project.designatorStyle);
     // What is left to lay, however it is drawn now, and what was laid of
     // what there was.
     result.unrouted = int(waiting(none).size());

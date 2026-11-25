@@ -216,6 +216,13 @@ Point placementTextPoint(const Placement &placement, ComponentText text);
 // A rectangle surely holding that text as it is drawn, in millimetres;
 // one of no size when it is not shown.
 QRectF placementTextRect(const Placement &placement, ComponentText text);
+// Where the designator of a wire link stands on the board: beside the
+// middle of its wire, clear of its pads, and moved by its offset
+// (WireLink::textAt).
+Point linkTextPoint(const WireLink &link);
+// A rectangle surely holding it as it is drawn, in millimetres; one of no
+// size for a link without a designator.
+QRectF linkTextRect(const WireLink &link);
 
 // The line on the silkscreen from a placement's text to the part, when
 // the text is shown and has its line (Placement::refLine, valueLine): from

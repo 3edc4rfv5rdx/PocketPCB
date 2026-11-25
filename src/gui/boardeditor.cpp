@@ -85,6 +85,8 @@ QString BoardEditor::actionName(Action action)
         return tr("Rotate parts");
     case Action::MovePartText:
         return tr("Move part text");
+    case Action::MoveLinkText:
+        return tr("Move wire link designator");
     case Action::ShowValue:
         return tr("Show value");
     case Action::HideValue:
@@ -829,6 +831,10 @@ QList<QLineF> BoardEditor::textGuides() const
                                      toMm(placementTextPoint(placement, text))));
         }
     }
+    // A wire link's designator from the middle of its wire.
+    if (const WireLink *link = findById(board.links, alone.owner))
+        guides.append(
+            QLineF((toMm(link->from) + toMm(link->to)) / 2, toMm(linkTextPoint(*link))));
     return guides;
 }
 
@@ -860,6 +866,8 @@ void BoardEditor::setTracksShown(bool shown)
         if (m_tool == Tool::Track)
             chooseSelectTool();
         m_chosen.subtract(chosenTracks());
+        if (findById(m_document->design().board.links, m_chosenText.owner) != nullptr)
+            m_chosenText = PlacementText();
         m_hoverTimer.stop();
         m_pendingNet.clear();
         setHoveredNet(QString());
@@ -871,7 +879,11 @@ PlacementText BoardEditor::textUnder(const QPointF &at) const
 {
     if (!m_silkscreenShown)
         return PlacementText();
-    return placementTextAt(m_document->design().board, at);
+    // The designators of wire links hide with their links.
+    Board board = m_document->design().board;
+    if (!m_tracksShown)
+        board.links.clear();
+    return placementTextAt(board, at);
 }
 
 ObjectId BoardEditor::placementUnder(const QPointF &at) const
@@ -1205,7 +1217,10 @@ void BoardEditor::release(const QPointF &at)
         const Board moved = *m_movedBoard;
         const QSet<ObjectId> ids = chosenPlacements();
         const QSet<ObjectId> holes = chosenHoles();
-        const Action action = m_dragText         ? Action::MovePartText
+        const bool linkText =
+            m_dragText && findById(m_document->design().board.links, m_chosenText.owner);
+        const Action action = linkText           ? Action::MoveLinkText
+                              : m_dragText       ? Action::MovePartText
                               : !ids.isEmpty()   ? Action::MoveParts
                               : !holes.isEmpty() ? Action::MoveHoles
                                                  : Action::MoveOutline;
@@ -1304,6 +1319,9 @@ BoardEditor::MenuTarget BoardEditor::chooseForMenu(const QPointF &at)
         if (copper.isNull())
             copper = trackAt(design.board, at, reach, trackSide());
     }
+    // A wire link's designator stands for its link.
+    if (findById(design.board.links, text.owner) != nullptr)
+        copper = text.owner;
     const ObjectId hit = !text.isNull()     ? text.owner
                          : !hole.isNull()   ? hole
                          : !copper.isNull() ? copper

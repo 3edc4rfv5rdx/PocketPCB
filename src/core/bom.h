@@ -1,5 +1,6 @@
 #pragma once
 
+#include "board.h"
 #include "library.h"
 #include "schematic.h"
 
@@ -25,8 +26,15 @@ struct BomRow
     QString footprint;
     int powerMw = 0;
     QString comment;
-    // The components of the row, on whatever sheet.
+    // The components of the row, on whatever sheet; for a row of wire
+    // links, the links.
     QSet<ObjectId> ids;
+    // A row of the board's wire links (linkRows()) of one kind and one
+    // length: the wire to cut for each, in nanometres. Its part, value,
+    // footprint and comment are empty.
+    bool link = false;
+    bool insulated = false;
+    Coord length = 0;
 };
 
 // The rows of 'schematic', their groups taken from 'library': the rows of
@@ -34,6 +42,15 @@ struct BomRow
 // those without a group last; within a group, rows by their first
 // designators.
 QList<BomRow> bomRows(const Schematic &schematic, const Library &library);
+
+// The rows of the wire links of 'board', all of LINK_GROUP: one for the
+// bare links of each length, the distance between their holes, and one
+// for the insulated ones of each length, that distance and a share more
+// for the way round, a lead at each end, rounded up (insulatedLinkLength()).
+// Rows by their first designators.
+QList<BomRow> linkRows(const Board &board);
+// The length of insulated wire to cut for a link whose holes are 'apart'.
+Coord insulatedLinkLength(Coord apart);
 
 // The rated power, in milliwatts, the most components of 'schematic' have:
 // the lower of those as many have; 0 when none has a power.

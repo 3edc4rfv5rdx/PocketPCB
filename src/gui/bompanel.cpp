@@ -90,7 +90,8 @@ BomPanel::BomPanel(Document *document, QWidget *parent)
     connect(m_table, &QTableWidget::itemChanged, this, &BomPanel::cellEdited);
     connect(m_table, &QTableWidget::cellDoubleClicked, this, [this](int line, int column) {
         const BomRow *row = rowOfLine(line);
-        if (column == Designators && row != nullptr)
+        // The board's wire links are on no sheet.
+        if (column == Designators && row != nullptr && !row->link)
             emit componentsChosen(row->ids);
     });
     connect(m_document, &Document::designChanged, this, &BomPanel::refresh);
@@ -105,6 +106,7 @@ QString BomPanel::bomTitle()
 void BomPanel::refresh()
 {
     m_rows = bomRows(m_document->design().schematic, m_document->design().library);
+    m_rows.append(linkRows(m_document->design().board));
     m_lineRows.clear();
     for (int r = 0; r < m_rows.size(); ++r) {
         if (r == 0 || m_rows.at(r).group != m_rows.at(r - 1).group)
@@ -130,7 +132,7 @@ void BomPanel::refresh()
         } else {
             const BomRow &row = m_rows.at(r);
             fields = {row.designators.join(QStringLiteral(", ")),
-                      row.value,
+                      row.link ? linkValue(row) : row.value,
                       QString::number(row.designators.size()),
                       row.footprint,
                       row.comment};
@@ -151,7 +153,8 @@ void BomPanel::refresh()
             Qt::ItemFlags flags = Qt::ItemIsEnabled;
             if (r != NO_ROW) {
                 flags |= Qt::ItemIsSelectable;
-                if (c == Value || c == Comment)
+                // A wire link has no value or comment of its own.
+                if ((c == Value || c == Comment) && !m_rows.at(r).link)
                     flags |= Qt::ItemIsEditable;
             }
             item->setFlags(flags);
@@ -162,6 +165,12 @@ void BomPanel::refresh()
     }
     m_note->setText(powerNote());
     m_note->setVisible(!m_note->text().isEmpty());
+}
+
+QString BomPanel::linkValue(const BomRow &row)
+{
+    return (row.insulated ? tr("Insulated wire") : tr("Bare wire")) + QLatin1Char(' ')
+           + formatMmShortUnit(row.length);
 }
 
 QString BomPanel::powerNote() const
@@ -182,7 +191,8 @@ const BomRow *BomPanel::rowOfLine(int line) const
 void BomPanel::cellEdited(QTableWidgetItem *item)
 {
     const BomRow *shown = rowOfLine(item->row());
-    if (shown == nullptr || (item->column() != Value && item->column() != Comment))
+    if (shown == nullptr || shown->link
+        || (item->column() != Value && item->column() != Comment))
         return;
     // A copy: the change below builds the rows anew.
     const BomRow row = *shown;
