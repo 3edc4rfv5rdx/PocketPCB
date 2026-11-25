@@ -64,12 +64,6 @@ QString padName(const Placement &placement, const Pad &pad)
     return placement.designator + QLatin1Char('.') + pad.number;
 }
 
-// The clearance the class of 'net' asks for; the rules' one without classes.
-Coord netClearance(const Design &design, const QString &net)
-{
-    const NetClass *netClass = trackClass(design, net);
-    return netClass != nullptr ? netClass->clearance : design.project.rules.clearance;
-}
 
 class Checker
 {
@@ -78,6 +72,7 @@ public:
         : m_design(design)
         , m_board(design.board)
         , m_rules(design.project.rules)
+        , m_classes(design)
     {
         const QPainterPath outline = outlinePath(m_board.outline);
         if (!outline.isEmpty())
@@ -107,6 +102,14 @@ public:
     }
 
 private:
+    // The clearance the class of 'net' asks for; the rules' one without
+    // classes.
+    Coord netClearance(const QString &net) const
+    {
+        const NetClass *netClass = m_classes.of(net);
+        return netClass != nullptr ? netClass->clearance : m_rules.clearance;
+    }
+
     // A problem added at 'level': none when the check is off.
     DrcProblem *add(DrcKind kind, CheckLevel level, const Point &at)
     {
@@ -232,8 +235,7 @@ private:
                 const double gap = nearest.length() - a.radius - b.radius;
                 const Coord clearance =
                     hole ? m_rules.clearance
-                         : std::max(netClearance(m_design, a.item.net),
-                                    netClearance(m_design, b.item.net));
+                         : std::max(netClearance(a.item.net), netClearance(b.item.net));
                 const Point at = toNm((nearest.p1() + nearest.p2()) / 2);
                 DrcProblem *problem = nullptr;
                 if (!hole && gap <= 0)
@@ -322,7 +324,7 @@ private:
                                                         m_rules.trackWidths.cend());
         for (const Track &track : m_board.tracks) {
             const Point at = toNm((toMm(track.from) + toMm(track.to)) / 2);
-            const NetClass *netClass = trackClass(m_design, track.net);
+            const NetClass *netClass = m_classes.of(track.net);
             DrcProblem *problem = nullptr;
             Coord required = 0;
             if (track.width < narrowest) {
@@ -388,6 +390,7 @@ private:
     const Design &m_design;
     const Board &m_board;
     const Rules &m_rules;
+    const TrackClasses m_classes;
     QPolygonF m_outline;
     QList<Shape> m_shapes;
     // The pads with holes of the placements on the board.

@@ -2,6 +2,7 @@
 
 #include "project.h"
 
+#include <QHash>
 #include <QPointF>
 #include <QSet>
 
@@ -185,5 +186,18 @@ Board withTracksSide(const Board &board, const QSet<ObjectId> &ids, BoardSide si
 // class for a net the schematic does not have, or for no net. Null only for
 // a project without classes.
 const NetClass *trackClass(const Design &design, const QString &net);
+// The same for many nets, the nets of the schematic found once: for a
+// check that asks for every piece of copper.
+class TrackClasses
+{
+public:
+    explicit TrackClasses(const Design &design);
+    const NetClass *of(const QString &net) const;
+
+private:
+    const Design &m_design;
+    // The class name of each net of the schematic.
+    QHash<QString, QString> m_names;
+};
 
 } // namespace ppcb

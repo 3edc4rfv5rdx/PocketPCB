@@ -1080,16 +1080,24 @@ Board withTracksSide(const Board &board, const QSet<ObjectId> &ids, BoardSide si
 
 const NetClass *trackClass(const Design &design, const QString &net)
 {
-    const Project &project = design.project;
-    QString name = project.defaultClass;
-    if (!net.isEmpty()) {
-        for (const Net &found : nets(design.schematic, design.library, project)) {
-            if (found.name == net) {
-                name = netClassOf(found, project, design.schematic);
-                break;
-            }
-        }
+    return TrackClasses(design).of(net);
+}
+
+TrackClasses::TrackClasses(const Design &design)
+    : m_design(design)
+{
+    for (const Net &found : nets(design.schematic, design.library, design.project)) {
+        // The first of two nets of one name decides, as a search would.
+        if (!m_names.contains(found.name))
+            m_names.insert(found.name, netClassOf(found, design.project, design.schematic));
     }
+}
+
+const NetClass *TrackClasses::of(const QString &net) const
+{
+    const Project &project = m_design.project;
+    const QString name =
+        net.isEmpty() ? project.defaultClass : m_names.value(net, project.defaultClass);
     for (const NetClass &netClass : project.netClasses) {
         if (netClass.name == name)
             return &netClass;
