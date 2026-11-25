@@ -14,13 +14,16 @@ namespace ppcb {
 // VERSION_INFO_FILE saying which version it is.
 extern const char VERSION_INFO_FILE[];
 
-// What a version is, as VERSION_INFO_FILE keeps it.
+// What a version is, as VERSION_INFO_FILE keeps it; for a version read
+// back, also its archive, and whether that could be read.
 struct ProjectVersion
 {
     int number = 0;
     QDateTime made;
     QString revision;
     QString description;
+    QString path;
+    bool readable = true;
 };
 
 // "0003-20261125-revB.zip": the version's number, the day it was made and
@@ -42,5 +45,10 @@ bool saveProjectVersion(const QString &projectPath, const Project &project,
 bool saveChangedProjectVersion(const QString &projectPath, const Project &project,
                                const QString &description, const QDateTime &made,
                                QString &path, QString &error);
+
+// The versions of the project at 'projectPath', the newest first. One whose
+// archive or VERSION_INFO_FILE cannot be read is listed by its archive and
+// the number in its name, not 'readable'.
+QList<ProjectVersion> projectVersions(const QString &projectPath);
 
 } // namespace ppcb

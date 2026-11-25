@@ -25,6 +25,7 @@ add_library(pocketpcb_gui STATIC
     toolicons.h toolicons.cpp
     updateboarddialog.h updateboarddialog.cpp
     updatepartsdialog.h updatepartsdialog.cpp
+    versionspanel.h versionspanel.cpp
     saveprojectdialog.h saveprojectdialog.cpp
     schematicprint.h schematicprint.cpp
     screensizedialog.h screensizedialog.cpp

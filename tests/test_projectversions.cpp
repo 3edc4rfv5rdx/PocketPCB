@@ -91,6 +91,44 @@ private slots:
         QCOMPARE(QFileInfo(path).fileName(), QStringLiteral("0002-20261125-revB.zip"));
     }
 
+    // The versions are listed the newest first, with what each says; an
+    // archive that cannot be read is listed by its number.
+    void versionsAreListed()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString projectPath = QDir(dir.path()).filePath(QStringLiteral("amp.ppcb"));
+        Design design = newDesign(QStringLiteral("amp"));
+        QString error;
+        QVERIFY(DesignFiles::write(projectPath, design, error));
+        QCOMPARE(projectVersions(projectPath).size(), 0);
+        const QDateTime first(QDate(2026, 11, 25), QTime(14, 30));
+        QString path;
+        QVERIFY(saveProjectVersion(projectPath, design.project, QStringLiteral("Start"), first,
+                                   path, error));
+        design.project.titleBlock.revision = QStringLiteral("B");
+        const QDateTime second(QDate(2026, 11, 26), QTime(9, 0));
+        QVERIFY(saveProjectVersion(projectPath, design.project, QStringLiteral("Gerber"), second,
+                                   path, error));
+        QVERIFY(JsonFile::writeData(QDir(DesignFiles::versionsPath(projectPath))
+                                        .filePath(QStringLiteral("0003-20261126.zip")),
+                                    "damaged", error));
+
+        const QList<ProjectVersion> versions = projectVersions(projectPath);
+        QCOMPARE(versions.size(), 3);
+        QCOMPARE(versions.at(0).number, 3);
+        QVERIFY(!versions.at(0).readable);
+        QCOMPARE(versions.at(1).number, 2);
+        QVERIFY(versions.at(1).readable);
+        QCOMPARE(versions.at(1).made, second);
+        QCOMPARE(versions.at(1).revision, QStringLiteral("B"));
+        QCOMPARE(versions.at(1).description, QStringLiteral("Gerber"));
+        QCOMPARE(versions.at(1).path, path);
+        QCOMPARE(versions.at(2).number, 1);
+        QCOMPARE(versions.at(2).made, first);
+        QCOMPARE(versions.at(2).description, QStringLiteral("Start"));
+    }
+
     // A file that cannot be read stops the version, naming the file.
     void aMissingFileIsReported()
     {

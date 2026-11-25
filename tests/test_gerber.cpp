@@ -226,6 +226,31 @@ private slots:
         QVERIFY(entries.isEmpty());
     }
 
+    // Each file comes back as it went in, an empty one too; a damaged one is
+    // refused by its CRC-32.
+    void zipFilesAreUnpacked()
+    {
+        const QByteArray big = QByteArray("track ").repeated(5000);
+        const QList<OutputFile> files{{QStringLiteral("a.json"), big},
+                                      {QStringLiteral("empty"), QByteArray()}};
+        QByteArray zip = zipArchive(files, QDateTime(QDate(2026, 11, 25), QTime(12, 0)));
+        QList<ZipEntry> entries;
+        QVERIFY(zipEntries(zip, entries));
+        QByteArray data;
+        QVERIFY(zipFileData(zip, entries.at(0), data));
+        QCOMPARE(data, big);
+        QVERIFY(entries.at(0).packedSize < entries.at(0).size);
+        QVERIFY(zipFileData(zip, entries.at(1), data));
+        QVERIFY(data.isEmpty());
+
+        ZipEntry wrong = entries.at(0);
+        wrong.crc ^= 1;
+        QVERIFY(!zipFileData(zip, wrong, data));
+        ZipEntry outside = entries.at(0);
+        outside.offset = quint32(zip.size());
+        QVERIFY(!zipFileData(zip, outside, data));
+    }
+
     void zipListsItsFiles()
     {
         const QList<OutputFile> files{{QStringLiteral("a.GTL"), QByteArray(1000, 'x')},

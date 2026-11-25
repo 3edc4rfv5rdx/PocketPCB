@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: View > Versions lists the versions of the project, the newest first, with date, revision and description
 - F: The revision box before Gerber export has no Next any more; the box after it offers to start the next revision
 - N: Gerber export saves the project and keeps it as a version when it changed since the last one
 - N: File > Save version keeps the project as it is, in a numbered zip in its versions folder

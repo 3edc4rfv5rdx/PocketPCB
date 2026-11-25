@@ -2070,4 +2070,27 @@
         <translation>нет</translation>
     </message>
 </context>
+<context>
+    <name>ppcb::VersionsPanel</name>
+    <message>
+        <source>Versions</source>
+        <translation>Версии</translation>
+    </message>
+    <message>
+        <source>Number</source>
+        <translation>Номер</translation>
+    </message>
+    <message>
+        <source>Date</source>
+        <translation>Дата</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation>Описание</translation>
+    </message>
+    <message>
+        <source>Cannot be read</source>
+        <translation>Не читается</translation>
+    </message>
+</context>
 </TS>

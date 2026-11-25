@@ -41,7 +41,9 @@ add_library(pocketpcb_core STATIC
     zipfile.h zipfile.cpp
 )
 target_include_directories(pocketpcb_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(pocketpcb_core PUBLIC Qt6::Core Qt6::Gui)
+# zlib unpacks the zip archives of the project's versions.
+find_package(ZLIB REQUIRED)
+target_link_libraries(pocketpcb_core PUBLIC Qt6::Core Qt6::Gui PRIVATE ZLIB::ZLIB)
 # The version and the build date are compiled into version.cpp only;
 # everything else calls appVersion() and appBuildDate().
 target_compile_definitions(pocketpcb_core PRIVATE PPCB_VERSION="${PROJECT_VERSION}"

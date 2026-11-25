@@ -29,6 +29,7 @@
 #include "updatepartsdialog.h"
 #include "stephistory.h"
 #include "projectversions.h"
+#include "versionspanel.h"
 #include "libraryviewitem.h"
 #include "saveprojectdialog.h"
 #include "schematicprint.h"
@@ -281,6 +282,13 @@ MainWindow::MainWindow(QWidget *parent)
     m_bomDock->setWidget(m_bomPanel);
     splitDockWidget(m_drcDock, m_bomDock, Qt::Vertical);
     m_bomDock->hide();
+    // The versions of the project, under the BOM; hidden until asked for.
+    m_versionsPanel = new VersionsPanel(m_document, this);
+    m_versionsDock = new QDockWidget(VersionsPanel::versionsTitle(), this);
+    m_versionsDock->setObjectName(QStringLiteral("versionsDock"));
+    m_versionsDock->setWidget(m_versionsPanel);
+    splitDockWidget(m_bomDock, m_versionsDock, Qt::Vertical);
+    m_versionsDock->hide();
     connect(m_bomPanel, &BomPanel::componentsChosen, this, &MainWindow::showComponents);
     // A problem chosen there is shown: its sheet, centred on it, with what
     // it is about chosen; a missing value is typed in at once.
@@ -718,6 +726,7 @@ void MainWindow::createMenus()
     viewMenu->addAction(m_ercDock->toggleViewAction());
     viewMenu->addAction(m_drcDock->toggleViewAction());
     viewMenu->addAction(m_bomDock->toggleViewAction());
+    viewMenu->addAction(m_versionsDock->toggleViewAction());
     viewMenu->addSeparator();
 
     QAction *zoomInAction = viewMenu->addAction(tr("Zoom in"));
@@ -1504,8 +1513,10 @@ void MainWindow::exportGerberFiles()
                                      message + QLatin1Char('\n') + error);
                 return;
             }
-            if (!versionPath.isEmpty())
+            if (!versionPath.isEmpty()) {
                 message += QLatin1Char('\n') + writtenMessage(versionPath);
+                m_versionsPanel->refresh();
+            }
             // The work after the files went to the factory goes on under the
             // next revision, when the user says so.
             QMessageBox box(QMessageBox::Information, exportGerberTitle(), message,
@@ -1543,6 +1554,7 @@ void MainWindow::saveVersion()
         return;
     }
     showStatus(writtenMessage(path));
+    m_versionsPanel->refresh();
 }
 
 bool MainWindow::chooseProjectToSaveAs()

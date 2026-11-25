@@ -1,5 +1,7 @@
 #include "zipfile.h"
 
+#include <zlib.h>
+
 #include <algorithm>
 #include <array>
 
@@ -12,6 +14,7 @@ const quint32 CENTRAL_HEADER = 0x02014b50;
 const quint32 END_OF_DIRECTORY = 0x06054b50;
 // Version 2.0, enough for deflate.
 const quint16 ZIP_VERSION = 20;
+const quint16 METHOD_STORE = 0;
 const quint16 METHOD_DEFLATE = 8;
 // The name is in UTF-8.
 const quint16 FLAG_UTF8 = 0x0800;
@@ -27,7 +30,11 @@ const int BEST_COMPRESSION = 9;
 // directory entry before its name, and the longest comment there may be.
 const int END_SIZE = 22;
 const int ENTRY_SIZE = 46;
+const int LOCAL_SIZE = 30;
 const int MAX_COMMENT = 0xffff;
+// The largest file unpacked: far more than a project holds, so that a
+// damaged size cannot ask for all the memory.
+const quint32 MAX_UNPACKED = 256u * 1024 * 1024;
 
 quint16 get16(const QByteArray &in, qsizetype at)
 {
@@ -67,6 +74,29 @@ QByteArray deflated(const QByteArray &data)
 {
     const QByteArray compressed = qCompress(data, BEST_COMPRESSION);
     return compressed.mid(QCOMPRESS_HEAD, compressed.size() - QCOMPRESS_HEAD - QCOMPRESS_TAIL);
+}
+
+// The raw deflate stream 'packed' unpacked, when it gives exactly 'size'
+// bytes.
+bool inflated(const QByteArray &packed, quint32 size, QByteArray &data)
+{
+    // A byte more than expected, to tell a stream that goes on.
+    QByteArray out(qsizetype(size) + 1, Qt::Uninitialized);
+    z_stream stream{};
+    if (inflateInit2(&stream, -MAX_WBITS) != Z_OK)
+        return false;
+    stream.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(packed.constData()));
+    stream.avail_in = uInt(packed.size());
+    stream.next_out = reinterpret_cast<Bytef *>(out.data());
+    stream.avail_out = uInt(out.size());
+    const int result = inflate(&stream, Z_FINISH);
+    const uLong written = stream.total_out;
+    inflateEnd(&stream);
+    if (result != Z_STREAM_END || written != size)
+        return false;
+    out.truncate(qsizetype(size));
+    data = out;
+    return true;
 }
 
 } // namespace
@@ -166,12 +196,36 @@ bool zipEntries(const QByteArray &archive, QList<ZipEntry> &entries)
         if (next > directoryEnd)
             return false;
         ZipEntry entry;
+        entry.method = get16(archive, at + 10);
         entry.crc = get32(archive, at + 16);
+        entry.packedSize = get32(archive, at + 20);
         entry.size = get32(archive, at + 24);
+        entry.offset = get32(archive, at + 42);
         entry.name = QString::fromUtf8(archive.mid(at + ENTRY_SIZE, nameSize));
         entries.append(entry);
         at = next;
     }
+    return true;
+}
+
+bool zipFileData(const QByteArray &archive, const ZipEntry &entry, QByteArray &data)
+{
+    const qsizetype at = entry.offset;
+    if (entry.size > MAX_UNPACKED || at + LOCAL_SIZE > archive.size()
+        || get32(archive, at) != LOCAL_HEADER)
+        return false;
+    const qsizetype start = at + LOCAL_SIZE + get16(archive, at + 26) + get16(archive, at + 28);
+    if (start + qsizetype(entry.packedSize) > archive.size())
+        return false;
+    const QByteArray packed = archive.mid(start, entry.packedSize);
+    QByteArray unpacked;
+    if (entry.method == METHOD_STORE && entry.packedSize == entry.size)
+        unpacked = packed;
+    else if (entry.method != METHOD_DEFLATE || !inflated(packed, entry.size, unpacked))
+        return false;
+    if (crc32(unpacked) != entry.crc)
+        return false;
+    data = unpacked;
     return true;
 }
 

@@ -2070,4 +2070,27 @@
         <translation>немає</translation>
     </message>
 </context>
+<context>
+    <name>ppcb::VersionsPanel</name>
+    <message>
+        <source>Versions</source>
+        <translation>Версії</translation>
+    </message>
+    <message>
+        <source>Number</source>
+        <translation>Номер</translation>
+    </message>
+    <message>
+        <source>Date</source>
+        <translation>Дата</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation>Опис</translation>
+    </message>
+    <message>
+        <source>Cannot be read</source>
+        <translation>Не читається</translation>
+    </message>
+</context>
 </TS>

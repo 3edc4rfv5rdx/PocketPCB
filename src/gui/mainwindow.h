@@ -24,6 +24,7 @@ namespace ppcb {
 class BoardEditor;
 class BomPanel;
 class DrcPanel;
+class VersionsPanel;
 class CanvasView;
 class DesignViewItem;
 class ErcPanel;
@@ -331,6 +332,8 @@ private:
     QDockWidget *m_drcDock = nullptr;
     BomPanel *m_bomPanel = nullptr;
     QDockWidget *m_bomDock = nullptr;
+    VersionsPanel *m_versionsPanel = nullptr;
+    QDockWidget *m_versionsDock = nullptr;
     // File, Edit, View and Settings, behind the menu button: there is no
     // menu bar.
     QMenu *m_mainMenu = nullptr;

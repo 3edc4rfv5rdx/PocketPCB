@@ -10,6 +10,9 @@
 #include <QJsonObject>
 #include <QMap>
 
+#include <algorithm>
+#include <climits>
+
 namespace ppcb {
 
 const char VERSION_INFO_FILE[] = "version.json";
@@ -110,6 +113,36 @@ bool versionHolds(const QString &path, const QList<OutputFile> &files)
     return true;
 }
 
+// The version in the archive 'path', from its VERSION_INFO_FILE.
+bool readVersion(const QString &path, ProjectVersion &version)
+{
+    QByteArray archive;
+    QString unused;
+    QList<ZipEntry> entries;
+    if (!JsonFile::readData(path, archive, unused) || !zipEntries(archive, entries))
+        return false;
+    for (const ZipEntry &entry : entries) {
+        if (entry.name != QLatin1String(VERSION_INFO_FILE))
+            continue;
+        QByteArray data;
+        if (!zipFileData(archive, entry, data))
+            return false;
+        const QJsonDocument document = QJsonDocument::fromJson(data);
+        if (!document.isObject())
+            return false;
+        const QJsonObject root = document.object();
+        JsonReader reader;
+        reader.header(root, FILE_TYPE_VERSION);
+        version.number = reader.integer(root, KEY_NUMBER, QString(), 1, INT_MAX);
+        version.made = QDateTime::fromString(reader.string(root, KEY_MADE, QString()),
+                                             Qt::ISODate);
+        version.revision = reader.string(root, KEY_REVISION, QString());
+        version.description = reader.string(root, KEY_DESCRIPTION, QString());
+        return reader.ok() && version.made.isValid();
+    }
+    return false;
+}
+
 // Writes 'files' of the project at 'projectPath' as its next version.
 bool writeVersion(const QString &projectPath, QList<OutputFile> files, const QString &revision,
                   const QString &description, const QDateTime &made, QString &path,
@@ -146,6 +179,26 @@ bool saveProjectVersion(const QString &projectPath, const Project &project,
     return projectFiles(projectPath, project, files, error)
            && writeVersion(projectPath, files, project.titleBlock.revision, description, made,
                            path, error);
+}
+
+QList<ProjectVersion> projectVersions(const QString &projectPath)
+{
+    QList<ProjectVersion> versions;
+    const QDir dir(DesignFiles::versionsPath(projectPath));
+    for (const QString &name : dir.entryList({QLatin1String(VERSION_FILTER)}, QDir::Files)) {
+        ProjectVersion version;
+        const QString path = dir.filePath(name);
+        if (!readVersion(path, version)) {
+            version = ProjectVersion();
+            version.number = name.section(QLatin1Char(NUMBER_END), 0, 0).toInt();
+            version.readable = false;
+        }
+        version.path = path;
+        versions.append(version);
+    }
+    std::sort(versions.begin(), versions.end(),
+              [](const ProjectVersion &a, const ProjectVersion &b) { return a.number > b.number; });
+    return versions;
 }
 
 bool saveChangedProjectVersion(const QString &projectPath, const Project &project,
