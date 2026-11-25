@@ -1471,6 +1471,11 @@ QRectF powerNameRect(const PowerSymbol &power, const Library &library)
                       TextAlign::Center);
 }
 
+QString revisionWord()
+{
+    return QCoreApplication::translate("ppcb::Paint", "Revision");
+}
+
 QString componentTextShown(const Component &component, ComponentText text,
                            const Library &library, const PowerShown &power)
 {

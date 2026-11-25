@@ -164,6 +164,13 @@ struct Project
     Coord boardGridStep = DEFAULT_BOARD_GRID_STEP;
 };
 
+// The revision after 'revision', trimmed: its last number one more, keeping
+// its width ("9" to "10", "1.09" to "1.10"), or its last Latin letters
+// stepped as a column name is ("A" to "B", "AZ" to "BA", case kept); "1"
+// after an empty one, and "1" added after anything else ("rev-" to
+// "rev-1").
+QString nextRevision(const QString &revision);
+
 bool operator==(const TitleBlock &a, const TitleBlock &b);
 bool operator==(const NetClass &a, const NetClass &b);
 bool operator==(const Rules &a, const Rules &b);

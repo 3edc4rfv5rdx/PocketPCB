@@ -465,6 +465,39 @@ Rules lutRules()
     return rules;
 }
 
+QString nextRevision(const QString &revision)
+{
+    QString text = revision.trimmed();
+    const auto isDigit = [](QChar c) { return c >= QLatin1Char('0') && c <= QLatin1Char('9'); };
+    const auto isLetter = [](QChar c) {
+        return (c >= QLatin1Char('A') && c <= QLatin1Char('Z'))
+               || (c >= QLatin1Char('a') && c <= QLatin1Char('z'));
+    };
+    if (text.isEmpty() || (!isDigit(text.back()) && !isLetter(text.back())))
+        return text + QLatin1Char('1');
+    // The run of digits, or of letters, at the end, counted up from its
+    // last character with a carry.
+    const bool digits = isDigit(text.back());
+    const auto inRun = [&](QChar c) { return digits ? isDigit(c) : isLetter(c); };
+    qsizetype start = text.size();
+    while (start > 0 && inRun(text.at(start - 1)))
+        --start;
+    for (qsizetype i = text.size() - 1; i >= start; --i) {
+        const QChar c = text.at(i);
+        if (c == QLatin1Char('9') || c == QLatin1Char('Z') || c == QLatin1Char('z')) {
+            text[i] = digits ? QChar(QLatin1Char('0')) : QChar(c.unicode() - 25);
+            continue;
+        }
+        text[i] = QChar(c.unicode() + 1);
+        return text;
+    }
+    // Every one carried: one more place in front, as 9 to 10 and Z to AA.
+    const QChar first = text.at(start);
+    const char front = digits ? '1' : first >= QLatin1Char('a') ? 'a' : 'A';
+    text.insert(start, QChar(QLatin1Char(front)));
+    return text;
+}
+
 bool operator==(const TitleBlock &a, const TitleBlock &b)
 {
     return a.title == b.title && a.author == b.author && a.organization == b.organization

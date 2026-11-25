@@ -4,6 +4,7 @@
 #include "format.h"
 #include "jsonio.h"
 #include "netspanel.h"
+#include "paint.h"
 #include "sheetedit.h"
 #include "sheeteditor.h"
 #include "trackedit.h"
@@ -98,7 +99,7 @@ QWidget *ProjectPropertiesDialog::makeGeneralTab()
     blockForm->addRow(tr("Author") + colon, m_authorEdit);
     blockForm->addRow(tr("Organization") + colon, m_organizationEdit);
     blockForm->addRow(tr("Contacts") + colon, m_contactsEdit);
-    blockForm->addRow(tr("Revision") + colon, m_revisionEdit);
+    blockForm->addRow(revisionWord() + colon, m_revisionEdit);
     blockForm->addRow(tr("Date") + colon, m_dateEdit);
     blockForm->addRow(tr("Note") + colon, m_noteEdit);
 

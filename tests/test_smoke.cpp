@@ -3,6 +3,7 @@
 #include "canvasview.h"
 #include "designviewitem.h"
 #include "document.h"
+#include "gerberexport.h"
 #include "grid.h"
 #include "libraryfile.h"
 #include "librarypanel.h"
@@ -18,6 +19,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QComboBox>
+#include <QDialog>
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QDockWidget>
@@ -557,6 +559,33 @@ private slots:
         QCOMPARE(dialog.name(), QStringLiteral("amp"));
         QVERIFY(save->isEnabled());
         QCOMPARE(dialog.parentFolder(), dir.path());
+    }
+
+    // Before the Gerber export: Next steps the revision, OK takes what is
+    // typed, trimmed, and Cancel leaves it.
+    void gerberRevisionIsAsked()
+    {
+        QString revision = QStringLiteral(" A ");
+        QTimer::singleShot(0, [] {
+            auto *dialog = qobject_cast<QDialog *>(QApplication::activeModalWidget());
+            QVERIFY(dialog != nullptr);
+            dialog->findChild<QPushButton *>(QStringLiteral("nextRevisionButton"))->click();
+            QCOMPARE(dialog->findChild<QLineEdit *>(QStringLiteral("gerberRevisionEdit"))->text(),
+                     QStringLiteral("B"));
+            dialog->accept();
+        });
+        QVERIFY(askGerberRevision(nullptr, revision));
+        QCOMPARE(revision, QStringLiteral("B"));
+
+        QTimer::singleShot(0, [] {
+            auto *dialog = qobject_cast<QDialog *>(QApplication::activeModalWidget());
+            QVERIFY(dialog != nullptr);
+            dialog->findChild<QLineEdit *>(QStringLiteral("gerberRevisionEdit"))
+                ->setText(QStringLiteral("7"));
+            dialog->reject();
+        });
+        QVERIFY(!askGerberRevision(nullptr, revision));
+        QCOMPARE(revision, QStringLiteral("B"));
     }
 
     void unsavedChangesAreAskedAbout()

@@ -174,6 +174,10 @@ QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &lib
 // what a view fitted to the drawing shows. Null when nothing is placed.
 QRectF sheetDrawingBounds(const Sheet &sheet, const Library &library, const PowerShown &power);
 
+// "Revision", the title block's field, as the title block and the dialogs
+// name it.
+QString revisionWord();
+
 // The texts a component shows beside its symbol.
 enum class ComponentText { Designator, Value };
 // What is drawn for the text: the designator, or the value; a grey "VALUE"

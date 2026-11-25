@@ -789,6 +789,20 @@ private slots:
         QVERIFY(!error.isEmpty());
         QVERIFY(!QFile::exists(path));
     }
+
+    // The revision the Next button gives.
+    void nextRevisionCounts()
+    {
+        const QList<QPair<const char *, const char *>> cases{
+            {"", "1"},       {" 3 ", "4"},     {"9", "10"},     {"09", "10"},
+            {"99", "100"},   {"1.9", "1.10"},  {"1.09", "1.10"}, {"v2", "v3"},
+            {"A", "B"},      {"Z", "AA"},      {"AZ", "BA"},    {"zz", "aaa"},
+            {"b", "c"},      {"2B", "2C"},     {"A9", "A10"},   {"rev-", "rev-1"}};
+        for (const auto &[from, to] : cases)
+            QCOMPARE(nextRevision(QString::fromUtf8(from)), QString::fromUtf8(to));
+        // A letter not Latin is left, and a number added after it.
+        QCOMPARE(nextRevision(QStringLiteral("Б")), QStringLiteral("Б1"));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestProject)

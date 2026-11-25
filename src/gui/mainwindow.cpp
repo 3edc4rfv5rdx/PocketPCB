@@ -445,13 +445,29 @@ void MainWindow::createMenus()
     });
     QAction *gerberAction = fileMenu->addAction(exportGerberTitle());
     gerberAction->setObjectName(QStringLiteral("actionExportGerber"));
-    // A box says it is done, or what went wrong.
+    // The revision is asked first and written into the project, one step,
+    // so that the title block and the archive's name agree; a box says it
+    // is done, or what went wrong.
     connect(gerberAction, &QAction::triggered, this, [this] {
-        QString message;
-        if (exportGerber(*m_document, message))
-            QMessageBox::information(this, exportGerberTitle(), message);
-        else
-            QMessageBox::warning(this, exportGerberTitle(), message);
+        QString message = gerberExportProblem(m_document->design());
+        if (message.isEmpty()) {
+            QString revision = m_document->design().project.titleBlock.revision;
+            if (!askGerberRevision(this, revision))
+                return;
+            if (revision != m_document->design().project.titleBlock.revision) {
+                Design changed = m_document->design();
+                changed.project.titleBlock.revision = revision;
+                m_document->change(revision.isEmpty()
+                                       ? revisionWord()
+                                       : revisionWord() + QLatin1Char(' ') + revision,
+                                   changed);
+            }
+            if (exportGerber(*m_document, message)) {
+                QMessageBox::information(this, exportGerberTitle(), message);
+                return;
+            }
+        }
+        QMessageBox::warning(this, exportGerberTitle(), message);
     });
     fileMenu->addSeparator();
 

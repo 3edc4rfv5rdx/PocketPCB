@@ -6,6 +6,8 @@
 #include <QString>
 
 class QDoubleSpinBox;
+class QHBoxLayout;
+class QLineEdit;
 class QWidget;
 
 namespace ppcb {
@@ -35,6 +37,9 @@ QDoubleSpinBox *mmSizeBox(Coord nm, double minMm, double maxMm, double stepMm, Q
 Coord mmSizeOf(const QDoubleSpinBox *box);
 // Gives 'box' of mmSizeBox() the length 'nm', as it was made with.
 void setMmSize(QDoubleSpinBox *box, Coord nm);
+// A row of 'edit', which holds a revision, and a Next button after it that
+// puts nextRevision() into it; Enter does not press the button.
+QHBoxLayout *revisionRow(QLineEdit *edit);
 // Lengths as "0.3 / 0.5 / 1.5", in millimetres with a slash between.
 QString formatMmList(const QList<Coord> &list);
 // Lengths typed so: in millimetres (parseMm()), apart by slashes, spaces or

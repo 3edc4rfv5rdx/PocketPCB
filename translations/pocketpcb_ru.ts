@@ -118,6 +118,10 @@
 <context>
     <name>ppcb::Format</name>
     <message>
+        <source>Next</source>
+        <translation>Следующая</translation>
+    </message>
+    <message>
         <source>Sent to the printer</source>
         <translation>Отправлено на принтер</translation>
     </message>
@@ -453,6 +457,10 @@
 </context>
 <context>
     <name>ppcb::Paint</name>
+    <message>
+        <source>Revision</source>
+        <translation>Ревизия</translation>
+    </message>
     <message>
         <source>Sheet %1 of %2</source>
         <translation>Лист %1 из %2</translation>
@@ -1442,10 +1450,6 @@
     <message>
         <source>Contacts</source>
         <translation>Контакты</translation>
-    </message>
-    <message>
-        <source>Revision</source>
-        <translation>Ревизия</translation>
     </message>
     <message>
         <source>Date</source>

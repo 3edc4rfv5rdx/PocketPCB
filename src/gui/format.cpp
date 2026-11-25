@@ -6,7 +6,10 @@
 #include <QDir>
 #include <QDoubleSpinBox>
 #include <QFileInfo>
+#include <QHBoxLayout>
+#include <QLineEdit>
 #include <QLocale>
+#include <QPushButton>
 #include <QRegularExpression>
 
 #include <algorithm>
@@ -128,6 +131,23 @@ Coord mmSizeOf(const QDoubleSpinBox *box)
 QString mmUnit()
 {
     return QCoreApplication::translate("ppcb::Format", "mm");
+}
+
+QHBoxLayout *revisionRow(QLineEdit *edit)
+{
+    auto *next = new QPushButton(QCoreApplication::translate("ppcb::Format", "Next"),
+                                 edit->parentWidget());
+    next->setObjectName(QStringLiteral("nextRevisionButton"));
+    // Enter in the dialog accepts it, not the next revision.
+    next->setAutoDefault(false);
+    QObject::connect(next, &QPushButton::clicked, edit, [edit] {
+        edit->setText(nextRevision(edit->text()));
+        edit->setFocus();
+    });
+    auto *row = new QHBoxLayout;
+    row->addWidget(edit);
+    row->addWidget(next);
+    return row;
 }
 
 QString symbolWord()

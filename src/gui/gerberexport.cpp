@@ -3,11 +3,16 @@
 #include "document.h"
 #include "format.h"
 #include "gerber.h"
+#include "paint.h"
 
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDir>
 #include <QFileInfo>
+#include <QFormLayout>
+#include <QLineEdit>
 #include <QRegularExpression>
 #include <QSaveFile>
 
@@ -42,13 +47,38 @@ QString gerberArchiveName(const QString &project, const QString &revision, const
            + QStringLiteral("-gerber.zip");
 }
 
+QString gerberExportProblem(const Design &design)
+{
+    if (design.board.outline.isEmpty())
+        return QCoreApplication::translate("ppcb::GerberExport", "The board has no outline");
+    return QString();
+}
+
+bool askGerberRevision(QWidget *parent, QString &revision)
+{
+    QDialog dialog(parent);
+    dialog.setWindowTitle(exportGerberTitle());
+    auto *edit = new QLineEdit(revision, &dialog);
+    edit->setObjectName(QStringLiteral("gerberRevisionEdit"));
+
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    auto *layout = new QFormLayout(&dialog);
+    layout->addRow(revisionWord() + QLatin1Char(':'), revisionRow(edit));
+    layout->addRow(buttons);
+    if (dialog.exec() != QDialog::Accepted)
+        return false;
+    revision = edit->text().trimmed();
+    return true;
+}
+
 bool exportGerber(const Document &document, QString &message)
 {
     const Design &design = document.design();
-    if (design.board.outline.isEmpty()) {
-        message = QCoreApplication::translate("ppcb::GerberExport", "The board has no outline");
+    message = gerberExportProblem(design);
+    if (!message.isEmpty())
         return false;
-    }
     // The output folder, made when missing.
     const QString anyOutput =
         projectOutputFile(document.projectPath(), QString(), QStringLiteral("zip"), message);
