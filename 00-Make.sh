@@ -55,4 +55,6 @@ else
 fi
 # Keep the summary on screen when started from a file manager.
 sleep 3
+date
 exit "$status"
+
