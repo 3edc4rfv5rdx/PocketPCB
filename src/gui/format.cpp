@@ -191,6 +191,16 @@ QString capitalized(const QString &text)
     return text.isEmpty() ? text : text.left(1).toUpper() + text.mid(1);
 }
 
+QString notCheckedMessage()
+{
+    return QCoreApplication::translate("ppcb::Format", "Not checked yet");
+}
+
+QString checkButtonText()
+{
+    return QCoreApplication::translate("ppcb::Format", "Check");
+}
+
 QString noProblemsMessage()
 {
     return QCoreApplication::translate("ppcb::Format", "No problems found");

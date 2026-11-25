@@ -209,7 +209,8 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
 
 <h3 id="erc">ERC</h3>
 <ul>
-  <li>The <b>ERC</b> panel checks the schematic after every change: empty values, repeated designators, free
+  <li>The <b>ERC</b> panel checks the schematic after every change while it is open and a sheet is shown
+    (a project just opened waits for a change or <b>Check</b>): empty values, repeated designators, free
     pins, misplaced no-connect marks, loose labels and wire ends, wires lying on wires or closing a loop, a two-pin
     part shorted, a net with two names and so on.</li>
   <li>While it is open the problems are ringed in red on the sheet; a problem chosen shows its place, and an empty
@@ -371,7 +372,8 @@ choice.</p>
 
 <h3 id="drc">DRC</h3>
 <ul>
-  <li>The <b>DRC</b> panel (its button on the strip, or View) checks the board after every change against the
+  <li>The <b>DRC</b> panel (its button on the strip, or View) checks the board after every change, while it is
+    open and the board is shown (a project just opened waits for a change or <b>Check</b>), against the
     project's rules: shorts, clearances between copper of different nets and to holes, copper near the board
     edge, narrow annular rings and tracks, drills not in the set, parts off the board and unrouted
     connections. Errors come first, then warnings.</li>

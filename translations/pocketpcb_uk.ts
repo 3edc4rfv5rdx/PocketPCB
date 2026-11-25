@@ -4,10 +4,6 @@
 <context>
     <name>ppcb::DrcPanel</name>
     <message>
-        <source>Check</source>
-        <translation>Перевірити</translation>
-    </message>
-    <message>
         <source>DRC</source>
         <translation>DRC</translation>
     </message>
@@ -121,6 +117,14 @@
 </context>
 <context>
     <name>ppcb::Format</name>
+    <message>
+        <source>Check</source>
+        <translation>Перевірити</translation>
+    </message>
+    <message>
+        <source>Not checked yet</source>
+        <translation>Ще не перевірено</translation>
+    </message>
     <message>
         <source>No problems found</source>
         <translation>Помилок не знайдено</translation>

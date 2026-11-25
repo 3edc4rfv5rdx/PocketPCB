@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: ERC and DRC run only while their panel is open and their page shown, and not when a project is opened, so opening is quick again; ERC has a Check button too
 - E: DRC finds the net classes once per check instead of for every pair of copper, which made it very slow
 - F: Ratsnest arcs meeting at a pad bend away from each other
 - N: The grid is a little brighter, and a button beside Actual size makes it much brighter while held

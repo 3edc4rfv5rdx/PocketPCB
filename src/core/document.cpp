@@ -402,6 +402,7 @@ void Document::reset(const Design &design, const QString &projectPath)
                 m_savedDate = date;
         }
     }
+    emit designReset();
     emit designChanged();
     emit savedDateChanged();
     noteModified();

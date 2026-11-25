@@ -262,7 +262,7 @@ MainWindow::MainWindow(QWidget *parent)
     splitDockWidget(m_netsDock, m_ercDock, Qt::Vertical);
     // The problems of the board's rules check, under those of the sheets;
     // hidden until asked for.
-    m_drcPanel = new DrcPanel(m_boardEditor, this);
+    m_drcPanel = new DrcPanel(m_document, m_boardEditor, this);
     m_drcDock = new QDockWidget(DrcPanel::drcTitle(), this);
     m_drcDock->setObjectName(QStringLiteral("drcDock"));
     m_drcDock->setWidget(m_drcPanel);

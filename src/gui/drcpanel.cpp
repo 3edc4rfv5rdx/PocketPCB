@@ -2,6 +2,7 @@
 
 #include "boardeditor.h"
 #include "format.h"
+#include "rulescheck.h"
 
 #include <QHeaderView>
 #include <QPushButton>
@@ -18,11 +19,14 @@ const int PROBLEM_ROLE = Qt::UserRole;
 
 } // namespace
 
-DrcPanel::DrcPanel(BoardEditor *editor, QWidget *parent)
+DrcPanel::DrcPanel(Document *document, BoardEditor *editor, QWidget *parent)
     : QWidget(parent)
     , m_editor(editor)
 {
-    QPushButton *checkButton = new QPushButton(tr("Check"), this);
+    m_check = new RulesCheck(
+        document, [this] { return isVisible() && m_editor->isActive(); },
+        [this] { m_editor->findProblems(); }, this);
+    QPushButton *checkButton = new QPushButton(checkButtonText(), this);
     checkButton->setObjectName(QStringLiteral("drcCheckButton"));
     m_tree = new QTreeWidget(this);
     m_tree->setObjectName(QStringLiteral("drcTree"));
@@ -35,14 +39,23 @@ DrcPanel::DrcPanel(BoardEditor *editor, QWidget *parent)
     layout->addWidget(m_tree);
 
     connect(checkButton, &QPushButton::clicked, this, [this] {
-        refresh();
+        m_check->check();
         emit checkRequested();
     });
     connect(m_tree, &QTreeWidget::itemSelectionChanged, this, &DrcPanel::itemChosen);
     // A click on the problem chosen shows it again.
     connect(m_tree, &QTreeWidget::itemClicked, this, &DrcPanel::itemChosen);
     connect(m_editor, &BoardEditor::problemsChanged, this, &DrcPanel::refresh);
+    connect(m_check, &RulesCheck::waitingChanged, this, &DrcPanel::refresh);
+    // The board shown, or another page.
+    connect(m_editor, &BoardEditor::changed, m_check, &RulesCheck::poke);
     refresh();
+}
+
+void DrcPanel::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+    m_check->poke();
 }
 
 QString DrcPanel::drcTitle()
@@ -114,8 +127,9 @@ void DrcPanel::refresh()
     const QSignalBlocker blocker(m_tree);
     m_tree->clear();
     m_problems = m_editor->problems();
-    if (m_problems.isEmpty()) {
-        QTreeWidgetItem *item = new QTreeWidgetItem(m_tree, {noProblemsMessage()});
+    if (m_check->waiting() || m_problems.isEmpty()) {
+        QTreeWidgetItem *item = new QTreeWidgetItem(
+            m_tree, {m_check->waiting() ? notCheckedMessage() : noProblemsMessage()});
         item->setFlags(Qt::NoItemFlags);
         return;
     }

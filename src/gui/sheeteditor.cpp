@@ -43,9 +43,13 @@ SheetEditor::SheetEditor(Document *document, CanvasView *canvas, QObject *parent
     // The nets are stale, and so is the index of the one lit.
     connect(m_document, &Document::designChanged, this, [this] {
         m_netsBuilt = false;
-        m_problemsFound = false;
         clearHoveredNet();
         emit netsChanged();
+    });
+    // The problems of another project are not shown.
+    connect(m_document, &Document::designReset, this, [this] {
+        m_problems.clear();
+        emit problemsChanged();
     });
     m_hoverTimer.setSingleShot(true);
     m_hoverTimer.setInterval(CanvasView::HOVER_DELAY_MS);
@@ -1181,14 +1185,11 @@ const QList<Net> &SheetEditor::nets() const
     return m_nets;
 }
 
-const QList<ErcProblem> &SheetEditor::problems() const
+void SheetEditor::findProblems()
 {
-    if (!m_problemsFound) {
-        const Design &design = m_document->design();
-        m_problems = checkSchematic(design.schematic, design.library, design.project, nets());
-        m_problemsFound = true;
-    }
-    return m_problems;
+    const Design &design = m_document->design();
+    m_problems = checkSchematic(design.schematic, design.library, design.project, nets());
+    emit problemsChanged();
 }
 
 void SheetEditor::setChosenNet(const QString &name)

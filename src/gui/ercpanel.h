@@ -9,11 +9,14 @@ class QTreeWidget;
 namespace ppcb {
 
 class Document;
+class RulesCheck;
 class SheetEditor;
 
 // The problems the rules check finds (see SheetEditor::problems()), found
-// again after every change: under the name of each sheet, then under the
-// whole project. Choosing one reports it with problemChosen().
+// again after every change while the panel is open and a sheet shown
+// (RulesCheck): under the name of each sheet, then under the whole
+// project. Check finds them again. Choosing one reports it with
+// problemChosen().
 class ErcPanel : public QWidget
 {
     Q_OBJECT
@@ -30,6 +33,10 @@ signals:
     // A problem on a sheet was chosen.
     void problemChosen(const ErcProblem &problem);
 
+protected:
+    // Shown: the check runs when the schematic changed meanwhile.
+    void showEvent(QShowEvent *event) override;
+
 private:
     void refresh();
     void itemChosen();
@@ -40,6 +47,7 @@ private:
 
     Document *m_document;
     SheetEditor *m_editor;
+    RulesCheck *m_check = nullptr;
     QTreeWidget *m_tree = nullptr;
     // The problems shown, by the index kept in each item.
     QList<ErcProblem> m_problems;

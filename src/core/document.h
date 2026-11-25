@@ -120,6 +120,9 @@ public:
 signals:
     // The content was replaced: by change(), Undo, Redo, startNew() or open().
     void designChanged();
+    // A project was opened or started: sent just before its designChanged(),
+    // so that what is slow to find again (the rules checks) waits.
+    void designReset();
     void modifiedChanged(bool modified);
     // A step was undone or redone: where it was made and what it touched,
     // so the window can show it.

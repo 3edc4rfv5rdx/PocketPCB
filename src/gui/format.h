@@ -69,5 +69,9 @@ QString cannotWriteMessage(const QString &path);
 QString capitalized(const QString &text);
 // What a rules check panel shows when it finds nothing.
 QString noProblemsMessage();
+// What a rules check panel shows before it has run on the project opened.
+QString notCheckedMessage();
+// The button of a rules check panel that runs it.
+QString checkButtonText();
 
 } // namespace ppcb

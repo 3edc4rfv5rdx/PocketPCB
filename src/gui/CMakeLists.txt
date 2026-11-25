@@ -6,6 +6,7 @@ add_library(pocketpcb_gui STATIC
     canvasview.h canvasview.cpp
     designviewitem.h designviewitem.cpp
     drcpanel.h drcpanel.cpp
+    rulescheck.h rulescheck.cpp
     ercpanel.h ercpanel.cpp
     format.h format.cpp
     inplaceedit.h inplaceedit.cpp

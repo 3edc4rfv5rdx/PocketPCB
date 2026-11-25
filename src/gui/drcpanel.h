@@ -10,17 +10,19 @@ class QTreeWidget;
 namespace ppcb {
 
 class BoardEditor;
+class Document;
+class RulesCheck;
 
 // The problems the board's rules check finds (BoardEditor::problems()),
-// found again after every change: the errors, then the warnings. Check
-// finds them again and shows the board; choosing one reports it with
-// problemChosen().
+// found again after every change while the panel is open and the board
+// shown (RulesCheck): the errors, then the warnings. Check finds them
+// again and shows the board; choosing one reports it with problemChosen().
 class DrcPanel : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit DrcPanel(BoardEditor *editor, QWidget *parent = nullptr);
+    DrcPanel(Document *document, BoardEditor *editor, QWidget *parent = nullptr);
 
     // The panel's title.
     static QString drcTitle();
@@ -36,6 +38,10 @@ signals:
     // Check was pressed.
     void checkRequested();
 
+protected:
+    // Shown: the check runs when the board changed meanwhile.
+    void showEvent(QShowEvent *event) override;
+
 private:
     void refresh();
     void itemChosen();
@@ -43,6 +49,7 @@ private:
     static QString itemText(const DrcItem &item);
 
     BoardEditor *m_editor;
+    RulesCheck *m_check = nullptr;
     QTreeWidget *m_tree = nullptr;
     // The problems shown, by the index kept in each item.
     QList<DrcProblem> m_problems;

@@ -2,9 +2,11 @@
 
 #include "document.h"
 #include "format.h"
+#include "rulescheck.h"
 #include "sheeteditor.h"
 
 #include <QHeaderView>
+#include <QPushButton>
 #include <QSignalBlocker>
 #include <QTreeWidget>
 #include <QVBoxLayout>
@@ -23,6 +25,11 @@ ErcPanel::ErcPanel(Document *document, SheetEditor *editor, QWidget *parent)
     , m_document(document)
     , m_editor(editor)
 {
+    m_check = new RulesCheck(
+        document, [this] { return isVisible() && m_editor->sheet() >= 0; },
+        [this] { m_editor->findProblems(); }, this);
+    QPushButton *checkButton = new QPushButton(checkButtonText(), this);
+    checkButton->setObjectName(QStringLiteral("ercCheckButton"));
     m_tree = new QTreeWidget(this);
     m_tree->setObjectName(QStringLiteral("ercTree"));
     m_tree->setColumnCount(1);
@@ -30,14 +37,25 @@ ErcPanel::ErcPanel(Document *document, SheetEditor *editor, QWidget *parent)
     m_tree->setSelectionMode(QAbstractItemView::SingleSelection);
 
     QVBoxLayout *layout = new QVBoxLayout(this);
+    layout->addWidget(checkButton);
     layout->addWidget(m_tree);
 
     connect(m_tree, &QTreeWidget::itemSelectionChanged, this, &ErcPanel::itemChosen);
     // A click on the problem chosen shows it again.
     connect(m_tree, &QTreeWidget::itemClicked, this, &ErcPanel::itemChosen);
-    connect(m_editor, &SheetEditor::netsChanged, this, &ErcPanel::refresh);
+    connect(checkButton, &QPushButton::clicked, m_check, &RulesCheck::check);
+    connect(m_editor, &SheetEditor::problemsChanged, this, &ErcPanel::refresh);
+    connect(m_check, &RulesCheck::waitingChanged, this, &ErcPanel::refresh);
     connect(m_editor, &SheetEditor::changed, this, &ErcPanel::followSelection);
+    // A sheet shown, or the board.
+    connect(m_editor, &SheetEditor::changed, m_check, &RulesCheck::poke);
     refresh();
+}
+
+void ErcPanel::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+    m_check->poke();
 }
 
 QString ErcPanel::ercTitle()
@@ -83,8 +101,9 @@ void ErcPanel::refresh()
     const QSignalBlocker blocker(m_tree);
     m_tree->clear();
     m_problems = m_editor->problems();
-    if (m_problems.isEmpty()) {
-        QTreeWidgetItem *item = new QTreeWidgetItem(m_tree, {noProblemsMessage()});
+    if (m_check->waiting() || m_problems.isEmpty()) {
+        QTreeWidgetItem *item = new QTreeWidgetItem(
+            m_tree, {m_check->waiting() ? notCheckedMessage() : noProblemsMessage()});
         item->setFlags(Qt::NoItemFlags);
         return;
     }
