@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The board print dialog shows a picture of a copy as it will be printed
 - F: A PDF or BOM made from a copy of a version goes into the project's out folder, named with the version
 - N: Open a copy in the Versions panel shows a version in its own window, read only, its schematic copied into the project
 - F: The buttons in the panels are grey blue, standing out from the lists

@@ -7,12 +7,14 @@
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
+class QLabel;
 class QPagedPaintDevice;
 class QSpinBox;
 
 namespace ppcb {
 
 class Document;
+struct Design;
 
 // The names of the command that prints the board, for its menu item, its
 // button and its dialog, and of the button that writes the PDF instead.
@@ -36,7 +38,8 @@ bool paintBoardPages(QPagedPaintDevice &device, const QSizeF &page, double dotsP
 // The choices of the board's print: the layer (the copper of a side that
 // has it, the silkscreen of a side with something on it), mirrored, the
 // negative and the centre holes (for the copper), the copies and the
-// registration marks, then Print or Export to PDF.
+// registration marks, then Print or Export to PDF; beside them a small
+// picture of one copy as it will be printed, following the choices.
 class BoardPrintDialog : public QDialog
 {
     Q_OBJECT
@@ -44,13 +47,18 @@ class BoardPrintDialog : public QDialog
 public:
     enum class Output { Printer, Pdf };
 
-    explicit BoardPrintDialog(const Board &board, QWidget *parent = nullptr);
+    explicit BoardPrintDialog(const Design &design, QWidget *parent = nullptr);
 
     BoardPrint print() const;
     // What the dialog was closed with, when accepted.
     Output output() const { return m_output; }
 
 private:
+    // Draws the picture of a copy again.
+    void updatePreview();
+
+    const Design &m_design;
+    QLabel *m_preview = nullptr;
     QComboBox *m_layer = nullptr;
     QCheckBox *m_mirrored = nullptr;
     QCheckBox *m_inverted = nullptr;

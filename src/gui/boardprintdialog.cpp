@@ -11,6 +11,9 @@
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
+#include <QHBoxLayout>
+#include <QImage>
+#include <QLabel>
 #include <QPageLayout>
 #include <QPainter>
 #include <QPdfWriter>
@@ -19,6 +22,10 @@
 #include <QPushButton>
 #include <QSaveFile>
 #include <QSpinBox>
+#include <QVBoxLayout>
+#include <QtMath>
+
+#include <algorithm>
 
 namespace ppcb {
 
@@ -32,6 +39,8 @@ const double CENTRE_HOLE_STEP_MM = 0.1;
 const int MAX_COPIES = 100;
 // Room around the outline for its line, in mm.
 const double OUTLINE_PRINT_ROOM = 0.5;
+// The longer side of the picture of a copy in the dialog, in pixels.
+const int PREVIEW_SIZE = 260;
 
 // The paper's size in millimetres, upright.
 QSizeF uprightSize(QPageSize::PageSizeId id)
@@ -71,6 +80,19 @@ QRectF printArea(const Design &design)
         return boardBounds(board, design.library);
     const double room = OUTLINE_PRINT_ROOM;
     return outlinePath(board.outline).boundingRect().adjusted(-room, -room, room, room);
+}
+
+// Takes the board's millimetres to a copy 'copy' with its corner at the
+// origin, mirrored about its middle when 'mirrored', and keeps the painting
+// inside it.
+void placeCopy(QPainter &painter, const QRectF &copy, bool mirrored)
+{
+    painter.translate(-copy.topLeft());
+    if (mirrored) {
+        painter.translate(copy.left() + copy.right(), 0);
+        painter.scale(-1, 1);
+    }
+    painter.setClipRect(copy);
 }
 
 // The drill table of the copper on paper 'page' (mm), wrapped to the width
@@ -154,12 +176,7 @@ bool paintBoardPages(QPagedPaintDevice &device, const QSizeF &page, double dotsP
                 painter.translate(copy.height(), 0);
                 painter.rotate(90);
             }
-            painter.translate(-copy.topLeft());
-            if (print.mirrored) {
-                painter.translate(copy.left() + copy.right(), 0);
-                painter.scale(-1, 1);
-            }
-            painter.setClipRect(copy);
+            placeCopy(painter, copy, print.mirrored);
             paintBoardLayerPrint(painter, board, design.library, print, area);
             painter.restore();
         }
@@ -169,7 +186,7 @@ bool paintBoardPages(QPagedPaintDevice &device, const QSizeF &page, double dotsP
 
 QString printBoard(QWidget *parent, const Document &document)
 {
-    BoardPrintDialog choices(document.design().board, parent);
+    BoardPrintDialog choices(document.design(), parent);
     if (choices.exec() != QDialog::Accepted)
         return QString();
     const BoardPrint print = choices.print();
@@ -234,9 +251,12 @@ QString printBoard(QWidget *parent, const Document &document)
     return fits ? writtenMessage(path) : writtenMessage(path) + QStringLiteral(". ") + notFitting;
 }
 
-BoardPrintDialog::BoardPrintDialog(const Board &board, QWidget *parent) : QDialog(parent)
+BoardPrintDialog::BoardPrintDialog(const Design &design, QWidget *parent)
+    : QDialog(parent)
+    , m_design(design)
 {
     setWindowTitle(printBoardTitle());
+    const Board &board = design.board;
     const BoardPrint defaults;
 
     // The copper of the sides that have it, the silkscreen of those with
@@ -299,14 +319,61 @@ BoardPrintDialog::BoardPrintDialog(const Board &board, QWidget *parent) : QDialo
     });
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-    auto *layout = new QFormLayout(this);
-    layout->addRow(m_layer);
-    layout->addRow(capitalized(tr("mirrored")), m_mirrored);
-    layout->addRow(tr("Negative for photoresist"), m_inverted);
-    layout->addRow(tr("Centre holes"), m_centreHole);
-    layout->addRow(tr("Copies"), m_copies);
-    layout->addRow(tr("Registration marks"), m_marks);
-    layout->addRow(buttons);
+    m_preview = new QLabel(this);
+    m_preview->setObjectName(QStringLiteral("printPreview"));
+    m_preview->setAlignment(Qt::AlignCenter);
+    m_preview->setMinimumSize(PREVIEW_SIZE, PREVIEW_SIZE);
+    // The picture follows every choice it shows.
+    connect(m_layer, &QComboBox::currentIndexChanged, this, &BoardPrintDialog::updatePreview);
+    for (QCheckBox *box : {m_mirrored, m_inverted, m_marks})
+        connect(box, &QCheckBox::toggled, this, &BoardPrintDialog::updatePreview);
+    connect(m_centreHole, &QDoubleSpinBox::valueChanged, this, &BoardPrintDialog::updatePreview);
+    updatePreview();
+
+    auto *form = new QFormLayout;
+    form->addRow(m_layer);
+    form->addRow(capitalized(tr("mirrored")), m_mirrored);
+    form->addRow(tr("Negative for photoresist"), m_inverted);
+    form->addRow(tr("Centre holes"), m_centreHole);
+    form->addRow(tr("Copies"), m_copies);
+    form->addRow(tr("Registration marks"), m_marks);
+    auto *row = new QHBoxLayout;
+    row->addLayout(form);
+    row->addWidget(m_preview, 1);
+    auto *layout = new QVBoxLayout(this);
+    layout->addLayout(row);
+    layout->addWidget(buttons);
+}
+
+void BoardPrintDialog::updatePreview()
+{
+    const BoardPrint print = this->print();
+    const QRectF area = printArea(m_design);
+    const QRectF copy = boardPrintCopyRect(area, print.registrationMarks);
+    if (copy.isEmpty()) {
+        m_preview->clear();
+        return;
+    }
+    // A copy as large as fits, sharp on a screen of more pixels too; white
+    // paper with a grey edge.
+    const qreal ratio = devicePixelRatioF();
+    const double scale = PREVIEW_SIZE / std::max(copy.width(), copy.height());
+    QImage image(QSize(qCeil(copy.width() * scale * ratio), qCeil(copy.height() * scale * ratio)),
+                 QImage::Format_RGB32);
+    image.fill(Qt::white);
+    {
+        QPainter painter(&image);
+        painter.scale(scale * ratio, scale * ratio);
+        placeCopy(painter, copy, print.mirrored);
+        paintBoardLayerPrint(painter, m_design.board, m_design.library, print, area);
+    }
+    {
+        QPainter painter(&image);
+        painter.setPen(QPen(Qt::gray, 0));
+        painter.drawRect(image.rect().adjusted(0, 0, -1, -1));
+    }
+    image.setDevicePixelRatio(ratio);
+    m_preview->setPixmap(QPixmap::fromImage(image));
 }
 
 BoardPrint BoardPrintDialog::print() const

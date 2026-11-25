@@ -4,7 +4,9 @@
 #include "paint.h"
 
 #include <QBuffer>
+#include <QCheckBox>
 #include <QImage>
+#include <QLabel>
 #include <QPainter>
 #include <QPdfWriter>
 #include <QRegularExpression>
@@ -152,6 +154,28 @@ private slots:
         buffer.close();
         const QString text = QString::fromLatin1(buffer.data());
         QCOMPARE(text.count(QRegularExpression(QStringLiteral("/Type\\s*/Page\\b"))), 3);
+    }
+
+    // The dialog shows a picture of a copy, which follows the choices.
+    void thePreviewFollowsTheChoices()
+    {
+        Design design = newDesign(QStringLiteral("amp"));
+        for (const Point &corner : {Point{0, 0}, Point{mmToNm(40), 0},
+                                    Point{mmToNm(40), mmToNm(20)}, Point{0, mmToNm(20)}})
+            design.board.outline.append(OutlineCorner{corner, 0});
+        BoardPrintDialog dialog(design);
+        auto *preview = dialog.findChild<QLabel *>(QStringLiteral("printPreview"));
+        QVERIFY(preview != nullptr);
+        const QImage plain = preview->pixmap().toImage();
+        QVERIFY(!plain.isNull());
+        // Twice as wide as high, as the board.
+        QVERIFY(plain.width() > plain.height());
+        dialog.findChild<QCheckBox *>(QStringLiteral("printInverted"))->setChecked(true);
+        const QImage negative = preview->pixmap().toImage();
+        QVERIFY(negative != plain);
+        // The middle of the board is black in the negative.
+        QCOMPARE(negative.pixelColor(negative.width() / 2, negative.height() / 2),
+                 QColor(Qt::black));
     }
 };
 
