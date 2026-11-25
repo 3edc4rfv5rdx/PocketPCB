@@ -1691,6 +1691,8 @@ const double PRINT_CAPTION_HEIGHT = 3.0;
 const double PRINT_RULER_TEXT_HEIGHT = 2.5;
 const double PRINT_RULER_TICK_LENGTH = 2.0;
 const double PRINT_RULER_LINE = 0.2;
+// The lines of the circle and the cross of a hole without a pad, in mm.
+const double PRINT_BARE_HOLE_LINE = 0.2;
 
 // A filled circle of 'diameter' at 'at'.
 void paintDot(QPainter &painter, const QPointF &at, double diameter, const QColor &color)
@@ -1790,6 +1792,23 @@ void paintCopperPrint(QPainter &painter, const Board &board, const Library &libr
         if (hole.ring > 0 && holePadOn(board, hole, side))
             paintCentreHole(painter, toMm(hole.at), hole.drill, print, paper);
     }
+    // A hole without a pad: a circle just inside its edge and a cross over
+    // its middle, drilled away with it.
+    QPen pen(ink, PRINT_BARE_HOLE_LINE);
+    pen.setCapStyle(Qt::FlatCap);
+    painter.setPen(pen);
+    painter.setBrush(Qt::NoBrush);
+    for (const MountingHole &hole : board.holes) {
+        if (hole.ring > 0)
+            continue;
+        const QPointF at = toMm(hole.at);
+        const double radius = nmToMm(hole.drill) / 2;
+        const double circle = radius - PRINT_BARE_HOLE_LINE / 2;
+        if (circle > 0)
+            painter.drawEllipse(at, circle, circle);
+        painter.drawLine(at - QPointF(radius, 0), at + QPointF(radius, 0));
+        painter.drawLine(at - QPointF(0, radius), at + QPointF(0, radius));
+    }
 }
 
 } // namespace
@@ -1803,7 +1822,8 @@ void paintBoardLayerPrint(QPainter &painter, const Board &board, const Library &
     const QColor paper = inverted ? QColor(Qt::black) : QColor(Qt::white);
     const bool marks = print.registrationMarks;
     painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
+    // Solid black to its edges, without the grey a smoothed edge has.
+    painter.setRenderHint(QPainter::Antialiasing, false);
     if (inverted) {
         painter.setPen(Qt::NoPen);
         painter.setBrush(paper);
@@ -1836,7 +1856,7 @@ void paintBoardPrintHeader(QPainter &painter, const QPointF &at, const QString &
                            const QString &rulerLabel)
 {
     painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::Antialiasing, false);
     const QColor black(Qt::black);
     drawText(painter, at + QPointF(0, PRINT_CAPTION_HEIGHT / 2), caption, PRINT_CAPTION_HEIGHT,
              TextAlign::Left, black);

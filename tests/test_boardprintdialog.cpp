@@ -102,6 +102,29 @@ private slots:
         QCOMPARE(at(image, 10, 15), QColor(Qt::black));
     }
 
+    // A hole without a pad: a circle at its edge and a cross over its
+    // middle, on either side.
+    void bareHoleHasCircleAndCross()
+    {
+        Board board;
+        MountingHole hole;
+        hole.id = newObjectId();
+        hole.at = Point{mmToNm(10), mmToNm(10)};
+        hole.drill = mmToNm(3);
+        board.holes.append(hole);
+        BoardPrint print;
+        print.registrationMarks = false;
+        for (const BoardSide side : {BoardSide::Top, BoardSide::Bottom}) {
+            print.side = side;
+            const QImage image = printed(board, print);
+            QCOMPARE(at(image, 11.4, 10), QColor(Qt::black));
+            QCOMPARE(at(image, 10, 10), QColor(Qt::black));
+            QCOMPARE(at(image, 10, 8.65), QColor(Qt::black));
+            QCOMPARE(at(image, 10.7, 10.7), QColor(Qt::white));
+            QCOMPARE(at(image, 12, 10), QColor(Qt::white));
+        }
+    }
+
     // Copies that do not share a page go on pages of their own.
     void copiesGoOnPages()
     {

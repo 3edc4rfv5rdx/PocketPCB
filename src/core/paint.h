@@ -266,8 +266,10 @@ void paintBoard(QPainter &painter, const Board &board, const Library &library,
 // around 'area' (the board's rectangle) when asked for.
 // The copper: the tracks, the pads of parts, wire links and holes, the
 // vias, and a centre hole of print.centreHole, no wider than the drill, in
-// the middle of each pad with a hole; in black on white, or white on black
-// over 'area' and the marks when inverted. The silkscreen: what the board
+// the middle of each pad with a hole, and a circle inside the edge of each
+// hole without a pad with a cross over its middle; in black on white, or
+// white on black over 'area' and the marks when inverted. Edges are not
+// smoothed: solid black to the last dot. The silkscreen: what the board
 // shows on it, in black.
 void paintBoardLayerPrint(QPainter &painter, const Board &board, const Library &library,
                           const BoardPrint &print, const QRectF &area);

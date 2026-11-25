@@ -166,6 +166,8 @@ QString printBoard(QWidget *parent, const Document &document)
         dialog.setOption(QAbstractPrintDialog::PrintSelection, false);
         if (dialog.exec() != QDialog::Accepted)
             return QString();
+        // Black from the black toner alone, not mixed of colours.
+        printer.setColorMode(QPrinter::GrayScale);
         // Upright pages, as for the schematic: the layout turns the copies
         // instead of a driver that might not turn the page.
         printer.setFullPage(true);
