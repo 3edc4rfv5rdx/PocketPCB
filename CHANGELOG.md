@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+## v0.13.339 (2026-11-25)
 - F: Export Gerber and drill files ends with a box saying where the archive is, or what went wrong
 - N: The copper print has the drill table under its ruler: each diameter and how many holes
 - N: Export Gerber and drill files for a factory, in out/gerber and a zip named with the revision and the day
