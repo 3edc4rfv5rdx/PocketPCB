@@ -2006,7 +2006,8 @@ void MainWindow::createToolBar()
         {m_netsDock->toggleViewAction(), ToolIcon::Nets},
         {m_ercDock->toggleViewAction(), ToolIcon::Erc},
         {m_drcDock->toggleViewAction(), ToolIcon::Drc},
-        {m_bomDock->toggleViewAction(), ToolIcon::Bom}};
+        {m_bomDock->toggleViewAction(), ToolIcon::Bom},
+        {m_versionsDock->toggleViewAction(), ToolIcon::Versions}};
     for (const auto &[action, icon] : panels) {
         action->setIcon(toolIcon(icon, color));
         bar->addAction(action);

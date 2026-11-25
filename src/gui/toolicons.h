@@ -45,6 +45,7 @@ enum class ToolIcon {
     Erc,
     Drc,
     Bom,
+    Versions,
 };
 
 // 'icon' drawn in lines of 'color' on a square of TOOL_ICON_SIZE pixels,

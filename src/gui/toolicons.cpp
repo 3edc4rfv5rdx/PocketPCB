@@ -10,6 +10,9 @@ namespace ppcb {
 
 namespace {
 
+// The height of the letters of the Versions picture, in units of the square.
+const int VERSIONS_TEXT_SIZE = 9;
+
 // The pictures are drawn on a square of TOOL_ICON_SIZE units, a unit a
 // pixel. Lines are two units wide and straight ones run on whole units, so
 // that each covers two whole rows of pixels and stays sharp; the bus four.
@@ -304,6 +307,18 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
             painter.drawLine(QPointF(4, y), QPointF(20, y));
         painter.drawLine(QPointF(9, 9), QPointF(9, 20));
         break;
+    case ToolIcon::Versions: {
+        // "Ver" in bold letters in a frame, as a picture: the same in every
+        // language.
+        painter.drawRect(QRectF(2, 4, 20, 16));
+        QFont font = painter.font();
+        font.setBold(true);
+        font.setPixelSize(VERSIONS_TEXT_SIZE);
+        painter.setFont(font);
+        painter.drawText(QRectF(0, 0, TOOL_ICON_SIZE, TOOL_ICON_SIZE), Qt::AlignCenter,
+                         QStringLiteral("Ver"));
+        break;
+    }
     }
 }
 
