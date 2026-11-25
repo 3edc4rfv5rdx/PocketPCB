@@ -73,21 +73,22 @@ QRectF printArea(const Design &design)
     return outlinePath(board.outline).boundingRect().adjusted(-room, -room, room, room);
 }
 
-// The drill table of the copper: "Drills  0.8 mm × 42  3.2 mm × 4", the
-// diameters as they are drilled; empty for the silkscreen or no holes.
-QString drillTable(const Design &design, const BoardPrint &print)
+// The drill table of the copper on paper 'page' (mm), wrapped to the width
+// between its margins: "Drills   0.8 mm × 42   3.2 mm × 4", the diameters
+// as they are drilled; no lines for the silkscreen or no holes.
+QStringList drillTable(const Design &design, const BoardPrint &print, const QSizeF &page)
 {
     if (print.layer != BoardPrintLayer::Copper)
-        return QString();
+        return QStringList();
     const QMap<Coord, int> counts =
         drillCounts(drillHoles(design.board, design.library, design.project.rules));
     if (counts.isEmpty())
-        return QString();
-    QString text = BoardPrintDialog::tr("Drills");
+        return QStringList();
+    QStringList entries{BoardPrintDialog::tr("Drills")};
     for (auto it = counts.cbegin(); it != counts.cend(); ++it)
-        text += QStringLiteral("   ") + formatMmShortUnit(it.key()) + QStringLiteral(" × ")
-                + QString::number(it.value());
-    return text;
+        entries.append(formatMmShortUnit(it.key()) + QStringLiteral(" × ")
+                       + QString::number(it.value()));
+    return boardPrintDrillLines(entries, page.width() - 2 * BOARD_PRINT_MARGIN);
 }
 
 // The combo box's data for a layer of a side, and back.
@@ -125,10 +126,11 @@ bool paintBoardPages(QPagedPaintDevice &device, const QSizeF &page, double dotsP
     const Board &board = design.board;
     const QRectF area = printArea(design);
     const QRectF copy = boardPrintCopyRect(area, print.registrationMarks);
-    const BoardPrintLayout layout = boardPrintLayout(copy.size(), page, print.copies);
+    const QStringList drills = drillTable(design, print, page);
+    const BoardPrintLayout layout =
+        boardPrintLayout(copy.size(), page, print.copies, boardPrintHeader(drills.size()));
     fits = layout.fits;
     const QString title = caption(document, print);
-    const QString drills = drillTable(design, print);
     const QString rulerLabel =
         QString::number(SCALE_RULER_LENGTH) + QLatin1Char(' ') + mmUnit();
 
@@ -211,7 +213,9 @@ QString printBoard(QWidget *parent, const Document &document)
     const Design &design = document.design();
     const QRectF copy = boardPrintCopyRect(printArea(design), print.registrationMarks);
     QPageSize::PageSizeId paper = QPageSize::A4;
-    if (!boardPrintLayout(copy.size(), uprightSize(paper), 1).fits)
+    const QSizeF a4 = uprightSize(paper);
+    const double a4Header = boardPrintHeader(drillTable(design, print, a4).size());
+    if (!boardPrintLayout(copy.size(), a4, 1, a4Header).fits)
         paper = QPageSize::A3;
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly))

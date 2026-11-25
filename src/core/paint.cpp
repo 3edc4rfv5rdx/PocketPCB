@@ -1834,7 +1834,7 @@ void paintSilkscreenLayer(QPainter &painter, const Board &board, const Library &
 }
 
 void paintBoardPrintHeader(QPainter &painter, const QPointF &at, const QString &caption,
-                           const QString &rulerLabel, const QString &drills)
+                           const QString &rulerLabel, const QStringList &drillLines)
 {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, false);
@@ -1852,10 +1852,28 @@ void paintBoardPrintHeader(QPainter &painter, const QPointF &at, const QString &
     drawText(painter, QPointF(at.x() + SCALE_RULER_LENGTH + PRINT_RULER_TEXT_HEIGHT, y),
              rulerLabel, PRINT_RULER_TEXT_HEIGHT, TextAlign::Left, black);
     // The drill table under the ruler's ticks.
-    drawText(painter,
-             QPointF(at.x(), y + PRINT_RULER_TICK_LENGTH + PRINT_CAPTION_HEIGHT),
-             drills, PRINT_RULER_TEXT_HEIGHT, TextAlign::Left, black);
+    const double drillsY = y + PRINT_RULER_TICK_LENGTH + PRINT_CAPTION_HEIGHT;
+    for (int line = 0; line < drillLines.size(); ++line)
+        drawText(painter, QPointF(at.x(), drillsY + line * BOARD_PRINT_DRILL_LINE),
+                 drillLines.at(line), PRINT_RULER_TEXT_HEIGHT, TextAlign::Left, black);
     painter.restore();
+}
+
+QStringList boardPrintDrillLines(const QStringList &entries, double width)
+{
+    const QString gap = QStringLiteral("   ");
+    QStringList lines;
+    for (const QString &entry : entries) {
+        if (!lines.isEmpty()) {
+            const QString longer = lines.last() + gap + entry;
+            if (strokeText(longer).width * PRINT_RULER_TEXT_HEIGHT <= width) {
+                lines.last() = longer;
+                continue;
+            }
+        }
+        lines.append(entry);
+    }
+    return lines;
 }
 
 } // namespace ppcb

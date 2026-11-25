@@ -55,12 +55,18 @@ QRectF boardPrintCopyRect(const QRectF &boardArea, bool marks)
     return boardArea.adjusted(-room, -room, room, room);
 }
 
-BoardPrintLayout boardPrintLayout(const QSizeF &copy, const QSizeF &page, int copies)
+double boardPrintHeader(int drillLines)
+{
+    return BOARD_PRINT_HEADER + std::max(drillLines, 0) * BOARD_PRINT_DRILL_LINE;
+}
+
+BoardPrintLayout boardPrintLayout(const QSizeF &copy, const QSizeF &page, int copies,
+                                  double header)
 {
     BoardPrintLayout layout;
     copies = std::max(copies, 1);
     const double width = page.width() - 2 * BOARD_PRINT_MARGIN;
-    const double height = page.height() - 2 * BOARD_PRINT_MARGIN - BOARD_PRINT_HEADER;
+    const double height = page.height() - 2 * BOARD_PRINT_MARGIN - header;
     const int columns = fitting(copy.width(), width);
     const int rows = fitting(copy.height(), height);
     const int turnedColumns = fitting(copy.height(), width);
@@ -72,7 +78,7 @@ BoardPrintLayout boardPrintLayout(const QSizeF &copy, const QSizeF &page, int co
     layout.fits = (layout.turned ? turnedColumns * turnedRows : columns * rows) > 0;
     const int perPage = layout.fits ? across * down : 1;
 
-    const QPointF start(BOARD_PRINT_MARGIN, BOARD_PRINT_MARGIN + BOARD_PRINT_HEADER);
+    const QPointF start(BOARD_PRINT_MARGIN, BOARD_PRINT_MARGIN + header);
     for (int index = 0; index < copies; ++index) {
         const int onPage = index % perPage;
         if (onPage == 0)

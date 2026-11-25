@@ -50,7 +50,7 @@ private slots:
     {
         const QSizeF a4(210, 297);
         // 190 wide: 3 of 60 with gaps; 263 high: 4.
-        const BoardPrintLayout layout = boardPrintLayout(QSizeF(60, 60), a4, 17);
+        const BoardPrintLayout layout = boardPrintLayout(QSizeF(60, 60), a4, 17, BOARD_PRINT_HEADER);
         QVERIFY(layout.fits);
         QVERIFY(!layout.turned);
         QCOMPARE(layout.pages.size(), 2);
@@ -72,7 +72,7 @@ private slots:
     // A long board too wide for the paper upright goes turned.
     void aLongBoardIsTurned()
     {
-        const BoardPrintLayout layout = boardPrintLayout(QSizeF(250, 50), QSizeF(210, 297), 1);
+        const BoardPrintLayout layout = boardPrintLayout(QSizeF(250, 50), QSizeF(210, 297), 1, BOARD_PRINT_HEADER);
         QVERIFY(layout.fits);
         QVERIFY(layout.turned);
         QCOMPARE(layout.pages.size(), 1);
@@ -81,7 +81,7 @@ private slots:
     // A board larger than the paper either way: a page each, all the same.
     void aBoardTooLargeHasAPageEach()
     {
-        const BoardPrintLayout layout = boardPrintLayout(QSizeF(300, 300), QSizeF(210, 297), 2);
+        const BoardPrintLayout layout = boardPrintLayout(QSizeF(300, 300), QSizeF(210, 297), 2, BOARD_PRINT_HEADER);
         QVERIFY(!layout.fits);
         QCOMPARE(layout.pages.size(), 2);
         QCOMPARE(layout.pages.at(1).size(), 1);
@@ -89,7 +89,26 @@ private slots:
 
     void atLeastOneCopy()
     {
-        QCOMPARE(boardPrintLayout(QSizeF(10, 10), QSizeF(210, 297), 0).pages.size(), 1);
+        QCOMPARE(boardPrintLayout(QSizeF(10, 10), QSizeF(210, 297), 0, BOARD_PRINT_HEADER)
+                     .pages.size(),
+                 1);
+    }
+
+    // Each line of the drill table makes the band at the top higher, and
+    // the copies start under it: 60 mm copies fit four down under a band of
+    // one line (277 - 18 = 259 >= 4 * 60 + 3 * 5), three under five (243).
+    void drillLinesPushTheCopiesDown()
+    {
+        QCOMPARE(boardPrintHeader(0), BOARD_PRINT_HEADER);
+        QCOMPARE(boardPrintHeader(2), BOARD_PRINT_HEADER + 2 * BOARD_PRINT_DRILL_LINE);
+        const QSizeF a4(210, 297);
+        const BoardPrintLayout one = boardPrintLayout(QSizeF(60, 60), a4, 12, boardPrintHeader(1));
+        QCOMPARE(one.pages.at(0).at(0),
+                 QPointF(BOARD_PRINT_MARGIN, BOARD_PRINT_MARGIN + boardPrintHeader(1)));
+        QCOMPARE(one.pages.size(), 1);
+        const BoardPrintLayout five = boardPrintLayout(QSizeF(60, 60), a4, 12, boardPrintHeader(5));
+        QCOMPARE(five.pages.size(), 2);
+        QCOMPARE(five.pages.at(0).size(), 9);
     }
 };
 

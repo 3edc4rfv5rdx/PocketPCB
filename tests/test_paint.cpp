@@ -240,6 +240,24 @@ class TestPaint : public QObject
     Q_OBJECT
 
 private slots:
+    // The drill table goes on as many lines as the width needs, every
+    // entry kept in order, an entry too wide on a line alone.
+    void drillTableIsWrapped()
+    {
+        QCOMPARE(boardPrintDrillLines({}, 190), QStringList());
+        QStringList entries{QStringLiteral("Drills")};
+        for (int i = 1; i <= 20; ++i)
+            entries.append(QStringLiteral("%1 mm × %2").arg(i).arg(i * 3));
+        const QStringList wide = boardPrintDrillLines(entries, 1000);
+        QCOMPARE(wide, QStringList{entries.join(QStringLiteral("   "))});
+        const QStringList lines = boardPrintDrillLines(entries, 100);
+        QVERIFY(lines.size() > 1);
+        QCOMPARE(lines.join(QStringLiteral("   ")), entries.join(QStringLiteral("   ")));
+        QVERIFY(lines.first().startsWith(QStringLiteral("Drills")));
+        // Narrower than any entry: one on each line.
+        QCOMPARE(boardPrintDrillLines(entries, 1), entries);
+    }
+
     // The title block names the revision; empty fields leave no row.
     void titleBlockNamesTheRevision()
     {

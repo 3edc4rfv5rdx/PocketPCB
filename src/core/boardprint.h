@@ -53,8 +53,8 @@ constexpr double REGISTRATION_MARK_LINE = 0.2;
 QRectF boardPrintCopyRect(const QRectF &boardArea, bool marks);
 
 // The copies laid out on pages of paper 'page' (millimetres): as many in a
-// row and in a column as fit inside the margins, under the caption and the
-// scale ruler, the rest on the next pages.
+// row and in a column as fit inside the margins, under the band at the top
+// 'header' mm high (boardPrintHeader()), the rest on the next pages.
 struct BoardPrintLayout
 {
     // Each copy a quarter turned, when more of them fit on a page so.
@@ -66,13 +66,19 @@ struct BoardPrintLayout
     // the paper's corner: where the copy, turned when 'turned', starts.
     QList<QList<QPointF>> pages;
 };
-BoardPrintLayout boardPrintLayout(const QSizeF &copy, const QSizeF &page, int copies);
+BoardPrintLayout boardPrintLayout(const QSizeF &copy, const QSizeF &page, int copies,
+                                  double header);
 
-// The paper's margins, the gap between copies, and the band at the top of
-// each page with the caption, the scale ruler and the drill table, in mm.
+// The paper's margins, the gap between copies, the band at the top of each
+// page with the caption and the scale ruler, and each line of the drill
+// table under it, in mm.
 constexpr double BOARD_PRINT_MARGIN = 10;
 constexpr double BOARD_PRINT_GAP = 5;
-constexpr double BOARD_PRINT_HEADER = 18;
+constexpr double BOARD_PRINT_HEADER = 14;
+constexpr double BOARD_PRINT_DRILL_LINE = 4;
+// The band at the top of each page with 'drillLines' lines of the drill
+// table.
+double boardPrintHeader(int drillLines);
 // The scale ruler: 100 mm, with a tick every 10 mm, so that the print can
 // be checked against a real ruler.
 constexpr double SCALE_RULER_LENGTH = 100;

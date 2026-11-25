@@ -287,9 +287,14 @@ void paintSilkscreenLayer(QPainter &painter, const Board &board, const Library &
                           BoardSide side);
 // The band at the top of a page of the board's print, in black, its top
 // left corner at 'at': 'caption', under it the scale ruler of
-// SCALE_RULER_LENGTH mm with 'rulerLabel' after it, and under that
-// 'drills', the drill table, when not empty.
+// SCALE_RULER_LENGTH mm with 'rulerLabel' after it, and under that the
+// lines of the drill table (boardPrintDrillLines()), BOARD_PRINT_DRILL_LINE
+// apart.
 void paintBoardPrintHeader(QPainter &painter, const QPointF &at, const QString &caption,
-                           const QString &rulerLabel, const QString &drills);
+                           const QString &rulerLabel, const QStringList &drillLines);
+// The entries of the drill table on lines no wider than 'width' mm, in the
+// header's text, a few spaces between two on a line; an entry wider than
+// that on a line alone. None for no entries.
+QStringList boardPrintDrillLines(const QStringList &entries, double width);
 
 } // namespace ppcb

@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A long drill table goes on to more lines instead of off the page, and the silkscreen print has no empty line for it
 - F: The title block prints the revision as "Revision: B", and Project properties has Next beside it
 - F: Export Gerber and drill files asks for the revision first, with Next for the one after it, and writes it into the project
 ## v0.13.339 (2026-11-25)
