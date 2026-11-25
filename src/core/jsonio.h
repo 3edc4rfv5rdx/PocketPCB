@@ -25,6 +25,7 @@ extern const char FILE_TYPE_SYMBOL[];
 extern const char FILE_TYPE_FOOTPRINT[];
 extern const char FILE_TYPE_PART[];
 extern const char FILE_TYPE_VIEW[];
+extern const char FILE_TYPE_VERSION[];
 
 // "<place>: <message>", or the message alone when there is no place.
 QString withPlace(const QString &place, const QString &message);
@@ -164,6 +165,9 @@ public:
     static bool read(const QString &path, QJsonObject &root, QString &error);
     // Writes through a temporary file, so a failure leaves the old file intact.
     static bool write(const QString &path, const QJsonObject &root, QString &error);
+    // The same for a file of any kind: all it holds, or 'data' written whole.
+    static bool readData(const QString &path, QByteArray &data, QString &error);
+    static bool writeData(const QString &path, const QByteArray &data, QString &error);
     // Makes 'folder' with the folders above it that are missing; nothing to
     // do when it is there.
     static bool makeFolder(const QString &folder, QString &error);

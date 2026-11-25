@@ -3,6 +3,7 @@
 #include "document.h"
 #include "format.h"
 #include "gerber.h"
+#include "jsonio.h"
 #include "paint.h"
 
 #include <QCoreApplication>
@@ -13,8 +14,6 @@
 #include <QFileInfo>
 #include <QFormLayout>
 #include <QLineEdit>
-#include <QRegularExpression>
-#include <QSaveFile>
 
 namespace ppcb {
 
@@ -25,8 +24,8 @@ const char GERBER_FOLDER[] = "gerber";
 // Writes 'data' into 'path' whole, or leaves what was there.
 bool writeFile(const QString &path, const QByteArray &data)
 {
-    QSaveFile file(path);
-    return file.open(QIODevice::WriteOnly) && file.write(data) == data.size() && file.commit();
+    QString unused;
+    return JsonFile::writeData(path, data, unused);
 }
 
 } // namespace
@@ -38,12 +37,7 @@ QString exportGerberTitle()
 
 QString gerberArchiveName(const QString &project, const QString &revision, const QDate &date)
 {
-    QString name = project;
-    QString safe = revision.trimmed();
-    safe.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9._-]")), QStringLiteral("_"));
-    if (!safe.isEmpty())
-        name += QStringLiteral("-rev") + safe;
-    return name + QLatin1Char('-') + date.toString(QStringLiteral("yyyyMMdd"))
+    return project + revisionInFileName(revision) + QLatin1Char('-') + date.toString(QStringLiteral("yyyyMMdd"))
            + QStringLiteral("-gerber.zip");
 }
 

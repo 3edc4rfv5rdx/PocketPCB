@@ -2,6 +2,9 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QRegularExpression>
+
+#include <algorithm>
 
 namespace ppcb {
 
@@ -13,6 +16,7 @@ const char PROJECT_BACKUP_FOLDER[] = "backup";
 const char PROJECT_HISTORY_FOLDER[] = "history";
 const char PROJECT_AUTOSAVE_FOLDER[] = "autosave";
 const char PROJECT_OUTPUT_FOLDER[] = "out";
+const char PROJECT_VERSIONS_FOLDER[] = "versions";
 
 const char NET_CLASS_SIGNAL[] = "Signal";
 const char NET_CLASS_POWER[] = "Power";
@@ -498,6 +502,13 @@ QString nextRevision(const QString &revision)
     return text;
 }
 
+QString revisionInFileName(const QString &revision)
+{
+    QString safe = revision.trimmed();
+    safe.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9._-]")), QStringLiteral("_"));
+    return safe.isEmpty() ? QString() : QStringLiteral("-rev") + safe;
+}
+
 bool operator==(const TitleBlock &a, const TitleBlock &b)
 {
     return a.title == b.title && a.author == b.author && a.organization == b.organization
@@ -681,6 +692,19 @@ QString DesignFiles::historyPath(const QString &projectPath)
 QString DesignFiles::outputPath(const QString &projectPath)
 {
     return besideProject(projectPath, QLatin1String(PROJECT_OUTPUT_FOLDER));
+}
+
+QString DesignFiles::versionsPath(const QString &projectPath)
+{
+    return besideProject(projectPath, QLatin1String(PROJECT_VERSIONS_FOLDER));
+}
+
+int highestFileNumber(const QString &folder, const QString &nameFilter, QChar separator)
+{
+    int highest = 0;
+    for (const QString &file : QDir(folder).entryList({nameFilter}, QDir::Files))
+        highest = std::max(highest, file.section(separator, 0, 0).toInt());
+    return highest;
 }
 
 QString DesignFiles::autosaveProjectPath(const QString &projectPath)

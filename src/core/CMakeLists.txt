@@ -27,6 +27,7 @@ add_library(pocketpcb_core STATIC
     project.h project.cpp
     ratsnest.h ratsnest.cpp
     projectview.h projectview.cpp
+    projectversions.h projectversions.cpp
     library.h library.cpp
     drc.h drc.cpp
     erc.h erc.cpp

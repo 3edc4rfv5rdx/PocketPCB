@@ -19,6 +19,7 @@ const char FILE_TYPE_SYMBOL[] = "pocketpcb-symbol";
 const char FILE_TYPE_FOOTPRINT[] = "pocketpcb-footprint";
 const char FILE_TYPE_PART[] = "pocketpcb-part";
 const char FILE_TYPE_VIEW[] = "pocketpcb-view";
+const char FILE_TYPE_VERSION[] = "pocketpcb-version";
 
 namespace {
 
@@ -407,7 +408,7 @@ bool JsonFile::makeFolder(const QString &folder, QString &error)
     return false;
 }
 
-bool JsonFile::read(const QString &path, QJsonObject &root, QString &error)
+bool JsonFile::readData(const QString &path, QByteArray &data, QString &error)
 {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -415,7 +416,26 @@ bool JsonFile::read(const QString &path, QJsonObject &root, QString &error)
                                     + file.errorString() + QLatin1Char(')'));
         return false;
     }
-    const QByteArray data = file.readAll();
+    data = file.readAll();
+    return true;
+}
+
+bool JsonFile::writeData(const QString &path, const QByteArray &data, QString &error)
+{
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly) || file.write(data) != data.size() || !file.commit()) {
+        error = withPlace(path, tr("cannot write the file") + QLatin1String(" (")
+                                    + file.errorString() + QLatin1Char(')'));
+        return false;
+    }
+    return true;
+}
+
+bool JsonFile::read(const QString &path, QJsonObject &root, QString &error)
+{
+    QByteArray data;
+    if (!readData(path, data, error))
+        return false;
 
     QJsonParseError parseError;
     const QJsonDocument document = QJsonDocument::fromJson(data, &parseError);
@@ -436,14 +456,7 @@ bool JsonFile::read(const QString &path, QJsonObject &root, QString &error)
 
 bool JsonFile::write(const QString &path, const QJsonObject &root, QString &error)
 {
-    QSaveFile file(path);
-    const QByteArray data = QJsonDocument(root).toJson(QJsonDocument::Indented);
-    if (!file.open(QIODevice::WriteOnly) || file.write(data) != data.size() || !file.commit()) {
-        error = withPlace(path, tr("cannot write the file") + QLatin1String(" (")
-                                    + file.errorString() + QLatin1Char(')'));
-        return false;
-    }
-    return true;
+    return writeData(path, QJsonDocument(root).toJson(QJsonDocument::Indented), error);
 }
 
 } // namespace ppcb

@@ -692,6 +692,14 @@
 <context>
     <name>ppcb::MainWindow</name>
     <message>
+        <source>Save version</source>
+        <translation>Зберегти версію</translation>
+    </message>
+    <message>
+        <source>What changed</source>
+        <translation>Що змінилося</translation>
+    </message>
+    <message>
         <source>Open last project</source>
         <translation>Відкрити останній проект</translation>
     </message>

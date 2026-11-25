@@ -1,5 +1,7 @@
 #include "stephistory.h"
 
+#include "project.h"
+
 #include <QDir>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -37,9 +39,7 @@ bool writeStep(const QString &folder, const QString &name, int page, const QStri
     if (!dir.mkpath(QStringLiteral(".")))
         return false;
     const QStringList nameFilter = {QStringLiteral("*.json")};
-    int last = 0;
-    for (const QString &file : dir.entryList(nameFilter, QDir::Files))
-        last = qMax(last, file.section(QLatin1Char(' '), 0, 0).toInt());
+    const int last = highestFileNumber(folder, nameFilter.first(), QLatin1Char(' '));
 
     QJsonObject root;
     root.insert(QStringLiteral("step"), name);

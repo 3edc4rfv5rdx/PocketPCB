@@ -28,6 +28,7 @@
 #include "updateboarddialog.h"
 #include "updatepartsdialog.h"
 #include "stephistory.h"
+#include "projectversions.h"
 #include "libraryviewitem.h"
 #include "saveprojectdialog.h"
 #include "schematicprint.h"
@@ -47,7 +48,9 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFileSystemWatcher>
+#include <QDateTime>
 #include <QInputDialog>
+#include <QLineEdit>
 #include <QWidgetAction>
 #include <QGraphicsScene>
 #include <QGridLayout>
@@ -419,6 +422,9 @@ void MainWindow::createMenus()
     saveAsAction->setObjectName(QStringLiteral("actionSaveProjectAs"));
     saveAsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
     connect(saveAsAction, &QAction::triggered, this, &MainWindow::chooseProjectToSaveAs);
+    QAction *versionAction = fileMenu->addAction(tr("Save version") + QStringLiteral("…"));
+    versionAction->setObjectName(QStringLiteral("actionSaveVersion"));
+    connect(versionAction, &QAction::triggered, this, &MainWindow::saveVersion);
     fileMenu->addSeparator();
 
     QAction *printAction = fileMenu->addAction(printSchematicTitle() + QStringLiteral("…"));
@@ -1485,6 +1491,27 @@ bool MainWindow::saveProject()
     }
     showStatus(m_document->projectPath());
     return true;
+}
+
+void MainWindow::saveVersion()
+{
+    bool ok = false;
+    const QString description =
+        QInputDialog::getText(this, tr("Save version"), tr("What changed") + QLatin1Char(':'),
+                              QLineEdit::Normal, QString(), &ok)
+            .trimmed();
+    if (!ok)
+        return;
+    if ((m_document->projectPath().isEmpty() || m_document->isModified()) && !saveProject())
+        return;
+    QString path;
+    QString error;
+    if (!saveProjectVersion(m_document->projectPath(), m_document->design().project, description,
+                            QDateTime::currentDateTime(), path, error)) {
+        QMessageBox::warning(this, tr("Save version"), error);
+        return;
+    }
+    showStatus(writtenMessage(path));
 }
 
 bool MainWindow::chooseProjectToSaveAs()

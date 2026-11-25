@@ -212,6 +212,9 @@ private:
     // Both return true when the project was saved.
     bool saveProject();
     bool chooseProjectToSaveAs();
+    // File > Save version: asks what changed, saves the project when it is
+    // not saved, and makes its next version (saveProjectVersion()).
+    void saveVersion();
     // File > Update parts from library: the parts chosen in the dialog
     // (partDifferences(), withPartsUpdated()) as one step.
     void updatePartsFromLibrary();

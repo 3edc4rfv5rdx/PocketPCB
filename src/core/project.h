@@ -26,6 +26,8 @@ extern const char PROJECT_HISTORY_FOLDER[];
 extern const char PROJECT_AUTOSAVE_FOLDER[];
 // The folder of the files made from the project, beside it too.
 extern const char PROJECT_OUTPUT_FOLDER[];
+// The folder of the versions of the project, beside it too.
+extern const char PROJECT_VERSIONS_FOLDER[];
 
 // Names of the two net classes a new project starts with, which are also its
 // default class and its power class (see Project).
@@ -171,6 +173,11 @@ struct Project
 // "rev-1").
 QString nextRevision(const QString &revision);
 
+// "-revB" for revision "B" in the name of a file made from the project:
+// trimmed, characters other than letters, digits, '.', '-' and '_' made
+// '_'; nothing for an empty revision.
+QString revisionInFileName(const QString &revision);
+
 bool operator==(const TitleBlock &a, const TitleBlock &b);
 bool operator==(const NetClass &a, const NetClass &b);
 bool operator==(const Rules &a, const Rules &b);
@@ -216,6 +223,11 @@ Design newDesign(const QString &baseName);
 // power symbol, a footprint. Each names the missing file, as "library/parts/diode.json".
 QStringList missingLibraryItems(const Design &design);
 
+// The highest number the names of the files in 'folder' matching
+// 'nameFilter' ("*.zip") start with, the number ending at 'separator'; 0
+// for none.
+int highestFileNumber(const QString &folder, const QString &nameFilter, QChar separator);
+
 // The three files and the library folder together. 'projectPath' is the
 // .ppcb file; the other two files are found beside it by the names it
 // holds, the library folder beside it as well. On failure both return false
@@ -233,6 +245,8 @@ public:
     static QString historyPath(const QString &projectPath);
     // Where the files made from the project go: the BOM, later Gerber.
     static QString outputPath(const QString &projectPath);
+    // Where the versions of the project go (projectversions.h).
+    static QString versionsPath(const QString &projectPath);
     // The project file of the autosaved copy: the project's own name inside
     // the autosave folder. The copy is a whole project of its own there.
     static QString autosaveProjectPath(const QString &projectPath);
