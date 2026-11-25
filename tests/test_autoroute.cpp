@@ -280,6 +280,41 @@ private slots:
         QCOMPARE(kept.unrouted, 1);
     }
 
+    // A bare link keeps from under a part when a short way round finds one
+    // clear of it: a part with pads 6 mm apart stands across the wall on
+    // the straight way.
+    void aWireLinkKeepsFromUnderAPart()
+    {
+        Design design = twoParts();
+        design.board.copper = CopperSides::Top;
+        design.board.tracks = {wall(BoardSide::Top)};
+        Footprint upright;
+        Pad pad;
+        pad.number = QStringLiteral("1");
+        pad.at = mm(0, -3);
+        pad.sizeX = pad.sizeY = mmToNm(1.6);
+        pad.hole = mmToNm(0.8);
+        upright.pads.append(pad);
+        pad.number = QStringLiteral("2");
+        pad.at = mm(0, 3);
+        upright.pads.append(pad);
+        design.library.footprints.insert(QStringLiteral("upright"), upright);
+        Placement raised;
+        raised.id = newObjectId();
+        raised.footprint = QStringLiteral("upright");
+        raised.at = mm(20, 15.24);
+        design.board.placements.append(raised);
+        const AutorouteResult result = autorouted(design);
+        QCOMPARE(result.unrouted, 0);
+        QCOMPARE(result.links, 1);
+        const WireLink &link = result.board.links.first();
+        const QRectF body = placementRect(raised, design.library);
+        const double half = nmToMm(WIRE_LINK_WIRE) / 2;
+        const QRectF wire =
+            QRectF(toMm(link.from), toMm(link.to)).normalized().adjusted(-half, -half, half, half);
+        QVERIFY(!body.intersects(wire));
+    }
+
     void anInsulatedLinkCrossesWhatABareOneCannot()
     {
         // A board of one side 80 mm wide; pad 1 of net A at (7.62, 15.24) and

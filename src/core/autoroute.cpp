@@ -36,6 +36,9 @@ const int LINK_COST = 40 * STRAIGHT_COST;
 const Coord LINK_PITCH = 2540000;
 const Coord LINK_SHORTEST = 2 * LINK_PITCH;
 const Coord LINK_LONGEST = 12 * LINK_PITCH;
+// What a bare link adds when its wire passes under a part, which it may do
+// under a raised one: as dear as a way round of this many steps.
+const int UNDER_PART_COST = 20 * STRAIGHT_COST;
 // An insulated link, any way and length up to this, when neither a track nor
 // a bare link finds a way, dearer than a bare one; it lands within this many
 // millimetres of what it goes to.
@@ -534,7 +537,15 @@ bool Router::route(const RatsnestLine &line)
         // Two links of one way a track apart: their pads and the room
         // between them, in steps.
         rules.jumpSpacing = int(std::ceil((2 * linkPad + gap) / nmToMm(m_step)));
-        rules.jumps = [this, &grid, &padFits, &linkClear](const GridNode &at) {
+        // A wire passing under a part: under the body of a placement.
+        const auto underPart = [&bodies, wireHalf](const Point &a, const Point &b) {
+            const QRectF wire =
+                QRectF(toMm(a), toMm(b)).normalized().adjusted(-wireHalf, -wireHalf, wireHalf,
+                                                               wireHalf);
+            return std::any_of(bodies.cbegin(), bodies.cend(),
+                               [&wire](const QRectF &body) { return body.intersects(wire); });
+        };
+        rules.jumps = [this, &grid, &padFits, &linkClear, underPart](const GridNode &at) {
             QList<GridJump> jumps;
             if (!padFits(at))
                 return jumps;
@@ -548,7 +559,8 @@ bool Router::route(const RatsnestLine &line)
                     const GridNode to{at.column + columns * cells, at.row + rows * cells, at.layer};
                     if (!grid.contains(to) || !padFits(to) || !linkClear(from, grid.point(to)))
                         continue;
-                    jumps.append(GridJump{to, LINK_COST + cells * STRAIGHT_COST});
+                    const int under = underPart(from, grid.point(to)) ? UNDER_PART_COST : 0;
+                    jumps.append(GridJump{to, LINK_COST + cells * STRAIGHT_COST + under});
                 }
             }
             return jumps;
