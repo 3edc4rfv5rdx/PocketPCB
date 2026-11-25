@@ -42,35 +42,43 @@ QString gerberArchiveName(const QString &project, const QString &revision, const
            + QStringLiteral("-gerber.zip");
 }
 
-QString exportGerber(const Document &document)
+bool exportGerber(const Document &document, QString &message)
 {
     const Design &design = document.design();
-    if (design.board.outline.isEmpty())
-        return QCoreApplication::translate("ppcb::GerberExport", "The board has no outline");
+    if (design.board.outline.isEmpty()) {
+        message = QCoreApplication::translate("ppcb::GerberExport", "The board has no outline");
+        return false;
+    }
     // The output folder, made when missing.
-    QString problem;
     const QString anyOutput =
-        projectOutputFile(document.projectPath(), QString(), QStringLiteral("zip"), problem);
+        projectOutputFile(document.projectPath(), QString(), QStringLiteral("zip"), message);
     if (anyOutput.isEmpty())
-        return problem;
+        return false;
     const QDir output = QFileInfo(anyOutput).dir();
     const QString folder = output.filePath(QLatin1String(GERBER_FOLDER));
-    if (!QDir().mkpath(folder))
-        return cannotWriteMessage(folder);
+    if (!QDir().mkpath(folder)) {
+        message = cannotWriteMessage(folder);
+        return false;
+    }
 
     const QString name = projectName(document.projectPath());
     const QList<OutputFile> files = gerberFiles(design, name);
     for (const OutputFile &file : files) {
         const QString path = QDir(folder).filePath(file.name);
-        if (!writeFile(path, file.data))
-            return cannotWriteMessage(path);
+        if (!writeFile(path, file.data)) {
+            message = cannotWriteMessage(path);
+            return false;
+        }
     }
     const QDateTime now = QDateTime::currentDateTime();
     const QString archive = output.filePath(
         gerberArchiveName(name, design.project.titleBlock.revision, now.date()));
-    if (!writeFile(archive, zipArchive(files, now)))
-        return cannotWriteMessage(archive);
-    return writtenMessage(archive);
+    if (!writeFile(archive, zipArchive(files, now))) {
+        message = cannotWriteMessage(archive);
+        return false;
+    }
+    message = writtenMessage(archive);
+    return true;
 }
 
 } // namespace ppcb

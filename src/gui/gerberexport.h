@@ -18,7 +18,8 @@ QString gerberArchiveName(const QString &project, const QString &revision, const
 
 // Writes the board's Gerber and drill files (gerberFiles()) into the
 // "gerber" folder of the project's output folder, and all of them into an
-// archive beside it (gerberArchiveName(), today). What to tell the user.
-QString exportGerber(const Document &document);
+// archive beside it (gerberArchiveName(), today). False when they could not
+// be written; 'message' says what to tell the user either way.
+bool exportGerber(const Document &document, QString &message);
 
 } // namespace ppcb

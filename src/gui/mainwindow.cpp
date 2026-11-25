@@ -445,8 +445,14 @@ void MainWindow::createMenus()
     });
     QAction *gerberAction = fileMenu->addAction(exportGerberTitle());
     gerberAction->setObjectName(QStringLiteral("actionExportGerber"));
-    connect(gerberAction, &QAction::triggered, this,
-            [this] { showStatus(exportGerber(*m_document)); });
+    // A box says it is done, or what went wrong.
+    connect(gerberAction, &QAction::triggered, this, [this] {
+        QString message;
+        if (exportGerber(*m_document, message))
+            QMessageBox::information(this, exportGerberTitle(), message);
+        else
+            QMessageBox::warning(this, exportGerberTitle(), message);
+    });
     fileMenu->addSeparator();
 
     QAction *propertiesAction =
