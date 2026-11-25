@@ -223,8 +223,13 @@ private:
     // is done, offering to start the next revision, or what went wrong.
     void exportGerberFiles();
     // File > Save version: asks what changed, saves the project when it is
-    // not saved, and makes its next version (saveProjectVersion()).
-    void saveVersion();
+    // not saved, and makes its next version (saveProjectVersion()). True
+    // when the version was made.
+    bool saveVersion();
+    // Puts version 'number', the archive 'path', in place of the design as
+    // one step, asking first whether to keep what changed since the newest
+    // version as a version; written to disk only by saving.
+    void restoreVersion(int number, const QString &path);
     // File > Update parts from library: the parts chosen in the dialog
     // (partDifferences(), withPartsUpdated()) as one step.
     void updatePartsFromLibrary();

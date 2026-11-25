@@ -3,12 +3,14 @@
 #include "jsonio.h"
 #include "zipfile.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QMap>
+#include <QTemporaryDir>
 
 #include <algorithm>
 #include <climits>
@@ -143,6 +145,14 @@ bool readVersion(const QString &path, ProjectVersion &version)
     return false;
 }
 
+// True when the newest version of the project at 'projectPath' holds
+// 'files'.
+bool newestVersionHolds(const QString &projectPath, const QList<OutputFile> &files)
+{
+    const QString newest = newestVersion(DesignFiles::versionsPath(projectPath));
+    return !newest.isEmpty() && versionHolds(newest, files);
+}
+
 // Writes 'files' of the project at 'projectPath' as its next version.
 bool writeVersion(const QString &projectPath, QList<OutputFile> files, const QString &revision,
                   const QString &description, const QDateTime &made, QString &path,
@@ -201,6 +211,16 @@ QList<ProjectVersion> projectVersions(const QString &projectPath)
     return versions;
 }
 
+bool projectChangedSinceVersion(const QString &projectPath, const Project &project,
+                                bool &changed, QString &error)
+{
+    QList<OutputFile> files;
+    if (!projectFiles(projectPath, project, files, error))
+        return false;
+    changed = !newestVersionHolds(projectPath, files);
+    return true;
+}
+
 bool saveChangedProjectVersion(const QString &projectPath, const Project &project,
                                const QString &description, const QDateTime &made,
                                QString &path, QString &error)
@@ -209,11 +229,50 @@ bool saveChangedProjectVersion(const QString &projectPath, const Project &projec
     QList<OutputFile> files;
     if (!projectFiles(projectPath, project, files, error))
         return false;
-    const QString newest = newestVersion(DesignFiles::versionsPath(projectPath));
-    if (!newest.isEmpty() && versionHolds(newest, files))
+    if (newestVersionHolds(projectPath, files))
         return true;
     return writeVersion(projectPath, files, project.titleBlock.revision, description, made, path,
                         error);
+}
+
+bool readProjectVersion(const QString &path, Design &design, QString &error)
+{
+    const QString cannotRead = withPlace(
+        path, QCoreApplication::translate("ppcb::ProjectVersions", "the version cannot be read"));
+    QByteArray archive;
+    QList<ZipEntry> entries;
+    if (!JsonFile::readData(path, archive, error))
+        return false;
+    QTemporaryDir copy;
+    if (!copy.isValid() || !zipEntries(archive, entries)) {
+        error = cannotRead;
+        return false;
+    }
+    // The files unpacked into a folder of their own, read as a project.
+    const QDir folder(copy.path());
+    QString projectPath;
+    for (const ZipEntry &entry : entries) {
+        if (entry.name == QLatin1String(VERSION_INFO_FILE))
+            continue;
+        // Only names inside the folder.
+        const QString target = QDir::cleanPath(folder.filePath(entry.name));
+        QByteArray data;
+        if (QDir::isAbsolutePath(entry.name) || entry.name.contains(QLatin1String(".."))
+            || !zipFileData(archive, entry, data)
+            || !JsonFile::makeFolder(QFileInfo(target).path(), error)
+            || !JsonFile::writeData(target, data, error)) {
+            error = cannotRead;
+            return false;
+        }
+        if (!entry.name.contains(QLatin1Char('/'))
+            && entry.name.endsWith(QLatin1String(FILE_EXT_PROJECT)))
+            projectPath = target;
+    }
+    if (projectPath.isEmpty()) {
+        error = cannotRead;
+        return false;
+    }
+    return DesignFiles::read(projectPath, design, error);
 }
 
 } // namespace ppcb

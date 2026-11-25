@@ -692,6 +692,14 @@
 <context>
     <name>ppcb::MainWindow</name>
     <message>
+        <source>Save the current project as a version first</source>
+        <translation>Сначала сохранить текущий проект как версию</translation>
+    </message>
+    <message>
+        <source>Restore version %1</source>
+        <translation>Вернуть версию %1</translation>
+    </message>
+    <message>
         <source>Start revision %1</source>
         <translation>Начать ревизию %1</translation>
     </message>
@@ -2073,6 +2081,10 @@
 <context>
     <name>ppcb::VersionsPanel</name>
     <message>
+        <source>Restore this version</source>
+        <translation>Вернуть эту версию</translation>
+    </message>
+    <message>
         <source>Versions</source>
         <translation>Версии</translation>
     </message>
@@ -2091,6 +2103,13 @@
     <message>
         <source>Cannot be read</source>
         <translation>Не читается</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::ProjectVersions</name>
+    <message>
+        <source>the version cannot be read</source>
+        <translation>версию не удаётся прочитать</translation>
     </message>
 </context>
 </TS>

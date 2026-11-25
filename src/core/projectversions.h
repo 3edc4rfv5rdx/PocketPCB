@@ -46,6 +46,16 @@ bool saveChangedProjectVersion(const QString &projectPath, const Project &projec
                                const QString &description, const QDateTime &made,
                                QString &path, QString &error);
 
+// Whether the files of the project saved at 'projectPath' are not those of
+// its newest version, or there is none. False, with 'error', when they
+// cannot be read.
+bool projectChangedSinceVersion(const QString &projectPath, const Project &project,
+                                bool &changed, QString &error);
+
+// The design kept in the version archive 'path', read as a project
+// (DesignFiles::read()). False, with 'error', when it cannot be.
+bool readProjectVersion(const QString &path, Design &design, QString &error);
+
 // The versions of the project at 'projectPath', the newest first. One whose
 // archive or VERSION_INFO_FILE cannot be read is listed by its archive and
 // the number in its name, not 'readable'.

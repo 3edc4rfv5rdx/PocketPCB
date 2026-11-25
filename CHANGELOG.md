@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Restore this version in the Versions panel brings an old version back as one step
 - E: An empty file in a zip archive is stored, as unpacking needs
 - N: View > Versions lists the versions of the project, the newest first, with date, revision and description
 - F: The revision box before Gerber export has no Next any more; the box after it offers to start the next revision

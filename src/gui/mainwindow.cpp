@@ -289,6 +289,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_versionsDock->setWidget(m_versionsPanel);
     splitDockWidget(m_bomDock, m_versionsDock, Qt::Vertical);
     m_versionsDock->hide();
+    connect(m_versionsPanel, &VersionsPanel::restoreRequested, this, &MainWindow::restoreVersion);
     connect(m_bomPanel, &BomPanel::componentsChosen, this, &MainWindow::showComponents);
     // A problem chosen there is shown: its sheet, centred on it, with what
     // it is about chosen; a missing value is typed in at once.
@@ -1535,7 +1536,7 @@ void MainWindow::exportGerberFiles()
     QMessageBox::warning(this, exportGerberTitle(), message);
 }
 
-void MainWindow::saveVersion()
+bool MainWindow::saveVersion()
 {
     bool ok = false;
     const QString description =
@@ -1543,18 +1544,46 @@ void MainWindow::saveVersion()
                               QLineEdit::Normal, QString(), &ok)
             .trimmed();
     if (!ok)
-        return;
+        return false;
     if ((m_document->projectPath().isEmpty() || m_document->isModified()) && !saveProject())
-        return;
+        return false;
     QString path;
     QString error;
     if (!saveProjectVersion(m_document->projectPath(), m_document->design().project, description,
                             QDateTime::currentDateTime(), path, error)) {
         QMessageBox::warning(this, tr("Save version"), error);
-        return;
+        return false;
     }
     showStatus(writtenMessage(path));
     m_versionsPanel->refresh();
+    return true;
+}
+
+void MainWindow::restoreVersion(int number, const QString &path)
+{
+    // What is not kept in a version yet may be kept first.
+    bool changed = m_document->isModified();
+    QString error;
+    if (!changed
+        && !projectChangedSinceVersion(m_document->projectPath(), m_document->design().project,
+                                       changed, error))
+        changed = true;
+    if (changed) {
+        QMessageBox box(QMessageBox::Question, VersionsPanel::restoreTitle(),
+                        tr("Save the current project as a version first") + QLatin1Char('?'),
+                        QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, this);
+        box.setObjectName(QStringLiteral("saveBeforeRestoreBox"));
+        box.setDefaultButton(QMessageBox::Yes);
+        const int answer = box.exec();
+        if (answer == QMessageBox::Cancel || (answer == QMessageBox::Yes && !saveVersion()))
+            return;
+    }
+    Design design;
+    if (!readProjectVersion(path, design, error)) {
+        QMessageBox::warning(this, VersionsPanel::restoreTitle(), error);
+        return;
+    }
+    m_document->change(tr("Restore version %1").arg(number), design);
 }
 
 bool MainWindow::chooseProjectToSaveAs()

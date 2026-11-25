@@ -1,4 +1,5 @@
 #include "jsonio.h"
+#include "objectid.h"
 #include "projectversions.h"
 
 #include <QDir>
@@ -127,6 +128,47 @@ private slots:
         QCOMPARE(versions.at(2).number, 1);
         QCOMPARE(versions.at(2).made, first);
         QCOMPARE(versions.at(2).description, QStringLiteral("Start"));
+    }
+
+    // A version read back is the design it was made of, and the project
+    // counts as changed since the newest version once its files change.
+    void aVersionIsReadBack()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString projectPath = QDir(dir.path()).filePath(QStringLiteral("amp.ppcb"));
+        Design design = newDesign(QStringLiteral("amp"));
+        design.project.titleBlock.revision = QStringLiteral("A");
+        QString error;
+        QVERIFY(DesignFiles::write(projectPath, design, error));
+        bool changed = false;
+        QVERIFY(projectChangedSinceVersion(projectPath, design.project, changed, error));
+        QVERIFY(changed); // no version yet
+        const QDateTime made(QDate(2026, 11, 25), QTime(14, 30));
+        QString path;
+        QVERIFY(saveProjectVersion(projectPath, design.project, QStringLiteral("A"), made, path,
+                                   error));
+        QVERIFY(projectChangedSinceVersion(projectPath, design.project, changed, error));
+        QVERIFY(!changed);
+
+        Design later = design;
+        later.project.titleBlock.revision = QStringLiteral("B");
+        later.schematic.sheets.append(Sheet());
+        later.schematic.sheets.last().id = newObjectId();
+        QVERIFY(DesignFiles::write(projectPath, later, error));
+        QVERIFY(projectChangedSinceVersion(projectPath, later.project, changed, error));
+        QVERIFY(changed);
+
+        Design restored;
+        QVERIFY2(readProjectVersion(path, restored, error), qPrintable(error));
+        Design expected;
+        QVERIFY(DesignFiles::read(projectPath, expected, error)); // the reading of 'later'
+        QVERIFY(restored != expected);
+        QCOMPARE(restored.project.titleBlock.revision, QStringLiteral("A"));
+        QCOMPARE(restored.schematic.sheets.size(), 1);
+
+        QVERIFY(!readProjectVersion(QDir(dir.path()).filePath(QStringLiteral("none.zip")),
+                                    restored, error));
     }
 
     // A file that cannot be read stops the version, naming the file.
