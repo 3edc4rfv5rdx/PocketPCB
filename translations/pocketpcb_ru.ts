@@ -672,6 +672,10 @@
 <context>
     <name>ppcb::MainWindow</name>
     <message>
+        <source>Brighter grid while held</source>
+        <translation>Сетка ярче, пока кнопка нажата</translation>
+    </message>
+    <message>
         <source>Show on schematic</source>
         <translation>Показать на схеме</translation>
     </message>

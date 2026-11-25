@@ -261,6 +261,13 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         dot(painter, {13, 15.5}, color);
         break;
     }
+    case ToolIcon::BrightGrid:
+        // A grid of three lines each way.
+        for (const qreal at : {6.0, 12.0, 18.0}) {
+            painter.drawLine(QPointF(at, 3), QPointF(at, 21));
+            painter.drawLine(QPointF(3, at), QPointF(21, at));
+        }
+        break;
     case ToolIcon::Library:
         painter.drawRect(QRectF(3, 5, 4, 15));
         painter.drawRect(QRectF(9, 5, 4, 15));

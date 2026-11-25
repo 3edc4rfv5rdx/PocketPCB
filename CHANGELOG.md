@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: The grid is a little brighter, and a button beside Actual size makes it much brighter while held
 - N: Properties in the menu of a part on the schematic opens the Properties panel ready for typing
 - I: The build script prints the time right after the build result
 - E: Moving a piece of track by hand or by Spread tracks stretches a track ending on its middle instead of leaving it cut off

@@ -46,6 +46,8 @@ public:
     // Ignores a step that is not positive.
     void setGridStep(ppcb::Coord step);
     void setGridStyle(ppcb::GridStyle style);
+    // The grid drawn much brighter, while a button is held.
+    void setGridBright(bool bright);
     void setCursorStyle(ppcb::CursorStyle style);
     void setZoomCenterAndWarp(bool on);
     // The colour under the grid; white at first.
@@ -104,6 +106,7 @@ private:
 
     Coord m_gridStep;
     GridStyle m_gridStyle = GridStyle::Lines;
+    bool m_gridBright = false;
     CursorStyle m_cursorStyle = CursorStyle::SmallCross;
     bool m_zoomCenterAndWarp = true;
     QColor m_background;

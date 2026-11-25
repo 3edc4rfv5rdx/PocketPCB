@@ -34,11 +34,16 @@ const int FIT_MARGIN = 4;
 
 // The grid and the cursor on a light background, and on a dark one (the
 // board).
-const QColor GRID_LINE_COLOR(224, 224, 224);
-const QColor GRID_DOT_COLOR(150, 150, 150);
+const QColor GRID_LINE_COLOR(205, 205, 205);
+const QColor GRID_DOT_COLOR(125, 125, 125);
 const QColor CURSOR_COLOR(60, 60, 60);
-const QColor DARK_GRID_LINE_COLOR(45, 45, 45);
-const QColor DARK_GRID_DOT_COLOR(110, 110, 110);
+const QColor DARK_GRID_LINE_COLOR(65, 65, 65);
+const QColor DARK_GRID_DOT_COLOR(135, 135, 135);
+// The grid while it is lit (setGridBright()).
+const QColor BRIGHT_GRID_LINE_COLOR(170, 170, 170);
+const QColor BRIGHT_GRID_DOT_COLOR(80, 80, 80);
+const QColor DARK_BRIGHT_GRID_LINE_COLOR(100, 100, 100);
+const QColor DARK_BRIGHT_GRID_DOT_COLOR(180, 180, 180);
 const QColor DARK_CURSOR_COLOR(210, 210, 210);
 // A background darker than this lightness (0 to 255) is dark.
 const int DARK_LIGHTNESS = 128;
@@ -94,6 +99,14 @@ void CanvasView::setGridStep(Coord step)
 void CanvasView::setGridStyle(GridStyle style)
 {
     m_gridStyle = style;
+    viewport()->update();
+}
+
+void CanvasView::setGridBright(bool bright)
+{
+    if (bright == m_gridBright)
+        return;
+    m_gridBright = bright;
     viewport()->update();
 }
 
@@ -178,7 +191,10 @@ void CanvasView::drawBackground(QPainter *painter, const QRectF &rect)
             lines.append(QLineF(rect.left(), y, rect.right(), y));
         }
         // Width 0: one pixel at any zoom.
-        painter->setPen(QPen(isDark() ? DARK_GRID_LINE_COLOR : GRID_LINE_COLOR, 0));
+        const QColor color = m_gridBright
+                                 ? (isDark() ? DARK_BRIGHT_GRID_LINE_COLOR : BRIGHT_GRID_LINE_COLOR)
+                                 : (isDark() ? DARK_GRID_LINE_COLOR : GRID_LINE_COLOR);
+        painter->setPen(QPen(color, 0));
         painter->drawLines(lines);
     } else {
         QVector<QPointF> dots;
@@ -186,7 +202,10 @@ void CanvasView::drawBackground(QPainter *painter, const QRectF &rect)
             for (qint64 column = firstColumn; column <= lastColumn; ++column)
                 dots.append(QPointF(column * step, row * step));
         }
-        QPen pen(isDark() ? DARK_GRID_DOT_COLOR : GRID_DOT_COLOR, GRID_DOT_PIXELS);
+        const QColor color = m_gridBright
+                                 ? (isDark() ? DARK_BRIGHT_GRID_DOT_COLOR : BRIGHT_GRID_DOT_COLOR)
+                                 : (isDark() ? DARK_GRID_DOT_COLOR : GRID_DOT_COLOR);
+        QPen pen(color, GRID_DOT_PIXELS);
         pen.setCosmetic(true); // width in pixels, not in millimetres
         painter->setPen(pen);
         painter->drawPoints(dots.constData(), int(dots.size()));

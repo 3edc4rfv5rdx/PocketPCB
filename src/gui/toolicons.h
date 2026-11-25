@@ -38,6 +38,7 @@ enum class ToolIcon {
     ZoomFit,
     ZoomFitDrawing,
     ActualSize,
+    BrightGrid,
     Library,
     Properties,
     Nets,

@@ -1657,6 +1657,15 @@ void MainWindow::createToolBar()
     put("actionZoomFit", ToolIcon::ZoomFit);
     put("actionZoomFitDrawing", ToolIcon::ZoomFitDrawing);
     put("actionActualSize", ToolIcon::ActualSize);
+    // The grid lit while the button is held down.
+    QAction *brightGrid = new QAction(tr("Brighter grid while held"), this);
+    brightGrid->setObjectName(QStringLiteral("actionBrightGrid"));
+    put("actionBrightGrid", ToolIcon::BrightGrid);
+    if (auto *button = qobject_cast<QToolButton *>(bar->widgetForAction(brightGrid))) {
+        connect(button, &QToolButton::pressed, m_canvas, [this] { m_canvas->setGridBright(true); });
+        connect(button, &QToolButton::released, m_canvas,
+                [this] { m_canvas->setGridBright(false); });
+    }
     stretch();
 
     // The modes in the middle, one pressed: those of the sheet editor or of
