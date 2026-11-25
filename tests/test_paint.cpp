@@ -240,6 +240,21 @@ class TestPaint : public QObject
     Q_OBJECT
 
 private slots:
+    // The title block names the revision; empty fields leave no row.
+    void titleBlockNamesTheRevision()
+    {
+        Schematic schematic = emptySchematic();
+        schematic.sheets.append(Sheet());
+        TitleBlock block;
+        block.title = QStringLiteral("Amplifier");
+        QCOMPARE(titleBlockRows(schematic, 1, block),
+                 (QStringList{QStringLiteral("Amplifier"), QStringLiteral("Sheet 2 of 2")}));
+        block.revision = QStringLiteral("B");
+        QCOMPARE(titleBlockRows(schematic, 0, block),
+                 (QStringList{QStringLiteral("Amplifier"), QStringLiteral("Revision: B"),
+                              QStringLiteral("Sheet 1 of 2")}));
+    }
+
     void pinPointsTowardsTheBody()
     {
         Pin pin;

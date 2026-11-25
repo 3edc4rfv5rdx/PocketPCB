@@ -805,24 +805,9 @@ void paintNoConnect(QPainter &painter, const NoConnect &mark, bool onPin)
 void paintFrame(QPainter &painter, const Schematic &schematic, int index,
                 const TitleBlock &titleBlock)
 {
-    const Sheet &sheet = schematic.sheets.at(index);
-    const QRectF paper = paperRect(sheet);
+    const QRectF paper = paperRect(schematic.sheets.at(index));
     const QRectF frame = paper.adjusted(FRAME_BINDING_MARGIN, FRAME_MARGIN, -FRAME_MARGIN, -FRAME_MARGIN);
-
-    QStringList rows;
-    const QStringList fields = {
-        titleBlock.title,    sheet.title,         titleBlock.author, titleBlock.organization,
-        titleBlock.contacts, titleBlock.revision, titleBlock.date,
-    };
-    for (const QString &field : fields) {
-        if (!field.isEmpty())
-            rows.append(field);
-    }
-    rows.append(QCoreApplication::translate("ppcb::Paint", "Sheet %1 of %2")
-                    .arg(index + 1)
-                    .arg(schematic.sheets.size()));
-    if (!titleBlock.note.isEmpty())
-        rows.append(titleBlock.note);
+    const QStringList rows = titleBlockRows(schematic, index, titleBlock);
 
     const QRectF block(frame.right() - TITLE_BLOCK_WIDTH,
                        frame.bottom() - rows.size() * TITLE_ROW_HEIGHT, TITLE_BLOCK_WIDTH,
@@ -1474,6 +1459,29 @@ QRectF powerNameRect(const PowerSymbol &power, const Library &library)
 QString revisionWord()
 {
     return QCoreApplication::translate("ppcb::Paint", "Revision");
+}
+
+QStringList titleBlockRows(const Schematic &schematic, int index, const TitleBlock &titleBlock)
+{
+    const Sheet &sheet = schematic.sheets.at(index);
+    const QString revision = titleBlock.revision.isEmpty()
+                                 ? QString()
+                                 : revisionWord() + QStringLiteral(": ") + titleBlock.revision;
+    QStringList rows;
+    const QStringList fields = {
+        titleBlock.title,    sheet.title, titleBlock.author, titleBlock.organization,
+        titleBlock.contacts, revision,    titleBlock.date,
+    };
+    for (const QString &field : fields) {
+        if (!field.isEmpty())
+            rows.append(field);
+    }
+    rows.append(QCoreApplication::translate("ppcb::Paint", "Sheet %1 of %2")
+                    .arg(index + 1)
+                    .arg(schematic.sheets.size()));
+    if (!titleBlock.note.isEmpty())
+        rows.append(titleBlock.note);
+    return rows;
 }
 
 QString componentTextShown(const Component &component, ComponentText text,

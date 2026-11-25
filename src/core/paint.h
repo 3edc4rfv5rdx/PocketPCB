@@ -177,6 +177,10 @@ QRectF sheetDrawingBounds(const Sheet &sheet, const Library &library, const Powe
 // "Revision", the title block's field, as the title block and the dialogs
 // name it.
 QString revisionWord();
+// The rows of the title block of sheet 'index', top down: each field of
+// 'titleBlock' that is not empty, the sheet's title second, the revision as
+// "Revision: B", then "Sheet 1 of 2" and the note.
+QStringList titleBlockRows(const Schematic &schematic, int index, const TitleBlock &titleBlock);
 
 // The texts a component shows beside its symbol.
 enum class ComponentText { Designator, Value };
