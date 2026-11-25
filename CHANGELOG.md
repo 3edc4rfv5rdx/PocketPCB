@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- I: Design rules check of the board in the core library, not yet shown in the app
 - I: The build script prints the time it finished
 - N: Wire links get designators (JP1, XN1 in GOST) on the silkscreen, dragged aside like part texts, and are listed in the BOM by wire length
 - E: An autoroute that lays nothing no longer moves the tracks already on the board
