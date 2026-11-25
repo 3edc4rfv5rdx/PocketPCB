@@ -212,6 +212,12 @@ private:
     // Both return true when the project was saved.
     bool saveProject();
     bool chooseProjectToSaveAs();
+    // File > Export Gerber and drill files: asks the revision and writes it
+    // into the project, one step, so that the title block and the archive's
+    // name agree; saves the project, writes the files and keeps a version
+    // when the project changed since the last one. A box says it is done,
+    // or what went wrong.
+    void exportGerberFiles();
     // File > Save version: asks what changed, saves the project when it is
     // not saved, and makes its next version (saveProjectVersion()).
     void saveVersion();

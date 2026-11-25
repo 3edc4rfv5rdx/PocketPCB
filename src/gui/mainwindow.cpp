@@ -451,30 +451,7 @@ void MainWindow::createMenus()
     });
     QAction *gerberAction = fileMenu->addAction(exportGerberTitle());
     gerberAction->setObjectName(QStringLiteral("actionExportGerber"));
-    // The revision is asked first and written into the project, one step,
-    // so that the title block and the archive's name agree; a box says it
-    // is done, or what went wrong.
-    connect(gerberAction, &QAction::triggered, this, [this] {
-        QString message = gerberExportProblem(m_document->design());
-        if (message.isEmpty()) {
-            QString revision = m_document->design().project.titleBlock.revision;
-            if (!askGerberRevision(this, revision))
-                return;
-            if (revision != m_document->design().project.titleBlock.revision) {
-                Design changed = m_document->design();
-                changed.project.titleBlock.revision = revision;
-                m_document->change(revision.isEmpty()
-                                       ? revisionWord()
-                                       : revisionWord() + QLatin1Char(' ') + revision,
-                                   changed);
-            }
-            if (exportGerber(*m_document, message)) {
-                QMessageBox::information(this, exportGerberTitle(), message);
-                return;
-            }
-        }
-        QMessageBox::warning(this, exportGerberTitle(), message);
-    });
+    connect(gerberAction, &QAction::triggered, this, &MainWindow::exportGerberFiles);
     fileMenu->addSeparator();
 
     QAction *propertiesAction =
@@ -1491,6 +1468,43 @@ bool MainWindow::saveProject()
     }
     showStatus(m_document->projectPath());
     return true;
+}
+
+void MainWindow::exportGerberFiles()
+{
+    QString message = gerberExportProblem(m_document->design());
+    if (message.isEmpty()) {
+        QString revision = m_document->design().project.titleBlock.revision;
+        if (!askGerberRevision(this, revision))
+            return;
+        if (revision != m_document->design().project.titleBlock.revision) {
+            Design changed = m_document->design();
+            changed.project.titleBlock.revision = revision;
+            m_document->change(revision.isEmpty() ? revisionWord()
+                                                  : revisionWord() + QLatin1Char(' ') + revision,
+                               changed);
+        }
+        // What goes to the factory is saved, and kept as a version.
+        if ((m_document->projectPath().isEmpty() || m_document->isModified()) && !saveProject())
+            return;
+        if (exportGerber(*m_document, message)) {
+            QString versionPath;
+            QString error;
+            if (!saveChangedProjectVersion(m_document->projectPath(),
+                                           m_document->design().project,
+                                           QStringLiteral("Gerber"),
+                                           QDateTime::currentDateTime(), versionPath, error)) {
+                QMessageBox::warning(this, exportGerberTitle(),
+                                     message + QLatin1Char('\n') + error);
+                return;
+            }
+            if (!versionPath.isEmpty())
+                message += QLatin1Char('\n') + writtenMessage(versionPath);
+            QMessageBox::information(this, exportGerberTitle(), message);
+            return;
+        }
+    }
+    QMessageBox::warning(this, exportGerberTitle(), message);
 }
 
 void MainWindow::saveVersion()

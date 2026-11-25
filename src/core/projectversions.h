@@ -36,4 +36,11 @@ bool saveProjectVersion(const QString &projectPath, const Project &project,
                         const QString &description, const QDateTime &made, QString &path,
                         QString &error);
 
+// The same, but only when the files are not those of the newest version
+// (by their names, sizes and CRC-32s); else 'path' is left empty and the
+// result is true.
+bool saveChangedProjectVersion(const QString &projectPath, const Project &project,
+                               const QString &description, const QDateTime &made,
+                               QString &path, QString &error);
+
 } // namespace ppcb

@@ -205,6 +205,27 @@ private slots:
     }
 
     // Each file's name and sizes in the central directory, then its end.
+    // The directory of an archive lists each file with its CRC-32 and size;
+    // what is not an archive, or is cut short, is refused.
+    void zipDirectoryIsRead()
+    {
+        const QList<OutputFile> files{{QStringLiteral("a.GTL"), QByteArray("copper")},
+                                      {QStringLiteral("library/б.json"), QByteArray("{}")}};
+        const QByteArray zip = zipArchive(files, QDateTime(QDate(2026, 11, 25), QTime(12, 0)));
+        QList<ZipEntry> entries;
+        QVERIFY(zipEntries(zip, entries));
+        QCOMPARE(entries.size(), 2);
+        for (int i = 0; i < 2; ++i) {
+            QCOMPARE(entries.at(i).name, files.at(i).name);
+            QCOMPARE(entries.at(i).crc, crc32(files.at(i).data));
+            QCOMPARE(entries.at(i).size, quint32(files.at(i).data.size()));
+        }
+        QVERIFY(!zipEntries(QByteArray("not a zip"), entries));
+        QVERIFY(!zipEntries(zip.mid(zip.size() / 2), entries));
+        QVERIFY(zipEntries(zipArchive({}, QDateTime::currentDateTime()), entries));
+        QVERIFY(entries.isEmpty());
+    }
+
     void zipListsItsFiles()
     {
         const QList<OutputFile> files{{QStringLiteral("a.GTL"), QByteArray(1000, 'x')},

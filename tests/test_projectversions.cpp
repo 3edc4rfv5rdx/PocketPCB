@@ -66,6 +66,31 @@ private slots:
         QCOMPARE(QFileInfo(second).fileName(), QStringLiteral("0002-20261125-revB.zip"));
     }
 
+    // A version only when the files changed since the newest one.
+    void aChangedVersionOnlyWhenSomethingChanged()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString projectPath = QDir(dir.path()).filePath(QStringLiteral("amp.ppcb"));
+        Design design = newDesign(QStringLiteral("amp"));
+        QString error;
+        QVERIFY(DesignFiles::write(projectPath, design, error));
+        const QDateTime made(QDate(2026, 11, 25), QTime(14, 30));
+        QString path;
+        QVERIFY(saveChangedProjectVersion(projectPath, design.project, QStringLiteral("Gerber"),
+                                          made, path, error));
+        QCOMPARE(QFileInfo(path).fileName(), QStringLiteral("0001-20261125.zip"));
+        QVERIFY(saveChangedProjectVersion(projectPath, design.project, QStringLiteral("Gerber"),
+                                          made, path, error));
+        QVERIFY(path.isEmpty());
+
+        design.project.titleBlock.revision = QStringLiteral("B");
+        QVERIFY(DesignFiles::write(projectPath, design, error));
+        QVERIFY(saveChangedProjectVersion(projectPath, design.project, QStringLiteral("Gerber"),
+                                          made, path, error));
+        QCOMPARE(QFileInfo(path).fileName(), QStringLiteral("0002-20261125-revB.zip"));
+    }
+
     // A file that cannot be read stops the version, naming the file.
     void aMissingFileIsReported()
     {
