@@ -127,14 +127,16 @@ QByteArray zipArchive(const QList<OutputFile> &files, const QDateTime &when)
     QByteArray directory;
     for (const OutputFile &file : files) {
         const QByteArray name = file.name.toUtf8();
-        const QByteArray body = deflated(file.data);
+        // An empty file is stored: deflate gives no stream for nothing.
+        const bool stored = file.data.isEmpty();
+        const QByteArray body = stored ? QByteArray() : deflated(file.data);
         const quint32 crc = crc32(file.data);
         const quint32 offset = quint32(archive.size());
         // The fields both headers share, from the version needed on.
         QByteArray common;
         put16(common, ZIP_VERSION);
         put16(common, FLAG_UTF8);
-        put16(common, METHOD_DEFLATE);
+        put16(common, stored ? METHOD_STORE : METHOD_DEFLATE);
         put16(common, time);
         put16(common, date);
         put32(common, crc);

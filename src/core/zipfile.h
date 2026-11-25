@@ -17,8 +17,8 @@ struct OutputFile
 // The CRC-32 of 'data', as zip files keep it.
 quint32 crc32(const QByteArray &data);
 
-// A zip archive of 'files', each compressed with deflate and dated 'when',
-// its name in UTF-8.
+// A zip archive of 'files', each compressed with deflate (an empty one
+// stored) and dated 'when', its name in UTF-8.
 QByteArray zipArchive(const QList<OutputFile> &files, const QDateTime &when);
 
 // A file in a zip archive as its directory lists it: the name, the CRC-32
