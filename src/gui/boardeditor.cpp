@@ -1231,8 +1231,11 @@ void BoardEditor::release(const QPointF &at)
                                                  : Action::MoveOutline;
         const QSet<ObjectId> touched =
             m_dragText ? QSet<ObjectId>{m_chosenText.owner} : QSet<ObjectId>(ids).unite(holes);
+        const QSet<ObjectId> movedHoles = m_dragText ? QSet<ObjectId>() : holes;
         dropDrag();
-        if (moved != m_document->design().board)
+        // Holes dragged with a ring onto copper of another net stay.
+        if (moved != m_document->design().board
+            && (movedHoles.isEmpty() || !refuseRingsTooNear(moved, movedHoles)))
             applyBoard(action, moved, touched);
         emit changed();
         return;
