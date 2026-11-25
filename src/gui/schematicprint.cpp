@@ -142,7 +142,7 @@ QString exportSchematicPdf(QWidget *parent, const Document &document, int curren
     }
 
     QString problem;
-    const QString path = projectOutputFile(document.projectPath(), QLatin1String(FILE_SUFFIX),
+    const QString path = projectOutputFile(document, QLatin1String(FILE_SUFFIX),
                                            QLatin1String(PDF_EXTENSION), problem);
     if (path.isEmpty())
         return problem;

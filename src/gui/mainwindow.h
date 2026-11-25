@@ -62,9 +62,10 @@ public:
     void openLastProject();
     // Shows version 'number', the archive 'path', unpacked into a folder of
     // the window's own, for reading only (Document::setReadOnly()), without
-    // making it a recent project. False, with the reason in the status bar,
-    // when it cannot be read.
-    bool showVersionCopy(int number, const QString &path);
+    // making it a recent project; what is printed or exported from it goes
+    // into the output folder of 'projectPath', named with "-v<number>".
+    // False, with the reason in the status bar, when it cannot be read.
+    bool showVersionCopy(int number, const QString &path, const QString &projectPath);
     // Saves the project into the new folder 'name' inside 'parentFolder'
     // (see Document::saveAsNewFolder()).
     bool saveProjectAs(const QString &parentFolder, const QString &name);

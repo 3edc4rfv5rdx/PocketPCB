@@ -1525,7 +1525,7 @@ void MainWindow::openVersionCopy(int number, const QString &path)
 {
     auto *window = new MainWindow;
     window->setAttribute(Qt::WA_DeleteOnClose);
-    if (!window->showVersionCopy(number, path)) {
+    if (!window->showVersionCopy(number, path, m_document->projectPath())) {
         QMessageBox::warning(this, VersionsPanel::openCopyTitle(), window->statusText());
         window->deleteLater();
         return;
@@ -1533,17 +1533,19 @@ void MainWindow::openVersionCopy(int number, const QString &path)
     window->show();
 }
 
-bool MainWindow::showVersionCopy(int number, const QString &path)
+bool MainWindow::showVersionCopy(int number, const QString &path, const QString &projectPath)
 {
     auto folder = std::make_unique<QTemporaryDir>();
-    QString projectPath;
+    QString copyPath;
     QString error;
-    if (!folder->isValid() || !unpackProjectVersion(path, folder->path(), projectPath, error)
-        || !m_document->open(projectPath, error)) {
+    if (!folder->isValid() || !unpackProjectVersion(path, folder->path(), copyPath, error)
+        || !m_document->open(copyPath, error)) {
         showStatus(error.isEmpty() ? Document::readOnlyMessage() : error);
         return false;
     }
     m_document->setReadOnly(true);
+    // What is printed or exported from it goes beside the project's own.
+    m_document->setOutputPlace(projectPath, QStringLiteral("-v%1").arg(number));
     m_versionFolder = std::move(folder);
     m_versionTitle = tr("Version %1").arg(number);
     m_versionBand->setText(m_versionTitle + QStringLiteral(", ") + tr("read only"));

@@ -1,5 +1,6 @@
 #include "format.h"
 
+#include "document.h"
 #include "project.h"
 
 #include <QCoreApplication>
@@ -160,9 +161,10 @@ QString footprintsWord()
     return QCoreApplication::translate("ppcb::Format", "footprints");
 }
 
-QString projectOutputFile(const QString &projectPath, const QString &suffix,
+QString projectOutputFile(const Document &document, const QString &suffix,
                           const QString &extension, QString &problem)
 {
+    const QString projectPath = document.outputProjectPath();
     if (projectPath.isEmpty()) {
         problem = QCoreApplication::translate("ppcb::Format", "Save the project first");
         return QString();
@@ -173,8 +175,8 @@ QString projectOutputFile(const QString &projectPath, const QString &suffix,
                   + QLatin1Char(' ') + QDir::toNativeSeparators(folder);
         return QString();
     }
-    return QDir(folder).filePath(QFileInfo(projectPath).completeBaseName() + suffix
-                                 + QLatin1Char('.') + extension);
+    return QDir(folder).filePath(QFileInfo(projectPath).completeBaseName() + document.outputTag()
+                                 + suffix + QLatin1Char('.') + extension);
 }
 
 QString lockPartsName(bool locked)

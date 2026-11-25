@@ -225,6 +225,17 @@ bool Document::open(const QString &projectPath, QString &error, QStringList *pro
     return true;
 }
 
+void Document::setOutputPlace(const QString &projectPath, const QString &tag)
+{
+    m_outputProjectPath = projectPath;
+    m_outputTag = tag;
+}
+
+QString Document::outputProjectPath() const
+{
+    return m_outputProjectPath.isEmpty() ? m_projectPath : m_outputProjectPath;
+}
+
 QString Document::readOnlyMessage()
 {
     return tr("A copy of a version is only for reading");
@@ -412,6 +423,8 @@ void Document::reset(const Design &design, const QString &projectPath)
     m_undoStack.clear();
     // Another project is not the copy that was for reading only.
     m_readOnly = false;
+    m_outputProjectPath.clear();
+    m_outputTag.clear();
     m_design = design;
     m_saved = design;
     m_projectPath = projectPath;

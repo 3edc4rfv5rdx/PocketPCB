@@ -75,7 +75,7 @@ bool exportGerber(const Document &document, QString &message)
         return false;
     // The output folder, made when missing.
     const QString anyOutput =
-        projectOutputFile(document.projectPath(), QString(), QStringLiteral("zip"), message);
+        projectOutputFile(document, QString(), QStringLiteral("zip"), message);
     if (anyOutput.isEmpty())
         return false;
     const QDir output = QFileInfo(anyOutput).dir();

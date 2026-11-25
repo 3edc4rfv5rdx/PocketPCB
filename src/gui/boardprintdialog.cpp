@@ -205,7 +205,7 @@ QString printBoard(QWidget *parent, const Document &document)
                                                 : QStringLiteral("-silkscreen"))
         + (print.side == BoardSide::Top ? QStringLiteral("-top") : QStringLiteral("-bottom"));
     QString problem;
-    const QString path = projectOutputFile(document.projectPath(), suffix,
+    const QString path = projectOutputFile(document, suffix,
                                            QLatin1String(PDF_EXTENSION), problem);
     if (path.isEmpty())
         return problem;

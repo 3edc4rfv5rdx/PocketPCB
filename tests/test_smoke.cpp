@@ -3,6 +3,7 @@
 #include "canvasview.h"
 #include "designviewitem.h"
 #include "document.h"
+#include "format.h"
 #include "gerberexport.h"
 #include "projectversions.h"
 #include "grid.h"
@@ -526,14 +527,19 @@ private slots:
         const QStringList recent = AppSettings::recentProjects();
 
         MainWindow copy;
-        QVERIFY2(copy.showVersionCopy(1, path), qPrintable(copy.statusText()));
+        QVERIFY2(copy.showVersionCopy(1, path, projectPath), qPrintable(copy.statusText()));
         QVERIFY(copy.document()->isReadOnly());
         QVERIFY(!copy.findChild<QLabel *>(QStringLiteral("versionBand"))->isHidden());
         QVERIFY(window.findChild<QLabel *>(QStringLiteral("versionBand"))->isHidden());
         QVERIFY(copy.document()->projectPath() != projectPath);
         QVERIFY2(copy.windowTitle().contains(QStringLiteral("1")), qPrintable(copy.windowTitle()));
         QCOMPARE(AppSettings::recentProjects(), recent);
-        QVERIFY(!copy.showVersionCopy(2, dir.filePath(QStringLiteral("none.zip"))));
+        // What is made from it goes into the project's own output folder.
+        QString problem;
+        QCOMPARE(projectOutputFile(*copy.document(), QStringLiteral("-bom"), QStringLiteral("txt"),
+                                   problem),
+                 QDir(DesignFiles::outputPath(projectPath)).filePath(QStringLiteral("amp-v1-bom.txt")));
+        QVERIFY(!copy.showVersionCopy(2, dir.filePath(QStringLiteral("none.zip")), projectPath));
     }
 
     void theSavedMarkTellsWhetherTheProjectIsSaved()

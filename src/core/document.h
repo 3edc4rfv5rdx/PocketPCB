@@ -80,6 +80,15 @@ public:
     void setReadOnly(bool readOnly) { m_readOnly = readOnly; }
     bool isReadOnly() const { return m_readOnly; }
     static QString readOnlyMessage();
+    // Where the files made from the document go: the output folder of the
+    // project 'projectPath', their names after it with 'tag' ("-v3") added;
+    // for a copy of a version, whose own folder goes with its window. Until
+    // another project is opened or started, as for reading only.
+    void setOutputPlace(const QString &projectPath, const QString &tag);
+    // The project whose output folder the files go to: projectPath() unless
+    // setOutputPlace() said another; and what their names have added.
+    QString outputProjectPath() const;
+    QString outputTag() const { return m_outputTag; }
     // Writes the files that changed since they were read or written, and
     // those that are missing. On failure returns false with a message; what
     // was written before the failure counts as saved.
@@ -160,6 +169,8 @@ private:
     QUndoStack m_undoStack;
     bool m_wasModified = false;
     bool m_readOnly = false;
+    QString m_outputProjectPath;
+    QString m_outputTag;
     int m_backupCount = DEFAULT_BACKUP_COUNT;
     // The content of the autosaved copy; empty when there is none.
     Design m_autosaved;

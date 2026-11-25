@@ -233,7 +233,7 @@ QList<QStringList> BomPanel::table() const
 QString BomPanel::outputFile(const QString &extension)
 {
     QString problem;
-    const QString path = projectOutputFile(m_document->projectPath(),
+    const QString path = projectOutputFile(*m_document,
                                            QLatin1String(FILE_SUFFIX), extension, problem);
     if (path.isEmpty())
         tell(problem);

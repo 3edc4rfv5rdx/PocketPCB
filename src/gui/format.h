@@ -11,6 +11,10 @@ class QLineEdit;
 class QWidget;
 
 namespace ppcb {
+class Document;
+}
+
+namespace ppcb {
 
 // Millimetres with exactly three decimals, in the current locale: "2.540".
 // For values that change while the user watches (cursor position).
@@ -53,11 +57,13 @@ QString mmUnit();
 QString symbolWord();
 QString footprintsWord();
 
-// The file of the project's output, named after the project with 'suffix'
-// and 'extension' ("pdf"), in its output folder (DesignFiles::outputPath()),
-// the folder made when missing. Empty, with 'problem' set to what to tell
-// the user, when the project was never saved or the folder cannot be made.
-QString projectOutputFile(const QString &projectPath, const QString &suffix,
+// The file of the output of 'document', in the output folder
+// (DesignFiles::outputPath()) of its Document::outputProjectPath(), named
+// after that project with Document::outputTag(), 'suffix' and 'extension'
+// ("pdf"), the folder made when missing. Empty, with 'problem' set to what
+// to tell the user, when the project was never saved or the folder cannot
+// be made.
+QString projectOutputFile(const Document &document, const QString &suffix,
                           const QString &extension, QString &problem);
 // The name of the step that locks parts, or unlocks them, on the sheet
 // and on the board; and what is said when a locked part would move.
