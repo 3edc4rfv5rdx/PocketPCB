@@ -1514,7 +1514,7 @@ void BoardEditor::setChosenHolesDrill(Coord drill)
     if (refuseHolesLocked())
         return;
     const Board drilled = withHolesDrill(board, ids, drill);
-    if (drill > 0 && drilled != board)
+    if (drill > 0 && drilled != board && !refuseRingsTooNear(drilled, ids))
         applyBoard(Action::HoleDiameter, drilled, ids);
 }
 
@@ -1528,6 +1528,27 @@ bool BoardEditor::chosenHolesLocked() const
     return areHolesLocked(m_document->design().board, chosenHoles());
 }
 
+bool BoardEditor::refuseRingsTooNear(const Board &changed, const QSet<ObjectId> &ids)
+{
+    // The shorts and clearances the rings of 'ids' have on 'board'.
+    const auto meetings = [this, &ids](const Board &board) {
+        Design design = m_document->design();
+        design.board = board;
+        int count = 0;
+        for (const DrcProblem &problem : drcProblems(design)) {
+            if (problem.kind != DrcKind::Short && problem.kind != DrcKind::Clearance)
+                continue;
+            for (const DrcItem &item : problem.items)
+                count += item.kind == DrcItem::Kind::HolePad && ids.contains(item.id) ? 1 : 0;
+        }
+        return count;
+    };
+    if (meetings(changed) <= meetings(m_document->design().board))
+        return false;
+    emit message(tr("The copper ring would come too near copper of another net"));
+    return true;
+}
+
 void BoardEditor::setChosenHolesPlated(bool plated)
 {
     const QSet<ObjectId> ids = chosenHoles();
@@ -1535,7 +1556,7 @@ void BoardEditor::setChosenHolesPlated(bool plated)
     if (refuseHolesLocked())
         return;
     const Board changedBoard = withHolesPlated(board, ids, plated);
-    if (changedBoard != board)
+    if (changedBoard != board && !refuseRingsTooNear(changedBoard, ids))
         applyBoard(Action::PlatedHoles, changedBoard, ids);
 }
 
@@ -1576,7 +1597,7 @@ void BoardEditor::holeValueTyped(Typed typed, const QString &text)
         break;
     }
     const Board padded = withHolesPad(board, ids, value);
-    if (padded != board)
+    if (padded != board && !refuseRingsTooNear(padded, ids))
         applyBoard(Action::CopperRing, padded, ids);
 }
 

@@ -1650,6 +1650,10 @@
 <context>
     <name>ppcb::BoardEditor</name>
     <message>
+        <source>The copper ring would come too near copper of another net</source>
+        <translation>Мідний поясок підійшов би надто близько до міді іншого кола</translation>
+    </message>
+    <message>
         <source>Draw board outline</source>
         <translation>Намалювати контур плати</translation>
     </message>

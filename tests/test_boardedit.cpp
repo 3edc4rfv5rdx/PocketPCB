@@ -260,12 +260,12 @@ private slots:
         QCOMPARE(plated.holes.at(0).ring, MM / 2);
         QCOMPARE(plated.holes.at(1).ring, MM / 2);
         QCOMPARE(withHolesPlated(plated, {first}, true).holes.at(0).ring, MM / 2);
-        // Plating taken off keeps the ring and its net.
+        // Plating taken off takes the ring and its net with it.
         plated.holes[0].net = QStringLiteral("GND");
         const Board unplated = withHolesPlated(plated, {first}, false);
         QVERIFY(!unplated.holes.at(0).plated);
-        QCOMPARE(unplated.holes.at(0).ring, MM / 2);
-        QCOMPARE(unplated.holes.at(0).net, QStringLiteral("GND"));
+        QCOMPARE(unplated.holes.at(0).ring, Coord(0));
+        QVERIFY(unplated.holes.at(0).net.isEmpty());
         // A pad of 0 goes off a hole without plating, with its net, and
         // stays on a plated one.
         Board ringless = withHolesPad(unplated, {first, second}, 0);

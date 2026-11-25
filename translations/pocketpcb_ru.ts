@@ -1650,6 +1650,10 @@
 <context>
     <name>ppcb::BoardEditor</name>
     <message>
+        <source>The copper ring would come too near copper of another net</source>
+        <translation>Медный поясок подошёл бы слишком близко к меди другой цепи</translation>
+    </message>
+    <message>
         <source>Draw board outline</source>
         <translation>Нарисовать контур платы</translation>
     </message>

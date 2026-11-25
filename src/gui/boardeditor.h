@@ -359,6 +359,10 @@ private:
     // Says in the status bar that the holes chosen are locked, when holes
     // are chosen and all of them are; true then.
     bool refuseHolesLocked();
+    // Says in the status bar that the rings of the holes 'ids' on
+    // 'changed' come onto or too near copper of another net, more than they
+    // do on the board now (as the rules check finds); true then.
+    bool refuseRingsTooNear(const Board &changed, const QSet<ObjectId> &ids);
     // Makes 'board' the board as one step named after 'action', with the
     // placements 'ids' as those it touched.
     void applyBoard(Action action, const Board &board, const QSet<ObjectId> &ids);

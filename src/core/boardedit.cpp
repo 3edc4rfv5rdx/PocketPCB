@@ -278,8 +278,12 @@ Board withHolesPlated(const Board &board, const QSet<ObjectId> &ids, bool plated
         hole.plated = plated;
         if (plated && hole.ring == 0)
             hole.ring = DEFAULT_HOLE_RING;
-        if (plated)
+        if (plated) {
             hole.padSides = CopperSides::Both;
+        } else {
+            hole.ring = 0;
+            hole.net.clear();
+        }
     }
     return result;
 }

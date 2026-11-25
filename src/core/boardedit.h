@@ -89,7 +89,8 @@ Board withHolesMoved(const Board &board, const QSet<ObjectId> &ids, const Point 
 Board withHolesDrill(const Board &board, const QSet<ObjectId> &ids, Coord drill);
 // The holes 'ids' made plated, a hole without a ring getting
 // DEFAULT_HOLE_RING and every one its pad on both sides, or not plated,
-// keeping their rings.
+// their rings and nets taken off with it (a ring without plating is given
+// by withHolesPad()).
 Board withHolesPlated(const Board &board, const QSet<ObjectId> &ids, bool plated);
 // The copper ring of 'hole' that makes a pad of 'diameter' around it; 0 for
 // a diameter of 0 or one not larger than the hole.
