@@ -956,6 +956,16 @@ void MainWindow::showSheetMenu(const QPoint &globalPos)
         add("actionCopy");
         add("actionCut");
         add("actionDuplicate");
+        // The panel of properties, shown, the keyboard in its first field.
+        if (!chosen.isEmpty()) {
+            menu.addSeparator();
+            QAction *properties = menu.addAction(PropertiesPanel::propertiesTitle());
+            connect(properties, &QAction::triggered, this, [this] {
+                m_propertiesDock->show();
+                m_propertiesDock->raise();
+                m_propertiesPanel->focusFirstField();
+            });
+        }
     } else {
         add("actionPaste");
         menu.addSeparator();

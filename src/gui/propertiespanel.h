@@ -49,6 +49,9 @@ public:
     // Shows the chosen components again. A field being typed in is left
     // alone while the same components stay chosen, unless 'force'.
     void refresh(bool force = false);
+    // Puts the keyboard in the first field that may be typed in: the
+    // designator, or with several chosen the value.
+    void focusFirstField();
 
 protected:
     // Esc in a field takes back what was typed there.

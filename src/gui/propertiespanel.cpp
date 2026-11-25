@@ -78,6 +78,15 @@ PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidge
     refresh(true);
 }
 
+void PropertiesPanel::focusFirstField()
+{
+    QLineEdit *field = m_designator->isEnabled() ? m_designator : m_value;
+    if (!field->isEnabled())
+        return;
+    field->setFocus(Qt::OtherFocusReason);
+    field->selectAll();
+}
+
 QString PropertiesPanel::propertiesTitle()
 {
     return tr("Properties");
