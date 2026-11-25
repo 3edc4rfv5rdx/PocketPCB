@@ -141,6 +141,15 @@ const char SAVED_MARK_STYLE[] =
 const char SAVED_COLOR[] = "#5f9462";
 // The count of unrouted connections: black, with a gap after it.
 const char UNROUTED_STYLE[] = "QLabel { color: black; margin-right: 12px; }";
+// The buttons of the panels in one grey blue, to stand out from the lists
+// round them.
+const char PANEL_BUTTON_STYLE[] =
+    "QDockWidget QPushButton { background-color: #d3dde8; color: #1e2a36;"
+    " border: 1px solid #8fa3b8; border-radius: 3px; padding: 4px 10px; }"
+    "QDockWidget QPushButton:hover { background-color: #c3d2e1; }"
+    "QDockWidget QPushButton:pressed { background-color: #aebfd1; }"
+    "QDockWidget QPushButton:disabled { background-color: #e6e9ed; color: #9aa3ad;"
+    " border-color: #c4ccd5; }";
 const char NOT_SAVED_COLOR[] = "#c25450";
 const char NEW_COLOR[] = "#8c8c8c";
 
@@ -289,6 +298,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_versionsDock->setWidget(m_versionsPanel);
     splitDockWidget(m_bomDock, m_versionsDock, Qt::Vertical);
     m_versionsDock->hide();
+    setStyleSheet(QLatin1String(PANEL_BUTTON_STYLE));
     connect(m_versionsPanel, &VersionsPanel::restoreRequested, this, &MainWindow::restoreVersion);
     connect(m_bomPanel, &BomPanel::componentsChosen, this, &MainWindow::showComponents);
     // A problem chosen there is shown: its sheet, centred on it, with what

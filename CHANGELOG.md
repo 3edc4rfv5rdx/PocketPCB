@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The buttons in the panels are grey blue, standing out from the lists
 - F: The Versions panel has its button on the strip, reading Ver
 - N: Restore this version in the Versions panel brings an old version back as one step
 - E: An empty file in a zip archive is stored, as unpacking needs
