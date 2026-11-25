@@ -5,6 +5,7 @@
 #include "bompanel.h"
 #include "canvasview.h"
 #include "designviewitem.h"
+#include "drcpanel.h"
 #include "ercpanel.h"
 #include "document.h"
 #include "format.h"
@@ -259,12 +260,20 @@ MainWindow::MainWindow(QWidget *parent)
     m_ercDock->setObjectName(QStringLiteral("ercDock"));
     m_ercDock->setWidget(m_ercPanel);
     splitDockWidget(m_netsDock, m_ercDock, Qt::Vertical);
+    // The problems of the board's rules check, under those of the sheets;
+    // hidden until asked for.
+    m_drcPanel = new DrcPanel(m_boardEditor, this);
+    m_drcDock = new QDockWidget(DrcPanel::drcTitle(), this);
+    m_drcDock->setObjectName(QStringLiteral("drcDock"));
+    m_drcDock->setWidget(m_drcPanel);
+    splitDockWidget(m_ercDock, m_drcDock, Qt::Vertical);
+    m_drcDock->hide();
     // The BOM, under the problems; hidden until asked for.
     m_bomPanel = new BomPanel(m_document, this);
     m_bomDock = new QDockWidget(BomPanel::bomTitle(), this);
     m_bomDock->setObjectName(QStringLiteral("bomDock"));
     m_bomDock->setWidget(m_bomPanel);
-    splitDockWidget(m_ercDock, m_bomDock, Qt::Vertical);
+    splitDockWidget(m_drcDock, m_bomDock, Qt::Vertical);
     m_bomDock->hide();
     connect(m_bomPanel, &BomPanel::componentsChosen, this, &MainWindow::showComponents);
     // A problem chosen there is shown: its sheet, centred on it, with what
@@ -279,6 +288,20 @@ MainWindow::MainWindow(QWidget *parent)
     // The rings on the sheet go with the panel.
     connect(m_ercDock->toggleViewAction(), &QAction::toggled, this,
             [this](bool shown) { m_designItem->setErcMarksShown(shown); });
+    // A problem of the board chosen is shown: the board, centred on it,
+    // with what it is about chosen; Check shows the board.
+    connect(m_drcPanel, &DrcPanel::problemChosen, this, [this](const DrcProblem &problem) {
+        if (m_designItem->page() != m_designItem->boardPage())
+            showPage(m_designItem->boardPage());
+        m_canvas->setView(toMm(problem.at), m_canvas->pixelsPerMm());
+        m_boardEditor->setChosen(DrcPanel::problemObjects(problem));
+    });
+    connect(m_drcPanel, &DrcPanel::checkRequested, this, [this] {
+        if (m_designItem->page() != m_designItem->boardPage())
+            showPage(m_designItem->boardPage());
+    });
+    connect(m_drcDock->toggleViewAction(), &QAction::toggled, this,
+            [this](bool shown) { m_designItem->setDrcMarksShown(shown); });
     // A net chosen there is shown: on the first sheet it is on, unless the
     // sheet shown has it.
     connect(m_netsPanel, &NetsPanel::netChosen, this, [this](const QString &name) {
@@ -330,6 +353,7 @@ MainWindow::MainWindow(QWidget *parent)
     restoreGeometry(AppSettings::windowGeometry());
     restoreState(AppSettings::windowState());
     m_designItem->setErcMarksShown(!m_ercDock->isHidden());
+    m_designItem->setDrcMarksShown(!m_drcDock->isHidden());
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -668,6 +692,7 @@ void MainWindow::createMenus()
     viewMenu->addAction(m_propertiesDock->toggleViewAction());
     viewMenu->addAction(m_netsDock->toggleViewAction());
     viewMenu->addAction(m_ercDock->toggleViewAction());
+    viewMenu->addAction(m_drcDock->toggleViewAction());
     viewMenu->addAction(m_bomDock->toggleViewAction());
     viewMenu->addSeparator();
 
@@ -1773,6 +1798,7 @@ void MainWindow::createToolBar()
         {m_propertiesDock->toggleViewAction(), ToolIcon::Properties},
         {m_netsDock->toggleViewAction(), ToolIcon::Nets},
         {m_ercDock->toggleViewAction(), ToolIcon::Erc},
+        {m_drcDock->toggleViewAction(), ToolIcon::Drc},
         {m_bomDock->toggleViewAction(), ToolIcon::Bom}};
     for (const auto &[action, icon] : panels) {
         action->setIcon(toolIcon(icon, color));

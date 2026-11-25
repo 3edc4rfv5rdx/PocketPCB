@@ -5,6 +5,7 @@ add_library(pocketpcb_gui STATIC
     bompanel.h bompanel.cpp
     canvasview.h canvasview.cpp
     designviewitem.h designviewitem.cpp
+    drcpanel.h drcpanel.cpp
     ercpanel.h ercpanel.cpp
     format.h format.cpp
     inplaceedit.h inplaceedit.cpp

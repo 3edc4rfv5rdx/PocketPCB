@@ -1299,6 +1299,22 @@ void paintErcMarks(QPainter &painter, const QList<ErcProblem> &problems, int ind
     painter.restore();
 }
 
+void paintDrcMarks(QPainter &painter, const QList<DrcProblem> &problems)
+{
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setBrush(Qt::NoBrush);
+    for (const bool errors : {false, true}) {
+        painter.setPen(linePen(errors ? paintcolor::ercMark() : paintcolor::drcWarning(),
+                               ERC_MARK_LINE_WIDTH));
+        for (const DrcProblem &problem : problems) {
+            if (problem.error == errors)
+                painter.drawEllipse(toMm(problem.at), ERC_MARK_RADIUS, ERC_MARK_RADIUS);
+        }
+    }
+    painter.restore();
+}
+
 namespace {
 
 // The drawings and the pin lines of a symbol, without the room

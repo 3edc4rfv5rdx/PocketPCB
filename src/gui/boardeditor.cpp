@@ -49,6 +49,10 @@ BoardEditor::BoardEditor(Document *document, CanvasView *canvas, QObject *parent
         if (m_active && m_tool == Tool::Select && !m_pressed)
             setHoveredNet(m_pendingNet);
     });
+    connect(m_document, &Document::designChanged, this, [this] {
+        m_problemsFound = false;
+        emit problemsChanged();
+    });
     // Undo, Redo or a project opened: what was dragged or lit may be gone.
     connect(m_document, &Document::designChanged, this, [this] {
         m_valueEdit.close(false);
@@ -1644,6 +1648,15 @@ void BoardEditor::setChosenLined(bool lined)
     }
     if (board != m_document->design().board)
         applyBoard(Action::LineToPart, board, ids);
+}
+
+const QList<DrcProblem> &BoardEditor::problems() const
+{
+    if (!m_problemsFound) {
+        m_problems = drcProblems(m_document->design());
+        m_problemsFound = true;
+    }
+    return m_problems;
 }
 
 void BoardEditor::setChosen(const QSet<ObjectId> &ids)

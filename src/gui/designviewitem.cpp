@@ -181,6 +181,14 @@ void DesignViewItem::setErcMarksShown(bool shown)
     update();
 }
 
+void DesignViewItem::setDrcMarksShown(bool shown)
+{
+    if (shown == m_drcMarksShown)
+        return;
+    m_drcMarksShown = shown;
+    update();
+}
+
 SheetEditor *DesignViewItem::activeEditor() const
 {
     if (m_editor == nullptr || m_editor->sheet() != m_page || m_page == boardPage())
@@ -402,6 +410,8 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
         painter.drawRect(linkTextRect(*owner));
     for (const QLineF &guide : editor->textGuides())
         painter.drawLine(guide);
+    if (m_drcMarksShown)
+        paintDrcMarks(painter, editor->problems());
     const QRectF frame = editor->chooserFrame();
     if (!frame.isEmpty()) {
         painter.setPen(QPen(paintcolor::selection(), 0, Qt::DashLine));

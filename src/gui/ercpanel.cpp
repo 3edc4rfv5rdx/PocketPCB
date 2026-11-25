@@ -1,6 +1,7 @@
 #include "ercpanel.h"
 
 #include "document.h"
+#include "format.h"
 #include "sheeteditor.h"
 
 #include <QHeaderView>
@@ -83,7 +84,7 @@ void ErcPanel::refresh()
     m_tree->clear();
     m_problems = m_editor->problems();
     if (m_problems.isEmpty()) {
-        QTreeWidgetItem *item = new QTreeWidgetItem(m_tree, {tr("No problems found")});
+        QTreeWidgetItem *item = new QTreeWidgetItem(m_tree, {noProblemsMessage()});
         item->setFlags(Qt::NoItemFlags);
         return;
     }

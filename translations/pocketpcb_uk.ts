@@ -2,6 +2,85 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="uk_UA">
 <context>
+    <name>ppcb::DrcPanel</name>
+    <message>
+        <source>Check</source>
+        <translation>Перевірити</translation>
+    </message>
+    <message>
+        <source>DRC</source>
+        <translation>DRC</translation>
+    </message>
+    <message>
+        <source>track of %1</source>
+        <translation>доріжка %1</translation>
+    </message>
+    <message>
+        <source>via of %1</source>
+        <translation>перехідний отвір %1</translation>
+    </message>
+    <message>
+        <source>wire link</source>
+        <translation>перемичка</translation>
+    </message>
+    <message>
+        <source>mounting hole</source>
+        <translation>монтажний отвір</translation>
+    </message>
+    <message>
+        <source>mounting hole of %1</source>
+        <translation>монтажний отвір %1</translation>
+    </message>
+    <message>
+        <source>Short between %1 and %2</source>
+        <translation>Замикання між %1 і %2</translation>
+    </message>
+    <message>
+        <source>Clearance between %1 and %2</source>
+        <translation>Зазор між %1 і %2</translation>
+    </message>
+    <message>
+        <source>%1 too near the board edge</source>
+        <translation>%1 надто близько до краю плати</translation>
+    </message>
+    <message>
+        <source>Annular ring of %1 too narrow</source>
+        <translation>Вузький поясок у %1</translation>
+    </message>
+    <message>
+        <source>%1 narrower than its net class</source>
+        <translation>%1 вужча, ніж вимагає клас кола</translation>
+    </message>
+    <message>
+        <source>%1 narrower than the rules allow</source>
+        <translation>%1 вужча, ніж допускають правила</translation>
+    </message>
+    <message>
+        <source>Drill %1 not in the drill set</source>
+        <translation>Свердла %1 немає в наборі</translation>
+    </message>
+    <message>
+        <source>holes</source>
+        <translation>отворів</translation>
+    </message>
+    <message>
+        <source>%1 is off the board</source>
+        <translation>%1 поза платою</translation>
+    </message>
+    <message>
+        <source>Unrouted connection of %1</source>
+        <translation>Нерозведене з’єднання %1</translation>
+    </message>
+    <message>
+        <source>Errors</source>
+        <translation>Помилки</translation>
+    </message>
+    <message>
+        <source>Warnings</source>
+        <translation>Попередження</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::BomPanel</name>
     <message>
         <source>BOM</source>
@@ -42,6 +121,10 @@
 </context>
 <context>
     <name>ppcb::Format</name>
+    <message>
+        <source>No problems found</source>
+        <translation>Помилок не знайдено</translation>
+    </message>
     <message>
         <source>Lock</source>
         <translation>Закріпити</translation>
@@ -530,10 +613,6 @@
     <message>
         <source>Name %1 belongs to another net</source>
         <translation>Ім&apos;я %1 зайняте іншим колом</translation>
-    </message>
-    <message>
-        <source>No problems found</source>
-        <translation>Помилок не знайдено</translation>
     </message>
     <message>
         <source>Whole project</source>

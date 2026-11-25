@@ -61,6 +61,8 @@ public:
     // Whether the problems of the rules check are ringed on the sheet: while
     // their panel is open.
     void setErcMarksShown(bool shown);
+    // The same for the board's rules check on the board.
+    void setDrcMarksShown(bool shown);
 
     QRectF boundingRect() const override { return m_area; }
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
@@ -96,6 +98,7 @@ private:
     QRectF m_area;
     int m_page = 0;
     bool m_ercMarksShown = false;
+    bool m_drcMarksShown = false;
 };
 
 } // namespace ppcb

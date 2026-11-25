@@ -2,6 +2,7 @@
 
 #include "board.h"
 #include "boardedit.h"
+#include "drc.h"
 #include "document.h"
 #include "inplaceedit.h"
 #include "trackedit.h"
@@ -171,6 +172,9 @@ public:
     // (joinedCopper(), as Shift and a click choose): its unrouted
     // connections are drawn bold. Empty otherwise.
     QString joinedChosenNet() const;
+    // What the rules check finds on the board (drcProblems()), found again
+    // after every change when next asked.
+    const QList<DrcProblem> &problems() const;
     // The text chosen alone; null when none is.
     PlacementText chosenText() const { return m_active ? m_chosenText : PlacementText(); }
     // The lines from a placement's point to where its texts stand, to show
@@ -327,6 +331,8 @@ signals:
     void changed();
     // Why something could not be done, for the status bar.
     void message(const QString &text);
+    // The board or its rules changed: problems() may differ.
+    void problemsChanged();
 
 private:
     // What the line typed in place is for.
@@ -423,6 +429,9 @@ private:
     // The placements and the holes chosen, and a text chosen alone.
     QSet<ObjectId> m_chosen;
     PlacementText m_chosenText;
+    // problems(), while the design stays as it was when they were found.
+    mutable QList<DrcProblem> m_problems;
+    mutable bool m_problemsFound = false;
     // The press took a placement chosen, or a text: a drag moves them from
     // 'm_dragAnchor', the point of the one taken, which lands on the grid.
     bool m_dragPlacements = false;

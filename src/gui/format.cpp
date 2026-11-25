@@ -155,4 +155,14 @@ QString cannotWriteMessage(const QString &path)
            + QDir::toNativeSeparators(path);
 }
 
+QString capitalized(const QString &text)
+{
+    return text.isEmpty() ? text : text.left(1).toUpper() + text.mid(1);
+}
+
+QString noProblemsMessage()
+{
+    return QCoreApplication::translate("ppcb::Format", "No problems found");
+}
+
 } // namespace ppcb

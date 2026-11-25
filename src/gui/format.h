@@ -55,5 +55,10 @@ QString partLockedMessage();
 // What to tell after writing the file 'path', or failing to.
 QString writtenMessage(const QString &path);
 QString cannotWriteMessage(const QString &path);
+// 'text' with its first letter a capital, for a sentence starting with a
+// word that is in lower case elsewhere.
+QString capitalized(const QString &text);
+// What a rules check panel shows when it finds nothing.
+QString noProblemsMessage();
 
 } // namespace ppcb

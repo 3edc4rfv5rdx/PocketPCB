@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drc.h"
 #include "erc.h"
 #include "project.h"
 
@@ -82,6 +83,8 @@ inline QColor litNet() { return QColor(255, 140, 0); }
 inline QColor deleteQuestion() { return QColor(255, 140, 0); }
 // The ring around a problem the rules check found.
 inline QColor ercMark() { return QColor(220, 0, 0); }
+// The ring around a warning of the board's rules check.
+inline QColor drcWarning() { return QColor(255, 140, 0); }
 } // namespace paintcolor
 
 QPointF toMm(const Point &point);
@@ -142,6 +145,9 @@ void paintSheet(QPainter &painter, const Schematic &schematic, const Library &li
                 int index, const TitleBlock &titleBlock, const PowerShown &power);
 // A red ring around each of 'problems' on sheet 'index'.
 void paintErcMarks(QPainter &painter, const QList<ErcProblem> &problems, int index);
+// A ring around each of the board's 'problems': red for an error, orange
+// for a warning, the errors over the warnings.
+void paintDrcMarks(QPainter &painter, const QList<DrcProblem> &problems);
 
 // Where an object of a sheet is for the mouse, in millimetres. What is a
 // line — a wire, a bus, a drawing that is not filled in — is found by its

@@ -42,6 +42,7 @@ enum class ToolIcon {
     Properties,
     Nets,
     Erc,
+    Drc,
     Bom,
 };
 

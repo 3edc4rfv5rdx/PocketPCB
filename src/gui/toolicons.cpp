@@ -285,6 +285,12 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         painter.drawLine(QPointF(12, 9), QPointF(12, 14));
         dot(painter, {12, 17}, color);
         break;
+    case ToolIcon::Drc:
+        // A board with a mark of warning on it.
+        painter.drawRect(QRectF(3, 4, 18, 16));
+        painter.drawLine(QPointF(12, 8), QPointF(12, 13));
+        dot(painter, {12, 16.5}, color);
+        break;
     case ToolIcon::Bom:
         painter.drawRect(QRectF(4, 4, 16, 16));
         for (const qreal y : {9.0, 13.0, 17.0})
