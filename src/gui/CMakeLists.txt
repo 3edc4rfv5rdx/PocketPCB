@@ -2,6 +2,7 @@
 add_library(pocketpcb_gui STATIC
     appsettings.h appsettings.cpp
     boardeditor.h boardeditor.cpp
+    boardprintdialog.h boardprintdialog.cpp
     bompanel.h bompanel.cpp
     canvasview.h canvasview.cpp
     designviewitem.h designviewitem.cpp

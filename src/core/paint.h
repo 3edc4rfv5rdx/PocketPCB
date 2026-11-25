@@ -1,5 +1,6 @@
 #pragma once
 
+#include "boardprint.h"
 #include "drc.h"
 #include "erc.h"
 #include "project.h"
@@ -258,5 +259,22 @@ QRectF layoutBounds(const Board &board, const Library &library);
 void paintBoard(QPainter &painter, const Board &board, const Library &library,
                 const BoardLayerSet &shown = BoardLayerSet::all(), bool lockedMarked = false,
                 std::optional<BoardSide> bright = std::nullopt);
+
+// Layer 'print.layer' of side 'print.side' of 'board', printed for a board
+// made at home (boardprint.h), in the board's millimetres and not
+// mirrored, with the outline as a thin line and the registration marks
+// around 'area' (the board's rectangle) when asked for.
+// The copper: the tracks, the pads of parts, wire links and holes, the
+// vias, and a centre hole of print.centreHole, no wider than the drill, in
+// the middle of each pad with a hole; in black on white, or white on black
+// over 'area' and the marks when inverted. The silkscreen: what the board
+// shows on it, in black.
+void paintBoardLayerPrint(QPainter &painter, const Board &board, const Library &library,
+                          const BoardPrint &print, const QRectF &area);
+// The band at the top of a page of the board's print, in black, its top
+// left corner at 'at': 'caption', and under it the scale ruler of
+// SCALE_RULER_LENGTH mm with 'rulerLabel' after it.
+void paintBoardPrintHeader(QPainter &painter, const QPointF &at, const QString &caption,
+                           const QString &rulerLabel);
 
 } // namespace ppcb

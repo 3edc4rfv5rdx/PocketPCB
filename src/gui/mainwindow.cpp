@@ -2,6 +2,7 @@
 
 #include "autoroute.h"
 #include "boardeditor.h"
+#include "boardprintdialog.h"
 #include "bompanel.h"
 #include "canvasview.h"
 #include "designviewitem.h"
@@ -431,6 +432,13 @@ void MainWindow::createMenus()
     pdfAction->setObjectName(QStringLiteral("actionExportSchematicPdf"));
     connect(pdfAction, &QAction::triggered, this, [this] {
         const QString message = exportSchematicPdf(this, *m_document, m_sheetEditor->sheet());
+        if (!message.isEmpty())
+            showStatus(message);
+    });
+    QAction *boardPrintAction = fileMenu->addAction(printBoardTitle() + QStringLiteral("…"));
+    boardPrintAction->setObjectName(QStringLiteral("actionPrintBoard"));
+    connect(boardPrintAction, &QAction::triggered, this, [this] {
+        const QString message = printBoard(this, *m_document);
         if (!message.isEmpty())
             showStatus(message);
     });
@@ -1669,8 +1677,31 @@ void MainWindow::createToolBar()
         bar->widgetForAction(put("actionSaveProject", ToolIcon::Save)));
     // On red while something is not saved.
     updateSavedMark();
-    put("actionPrintSchematic", ToolIcon::Print);
-    put("actionExportSchematicPdf", ToolIcon::Pdf);
+    // Print and PDF act on the page shown: the schematic's commands, or on
+    // the board the dialog of its print (see updateTools()).
+    struct PageTool
+    {
+        const char *name;
+        ToolIcon icon;
+        const char *schematic;
+    };
+    for (const PageTool &page : {PageTool{"actionPrintTool", ToolIcon::Print, "actionPrintSchematic"},
+                                 PageTool{"actionPdfTool", ToolIcon::Pdf,
+                                          "actionExportSchematicPdf"}}) {
+        // The menu items keep their pictures.
+        dress(page.schematic, page.icon);
+        QAction *tool = new QAction(this);
+        tool->setObjectName(QLatin1String(page.name));
+        tool->setIcon(toolIcon(page.icon, color));
+        const QString schematicName = QLatin1String(page.schematic);
+        connect(tool, &QAction::triggered, this, [this, schematicName] {
+            const QString target = m_boardEditor->isActive() ? QStringLiteral("actionPrintBoard")
+                                                             : schematicName;
+            findChild<QAction *>(target)->trigger();
+        });
+        bar->addAction(tool);
+    }
+    dress("actionPrintBoard", ToolIcon::Print);
     // A gap that does not grow.
     const auto gap = [bar] {
         QWidget *spacer = new QWidget(bar);
@@ -1911,6 +1942,19 @@ void MainWindow::updateTools()
     lock->setEnabled(board ? m_boardEditor->hasChosen() : sheet && m_sheetEditor->canLockChosen());
     lock->setChecked(board ? m_boardEditor->chosenLocked()
                            : sheet && m_sheetEditor->chosenLocked());
+    // Ctrl+P prints the page shown; the strip's Print and PDF name what
+    // they do there.
+    QAction *printSchematicAction = findChild<QAction *>(QStringLiteral("actionPrintSchematic"));
+    QAction *printBoardAction = findChild<QAction *>(QStringLiteral("actionPrintBoard"));
+    printSchematicAction->setShortcut(board ? QKeySequence() : QKeySequence(QKeySequence::Print));
+    printBoardAction->setShortcut(board ? QKeySequence(QKeySequence::Print) : QKeySequence());
+    const QString printKey = QStringLiteral(" (")
+                             + QKeySequence(QKeySequence::Print).toString(QKeySequence::NativeText)
+                             + QLatin1Char(')');
+    if (QAction *printTool = findChild<QAction *>(QStringLiteral("actionPrintTool")))
+        printTool->setToolTip((board ? printBoardTitle() : printSchematicTitle()) + printKey);
+    if (QAction *pdfTool = findChild<QAction *>(QStringLiteral("actionPdfTool")))
+        pdfTool->setToolTip(board ? exportBoardPdfTitle() : exportSchematicPdfTitle());
     QAction *select = findChild<QAction *>(QStringLiteral("actionSelectTool"));
     select->setEnabled(sheet || board);
     select->setChecked((sheet && m_sheetEditor->tool() == SheetEditor::Tool::Select)

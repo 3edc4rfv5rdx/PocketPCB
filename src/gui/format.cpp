@@ -196,6 +196,21 @@ QString notCheckedMessage()
     return QCoreApplication::translate("ppcb::Format", "Not checked yet");
 }
 
+QString sentToPrinterMessage()
+{
+    return QCoreApplication::translate("ppcb::Format", "Sent to the printer");
+}
+
+QString cannotPrintMessage()
+{
+    return QCoreApplication::translate("ppcb::Format", "Cannot print");
+}
+
+QString projectName(const QString &projectPath)
+{
+    return QFileInfo(projectPath).completeBaseName();
+}
+
 QString checkButtonText()
 {
     return QCoreApplication::translate("ppcb::Format", "Check");

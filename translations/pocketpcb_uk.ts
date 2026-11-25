@@ -118,6 +118,14 @@
 <context>
     <name>ppcb::Format</name>
     <message>
+        <source>Sent to the printer</source>
+        <translation>Надіслано на принтер</translation>
+    </message>
+    <message>
+        <source>Cannot print</source>
+        <translation>Не вдається надрукувати</translation>
+    </message>
+    <message>
         <source>Check</source>
         <translation>Перевірити</translation>
     </message>
@@ -1631,14 +1639,6 @@
         <translation>Зберегти схему в PDF</translation>
     </message>
     <message>
-        <source>Cannot print</source>
-        <translation>Не вдається надрукувати</translation>
-    </message>
-    <message>
-        <source>Sent to the printer</source>
-        <translation>Надіслано на принтер</translation>
-    </message>
-    <message>
         <source>Which sheets to export</source>
         <translation>Які аркуші зберегти</translation>
     </message>
@@ -1649,6 +1649,69 @@
     <message>
         <source>All sheets</source>
         <translation>Усі аркуші</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::BoardPrintDialog</name>
+    <message>
+        <source>Print board</source>
+        <translation>Друк плати</translation>
+    </message>
+    <message>
+        <source>Export board to PDF</source>
+        <translation>Зберегти плату в PDF</translation>
+    </message>
+    <message>
+        <source>Top copper</source>
+        <translation>Верхня мідь</translation>
+    </message>
+    <message>
+        <source>Bottom copper</source>
+        <translation>Нижня мідь</translation>
+    </message>
+    <message>
+        <source>Top silkscreen</source>
+        <translation>Верхня шовкографія</translation>
+    </message>
+    <message>
+        <source>Bottom silkscreen</source>
+        <translation>Нижня шовкографія</translation>
+    </message>
+    <message>
+        <source>mirrored</source>
+        <translation>дзеркально</translation>
+    </message>
+    <message>
+        <source>negative</source>
+        <translation>негатив</translation>
+    </message>
+    <message>
+        <source>The board does not fit on the paper</source>
+        <translation>Плата не вміщується на аркуші</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Немає</translation>
+    </message>
+    <message>
+        <source>Print</source>
+        <translation>Друк</translation>
+    </message>
+    <message>
+        <source>Negative for photoresist</source>
+        <translation>Негатив для фоторезисту</translation>
+    </message>
+    <message>
+        <source>Centre holes</source>
+        <translation>Центрувальні отвори</translation>
+    </message>
+    <message>
+        <source>Copies</source>
+        <translation>Копії</translation>
+    </message>
+    <message>
+        <source>Registration marks</source>
+        <translation>Мітки суміщення</translation>
     </message>
 </context>
 <context>

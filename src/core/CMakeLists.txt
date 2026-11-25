@@ -4,6 +4,7 @@ add_library(pocketpcb_core STATIC
     autoroute.h autoroute.cpp
     version.h version.cpp
     board.h board.cpp
+    boardprint.h boardprint.cpp
     boardedit.h boardedit.cpp
     boardupdate.h boardupdate.cpp
     trackedit.h trackedit.cpp

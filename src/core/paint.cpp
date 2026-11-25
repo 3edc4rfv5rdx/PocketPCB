@@ -1068,6 +1068,36 @@ void paintBoardGraphic(QPainter &painter, const BoardGraphic &item)
     painter.restore();
 }
 
+// The silkscreen of 'side': the parts on it, the author's drawing, and on
+// the top, the side of the parts, the wires of wire links with their
+// designators. With 'lockedMarked', see paintBoard().
+void paintSilkscreen(QPainter &painter, const Board &board, const Library &library,
+                     BoardSide side, bool lockedMarked)
+{
+    for (const Placement &placement : board.placements) {
+        if (placement.side == side)
+            paintPlacementSilkscreen(painter, library, placement,
+                                     lockedMarked && placement.locked
+                                         ? paintcolor::lockedPart()
+                                         : silkscreenColor(side));
+    }
+    for (const BoardGraphic &item : board.graphics) {
+        if (item.side == side)
+            paintBoardGraphic(painter, item);
+    }
+    if (side != BoardSide::Top)
+        return;
+    // An insulated one dashed.
+    for (const WireLink &link : board.links) {
+        painter.setPen(QPen(inked(paintcolor::silkscreenTop()), nmToMm(WIRE_LINK_WIRE),
+                            link.insulated ? Qt::DashLine : Qt::SolidLine, Qt::RoundCap));
+        painter.drawLine(toMm(link.from), toMm(link.to));
+    }
+    for (const WireLink &link : board.links)
+        drawText(painter, toMm(linkTextPoint(link)), link.designator, PLACEHOLDER_TEXT_HEIGHT,
+                 TextAlign::Center, paintcolor::silkscreenTop());
+}
+
 QRectF squareAround(const QPointF &center, double size)
 {
     return circleRect(center, size / 2);
@@ -1639,28 +1669,10 @@ void paintBoard(QPainter &painter, const Board &board, const Library &library,
     for (const MountingHole &hole : board.holes)
         paintMountingHole(painter, board, hole, shown, lockedMarked, bright);
 
-    for (const Placement &placement : board.placements) {
-        if (shown.contains(silkscreenLayer(placement.side)))
-            paintPlacementSilkscreen(painter, library, placement,
-                                     lockedMarked && placement.locked
-                                         ? paintcolor::lockedPart()
-                                         : silkscreenColor(placement.side));
-    }
-    for (const BoardGraphic &item : board.graphics) {
-        if (shown.contains(silkscreenLayer(item.side)))
-            paintBoardGraphic(painter, item);
-    }
-    // The wires of wire links, on the side of the parts.
-    if (shown.contains(BoardLayer::SilkscreenTop)) {
-        // An insulated one dashed.
-        for (const WireLink &link : board.links) {
-            painter.setPen(QPen(paintcolor::silkscreenTop(), nmToMm(WIRE_LINK_WIRE),
-                                link.insulated ? Qt::DashLine : Qt::SolidLine, Qt::RoundCap));
-            painter.drawLine(toMm(link.from), toMm(link.to));
-        }
-        for (const WireLink &link : board.links)
-            drawText(painter, toMm(linkTextPoint(link)), link.designator,
-                     PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center, paintcolor::silkscreenTop());
+    // The top over the bottom.
+    for (const BoardSide side : {BoardSide::Bottom, BoardSide::Top}) {
+        if (shown.contains(silkscreenLayer(side)))
+            paintSilkscreen(painter, board, library, side, lockedMarked);
     }
 
     if (shown.contains(BoardLayer::Outline)) {
@@ -1668,6 +1680,176 @@ void paintBoard(QPainter &painter, const Board &board, const Library &library,
         painter.setBrush(Qt::NoBrush);
         painter.drawPath(outlinePath(board.outline));
     }
+    painter.restore();
+}
+
+namespace {
+
+// The heights of the caption and the ruler's label of the board's print,
+// the length of the ruler's ticks, and the width of its lines, in mm.
+const double PRINT_CAPTION_HEIGHT = 3.0;
+const double PRINT_RULER_TEXT_HEIGHT = 2.5;
+const double PRINT_RULER_TICK_LENGTH = 2.0;
+const double PRINT_RULER_LINE = 0.2;
+
+// A filled circle of 'diameter' at 'at'.
+void paintDot(QPainter &painter, const QPointF &at, double diameter, const QColor &color)
+{
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(color);
+    painter.drawEllipse(at, diameter / 2, diameter / 2);
+}
+
+// The centre hole of a pad drilled 'drill' wide, as 'print' asks.
+void paintCentreHole(QPainter &painter, const QPointF &at, Coord drill, const BoardPrint &print,
+                     const QColor &paper)
+{
+    const Coord diameter = std::min(print.centreHole, drill);
+    if (diameter > 0)
+        paintDot(painter, at, nmToMm(diameter), paper);
+}
+
+void paintPadShape(QPainter &painter, const Pad &pad, const QColor &ink)
+{
+    const QRectF rect = padRect(pad);
+    const double smaller = std::min(rect.width(), rect.height());
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(ink);
+    switch (pad.shape) {
+    case PadShape::Circle:
+        painter.drawEllipse(rect);
+        break;
+    case PadShape::Rect:
+        painter.drawRect(rect);
+        break;
+    case PadShape::Oval:
+        painter.drawRoundedRect(rect, smaller / 2, smaller / 2);
+        break;
+    }
+}
+
+// The copper of 'print.side' in 'ink', with the centre holes in 'paper'.
+void paintCopperPrint(QPainter &painter, const Board &board, const Library &library,
+                      const BoardPrint &print, const QColor &ink, const QColor &paper)
+{
+    const BoardSide side = print.side;
+    for (const Track &track : board.tracks) {
+        if (track.side != side)
+            continue;
+        QPen pen(ink, nmToMm(track.width));
+        pen.setCapStyle(Qt::RoundCap);
+        painter.setPen(pen);
+        painter.drawLine(toMm(track.from), toMm(track.to));
+    }
+    // The pads, and then their centre holes over every copper.
+    for (const Placement &placement : board.placements) {
+        const Footprint *footprint = library.findFootprint(placement.footprint);
+        if (footprint == nullptr)
+            continue;
+        painter.save();
+        painter.setTransform(placementTransform(placement), true);
+        for (const Pad &pad : footprint->pads) {
+            if (copperOn(padCopperSides(pad.layers, placement.side), side))
+                paintPadShape(painter, pad, ink);
+        }
+        painter.restore();
+    }
+    for (const Via &via : board.vias)
+        paintDot(painter, toMm(via.at), nmToMm(via.size), ink);
+    const bool linkPads = copperOn(board.copper, side);
+    for (const WireLink &link : board.links) {
+        for (const Point &end : {link.from, link.to}) {
+            if (linkPads)
+                paintDot(painter, toMm(end), nmToMm(link.size), ink);
+        }
+    }
+    for (const MountingHole &hole : board.holes) {
+        if (hole.ring > 0 && holePadOn(board, hole, side))
+            paintDot(painter, toMm(hole.at), nmToMm(holeOuterDiameter(hole)), ink);
+    }
+
+    for (const Placement &placement : board.placements) {
+        const Footprint *footprint = library.findFootprint(placement.footprint);
+        if (footprint == nullptr)
+            continue;
+        const QTransform transform = placementTransform(placement);
+        for (const Pad &pad : footprint->pads) {
+            if (pad.hole > 0 && copperOn(padCopperSides(pad.layers, placement.side), side))
+                paintCentreHole(painter, transform.map(toMm(pad.at)), pad.hole, print, paper);
+        }
+    }
+    for (const Via &via : board.vias)
+        paintCentreHole(painter, toMm(via.at), via.drill, print, paper);
+    for (const WireLink &link : board.links) {
+        for (const Point &end : {link.from, link.to}) {
+            if (linkPads)
+                paintCentreHole(painter, toMm(end), link.drill, print, paper);
+        }
+    }
+    for (const MountingHole &hole : board.holes) {
+        if (hole.ring > 0 && holePadOn(board, hole, side))
+            paintCentreHole(painter, toMm(hole.at), hole.drill, print, paper);
+    }
+}
+
+} // namespace
+
+void paintBoardLayerPrint(QPainter &painter, const Board &board, const Library &library,
+                          const BoardPrint &print, const QRectF &area)
+{
+    const bool copper = print.layer == BoardPrintLayer::Copper;
+    const bool inverted = copper && print.inverted;
+    const QColor ink = inverted ? QColor(Qt::white) : QColor(Qt::black);
+    const QColor paper = inverted ? QColor(Qt::black) : QColor(Qt::white);
+    const bool marks = print.registrationMarks;
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    if (inverted) {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(paper);
+        painter.drawRect(boardPrintCopyRect(area, marks));
+    }
+    if (copper) {
+        paintCopperPrint(painter, board, library, print, ink, paper);
+    } else {
+        const MonochromeInk monochrome;
+        paintSilkscreen(painter, board, library, print.side, false);
+    }
+
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(QPen(ink, OUTLINE_WIDTH));
+    painter.drawPath(outlinePath(board.outline));
+    if (marks) {
+        QPen pen(ink, REGISTRATION_MARK_LINE);
+        pen.setCapStyle(Qt::FlatCap);
+        painter.setPen(pen);
+        const double arm = REGISTRATION_MARK_ARM;
+        for (const QPointF &centre : registrationMarkCentres(area)) {
+            painter.drawLine(centre - QPointF(arm, 0), centre + QPointF(arm, 0));
+            painter.drawLine(centre - QPointF(0, arm), centre + QPointF(0, arm));
+        }
+    }
+    painter.restore();
+}
+
+void paintBoardPrintHeader(QPainter &painter, const QPointF &at, const QString &caption,
+                           const QString &rulerLabel)
+{
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    const QColor black(Qt::black);
+    drawText(painter, at + QPointF(0, PRINT_CAPTION_HEIGHT / 2), caption, PRINT_CAPTION_HEIGHT,
+             TextAlign::Left, black);
+    // The ruler under the caption, its ticks hanging from it.
+    const double y = at.y() + 2 * PRINT_CAPTION_HEIGHT + PRINT_RULER_TEXT_HEIGHT / 2;
+    QPen pen(black, PRINT_RULER_LINE);
+    pen.setCapStyle(Qt::FlatCap);
+    painter.setPen(pen);
+    painter.drawLine(QPointF(at.x(), y), QPointF(at.x() + SCALE_RULER_LENGTH, y));
+    for (double x = 0; x <= SCALE_RULER_LENGTH + 0.001; x += SCALE_RULER_TICK)
+        painter.drawLine(QPointF(at.x() + x, y), QPointF(at.x() + x, y + PRINT_RULER_TICK_LENGTH));
+    drawText(painter, QPointF(at.x() + SCALE_RULER_LENGTH + PRINT_RULER_TEXT_HEIGHT, y),
+             rulerLabel, PRINT_RULER_TEXT_HEIGHT, TextAlign::Left, black);
     painter.restore();
 }
 

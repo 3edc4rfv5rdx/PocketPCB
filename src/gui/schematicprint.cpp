@@ -6,7 +6,6 @@
 #include "sheetedit.h"
 
 #include <QCoreApplication>
-#include <QFileInfo>
 #include <QMessageBox>
 #include <QPageLayout>
 #include <QPainter>
@@ -51,11 +50,6 @@ void paintPage(QPainter &painter, const Document &document, int index, const QPa
     painter.restore();
 }
 
-QString projectName(const Document &document)
-{
-    return QFileInfo(document.projectPath()).completeBaseName();
-}
-
 } // namespace
 
 QString printSchematicTitle()
@@ -74,7 +68,7 @@ QString printSchematic(QWidget *parent, const Document &document, int current)
     if (sheets.isEmpty())
         return QString();
     QPrinter printer(QPrinter::HighResolution);
-    printer.setDocName(projectName(document));
+    printer.setDocName(projectName(document.projectPath()));
     printer.setFullPage(true);
     QPrintDialog dialog(&printer, parent);
     dialog.setWindowTitle(printSchematicTitle());
@@ -95,8 +89,8 @@ QString printSchematic(QWidget *parent, const Document &document, int current)
         to = qBound(from, printer.toPage() - 1, to);
     }
     if (!printSheets(printer, document, from, to))
-        return QCoreApplication::translate("ppcb::SchematicPrint", "Cannot print");
-    return QCoreApplication::translate("ppcb::SchematicPrint", "Sent to the printer");
+        return cannotPrintMessage();
+    return sentToPrinterMessage();
 }
 
 bool printSheets(QPrinter &printer, const Document &document, int from, int to)
@@ -157,7 +151,7 @@ QString exportSchematicPdf(QWidget *parent, const Document &document, int curren
         return cannotWriteMessage(path);
     {
         QPdfWriter writer(&file);
-        writer.setTitle(projectName(document));
+        writer.setTitle(projectName(document.projectPath()));
         writer.setCreator(QCoreApplication::applicationName());
         QPageLayout layout = sheetLayout(sheets.at(from));
         writer.setPageLayout(layout);

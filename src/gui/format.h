@@ -64,6 +64,12 @@ QString partLockedMessage();
 // What to tell after writing the file 'path', or failing to.
 QString writtenMessage(const QString &path);
 QString cannotWriteMessage(const QString &path);
+// What to tell after sending a print to the printer, or failing to.
+QString sentToPrinterMessage();
+QString cannotPrintMessage();
+// The name of the project in 'projectPath': its file's name without the
+// extension.
+QString projectName(const QString &projectPath);
 // 'text' with its first letter a capital, for a sentence starting with a
 // word that is in lower case elsewhere.
 QString capitalized(const QString &text);

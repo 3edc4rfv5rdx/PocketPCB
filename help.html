@@ -49,6 +49,7 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
       <li><a href="#tracks">Tracks</a></li>
       <li><a href="#autoroute">Autorouter</a></li>
       <li><a href="#drc">DRC</a></li>
+      <li><a href="#boardprint">Printing the board</a></li>
     </ul>
   </li>
   <li><a href="#settings">Settings</a></li>
@@ -89,8 +90,8 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
 <ul>
   <li>The menus open from the button at the left of the strip, or with <kbd>F10</kbd>.
     Help &gt; User guide (<kbd>F1</kbd>) opens this page, Help &gt; About names the version.</li>
-  <li>The strip of tools, left to right: the menu, Recent projects, Project properties, Save, Print and PDF of
-    the schematic; Undo and Redo; Zoom in, Zoom out, Fit the page, Fit the drawing, Actual size, and a grid button
+  <li>The strip of tools, left to right: the menu, Recent projects, Project properties, Save, Print and PDF (of
+    the schematic, or on the board Print board); Undo and Redo; Zoom in, Zoom out, Fit the page, Fit the drawing, Actual size, and a grid button
     that makes the grid brighter while held; in the middle
     Lock and the tools of the page shown (the one on stands pressed); on the right the panels: Library,
     Properties, Nets, ERC, DRC, BOM. Each tip names its key.</li>
@@ -232,6 +233,7 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
     each fitted to the paper.</li>
   <li>File &gt; Export schematic to PDF writes the sheet shown or all of them at 1:1 into the <i>out</i>
     folder.</li>
+  <li>The board prints 1:1 for making it at home: see <a href="#boardprint">Printing the board</a>.</li>
 </ul>
 
 <h2 id="board">Board</h2>
@@ -385,6 +387,19 @@ choice.</p>
   <li>The pads of one part are not checked against each other.</li>
 </ul>
 
+<h3 id="boardprint">Printing the board</h3>
+<ul>
+  <li>File &gt; <b>Print board</b> (<kbd>Ctrl+P</kbd> while the board is shown, or Print and PDF on the strip)
+    prints a layer 1:1 for toner transfer or photoresist: the copper of a side, or its silkscreen.</li>
+  <li><b>Mirrored</b> is on for the top and off for the bottom at first. <b>Negative for photoresist</b> prints the
+    copper white on black. <b>Centre holes</b> leave a small hole in each pad, 0.5 mm at first, for the
+    drill.</li>
+  <li><b>Registration marks</b> are crosses outside the board, to put the prints of the two sides over each
+    other. Several <b>copies</b> fill the page and go on to the next.</li>
+  <li><b>Print</b> asks the printer; <b>Export board to PDF</b> writes the layer into the <i>out</i> folder.
+    Each page has a 100 mm ruler: measure it to check that the printer keeps the scale.</li>
+</ul>
+
 <h2 id="settings">Settings</h2>
 <ul>
   <li><b>Language</b>: the interface language, or the system's; taken at the next start.</li>
@@ -402,7 +417,7 @@ choice.</p>
   <tr><td><kbd>Ctrl+S</kbd> / <kbd>Ctrl+Shift+S</kbd></td><td>Save / Save as</td></tr>
   <tr><td><kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Shift+Z</kbd></td><td>Undo / Redo</td></tr>
   <tr><td><kbd>Ctrl+C</kbd>, <kbd>Ctrl+X</kbd>, <kbd>Ctrl+V</kbd>, <kbd>Ctrl+D</kbd></td><td>Copy, cut, paste, duplicate</td></tr>
-  <tr><td><kbd>Ctrl+P</kbd></td><td>Print schematic</td></tr>
+  <tr><td><kbd>Ctrl+P</kbd></td><td>Print schematic, or the board while it is shown</td></tr>
   <tr><td><kbd>Ctrl+L</kbd></td><td>Open library file</td></tr>
   <tr><td><kbd>Home</kbd> / <kbd>Shift+Home</kbd></td><td>Fit the page / fit the drawing</td></tr>
   <tr><td><kbd>Ctrl+0</kbd></td><td>Actual size</td></tr>
