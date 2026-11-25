@@ -69,10 +69,10 @@ struct BoardPrintLayout
 BoardPrintLayout boardPrintLayout(const QSizeF &copy, const QSizeF &page, int copies);
 
 // The paper's margins, the gap between copies, and the band at the top of
-// each page with the caption and the scale ruler, in mm.
+// each page with the caption, the scale ruler and the drill table, in mm.
 constexpr double BOARD_PRINT_MARGIN = 10;
 constexpr double BOARD_PRINT_GAP = 5;
-constexpr double BOARD_PRINT_HEADER = 14;
+constexpr double BOARD_PRINT_HEADER = 18;
 // The scale ruler: 100 mm, with a tick every 10 mm, so that the print can
 // be checked against a real ruler.
 constexpr double SCALE_RULER_LENGTH = 100;

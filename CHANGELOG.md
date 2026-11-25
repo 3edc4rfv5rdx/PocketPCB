@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: The copper print has the drill table under its ruler: each diameter and how many holes
 - N: Export Gerber and drill files for a factory, in out/gerber and a zip named with the revision and the day
 - F: The board print is solid black without smoothed edges, in grayscale, and marks a hole without a pad with a circle and a centre cross
 - N: Print board 1:1 for making it at home: copper or silkscreen of a side, mirrored, negative, centre holes, copies, registration marks and a scale ruler, to the printer or PDF

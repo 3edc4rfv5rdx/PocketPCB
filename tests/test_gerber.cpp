@@ -104,6 +104,17 @@ private slots:
         QCOMPARE(drilledDiameter(mmToNm(5), rules), mmToNm(5));
     }
 
+    void drillTableCountsEachDiameter()
+    {
+        const QList<DrillHole> holes{{Point(), mmToNm(3.2), false},
+                                     {Point(), mmToNm(0.8), true},
+                                     {Point(), mmToNm(0.8), false}};
+        const QMap<Coord, int> counts = drillCounts(holes);
+        QCOMPARE(counts.keys(), (QList<Coord>{mmToNm(0.8), mmToNm(3.2)}));
+        QCOMPARE(counts.value(mmToNm(0.8)), 2);
+        QCOMPARE(counts.value(mmToNm(3.2)), 1);
+    }
+
     void excellonHasToolsAndHoles()
     {
         const QList<DrillHole> holes{{Point{mmToNm(1), mmToNm(2)}, mmToNm(0.8), true},

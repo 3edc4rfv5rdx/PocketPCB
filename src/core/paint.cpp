@@ -1821,7 +1821,7 @@ void paintSilkscreenLayer(QPainter &painter, const Board &board, const Library &
 }
 
 void paintBoardPrintHeader(QPainter &painter, const QPointF &at, const QString &caption,
-                           const QString &rulerLabel)
+                           const QString &rulerLabel, const QString &drills)
 {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, false);
@@ -1838,6 +1838,10 @@ void paintBoardPrintHeader(QPainter &painter, const QPointF &at, const QString &
         painter.drawLine(QPointF(at.x() + x, y), QPointF(at.x() + x, y + PRINT_RULER_TICK_LENGTH));
     drawText(painter, QPointF(at.x() + SCALE_RULER_LENGTH + PRINT_RULER_TEXT_HEIGHT, y),
              rulerLabel, PRINT_RULER_TEXT_HEIGHT, TextAlign::Left, black);
+    // The drill table under the ruler's ticks.
+    drawText(painter,
+             QPointF(at.x(), y + PRINT_RULER_TICK_LENGTH + PRINT_CAPTION_HEIGHT),
+             drills, PRINT_RULER_TEXT_HEIGHT, TextAlign::Left, black);
     painter.restore();
 }
 

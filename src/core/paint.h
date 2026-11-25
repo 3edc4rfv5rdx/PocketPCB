@@ -278,9 +278,10 @@ void paintBoardLayerPrint(QPainter &painter, const Board &board, const Library &
 void paintSilkscreenLayer(QPainter &painter, const Board &board, const Library &library,
                           BoardSide side);
 // The band at the top of a page of the board's print, in black, its top
-// left corner at 'at': 'caption', and under it the scale ruler of
-// SCALE_RULER_LENGTH mm with 'rulerLabel' after it.
+// left corner at 'at': 'caption', under it the scale ruler of
+// SCALE_RULER_LENGTH mm with 'rulerLabel' after it, and under that
+// 'drills', the drill table, when not empty.
 void paintBoardPrintHeader(QPainter &painter, const QPointF &at, const QString &caption,
-                           const QString &rulerLabel);
+                           const QString &rulerLabel, const QString &drills);
 
 } // namespace ppcb

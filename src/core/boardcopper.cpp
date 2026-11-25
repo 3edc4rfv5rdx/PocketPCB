@@ -87,6 +87,14 @@ QList<DrillHole> drillHoles(const Board &board, const Library &library, const Ru
     return holes;
 }
 
+QMap<Coord, int> drillCounts(const QList<DrillHole> &holes)
+{
+    QMap<Coord, int> counts;
+    for (const DrillHole &hole : holes)
+        ++counts[hole.diameter];
+    return counts;
+}
+
 Coord drilledDiameter(Coord diameter, const Rules &rules)
 {
     if (!rules.drillsOnly)

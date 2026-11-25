@@ -1,5 +1,6 @@
 #include "boardprintdialog.h"
 
+#include "boardcopper.h"
 #include "document.h"
 #include "format.h"
 #include "paint.h"
@@ -72,6 +73,23 @@ QRectF printArea(const Design &design)
     return outlinePath(board.outline).boundingRect().adjusted(-room, -room, room, room);
 }
 
+// The drill table of the copper: "Drills  0.8 mm × 42  3.2 mm × 4", the
+// diameters as they are drilled; empty for the silkscreen or no holes.
+QString drillTable(const Design &design, const BoardPrint &print)
+{
+    if (print.layer != BoardPrintLayer::Copper)
+        return QString();
+    const QMap<Coord, int> counts =
+        drillCounts(drillHoles(design.board, design.library, design.project.rules));
+    if (counts.isEmpty())
+        return QString();
+    QString text = BoardPrintDialog::tr("Drills");
+    for (auto it = counts.cbegin(); it != counts.cend(); ++it)
+        text += QStringLiteral("   ") + formatMmShortUnit(it.key()) + QStringLiteral(" × ")
+                + QString::number(it.value());
+    return text;
+}
+
 // The combo box's data for a layer of a side, and back.
 int layerChoice(BoardPrintLayer layer, BoardSide side)
 {
@@ -110,6 +128,7 @@ bool paintBoardPages(QPagedPaintDevice &device, const QSizeF &page, double dotsP
     const BoardPrintLayout layout = boardPrintLayout(copy.size(), page, print.copies);
     fits = layout.fits;
     const QString title = caption(document, print);
+    const QString drills = drillTable(design, print);
     const QString rulerLabel =
         QString::number(SCALE_RULER_LENGTH) + QLatin1Char(' ') + mmUnit();
 
@@ -122,7 +141,7 @@ bool paintBoardPages(QPagedPaintDevice &device, const QSizeF &page, double dotsP
         painter.resetTransform();
         painter.scale(dotsPerMm, dotsPerMm);
         paintBoardPrintHeader(painter, QPointF(BOARD_PRINT_MARGIN, BOARD_PRINT_MARGIN), title,
-                              rulerLabel);
+                              rulerLabel, drills);
         for (const QPointF &corner : layout.pages.at(index)) {
             painter.save();
             // Read from the last: the board mirrored about the middle of

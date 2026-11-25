@@ -4,6 +4,7 @@
 #include "library.h"
 
 #include <QList>
+#include <QMap>
 
 namespace ppcb {
 
@@ -46,6 +47,10 @@ struct DrillHole
 // Every hole of the board, once each, with the diameter it is drilled with
 // (drilledDiameter()).
 QList<DrillHole> drillHoles(const Board &board, const Library &library, const Rules &rules);
+
+// How many of 'holes' each diameter has, the diameters ascending: the drill
+// table.
+QMap<Coord, int> drillCounts(const QList<DrillHole> &holes);
 
 // The diameter 'diameter' is drilled with: when only the drills of the
 // rules may be used, the smallest of them not smaller; else, or when none

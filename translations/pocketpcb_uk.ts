@@ -1665,6 +1665,10 @@
 <context>
     <name>ppcb::BoardPrintDialog</name>
     <message>
+        <source>Drills</source>
+        <translation>Свердла</translation>
+    </message>
+    <message>
         <source>Print board</source>
         <translation>Друк плати</translation>
     </message>
