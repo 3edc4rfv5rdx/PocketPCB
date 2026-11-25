@@ -23,9 +23,8 @@ QString gerberArchiveName(const QString &project, const QString &revision, const
 // when nothing does.
 QString gerberExportProblem(const Design &design);
 
-// Asks which revision the files are made for, starting with 'revision', a
-// Next button putting nextRevision() in; 'revision' is what was typed,
-// trimmed. False when cancelled.
+// Asks which revision the files are made for, starting with 'revision';
+// 'revision' is what was typed, trimmed. False when cancelled.
 bool askGerberRevision(QWidget *parent, QString &revision);
 
 // Writes the board's Gerber and drill files (gerberFiles()) into the

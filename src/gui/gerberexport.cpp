@@ -59,7 +59,7 @@ bool askGerberRevision(QWidget *parent, QString &revision)
     QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     auto *layout = new QFormLayout(&dialog);
-    layout->addRow(revisionWord() + QLatin1Char(':'), revisionRow(edit));
+    layout->addRow(revisionWord() + QLatin1Char(':'), edit);
     layout->addRow(buttons);
     if (dialog.exec() != QDialog::Accepted)
         return false;

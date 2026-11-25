@@ -64,6 +64,7 @@
 #include <QProgressDialog>
 #include <QPainter>
 #include <QPixmap>
+#include <QAbstractButton>
 #include <QPushButton>
 #include <QShowEvent>
 #include <QStatusBar>
@@ -1470,6 +1471,17 @@ bool MainWindow::saveProject()
     return true;
 }
 
+void MainWindow::setRevision(const QString &revision)
+{
+    if (revision == m_document->design().project.titleBlock.revision)
+        return;
+    Design changed = m_document->design();
+    changed.project.titleBlock.revision = revision;
+    m_document->change(revision.isEmpty() ? revisionWord()
+                                          : revisionWord() + QLatin1Char(' ') + revision,
+                       changed);
+}
+
 void MainWindow::exportGerberFiles()
 {
     QString message = gerberExportProblem(m_document->design());
@@ -1477,13 +1489,7 @@ void MainWindow::exportGerberFiles()
         QString revision = m_document->design().project.titleBlock.revision;
         if (!askGerberRevision(this, revision))
             return;
-        if (revision != m_document->design().project.titleBlock.revision) {
-            Design changed = m_document->design();
-            changed.project.titleBlock.revision = revision;
-            m_document->change(revision.isEmpty() ? revisionWord()
-                                                  : revisionWord() + QLatin1Char(' ') + revision,
-                               changed);
-        }
+        setRevision(revision);
         // What goes to the factory is saved, and kept as a version.
         if ((m_document->projectPath().isEmpty() || m_document->isModified()) && !saveProject())
             return;
@@ -1500,7 +1506,18 @@ void MainWindow::exportGerberFiles()
             }
             if (!versionPath.isEmpty())
                 message += QLatin1Char('\n') + writtenMessage(versionPath);
-            QMessageBox::information(this, exportGerberTitle(), message);
+            // The work after the files went to the factory goes on under the
+            // next revision, when the user says so.
+            QMessageBox box(QMessageBox::Information, exportGerberTitle(), message,
+                            QMessageBox::Ok, this);
+            box.setObjectName(QStringLiteral("gerberDoneBox"));
+            const QString next = nextRevision(revision);
+            QAbstractButton *nextButton =
+                box.addButton(tr("Start revision %1").arg(next), QMessageBox::ActionRole);
+            nextButton->setObjectName(QStringLiteral("startNextRevision"));
+            box.exec();
+            if (box.clickedButton() == nextButton)
+                setRevision(next);
             return;
         }
     }

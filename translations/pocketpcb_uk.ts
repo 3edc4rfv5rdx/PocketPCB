@@ -692,6 +692,10 @@
 <context>
     <name>ppcb::MainWindow</name>
     <message>
+        <source>Start revision %1</source>
+        <translation>Почати ревізію %1</translation>
+    </message>
+    <message>
         <source>Save version</source>
         <translation>Зберегти версію</translation>
     </message>

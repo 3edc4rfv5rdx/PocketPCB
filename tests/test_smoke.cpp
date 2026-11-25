@@ -561,17 +561,19 @@ private slots:
         QCOMPARE(dialog.parentFolder(), dir.path());
     }
 
-    // Before the Gerber export: Next steps the revision, OK takes what is
-    // typed, trimmed, and Cancel leaves it.
+    // Before the Gerber export: OK takes the revision typed, trimmed, and
+    // Cancel leaves it; there is no Next there.
     void gerberRevisionIsAsked()
     {
-        QString revision = QStringLiteral(" A ");
+        QString revision = QStringLiteral("A");
         QTimer::singleShot(0, [] {
             auto *dialog = qobject_cast<QDialog *>(QApplication::activeModalWidget());
             QVERIFY(dialog != nullptr);
-            dialog->findChild<QPushButton *>(QStringLiteral("nextRevisionButton"))->click();
-            QCOMPARE(dialog->findChild<QLineEdit *>(QStringLiteral("gerberRevisionEdit"))->text(),
-                     QStringLiteral("B"));
+            QVERIFY(dialog->findChild<QPushButton *>(QStringLiteral("nextRevisionButton"))
+                    == nullptr);
+            auto *edit = dialog->findChild<QLineEdit *>(QStringLiteral("gerberRevisionEdit"));
+            QCOMPARE(edit->text(), QStringLiteral("A"));
+            edit->setText(QStringLiteral(" B "));
             dialog->accept();
         });
         QVERIFY(askGerberRevision(nullptr, revision));

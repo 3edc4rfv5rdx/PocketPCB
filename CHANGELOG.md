@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The revision box before Gerber export has no Next any more; the box after it offers to start the next revision
 - N: Gerber export saves the project and keeps it as a version when it changed since the last one
 - N: File > Save version keeps the project as it is, in a numbered zip in its versions folder
 - F: A long drill table goes on to more lines instead of off the page, and the silkscreen print has no empty line for it
