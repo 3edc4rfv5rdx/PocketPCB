@@ -50,6 +50,7 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
       <li><a href="#autoroute">Autorouter</a></li>
       <li><a href="#drc">DRC</a></li>
       <li><a href="#boardprint">Printing the board</a></li>
+      <li><a href="#gerber">Files for a factory</a></li>
     </ul>
   </li>
   <li><a href="#settings">Settings</a></li>
@@ -400,6 +401,17 @@ choice.</p>
     Each page has a 100 mm ruler: measure it to check that the printer keeps the scale.</li>
   <li>The layer is printed solid black, in grayscale. In the printer's own settings turn toner saving off
     and the density up, for the darkest print.</li>
+</ul>
+
+<h3 id="gerber">Files for a factory</h3>
+<ul>
+  <li>File &gt; <b>Export Gerber and drill files</b> writes the files a factory makes the board from into the
+    <i>out/gerber</i> folder: copper, solder mask, silkscreen and outline in Gerber, the holes in Excellon,
+    plated and not plated apart.</li>
+  <li>The same files go into one zip archive in <i>out</i>, named with the project, its revision (from Project
+    properties) and the day as 20261125: upload it to the factory's site.</li>
+  <li>With the Toner transfer rules each hole is drilled with the nearest drill of the set not smaller than
+    it. The board needs an outline.</li>
 </ul>
 
 <h2 id="settings">Settings</h2>

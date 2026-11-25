@@ -1,5 +1,6 @@
 #include "paint.h"
 
+#include "boardcopper.h"
 #include "strokefont.h"
 #include "wiring.h"
 
@@ -1711,10 +1712,12 @@ void paintCentreHole(QPainter &painter, const QPointF &at, Coord drill, const Bo
         paintDot(painter, at, nmToMm(diameter), paper);
 }
 
-void paintPadShape(QPainter &painter, const Pad &pad, const QColor &ink)
+void paintCopperPad(QPainter &painter, const CopperPad &pad, const QColor &ink)
 {
-    const QRectF rect = padRect(pad);
-    const double smaller = std::min(rect.width(), rect.height());
+    const double width = nmToMm(pad.sizeX);
+    const double height = nmToMm(pad.sizeY);
+    const QRectF rect(toMm(pad.at) - QPointF(width / 2, height / 2), QSizeF(width, height));
+    const double smaller = std::min(width, height);
     painter.setPen(Qt::NoPen);
     painter.setBrush(ink);
     switch (pad.shape) {
@@ -1744,53 +1747,12 @@ void paintCopperPrint(QPainter &painter, const Board &board, const Library &libr
         painter.drawLine(toMm(track.from), toMm(track.to));
     }
     // The pads, and then their centre holes over every copper.
-    for (const Placement &placement : board.placements) {
-        const Footprint *footprint = library.findFootprint(placement.footprint);
-        if (footprint == nullptr)
-            continue;
-        painter.save();
-        painter.setTransform(placementTransform(placement), true);
-        for (const Pad &pad : footprint->pads) {
-            if (copperOn(padCopperSides(pad.layers, placement.side), side))
-                paintPadShape(painter, pad, ink);
-        }
-        painter.restore();
-    }
-    for (const Via &via : board.vias)
-        paintDot(painter, toMm(via.at), nmToMm(via.size), ink);
-    const bool linkPads = copperOn(board.copper, side);
-    for (const WireLink &link : board.links) {
-        for (const Point &end : {link.from, link.to}) {
-            if (linkPads)
-                paintDot(painter, toMm(end), nmToMm(link.size), ink);
-        }
-    }
-    for (const MountingHole &hole : board.holes) {
-        if (hole.ring > 0 && holePadOn(board, hole, side))
-            paintDot(painter, toMm(hole.at), nmToMm(holeOuterDiameter(hole)), ink);
-    }
-
-    for (const Placement &placement : board.placements) {
-        const Footprint *footprint = library.findFootprint(placement.footprint);
-        if (footprint == nullptr)
-            continue;
-        const QTransform transform = placementTransform(placement);
-        for (const Pad &pad : footprint->pads) {
-            if (pad.hole > 0 && copperOn(padCopperSides(pad.layers, placement.side), side))
-                paintCentreHole(painter, transform.map(toMm(pad.at)), pad.hole, print, paper);
-        }
-    }
-    for (const Via &via : board.vias)
-        paintCentreHole(painter, toMm(via.at), via.drill, print, paper);
-    for (const WireLink &link : board.links) {
-        for (const Point &end : {link.from, link.to}) {
-            if (linkPads)
-                paintCentreHole(painter, toMm(end), link.drill, print, paper);
-        }
-    }
-    for (const MountingHole &hole : board.holes) {
-        if (hole.ring > 0 && holePadOn(board, hole, side))
-            paintCentreHole(painter, toMm(hole.at), hole.drill, print, paper);
+    const QList<CopperPad> pads = copperPads(board, library, side);
+    for (const CopperPad &pad : pads)
+        paintCopperPad(painter, pad, ink);
+    for (const CopperPad &pad : pads) {
+        if (pad.drill > 0)
+            paintCentreHole(painter, toMm(pad.at), pad.drill, print, paper);
     }
     // A hole without a pad: a circle just inside its edge and a cross over
     // its middle, drilled away with it.
@@ -1832,8 +1794,7 @@ void paintBoardLayerPrint(QPainter &painter, const Board &board, const Library &
     if (copper) {
         paintCopperPrint(painter, board, library, print, ink, paper);
     } else {
-        const MonochromeInk monochrome;
-        paintSilkscreen(painter, board, library, print.side, false);
+        paintSilkscreenLayer(painter, board, library, print.side);
     }
 
     painter.setBrush(Qt::NoBrush);
@@ -1850,6 +1811,13 @@ void paintBoardLayerPrint(QPainter &painter, const Board &board, const Library &
         }
     }
     painter.restore();
+}
+
+void paintSilkscreenLayer(QPainter &painter, const Board &board, const Library &library,
+                          BoardSide side)
+{
+    const MonochromeInk monochrome;
+    paintSilkscreen(painter, board, library, side, false);
 }
 
 void paintBoardPrintHeader(QPainter &painter, const QPointF &at, const QString &caption,

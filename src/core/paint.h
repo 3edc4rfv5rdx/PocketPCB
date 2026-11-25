@@ -273,6 +273,10 @@ void paintBoard(QPainter &painter, const Board &board, const Library &library,
 // shows on it, in black.
 void paintBoardLayerPrint(QPainter &painter, const Board &board, const Library &library,
                           const BoardPrint &print, const QRectF &area);
+// The silkscreen of 'side' as it is made, in black: what the board shows
+// on it (see paintBoard()), locked parts not marked.
+void paintSilkscreenLayer(QPainter &painter, const Board &board, const Library &library,
+                          BoardSide side);
 // The band at the top of a page of the board's print, in black, its top
 // left corner at 'at': 'caption', and under it the scale ruler of
 // SCALE_RULER_LENGTH mm with 'rulerLabel' after it.

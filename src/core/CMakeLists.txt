@@ -4,6 +4,7 @@ add_library(pocketpcb_core STATIC
     autoroute.h autoroute.cpp
     version.h version.cpp
     board.h board.cpp
+    boardcopper.h boardcopper.cpp
     boardprint.h boardprint.cpp
     boardedit.h boardedit.cpp
     boardupdate.h boardupdate.cpp
@@ -11,6 +12,7 @@ add_library(pocketpcb_core STATIC
     bom.h bom.cpp
     document.h document.cpp
     footprint.h footprint.cpp
+    gerber.h gerber.cpp
     graphic.h graphic.cpp
     gridroute.h gridroute.cpp
     grid.h grid.cpp
@@ -35,6 +37,7 @@ add_library(pocketpcb_core STATIC
     strokefont.h strokefont.cpp strokefont_data.cpp
     symbol.h symbol.cpp
     wiring.h wiringdetail.h wiregeometry.cpp wireroute.cpp wirefollow.cpp wireedit.cpp
+    zipfile.h zipfile.cpp
 )
 target_include_directories(pocketpcb_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(pocketpcb_core PUBLIC Qt6::Core Qt6::Gui)

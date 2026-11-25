@@ -1652,6 +1652,17 @@
     </message>
 </context>
 <context>
+    <name>ppcb::GerberExport</name>
+    <message>
+        <source>Export Gerber and drill files</source>
+        <translation>Експорт Gerber і свердловки</translation>
+    </message>
+    <message>
+        <source>The board has no outline</source>
+        <translation>Плата не має контуру</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::BoardPrintDialog</name>
     <message>
         <source>Print board</source>

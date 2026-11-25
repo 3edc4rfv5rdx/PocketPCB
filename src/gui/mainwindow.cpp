@@ -10,6 +10,7 @@
 #include "ercpanel.h"
 #include "document.h"
 #include "format.h"
+#include "gerberexport.h"
 #include "grid.h"
 #include "language.h"
 #include "librarypanel.h"
@@ -442,6 +443,10 @@ void MainWindow::createMenus()
         if (!message.isEmpty())
             showStatus(message);
     });
+    QAction *gerberAction = fileMenu->addAction(exportGerberTitle());
+    gerberAction->setObjectName(QStringLiteral("actionExportGerber"));
+    connect(gerberAction, &QAction::triggered, this,
+            [this] { showStatus(exportGerber(*m_document)); });
     fileMenu->addSeparator();
 
     QAction *propertiesAction =

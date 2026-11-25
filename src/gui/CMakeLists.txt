@@ -10,6 +10,7 @@ add_library(pocketpcb_gui STATIC
     rulescheck.h rulescheck.cpp
     ercpanel.h ercpanel.cpp
     format.h format.cpp
+    gerberexport.h gerberexport.cpp
     inplaceedit.h inplaceedit.cpp
     language.h language.cpp
     librarypanel.h librarypanel.cpp

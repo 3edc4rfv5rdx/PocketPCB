@@ -1,5 +1,6 @@
 #include "appsettings.h"
 #include "format.h"
+#include "gerberexport.h"
 #include "language.h"
 
 #include <QSettings>
@@ -35,6 +36,17 @@ private slots:
         QCOMPARE(formatMmFixed(-635000), QStringLiteral("-0.635"));
         QCOMPARE(formatMmFixed(1234567890), QStringLiteral("1234.568")); // no group separator
         QCOMPARE(formatMmFixed(-400), QStringLiteral("0.000")); // not "-0.000"
+    }
+
+    // The revision and the day in the archive's name, the revision made
+    // safe for a file name and left out when empty.
+    void gerberArchiveNamed()
+    {
+        const QDate day(2026, 11, 25);
+        QCOMPARE(gerberArchiveName(QStringLiteral("amp"), QString(), day),
+                 QStringLiteral("amp-20261125-gerber.zip"));
+        QCOMPARE(gerberArchiveName(QStringLiteral("amp"), QStringLiteral(" 1.2/b "), day),
+                 QStringLiteral("amp-rev1.2_b-20261125-gerber.zip"));
     }
 
     void formatShort()
