@@ -146,7 +146,9 @@ Board withTrackCornerMoved(const Board &board, const Library &library, const Obj
 // upright one sideways, one at 45 degrees by whole cells of 'gridStep'
 // across it, another by 'delta' as it is. A piece going on from an end is
 // laid again to it from its far end, straight and at 45 degrees; an end on a
-// pad, a via or a fork gets a new piece to it; a free end just moves.
+// pad, a via or a fork gets a new piece to it; a free end just moves. A
+// piece ending on it between its ends is made longer or shorter along its
+// way to meet it again; when one cannot, the board stays as it is.
 Board withTrackPieceMoved(const Board &board, const Library &library, const ObjectId &id,
                           const Point &delta, Coord gridStep);
 // 'board' with its pieces of track 'ids' (every one when empty) moved across

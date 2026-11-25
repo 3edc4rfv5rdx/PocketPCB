@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: Moving a piece of track by hand or by Spread tracks stretches a track ending on its middle instead of leaving it cut off
 - N: Project properties has a Rules tab for the board's rules, the rule set and the level of each check
 - N: DRC panel checks the board after every change and rings the problems on it
 - I: Design rules check of the board in the core library, not yet shown in the app

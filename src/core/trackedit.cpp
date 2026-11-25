@@ -771,6 +771,28 @@ Board withTrackPieceMoved(const Board &board, const Library &library, const Obje
         joiner.to = movedEnd;
         added.append(joiner);
     }
+    // A piece ending on it between its ends keeps its way too, made longer
+    // or shorter to meet it again; when it cannot (it runs along the piece,
+    // would shrink to nothing or turn back, or would miss the piece moved),
+    // the piece is not moved.
+    for (const Track &stem : board.tracks) {
+        if (stem.side != track.side)
+            continue;
+        for (const bool atTo : {false, true}) {
+            const Point end = atTo ? stem.to : stem.from;
+            if (!insidePiece(track, end))
+                continue;
+            const Point far = atTo ? stem.from : stem.to;
+            const std::optional<Point> meet = linesMeet(far, end - far, moved.from, way);
+            if (!meet || *meet == far || dot(*meet - far, end - far) <= 0
+                || (*meet != moved.from && *meet != moved.to && !insidePiece(moved, *meet)))
+                return board;
+            Track longer = stem;
+            (atTo ? longer.to : longer.from) = *meet;
+            gone.insert(stem.id);
+            added.append(longer);
+        }
+    }
     return withPiecesMerged(withPiecesReplaced(board, id, {moved}, gone, added), library);
 }
 

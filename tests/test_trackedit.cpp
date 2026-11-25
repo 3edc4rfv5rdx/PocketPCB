@@ -424,6 +424,23 @@ private slots:
         QCOMPARE(slanted.tracks.size(), 3);
         QCOMPARE(findById(slanted.tracks, down)->to, mm(-3, 12));
 
+        // A track ending on its middle, at 45 degrees from (6, 16): made
+        // longer to meet the piece moved up by 2.
+        Board teed = board;
+        Track stem;
+        stem.id = newObjectId();
+        stem.net = QStringLiteral("A");
+        stem.width = MM / 2;
+        stem.from = mm(6, 16);
+        stem.to = mm(0, 10);
+        teed.tracks.append(stem);
+        const Board teeMoved = withTrackPieceMoved(teed, library(), across, mm(0, -2), MM);
+        QCOMPARE(findById(teeMoved.tracks, across)->from, mm(-5, 8));
+        QCOMPARE(findById(teeMoved.tracks, stem.id)->from, mm(6, 16));
+        QCOMPARE(findById(teeMoved.tracks, stem.id)->to, mm(-2, 8));
+        // Moved down past where it starts, it would turn back: not moved.
+        QCOMPARE(withTrackPieceMoved(teed, library(), across, mm(0, 7), MM), teed);
+
         // Up by 9, past pad 2 of net B at (5, 0): it shorts.
         Design design = newDesign(QStringLiteral("t"));
         design.library = library();
