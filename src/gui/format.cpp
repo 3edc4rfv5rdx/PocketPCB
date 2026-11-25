@@ -7,7 +7,9 @@
 #include <QDoubleSpinBox>
 #include <QFileInfo>
 #include <QLocale>
+#include <QRegularExpression>
 
+#include <algorithm>
 #include <cmath>
 
 namespace ppcb {
@@ -77,9 +79,38 @@ QDoubleSpinBox *mmSizeBox(Coord nm, double minMm, double maxMm, double stepMm, Q
     box->setDecimals(MM_DECIMALS);
     box->setRange(minMm, maxMm);
     box->setSingleStep(stepMm);
-    box->setValue(nmToMm(nm));
-    box->setProperty(SIZE_PROPERTY, QVariant::fromValue(qint64(nm)));
+    setMmSize(box, nm);
     return box;
+}
+
+void setMmSize(QDoubleSpinBox *box, Coord nm)
+{
+    box->setProperty(SIZE_PROPERTY, QVariant::fromValue(qint64(nm)));
+    box->setValue(nmToMm(nm));
+}
+
+QString formatMmList(const QList<Coord> &list)
+{
+    QStringList texts;
+    for (const Coord nm : list)
+        texts.append(formatMmShort(nm));
+    return texts.join(QStringLiteral(" / "));
+}
+
+bool parseMmList(const QString &text, QList<Coord> &list)
+{
+    QList<Coord> parsed;
+    static const QRegularExpression separators(QStringLiteral("[\\s/;]+"));
+    for (const QString &word : text.split(separators, Qt::SkipEmptyParts)) {
+        Coord nm = 0;
+        if (!parseMm(word, nm) || nm <= 0)
+            return false;
+        if (!parsed.contains(nm))
+            parsed.append(nm);
+    }
+    std::sort(parsed.begin(), parsed.end());
+    list = parsed;
+    return true;
 }
 
 Coord mmSizeOf(const QDoubleSpinBox *box)

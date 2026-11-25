@@ -2,6 +2,7 @@
 
 #include "units.h"
 
+#include <QList>
 #include <QString>
 
 class QDoubleSpinBox;
@@ -32,6 +33,14 @@ QDoubleSpinBox *mmSizeBox(Coord nm, double minMm, double maxMm, double stepMm, Q
 // The length in 'box': the one it was given while what it shows is that
 // one rounded, so that a length finer than the decimals is not lost unseen.
 Coord mmSizeOf(const QDoubleSpinBox *box);
+// Gives 'box' of mmSizeBox() the length 'nm', as it was made with.
+void setMmSize(QDoubleSpinBox *box, Coord nm);
+// Lengths as "0.3 / 0.5 / 1.5", in millimetres with a slash between.
+QString formatMmList(const QList<Coord> &list);
+// Lengths typed so: in millimetres (parseMm()), apart by slashes, spaces or
+// semicolons, each more than 0; ascending, each once. False for anything
+// else.
+bool parseMmList(const QString &text, QList<Coord> &list);
 
 // "mm", the unit after a length, in the current language.
 QString mmUnit();

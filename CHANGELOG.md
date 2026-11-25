@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Project properties has a Rules tab for the board's rules, the rule set and the level of each check
 - N: DRC panel checks the board after every change and rings the problems on it
 - I: Design rules check of the board in the core library, not yet shown in the app
 - I: The build script prints the time it finished

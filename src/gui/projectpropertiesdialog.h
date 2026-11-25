@@ -5,6 +5,7 @@
 
 #include <QDialog>
 
+class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
 class QLineEdit;
@@ -17,7 +18,8 @@ namespace ppcb {
 // fields of the title block, the style of designators and the sides of
 // the board with copper; on the Net
 // classes tab the classes, added, renamed, changed and deleted, and which
-// of them is the default class and the power class.
+// of them is the default class and the power class; on the Rules tab the
+// rules of the board and the level of each check (Rules).
 class ProjectPropertiesDialog : public QDialog
 {
     Q_OBJECT
@@ -43,6 +45,15 @@ private:
 
     QWidget *makeGeneralTab();
     QWidget *makeNetClassesTab();
+    QWidget *makeRulesTab();
+    // The rules tab shows the values of 'rules', its levels kept.
+    void showRuleValues(const Rules &rules);
+    // The default track width offers the widths typed, the one chosen kept
+    // while it is among them.
+    void updateDefaultWidths();
+    // The rules as the tab has them; 'ok' false, with what is wrong in
+    // 'problem', when they are not right.
+    Rules typedRules(bool &ok, QString &problem) const;
     // A row of the table for 'netClass', which had the name 'original'
     // (empty for a class added here).
     void appendClassRow(const QString &original, const NetClass &netClass);
@@ -71,6 +82,25 @@ private:
     QPushButton *m_deleteClassButton = nullptr;
     QComboBox *m_defaultClassBox = nullptr;
     QComboBox *m_powerClassBox = nullptr;
+    QComboBox *m_ruleSetBox = nullptr;
+    QLineEdit *m_widthsEdit = nullptr;
+    QComboBox *m_defaultWidthBox = nullptr;
+    QDoubleSpinBox *m_clearanceBox = nullptr;
+    QDoubleSpinBox *m_edgeClearanceBox = nullptr;
+    QDoubleSpinBox *m_annularRingBox = nullptr;
+    QDoubleSpinBox *m_viaDrillBox = nullptr;
+    QDoubleSpinBox *m_viaSizeBox = nullptr;
+    QDoubleSpinBox *m_linkDrillBox = nullptr;
+    QDoubleSpinBox *m_linkSizeBox = nullptr;
+    QDoubleSpinBox *m_maskBox = nullptr;
+    QCheckBox *m_viasCoveredBox = nullptr;
+    QLineEdit *m_drillsEdit = nullptr;
+    QCheckBox *m_drillsOnlyBox = nullptr;
+    QComboBox *m_clearanceLevelBox = nullptr;
+    QComboBox *m_edgeClearanceLevelBox = nullptr;
+    QComboBox *m_annularRingLevelBox = nullptr;
+    QComboBox *m_minimumWidthLevelBox = nullptr;
+    QComboBox *m_classWidthLevelBox = nullptr;
     // The key the next row of the table of classes gets (ROW_KEY_ROLE).
     int m_nextRowKey = 0;
 };

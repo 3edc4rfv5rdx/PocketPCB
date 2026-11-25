@@ -1268,6 +1268,90 @@
 <context>
     <name>ppcb::ProjectPropertiesDialog</name>
     <message>
+        <source>Rules</source>
+        <translation>Правила</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>Ошибка</translation>
+    </message>
+    <message>
+        <source>Warning</source>
+        <translation>Предупреждение</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Выкл</translation>
+    </message>
+    <message>
+        <source>Manufacturing</source>
+        <translation>Производство</translation>
+    </message>
+    <message>
+        <source>Toner transfer</source>
+        <translation>ЛУТ</translation>
+    </message>
+    <message>
+        <source>Vias under the solder mask</source>
+        <translation>Переходные под маской</translation>
+    </message>
+    <message>
+        <source>Only these drills</source>
+        <translation>Только эти свёрла</translation>
+    </message>
+    <message>
+        <source>Rule set</source>
+        <translation>Набор правил</translation>
+    </message>
+    <message>
+        <source>Track widths</source>
+        <translation>Ширины дорожек</translation>
+    </message>
+    <message>
+        <source>Default track width</source>
+        <translation>Ширина по умолчанию</translation>
+    </message>
+    <message>
+        <source>Track narrower than its class</source>
+        <translation>Дорожка уже своего класса</translation>
+    </message>
+    <message>
+        <source>Edge clearance</source>
+        <translation>Зазор до края</translation>
+    </message>
+    <message>
+        <source>Annular ring</source>
+        <translation>Гарантийный поясок</translation>
+    </message>
+    <message>
+        <source>Wire link hole</source>
+        <translation>Отверстие перемычки</translation>
+    </message>
+    <message>
+        <source>Wire link pad</source>
+        <translation>Площадка перемычки</translation>
+    </message>
+    <message>
+        <source>Solder mask expansion</source>
+        <translation>Расширение маски</translation>
+    </message>
+    <message>
+        <source>Drills</source>
+        <translation>Свёрла</translation>
+    </message>
+    <message>
+        <source>Track widths must be lengths in millimetres apart by slashes</source>
+        <translation>Ширины дорожек — это длины в миллиметрах через косую черту</translation>
+    </message>
+    <message>
+        <source>Drills must be lengths in millimetres apart by slashes</source>
+        <translation>Свёрла — это диаметры в миллиметрах через косую черту</translation>
+    </message>
+    <message>
+        <source>Only these drills needs at least one drill</source>
+        <translation>Для «Только эти свёрла» нужно хотя бы одно сверло</translation>
+    </message>
+    <message>
         <source>Date of the last save</source>
         <translation>Дата последнего сохранения</translation>
     </message>
