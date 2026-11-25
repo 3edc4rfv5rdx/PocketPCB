@@ -88,6 +88,8 @@ QString BoardEditor::actionName(Action action)
         return tr("Move parts");
     case Action::RotateParts:
         return tr("Rotate parts");
+    case Action::FlipParts:
+        return tr("Flip to other side");
     case Action::MovePartText:
         return tr("Move part text");
     case Action::MoveLinkText:
@@ -611,6 +613,28 @@ void BoardEditor::rotateChosen()
                    withTracksFollowingPads(board, withPlacementsRotated(board, ids, center),
                                            design.library),
                    design),
+               ids);
+}
+
+void BoardEditor::flipChosen()
+{
+    const QSet<ObjectId> ids = chosenPlacements();
+    if (ids.isEmpty() || m_dragging)
+        return;
+    const Design &design = m_document->design();
+    const Board &board = design.board;
+    if (arePlacementsLocked(board, ids)) {
+        emit message(partLockedMessage());
+        return;
+    }
+    const Placement *one = ids.size() == 1 ? findById(board.placements, *ids.cbegin()) : nullptr;
+    const Point center =
+        one != nullptr ? one->at
+                       : m_canvas->snapped(placementsBounds(board, design.library, ids).center());
+    applyBoard(Action::FlipParts,
+               withoutShortingStretches(board,
+                                        withPartsFlipped(board, design.library, ids, center),
+                                        design),
                ids);
 }
 

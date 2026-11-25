@@ -2,6 +2,7 @@
 
 #include "bom.h"
 #include "grid.h"
+#include "ratsnest.h"
 
 #include <QLineF>
 
@@ -13,6 +14,7 @@ namespace ppcb {
 namespace {
 
 constexpr int QUARTER_TURN = 90;
+constexpr int HALF_TURN = 180;
 constexpr int FULL_TURN = 360;
 
 // A quarter turn clockwise on the board, where Y grows downwards: what was
@@ -120,6 +122,48 @@ Board withPlacementsRotated(const Board &board, const QSet<ObjectId> &ids, const
         placement.rotation = (placement.rotation + QUARTER_TURN) % FULL_TURN;
         placement.refAt = turned(placement.refAt);
         placement.valueAt = turned(placement.valueAt);
+    }
+    return result;
+}
+
+Board withPlacementsFlipped(const Board &board, const Library &library, const QSet<ObjectId> &ids,
+                            const Point &center)
+{
+    // How far the pads of 'placement' lie from where they lay in 'was',
+    // each about its own placement's point.
+    const auto padsMoved = [&library](const Placement &was, const Placement &placement) {
+        const Footprint *footprint = library.findFootprint(placement.footprint);
+        double moved = 0;
+        if (footprint == nullptr)
+            return moved;
+        for (const Pad &pad : footprint->pads) {
+            const Point before = placedPadPoint(was, pad.at) - was.at;
+            const Point after = placedPadPoint(placement, pad.at) - placement.at;
+            const double dx = double(after.x - before.x);
+            const double dy = double(after.y - before.y);
+            moved += dx * dx + dy * dy;
+        }
+        return moved;
+    };
+    Board result = board;
+    for (Placement &placement : result.placements) {
+        if (!ids.contains(placement.id) || placement.locked)
+            continue;
+        const Placement was = placement;
+        placement.at.x = 2 * center.x - placement.at.x;
+        placement.side =
+            placement.side == BoardSide::Top ? BoardSide::Bottom : BoardSide::Top;
+        // Left to right: a turn seen in a mirror goes the other way. Top to
+        // bottom is that turned half round about the part's point.
+        Placement upsideDown = placement;
+        placement.rotation = (FULL_TURN - was.rotation) % FULL_TURN;
+        placement.refAt.x = -was.refAt.x;
+        placement.valueAt.x = -was.valueAt.x;
+        upsideDown.rotation = (FULL_TURN + HALF_TURN - was.rotation) % FULL_TURN;
+        upsideDown.refAt.y = -was.refAt.y;
+        upsideDown.valueAt.y = -was.valueAt.y;
+        if (padsMoved(was, upsideDown) < padsMoved(was, placement))
+            placement = upsideDown;
     }
     return result;
 }

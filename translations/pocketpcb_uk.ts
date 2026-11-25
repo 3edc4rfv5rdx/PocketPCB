@@ -1768,6 +1768,10 @@
 <context>
     <name>ppcb::BoardEditor</name>
     <message>
+        <source>Flip to other side</source>
+        <translation>На інший бік</translation>
+    </message>
+    <message>
         <source>The copper ring would come too near copper of another net</source>
         <translation>Мідний поясок підійшов би надто близько до міді іншого кола</translation>
     </message>

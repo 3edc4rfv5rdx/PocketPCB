@@ -14,7 +14,7 @@ Early development. What works now (the user guide, Help > User guide or [`help.h
 - Library: built-in, your own and the project's copy; Update parts from library.
 - Schematic: sheets, parts, wires, buses, labels, power symbols, no-connect marks, lock.
 - Panels: Library, Properties, Nets, ERC, DRC, BOM, Versions.
-- Board: outline, parts, holes, tracks, vias, wire links, ratsnest, lock.
+- Board: outline, parts on either side, holes, tracks, vias, wire links, ratsnest, lock.
 - Update board from schematic (F8).
 - Autorouter, also for one-sided boards with wire links.
 - Printing: schematic to printer or PDF, board 1:1 for toner transfer.

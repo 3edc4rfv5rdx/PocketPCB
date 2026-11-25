@@ -526,6 +526,35 @@ private slots:
         QCOMPARE(gost.links.at(2).designator, QStringLiteral("XN4"));
     }
 
+    // Flipped about its point, top to bottom as its pads lie level: the
+    // track on pad 1, through the board, stays on it; the one on pad 2, now
+    // on the bottom, goes.
+    void aFlippedPartKeepsTheTracksOfItsPadsThroughTheBoard()
+    {
+        Board board = boardWithPart();
+        Track onThrough;
+        onThrough.id = newObjectId();
+        onThrough.net = QStringLiteral("A");
+        onThrough.side = BoardSide::Bottom;
+        onThrough.from = mm(-5, 0);
+        onThrough.to = mm(-5, 10);
+        Track onFront;
+        onFront.id = newObjectId();
+        onFront.net = QStringLiteral("B");
+        onFront.side = BoardSide::Top;
+        onFront.from = mm(5, 10);
+        onFront.to = mm(5, 0);
+        board.tracks = {onThrough, onFront};
+        const QSet<ObjectId> part{board.placements.at(0).id};
+
+        const Board flipped = withPartsFlipped(board, library(), part, Point());
+        QVERIFY(flipped.placements.at(0).side == BoardSide::Bottom);
+        QCOMPARE(flipped.tracks.size(), 1);
+        QCOMPARE(flipped.tracks.at(0).id, onThrough.id);
+        QCOMPARE(flipped.tracks.at(0).from, mm(-5, 0));
+        QCOMPARE(flipped.tracks.at(0).to, mm(-5, 10));
+    }
+
     void tracksTakeTheClassOfTheirNet()
     {
         Design design = newDesign(QStringLiteral("t"));

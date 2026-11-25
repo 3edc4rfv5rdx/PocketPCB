@@ -1,5 +1,6 @@
 #include "trackedit.h"
 
+#include "boardedit.h"
 #include "bom.h"
 #include "grid.h"
 #include "netlist.h"
@@ -439,6 +440,27 @@ Board withTracksFollowingPads(const Board &before, const Board &after, const Lib
     }
     result.tracks.removeIf([](const Track &track) { return track.from == track.to; });
     return result;
+}
+
+Board withPartsFlipped(const Board &board, const Library &library, const QSet<ObjectId> &ids,
+                       const Point &center)
+{
+    const Board flipped = withPlacementsFlipped(board, library, ids, center);
+    // The same pads in the same order, as only the placements changed.
+    const QList<PadPoint> was = padPoints(board, library);
+    const QList<PadPoint> now = padPoints(flipped, library);
+    QSet<ObjectId> left;
+    if (was.size() == now.size()) {
+        for (const Track &track : board.tracks) {
+            for (int i = 0; i < was.size(); ++i) {
+                const PadPoint &pad = was.at(i);
+                if (pad.on(track.side) && !now.at(i).on(track.side)
+                    && (pad.at == track.from || pad.at == track.to))
+                    left.unite(runOf(board, was, track.id));
+            }
+        }
+    }
+    return withoutTracks(withTracksFollowingPads(board, flipped, library), left);
 }
 
 Board withTracksOnNewFootprints(const Board &before, const Board &after, const Library &library,

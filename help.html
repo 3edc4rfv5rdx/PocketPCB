@@ -317,8 +317,12 @@ choice.</p>
   <li>Click, <kbd>Ctrl</kbd>+click or a frame to choose; drag to move along the grid; <kbd>R</kbd> turns by
     90&deg;, also while dragging. Tracks ending on the pads of a part or a hole follow it: their last piece
     stretches. A track that would cross another net is deleted instead, and its connection shows as unrouted.</li>
+  <li><kbd>F</kbd> (<b>Flip to other side</b>) puts the parts chosen on the other side of the board, mirrored:
+    each about its own axis that keeps its pads where they were, as a resistor's; their silkscreen goes to that
+    side, tracks on pads through the board stay on them, and tracks on pads that went to the other side are
+    deleted.</li>
   <li>Designators and values are dragged on their own; a chosen text shows a line to its part.</li>
-  <li>The menu of a part: Rotate, Lock or Unlock, Show or Hide value, <b>Line to part</b> (a bold silkscreen line
+  <li>The menu of a part: Rotate, Flip to other side, Lock or Unlock, Show or Hide value, <b>Line to part</b> (a bold silkscreen line
     from the part to its texts), Show on schematic, Delete.</li>
   <li><kbd>Del</kbd> moves the parts chosen off the board, to the right of it: parts come and go with the
     schematic. Locked parts stay. Their tracks are deleted: from each pad up to the next pad or fork.</li>
@@ -455,6 +459,7 @@ choice.</p>
   <tr><td><kbd>Esc</kbd></td><td>Stop what is going on, drop the choice</td></tr>
   <tr><td><kbd>Ctrl+A</kbd></td><td>Choose all</td></tr>
   <tr><td><kbd>R</kbd>, <kbd>M</kbd>, <kbd>Del</kbd></td><td>Rotate, mirror, delete</td></tr>
+  <tr><td><kbd>F</kbd></td><td>Flip parts to the other side of the board</td></tr>
   <tr><td><kbd>W</kbd>, <kbd>B</kbd>, <kbd>L</kbd>, <kbd>P</kbd>, <kbd>X</kbd></td><td>Wire, bus, label, power symbol, no-connect</td></tr>
   <tr><td><kbd>Space</kbd></td><td>Turn the corner of a wire; put the slanted piece of a track first or last</td></tr>
   <tr><td><kbd>/</kbd> or <kbd>.</kbd></td><td>Slant the corner of a wire</td></tr>

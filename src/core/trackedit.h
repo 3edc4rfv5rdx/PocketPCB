@@ -119,6 +119,11 @@ Board withTracksFollowingPads(const Board &before, const Board &after, const Lib
 // pad the new footprint lacks are deleted.
 Board withTracksOnNewFootprints(const Board &before, const Board &after, const Library &library,
                                 const QSet<ObjectId> &ids);
+// The parts 'ids' put on the other side (withPlacementsFlipped()), the
+// tracks on their pads through the board following the pads, and the runs
+// (trackRun()) from a pad that left the side of its track deleted.
+Board withPartsFlipped(const Board &board, const Library &library, const QSet<ObjectId> &ids,
+                       const Point &center);
 // 'after', a change of 'before' that stretched tracks after pads moved
 // (withTracksFollowingPads(), withTracksOnNewFootprints()), without the runs
 // (trackRun()) of the tracks whose shape the change altered where they now

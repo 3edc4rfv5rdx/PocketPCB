@@ -593,6 +593,15 @@ void MainWindow::createMenus()
     });
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Mirror), "actionMirror",
                   QKeySequence(Qt::Key_M), &SheetEditor::mirrorSelection);
+    // The board's parts chosen go to its other side; only on the board.
+    QAction *flipAction =
+        editMenu->addAction(BoardEditor::actionName(BoardEditor::Action::FlipParts));
+    flipAction->setObjectName(QStringLiteral("actionFlip"));
+    flipAction->setShortcut(QKeySequence(Qt::Key_F));
+    connect(flipAction, &QAction::triggered, this, [this] {
+        if (m_boardEditor->isActive())
+            m_boardEditor->flipChosen();
+    });
     QAction *deleteAction =
         addEditAction(SheetEditor::actionName(SheetEditor::Action::Delete), "actionDelete",
                       QKeySequence::Delete, &SheetEditor::deleteSelection);
@@ -1067,6 +1076,7 @@ void MainWindow::showBoardMenu(const QPoint &globalPos)
     switch (target) {
     case BoardEditor::MenuTarget::Placement: {
         add("actionRotate");
+        add("actionFlip");
         addLock();
         const bool shown = m_boardEditor->chosenValuesShown();
         QAction *value = menu.addAction(BoardEditor::actionName(
@@ -2133,6 +2143,9 @@ void MainWindow::updateTools()
         layer->setEnabled(board && m_document->design().board.copper == CopperSides::Both);
     }
     findChild<QAction *>(QStringLiteral("actionRotate"))->setEnabled(sheet || board);
+    QAction *flip = findChild<QAction *>(QStringLiteral("actionFlip"));
+    flip->setEnabled(board);
+    flip->setVisible(board);
     findChild<QAction *>(QStringLiteral("actionDelete"))->setEnabled(sheet || board);
     if (QAction *updateBoardTool = findChild<QAction *>(QStringLiteral("actionUpdateBoardTool"))) {
         updateBoardTool->setVisible(board);

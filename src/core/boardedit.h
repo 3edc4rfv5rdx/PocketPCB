@@ -46,6 +46,14 @@ Board withPlacementsMoved(const Board &board, const QSet<ObjectId> &ids, const P
 // about 'center', their texts going round them. Turning four times gives
 // the board back.
 Board withPlacementsRotated(const Board &board, const QSet<ObjectId> &ids, const Point &center);
+// The placements 'ids' put on the other side of the board, their points
+// mirrored left to right about the upright line through 'center', as seen
+// from the top. Each is mirrored about its own point left to right or top
+// to bottom, whichever moves its pads in 'library' less (left to right when
+// alike), so that a resistor keeps its pads where they were; its texts are
+// mirrored with it. Locked ones stay. Flipping twice gives the board back.
+Board withPlacementsFlipped(const Board &board, const Library &library, const QSet<ObjectId> &ids,
+                            const Point &center);
 // The text moved by 'delta' away from where it stands; its placement or
 // link stays.
 Board withPlacementTextMoved(const Board &board, const PlacementText &text, const Point &delta);

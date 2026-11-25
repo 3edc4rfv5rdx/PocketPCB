@@ -1,4 +1,5 @@
 #include "boardedit.h"
+#include "ratsnest.h"
 #include "trackedit.h"
 
 #include <QtTest>
@@ -142,6 +143,40 @@ private slots:
         for (int i = 0; i < 4; ++i)
             round = withPlacementsRotated(round, {r2}, mm(7, 3));
         QCOMPARE(round, board);
+    }
+
+    // Flipped about R1's point: R2 goes to the left of it, on the bottom.
+    // Upright, mirrored left to right keeps its pads: turned the other way,
+    // its texts mirrored so. Level, mirrored top to bottom keeps them: turned
+    // half round the other way, its texts mirrored so. Twice gives the board
+    // back; a locked one stays.
+    void placementsAreFlippedToTheOtherSide()
+    {
+        Board board = twoPlacements();
+        const ObjectId r2 = board.placements.at(1).id;
+        board.placements[1].rotation = 90;
+        board.placements[1].refAt = mm(2, -3);
+        const Board flipped = withPlacementsFlipped(board, library(), {r2}, mm(0, 0));
+        QCOMPARE(flipped.placements.at(0), board.placements.at(0));
+        QCOMPARE(flipped.placements.at(1).at, mm(-20, 10));
+        QVERIFY(flipped.placements.at(1).side == BoardSide::Bottom);
+        QCOMPARE(flipped.placements.at(1).rotation, 270);
+        QCOMPARE(flipped.placements.at(1).refAt, mm(-2, -3));
+        QCOMPARE(withPlacementsFlipped(flipped, library(), {r2}, mm(0, 0)), board);
+
+        Board level = board;
+        level.placements[1].rotation = 0;
+        const Board upside = withPlacementsFlipped(level, library(), {r2}, mm(20, 10));
+        QCOMPARE(upside.placements.at(1).at, mm(20, 10));
+        QCOMPARE(upside.placements.at(1).rotation, 180);
+        QCOMPARE(upside.placements.at(1).refAt, mm(2, 3));
+        for (const Pad &pad : library().findFootprint(QStringLiteral("fp"))->pads)
+            QCOMPARE(placedPadPoint(upside.placements.at(1), pad.at),
+                     placedPadPoint(level.placements.at(1), pad.at));
+        QCOMPARE(withPlacementsFlipped(upside, library(), {r2}, mm(20, 10)), level);
+
+        board.placements[1].locked = true;
+        QCOMPARE(withPlacementsFlipped(board, library(), {r2}, mm(0, 0)), board);
     }
 
     // R1's designator, at (0, -3), moved up to (0, -8): with its line, the
