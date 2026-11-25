@@ -53,6 +53,9 @@ public:
     // Both return false, with the reason in the status bar, on failure; what
     // was open before stays.
     bool openProject(const QString &path);
+    // Opens the first of the recent projects; says so in the status bar
+    // when there is none.
+    void openLastProject();
     // Saves the project into the new folder 'name' inside 'parentFolder'
     // (see Document::saveAsNewFolder()).
     bool saveProjectAs(const QString &parentFolder, const QString &name);
@@ -197,6 +200,8 @@ private:
     void chooseProjectToOpen();
     // Fills the menu of recent projects from the settings.
     void updateRecentMenu();
+    // The name of the command that opens the last project.
+    static QString lastProjectTitle();
     // Fills 'menu' with the recent projects and Clear list; with none, a
     // line that says so.
     void fillRecentMenu(QMenu *menu);

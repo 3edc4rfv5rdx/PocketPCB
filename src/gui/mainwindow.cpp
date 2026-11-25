@@ -396,6 +396,11 @@ void MainWindow::createMenus()
     openAction->setShortcut(QKeySequence::Open);
     connect(openAction, &QAction::triggered, this, &MainWindow::chooseProjectToOpen);
 
+    QAction *lastAction = fileMenu->addAction(lastProjectTitle());
+    lastAction->setObjectName(QStringLiteral("actionOpenLastProject"));
+    lastAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_O));
+    connect(lastAction, &QAction::triggered, this, &MainWindow::openLastProject);
+
     m_recentMenu = fileMenu->addMenu(tr("Recent projects"));
     m_recentMenu->setObjectName(QStringLiteral("menuRecentProjects"));
     m_recentMenu->setToolTipsVisible(true);
@@ -1383,7 +1388,25 @@ void MainWindow::leaveAndOpenProject(const QString &path)
 void MainWindow::updateRecentMenu()
 {
     fillRecentMenu(m_recentMenu);
-    m_recentMenu->setEnabled(!AppSettings::recentProjects().isEmpty());
+    const bool any = !AppSettings::recentProjects().isEmpty();
+    m_recentMenu->setEnabled(any);
+    if (QAction *last = findChild<QAction *>(QStringLiteral("actionOpenLastProject")))
+        last->setEnabled(any);
+}
+
+QString MainWindow::lastProjectTitle()
+{
+    return tr("Open last project");
+}
+
+void MainWindow::openLastProject()
+{
+    const QStringList paths = AppSettings::recentProjects();
+    if (paths.isEmpty()) {
+        showStatus(tr("No recent projects"));
+        return;
+    }
+    openRecentProject(paths.first());
 }
 
 void MainWindow::fillRecentMenu(QMenu *menu)
@@ -1624,12 +1647,20 @@ void MainWindow::createToolBar()
     recentMenu->setToolTipsVisible(true);
     connect(recentMenu, &QMenu::aboutToShow, this,
             [this, recentMenu] { fillRecentMenu(recentMenu); });
+    // A click opens the last project, the arrow the list.
+    QAction *lastTool = new QAction(lastProjectTitle(), this);
+    lastTool->setObjectName(QStringLiteral("actionOpenLastProjectTool"));
+    lastTool->setIcon(toolIcon(ToolIcon::Recent, color));
+    lastTool->setToolTip(
+        lastProjectTitle() + QStringLiteral(" (")
+        + QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_O).toString(QKeySequence::NativeText)
+        + QStringLiteral("), ") + m_recentMenu->title().toLower());
+    connect(lastTool, &QAction::triggered, this, &MainWindow::openLastProject);
     QToolButton *recentButton = new QToolButton(bar);
     recentButton->setObjectName(QStringLiteral("recentProjectsButton"));
-    recentButton->setIcon(toolIcon(ToolIcon::Recent, color));
-    recentButton->setToolTip(m_recentMenu->title());
+    recentButton->setDefaultAction(lastTool);
     recentButton->setMenu(recentMenu);
-    recentButton->setPopupMode(QToolButton::InstantPopup);
+    recentButton->setPopupMode(QToolButton::MenuButtonPopup);
     bar->addWidget(recentButton);
     // Without the dots of the menu item in its tip: the button opens it.
     QAction *properties = put("actionProjectProperties", ToolIcon::ProjectProperties);

@@ -328,7 +328,8 @@ QStringList AppSettings::recentProjects()
     // An empty list may come back from the file as one empty string.
     QStringList paths = readValue(KEY_RECENT_PROJECTS, QStringList()).toStringList();
     paths.removeAll(QString());
-    return paths;
+    // A list kept when more were.
+    return paths.mid(0, RECENT_PROJECTS_MAX);
 }
 
 void AppSettings::addRecentProject(const QString &path)

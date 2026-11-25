@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Open last project (Ctrl+Shift+O): the Recent projects button opens it with a click and lists the last seven by its arrow
 - F: The diode bridge symbol has its inner line shorter, clear of the corners, and drawn through the diode
 - E: Plating, a pad or a diameter that would put a hole's copper ring onto another net's copper is refused, and taking plating off takes its ring off too
 - F: The autorouter lays a bare wire link under a part only when no short way round avoids it

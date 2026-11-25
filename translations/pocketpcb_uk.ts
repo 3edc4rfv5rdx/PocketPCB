@@ -676,6 +676,10 @@
 <context>
     <name>ppcb::MainWindow</name>
     <message>
+        <source>Open last project</source>
+        <translation>Відкрити останній проект</translation>
+    </message>
+    <message>
         <source>Brighter grid while held</source>
         <translation>Сітка яскравіша, поки кнопка натиснута</translation>
     </message>
