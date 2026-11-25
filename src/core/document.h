@@ -74,6 +74,12 @@ public:
     // into 'error' and leaves the document as it was. What is wrong with the
     // project library does not stop it: see DesignFiles::read().
     bool open(const QString &projectPath, QString &error, QStringList *problems = nullptr);
+    // A document for reading only, as a copy of a version: change() leaves
+    // it as it is, sending changeRefused(), and saving refuses with
+    // readOnlyMessage(). Until another project is opened or started.
+    void setReadOnly(bool readOnly) { m_readOnly = readOnly; }
+    bool isReadOnly() const { return m_readOnly; }
+    static QString readOnlyMessage();
     // Writes the files that changed since they were read or written, and
     // those that are missing. On failure returns false with a message; what
     // was written before the failure counts as saved.
@@ -132,6 +138,8 @@ signals:
     void stepMade(const QString &text, int page, const Design &before);
     // savedDate() changed.
     void savedDateChanged();
+    // change() was given a change while the document is for reading only.
+    void changeRefused();
 
 private:
     friend class DesignCommand;
@@ -151,6 +159,7 @@ private:
     QString m_projectPath;
     QUndoStack m_undoStack;
     bool m_wasModified = false;
+    bool m_readOnly = false;
     int m_backupCount = DEFAULT_BACKUP_COUNT;
     // The content of the autosaved copy; empty when there is none.
     Design m_autosaved;

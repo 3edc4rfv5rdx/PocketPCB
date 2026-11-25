@@ -5,6 +5,7 @@
 #include "projectversions.h"
 
 #include <QDir>
+#include <QHBoxLayout>
 #include <QHeaderView>
 #include <QAction>
 #include <QLocale>
@@ -35,17 +36,39 @@ VersionsPanel::VersionsPanel(Document *document, QWidget *parent)
     m_tree->header()->setStretchLastSection(true);
     m_tree->setContextMenuPolicy(Qt::ActionsContextMenu);
     m_restoreAction = new QAction(restoreTitle() + QStringLiteral("…"), this);
-    m_tree->addAction(m_restoreAction);
+    m_openAction = new QAction(openCopyTitle(), this);
+    m_tree->addActions({m_restoreAction, m_openAction});
     m_restoreButton = new QPushButton(restoreTitle() + QStringLiteral("…"), this);
     m_restoreButton->setObjectName(QStringLiteral("restoreVersionButton"));
+    m_openButton = new QPushButton(openCopyTitle(), this);
+    m_openButton->setObjectName(QStringLiteral("openVersionCopyButton"));
 
+    QHBoxLayout *buttons = new QHBoxLayout;
+    buttons->addWidget(m_restoreButton);
+    buttons->addWidget(m_openButton);
     QVBoxLayout *layout = new QVBoxLayout(this);
-    layout->addWidget(m_restoreButton);
+    layout->addLayout(buttons);
     layout->addWidget(m_tree);
 
+    const auto restore = [this] {
+        int number = 0;
+        QString path;
+        if (chosenVersion(number, path))
+            emit restoreRequested(number, path);
+    };
+    const auto open = [this] {
+        int number = 0;
+        QString path;
+        if (chosenVersion(number, path))
+            emit openRequested(number, path);
+    };
     connect(m_tree, &QTreeWidget::itemSelectionChanged, this, &VersionsPanel::updateRestore);
-    connect(m_restoreAction, &QAction::triggered, this, &VersionsPanel::restoreChosen);
-    connect(m_restoreButton, &QPushButton::clicked, this, &VersionsPanel::restoreChosen);
+    connect(m_restoreAction, &QAction::triggered, this, restore);
+    connect(m_restoreButton, &QPushButton::clicked, this, restore);
+    connect(m_openAction, &QAction::triggered, this, open);
+    connect(m_openButton, &QPushButton::clicked, this, open);
+    // A double click opens the copy.
+    connect(m_tree, &QTreeWidget::itemDoubleClicked, this, open);
     updateRestore();
 
     connect(m_document, &Document::designReset, this, &VersionsPanel::refresh);
@@ -63,23 +86,30 @@ QString VersionsPanel::restoreTitle()
     return tr("Restore this version");
 }
 
-void VersionsPanel::updateRestore()
+QString VersionsPanel::openCopyTitle()
 {
-    const QList<QTreeWidgetItem *> chosen = m_tree->selectedItems();
-    const bool readable =
-        !chosen.isEmpty() && !chosen.first()->data(NumberColumn, PATH_ROLE).toString().isEmpty();
-    m_restoreAction->setEnabled(readable);
-    m_restoreButton->setEnabled(readable);
+    return tr("Open a copy");
 }
 
-void VersionsPanel::restoreChosen()
+bool VersionsPanel::chosenVersion(int &number, QString &path) const
 {
     const QList<QTreeWidgetItem *> chosen = m_tree->selectedItems();
     if (chosen.isEmpty())
-        return;
-    const QString path = chosen.first()->data(NumberColumn, PATH_ROLE).toString();
-    if (!path.isEmpty())
-        emit restoreRequested(chosen.first()->text(NumberColumn).toInt(), path);
+        return false;
+    path = chosen.first()->data(NumberColumn, PATH_ROLE).toString();
+    number = chosen.first()->text(NumberColumn).toInt();
+    return !path.isEmpty();
+}
+
+void VersionsPanel::updateRestore()
+{
+    int number = 0;
+    QString path;
+    const bool readable = chosenVersion(number, path);
+    for (QAction *action : {m_restoreAction, m_openAction})
+        action->setEnabled(readable);
+    for (QPushButton *button : {m_restoreButton, m_openButton})
+        button->setEnabled(readable);
 }
 
 void VersionsPanel::showEvent(QShowEvent *event)

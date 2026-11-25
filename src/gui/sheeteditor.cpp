@@ -15,6 +15,9 @@
 
 namespace ppcb {
 
+Sheet SheetEditor::s_clipboard;
+Library SheetEditor::s_clipboardLibrary;
+
 namespace {
 
 // How many components a step's name lists before it stops.
@@ -1022,8 +1025,8 @@ void SheetEditor::copySelection()
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr || m_placing || (m_selection.isEmpty() && !hasSegment()))
         return;
-    m_clipboard = selectionPiece(*sheet);
-    m_clipboardLibrary = m_document->design().library;
+    s_clipboard = selectionPiece(*sheet);
+    s_clipboardLibrary = m_document->design().library;
 }
 
 void SheetEditor::cutSelection()
@@ -1042,9 +1045,9 @@ void SheetEditor::cutSelection()
 
 void SheetEditor::paste()
 {
-    if (m_placing || objectIds(m_clipboard).isEmpty())
+    if (m_placing || objectIds(s_clipboard).isEmpty())
         return;
-    startFloating(withNewIds(m_clipboard), m_clipboardLibrary, Action::Paste, false);
+    startFloating(withNewIds(s_clipboard), s_clipboardLibrary, Action::Paste, false);
 }
 
 void SheetEditor::duplicateSelection()

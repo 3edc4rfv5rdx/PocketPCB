@@ -74,6 +74,38 @@ private slots:
         QVERIFY(!document.isModified());
     }
 
+    // A document for reading only takes no change and no save, until
+    // another project is started.
+    void aReadOnlyDocumentRefusesChanges()
+    {
+        Document document;
+        document.setReadOnly(true);
+        QSignalSpy refused(&document, &Document::changeRefused);
+        Design changed = document.design();
+        changed.project.titleBlock.title = QStringLiteral("changed");
+        const Design before = document.design();
+        document.change(QStringLiteral("Title"), changed);
+        QCOMPARE(refused.size(), 1);
+        QVERIFY(document.design() == before);
+        QVERIFY(!document.isModified());
+        QVERIFY(!document.undoStack()->canUndo());
+        // A change that changes nothing is no refusal.
+        document.change(QStringLiteral("Nothing"), before);
+        QCOMPARE(refused.size(), 1);
+
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        QString error;
+        QVERIFY(!document.saveAs(QDir(dir.path()).filePath(QStringLiteral("a.ppcb")), error));
+        QCOMPARE(error, Document::readOnlyMessage());
+        QVERIFY(!document.save(error));
+
+        document.startNew();
+        QVERIFY(!document.isReadOnly());
+        document.change(QStringLiteral("Title"), changed);
+        QVERIFY(document.isModified());
+    }
+
     void undoBringsBackTheSameContent()
     {
         Document document;

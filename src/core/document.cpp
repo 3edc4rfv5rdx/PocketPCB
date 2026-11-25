@@ -189,6 +189,10 @@ void Document::change(const QString &text, const Design &changed, int page,
         sheet = withWiresMerged(sheet);
     if (after == m_design)
         return;
+    if (m_readOnly) {
+        emit changeRefused();
+        return;
+    }
     const Design before = m_design;
     m_undoStack.push(new DesignCommand(this, text, m_design, after, page, ids));
     emit stepMade(text, page, before);
@@ -221,8 +225,17 @@ bool Document::open(const QString &projectPath, QString &error, QStringList *pro
     return true;
 }
 
+QString Document::readOnlyMessage()
+{
+    return tr("A copy of a version is only for reading");
+}
+
 bool Document::save(QString &error)
 {
+    if (m_readOnly) {
+        error = readOnlyMessage();
+        return false;
+    }
     if (m_projectPath.isEmpty()) {
         error = tr("the project has no file yet");
         return false;
@@ -235,6 +248,10 @@ bool Document::save(QString &error)
 
 bool Document::saveAs(const QString &projectPath, QString &error)
 {
+    if (m_readOnly) {
+        error = readOnlyMessage();
+        return false;
+    }
     // The schematic and the board take their names from it.
     const QString baseName = QFileInfo(projectPath).completeBaseName();
     if (baseName.isEmpty()) {
@@ -367,6 +384,10 @@ QString Document::newFolderProblem(const QString &parentFolder, const QString &n
 
 bool Document::saveAsNewFolder(const QString &parentFolder, const QString &name, QString &error)
 {
+    if (m_readOnly) {
+        error = readOnlyMessage();
+        return false;
+    }
     error = newFolderProblem(parentFolder, name);
     if (!error.isEmpty())
         return false;
@@ -389,6 +410,8 @@ void Document::install(const Design &design)
 void Document::reset(const Design &design, const QString &projectPath)
 {
     m_undoStack.clear();
+    // Another project is not the copy that was for reading only.
+    m_readOnly = false;
     m_design = design;
     m_saved = design;
     m_projectPath = projectPath;

@@ -141,6 +141,8 @@ const char SAVED_MARK_STYLE[] =
 const char SAVED_COLOR[] = "#5f9462";
 // The count of unrouted connections: black, with a gap after it.
 const char UNROUTED_STYLE[] = "QLabel { color: black; margin-right: 12px; }";
+const char VERSION_BAND_STYLE[] =
+    "QLabel { background-color: #f0b44a; color: #2b1d05; font-weight: bold; padding: 5px 10px; }";
 // The buttons of the panels in one grey blue, to stand out from the lists
 // round them.
 const char PANEL_BUTTON_STYLE[] =
@@ -202,9 +204,18 @@ MainWindow::MainWindow(QWidget *parent)
     QVBoxLayout *layout = new QVBoxLayout(central);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
+    // Under the canvas of a copy of a version, a band saying so.
+    m_versionBand = new QLabel(central);
+    m_versionBand->setObjectName(QStringLiteral("versionBand"));
+    m_versionBand->setStyleSheet(QLatin1String(VERSION_BAND_STYLE));
+    m_versionBand->hide();
     layout->addWidget(m_sheetTabs);
     layout->addWidget(m_canvas);
+    layout->addWidget(m_versionBand);
     setCentralWidget(central);
+    // Another project opened in the window is not the copy.
+    connect(m_document, &Document::designReset, this,
+            [this] { m_versionBand->setVisible(m_document->isReadOnly()); });
     connect(m_sheetTabs, &SheetTabs::pageChosen, this, [this](int page) { showPage(page); });
 
     m_designItem->setEditor(m_sheetEditor);
@@ -243,6 +254,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_document, &Document::modifiedChanged, this, &MainWindow::updateTitle);
     // The title block shows the date of the last save.
     connect(m_document, &Document::savedDateChanged, this, [this] { m_designItem->update(); });
+    connect(m_document, &Document::changeRefused, this,
+            [this] { showStatus(Document::readOnlyMessage()); });
 
     m_libraryWatcher = new QFileSystemWatcher(this);
     m_reloadTimer = new QTimer(this);
@@ -300,6 +313,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_versionsDock->hide();
     setStyleSheet(QLatin1String(PANEL_BUTTON_STYLE));
     connect(m_versionsPanel, &VersionsPanel::restoreRequested, this, &MainWindow::restoreVersion);
+    connect(m_versionsPanel, &VersionsPanel::openRequested, this, &MainWindow::openVersionCopy);
     connect(m_bomPanel, &BomPanel::componentsChosen, this, &MainWindow::showComponents);
     // A problem chosen there is shown: its sheet, centred on it, with what
     // it is about chosen; a missing value is typed in at once.
@@ -385,6 +399,11 @@ void MainWindow::closeEvent(QCloseEvent *event)
 {
     if (!confirmLeavingProject()) {
         event->ignore();
+        return;
+    }
+    // A copy of a version keeps nothing: the window of the project does.
+    if (m_document->isReadOnly()) {
+        QMainWindow::closeEvent(event);
         return;
     }
     storeViews();
@@ -1502,8 +1521,48 @@ void MainWindow::setRevision(const QString &revision)
                        changed);
 }
 
+void MainWindow::openVersionCopy(int number, const QString &path)
+{
+    auto *window = new MainWindow;
+    window->setAttribute(Qt::WA_DeleteOnClose);
+    if (!window->showVersionCopy(number, path)) {
+        QMessageBox::warning(this, VersionsPanel::openCopyTitle(), window->statusText());
+        window->deleteLater();
+        return;
+    }
+    window->show();
+}
+
+bool MainWindow::showVersionCopy(int number, const QString &path)
+{
+    auto folder = std::make_unique<QTemporaryDir>();
+    QString projectPath;
+    QString error;
+    if (!folder->isValid() || !unpackProjectVersion(path, folder->path(), projectPath, error)
+        || !m_document->open(projectPath, error)) {
+        showStatus(error.isEmpty() ? Document::readOnlyMessage() : error);
+        return false;
+    }
+    m_document->setReadOnly(true);
+    m_versionFolder = std::move(folder);
+    m_versionTitle = tr("Version %1").arg(number);
+    m_versionBand->setText(m_versionTitle + QStringLiteral(", ") + tr("read only"));
+    m_versionBand->show();
+    m_views.clear();
+    m_shownViewKey.clear();
+    showPage(0);
+    updateTitle();
+    showStatus(Document::readOnlyMessage());
+    return true;
+}
+
 void MainWindow::exportGerberFiles()
 {
+    // The files for the factory are made from the project, not a copy.
+    if (m_document->isReadOnly()) {
+        showStatus(Document::readOnlyMessage());
+        return;
+    }
     QString message = gerberExportProblem(m_document->design());
     if (message.isEmpty()) {
         QString revision = m_document->design().project.titleBlock.revision;
@@ -1548,6 +1607,10 @@ void MainWindow::exportGerberFiles()
 
 bool MainWindow::saveVersion()
 {
+    if (m_document->isReadOnly()) {
+        showStatus(Document::readOnlyMessage());
+        return false;
+    }
     bool ok = false;
     const QString description =
         QInputDialog::getText(this, tr("Save version"), tr("What changed") + QLatin1Char(':'),
@@ -2387,7 +2450,10 @@ void MainWindow::keepShownPage()
 void MainWindow::updateTitle()
 {
     const QString path = m_document->projectPath();
-    const QString name = path.isEmpty() ? tr("untitled") : QFileInfo(path).fileName();
+    QString name = path.isEmpty() ? tr("untitled") : QFileInfo(path).fileName();
+    if (m_document->isReadOnly())
+        name = m_versionTitle + QStringLiteral(": ") + name + QStringLiteral(" (")
+               + tr("read only") + QLatin1Char(')');
     // "[*]" is where Qt puts the mark of unsaved changes.
     setWindowTitle(name + QStringLiteral("[*] — ") + QLatin1String(APP_TITLE));
     setWindowModified(m_document->isModified());

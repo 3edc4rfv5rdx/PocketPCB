@@ -4,6 +4,7 @@
 #include "designviewitem.h"
 #include "document.h"
 #include "gerberexport.h"
+#include "projectversions.h"
 #include "grid.h"
 #include "libraryfile.h"
 #include "librarypanel.h"
@@ -505,6 +506,34 @@ private slots:
         QVERIFY(!window.saveProjectAs(dir.path(), QStringLiteral("first")));
         QCOMPARE(window.document()->projectPath(), path);
         QVERIFY(!window.statusText().isEmpty());
+    }
+
+    // A version opens in a window for reading only, its number in the
+    // title, and is not made a recent project.
+    void aVersionCopyIsShownForReading()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        MainWindow window;
+        QVERIFY(window.saveProjectAs(dir.path(), QStringLiteral("amp")));
+        const QString projectPath = window.document()->projectPath();
+        QString path;
+        QString error;
+        QVERIFY2(saveProjectVersion(projectPath, window.document()->design().project,
+                                    QStringLiteral("Start"), QDateTime::currentDateTime(), path,
+                                    error),
+                 qPrintable(error));
+        const QStringList recent = AppSettings::recentProjects();
+
+        MainWindow copy;
+        QVERIFY2(copy.showVersionCopy(1, path), qPrintable(copy.statusText()));
+        QVERIFY(copy.document()->isReadOnly());
+        QVERIFY(!copy.findChild<QLabel *>(QStringLiteral("versionBand"))->isHidden());
+        QVERIFY(window.findChild<QLabel *>(QStringLiteral("versionBand"))->isHidden());
+        QVERIFY(copy.document()->projectPath() != projectPath);
+        QVERIFY2(copy.windowTitle().contains(QStringLiteral("1")), qPrintable(copy.windowTitle()));
+        QCOMPARE(AppSettings::recentProjects(), recent);
+        QVERIFY(!copy.showVersionCopy(2, dir.filePath(QStringLiteral("none.zip"))));
     }
 
     void theSavedMarkTellsWhetherTheProjectIsSaved()

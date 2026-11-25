@@ -13,8 +13,9 @@ class Document;
 // The versions of the project (projectVersions()), the newest first: the
 // number, when it was made, the revision and what changed. Read again when
 // the panel is shown, a project is opened or saved, and on refresh().
-// "Restore this version", a button over the list and in the menu of a
-// version, reports the version chosen with restoreRequested().
+// "Restore this version" and "Open a copy", buttons over the list and in
+// the menu of a version, report the version chosen with restoreRequested()
+// and openRequested().
 class VersionsPanel : public QWidget
 {
     Q_OBJECT
@@ -28,22 +29,28 @@ public:
     void refresh();
     // The command that puts a version back, for its button and its box.
     static QString restoreTitle();
+    // The command that opens a version in a window of its own, for reading.
+    static QString openCopyTitle();
 
 signals:
     void restoreRequested(int number, const QString &path);
+    void openRequested(int number, const QString &path);
 
 protected:
     void showEvent(QShowEvent *event) override;
 
 private:
-    // The restore command follows the version chosen: only a readable one.
+    // The commands follow the version chosen: only a readable one.
     void updateRestore();
-    void restoreChosen();
+    // The number and the archive of the version chosen; false for none.
+    bool chosenVersion(int &number, QString &path) const;
 
     Document *m_document;
     QTreeWidget *m_tree = nullptr;
     QAction *m_restoreAction = nullptr;
     QPushButton *m_restoreButton = nullptr;
+    QAction *m_openAction = nullptr;
+    QPushButton *m_openButton = nullptr;
 };
 
 } // namespace ppcb

@@ -197,6 +197,10 @@
 <context>
     <name>ppcb::Document</name>
     <message>
+        <source>A copy of a version is only for reading</source>
+        <translation>Копия версии только для чтения</translation>
+    </message>
+    <message>
         <source>the project file needs a name</source>
         <translation>файлу проекта нужно имя</translation>
     </message>
@@ -691,6 +695,14 @@
 </context>
 <context>
     <name>ppcb::MainWindow</name>
+    <message>
+        <source>Version %1</source>
+        <translation>Версия %1</translation>
+    </message>
+    <message>
+        <source>read only</source>
+        <translation>только чтение</translation>
+    </message>
     <message>
         <source>Save the current project as a version first</source>
         <translation>Сначала сохранить текущий проект как версию</translation>
@@ -2080,6 +2092,10 @@
 </context>
 <context>
     <name>ppcb::VersionsPanel</name>
+    <message>
+        <source>Open a copy</source>
+        <translation>Открыть копию</translation>
+    </message>
     <message>
         <source>Restore this version</source>
         <translation>Вернуть эту версию</translation>

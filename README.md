@@ -9,7 +9,7 @@ Written in C++ with Qt 6. Linux first; the code is kept portable. Text is drawn 
 Early development. What works now (the user guide, Help > User guide or [`help.html`](help.html), tells how):
 
 - Projects: a folder each, JSON files, backups, autosave, recent projects.
-- Versions: numbered zips in `versions/`, a Versions panel, restore.
+- Versions: numbered zips in `versions/`, a Versions panel, restore, a read-only copy.
 - Project properties: title block, designator style, copper sides, net classes, rules.
 - Library: built-in, your own and the project's copy; Update parts from library.
 - Schematic: sheets, parts, wires, buses, labels, power symbols, no-connect marks, lock.
@@ -19,8 +19,6 @@ Early development. What works now (the user guide, Help > User guide or [`help.h
 - Autorouter, also for one-sided boards with wire links.
 - Printing: schematic to printer or PDF, board 1:1 for toner transfer.
 - Gerber and Excellon export with a zip for the factory.
-
-Planned next: open a version as a read-only copy.
 
 The full specification is in [`tz.md`](tz.md) (English) and [`tz.ru.md`](tz.ru.md) (Russian original).
 

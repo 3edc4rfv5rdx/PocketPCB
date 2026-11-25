@@ -8,6 +8,9 @@
 
 #include <QHash>
 #include <QMainWindow>
+#include <QTemporaryDir>
+
+#include <memory>
 
 class QActionGroup;
 class QFileSystemWatcher;
@@ -57,6 +60,11 @@ public:
     // Opens the first of the recent projects; says so in the status bar
     // when there is none.
     void openLastProject();
+    // Shows version 'number', the archive 'path', unpacked into a folder of
+    // the window's own, for reading only (Document::setReadOnly()), without
+    // making it a recent project. False, with the reason in the status bar,
+    // when it cannot be read.
+    bool showVersionCopy(int number, const QString &path);
     // Saves the project into the new folder 'name' inside 'parentFolder'
     // (see Document::saveAsNewFolder()).
     bool saveProjectAs(const QString &parentFolder, const QString &name);
@@ -230,6 +238,8 @@ private:
     // one step, asking first whether to keep what changed since the newest
     // version as a version; written to disk only by saving.
     void restoreVersion(int number, const QString &path);
+    // Opens version 'number' in a new window for reading (showVersionCopy()).
+    void openVersionCopy(int number, const QString &path);
     // File > Update parts from library: the parts chosen in the dialog
     // (partDifferences(), withPartsUpdated()) as one step.
     void updatePartsFromLibrary();
@@ -304,6 +314,9 @@ private:
     BoardEditor *m_boardEditor = nullptr;
     // The view is fitted to the page after the window is first shown.
     bool m_shownOnce = false;
+    // The folder of the copy of a version shown, and its name for the title.
+    std::unique_ptr<QTemporaryDir> m_versionFolder;
+    QString m_versionTitle;
     QLabel *m_positionLabel = nullptr;
     QPushButton *m_savedMark = nullptr;
     QLabel *m_statusText = nullptr;
@@ -356,6 +369,8 @@ private:
     QToolButton *m_outlineButton = nullptr;
     QToolButton *m_saveButton = nullptr;
     QLabel *m_unroutedLabel = nullptr;
+    // The band under the canvas of a copy of a version.
+    QLabel *m_versionBand = nullptr;
     // The actions of the outline's button, stopped while it is locked.
     QList<QAction *> m_outlineActions;
 

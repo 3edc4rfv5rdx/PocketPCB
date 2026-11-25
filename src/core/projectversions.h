@@ -52,6 +52,11 @@ bool saveChangedProjectVersion(const QString &projectPath, const Project &projec
 bool projectChangedSinceVersion(const QString &projectPath, const Project &project,
                                 bool &changed, QString &error);
 
+// Unpacks the version archive 'path' into 'folder', which is there:
+// 'projectPath' is its project file. False, with 'error', when it cannot.
+bool unpackProjectVersion(const QString &path, const QString &folder, QString &projectPath,
+                          QString &error);
+
 // The design kept in the version archive 'path', read as a project
 // (DesignFiles::read()). False, with 'error', when it cannot be.
 bool readProjectVersion(const QString &path, Design &design, QString &error);

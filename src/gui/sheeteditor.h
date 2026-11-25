@@ -467,8 +467,10 @@ private:
     QTimer m_hoverTimer;
 
     // The clipboard: objects about the origin, and the library their parts are in.
-    Sheet m_clipboard;
-    Library m_clipboardLibrary;
+    // Shared by the editors of all the windows, so that what is copied in
+    // a copy of a version is pasted into the project.
+    static Sheet s_clipboard;
+    static Library s_clipboardLibrary;
 };
 
 } // namespace ppcb

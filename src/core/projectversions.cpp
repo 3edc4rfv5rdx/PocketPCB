@@ -235,7 +235,8 @@ bool saveChangedProjectVersion(const QString &projectPath, const Project &projec
                         error);
 }
 
-bool readProjectVersion(const QString &path, Design &design, QString &error)
+bool unpackProjectVersion(const QString &path, const QString &folder, QString &projectPath,
+                          QString &error)
 {
     const QString cannotRead = withPlace(
         path, QCoreApplication::translate("ppcb::ProjectVersions", "the version cannot be read"));
@@ -243,19 +244,17 @@ bool readProjectVersion(const QString &path, Design &design, QString &error)
     QList<ZipEntry> entries;
     if (!JsonFile::readData(path, archive, error))
         return false;
-    QTemporaryDir copy;
-    if (!copy.isValid() || !zipEntries(archive, entries)) {
+    if (!zipEntries(archive, entries)) {
         error = cannotRead;
         return false;
     }
-    // The files unpacked into a folder of their own, read as a project.
-    const QDir folder(copy.path());
-    QString projectPath;
+    const QDir dir(folder);
+    projectPath.clear();
     for (const ZipEntry &entry : entries) {
         if (entry.name == QLatin1String(VERSION_INFO_FILE))
             continue;
         // Only names inside the folder.
-        const QString target = QDir::cleanPath(folder.filePath(entry.name));
+        const QString target = QDir::cleanPath(dir.filePath(entry.name));
         QByteArray data;
         if (QDir::isAbsolutePath(entry.name) || entry.name.contains(QLatin1String(".."))
             || !zipFileData(archive, entry, data)
@@ -272,7 +271,21 @@ bool readProjectVersion(const QString &path, Design &design, QString &error)
         error = cannotRead;
         return false;
     }
-    return DesignFiles::read(projectPath, design, error);
+    return true;
+}
+
+bool readProjectVersion(const QString &path, Design &design, QString &error)
+{
+    // The files unpacked into a folder of their own, read as a project.
+    QTemporaryDir copy;
+    if (!copy.isValid()) {
+        error = withPlace(path, QCoreApplication::translate("ppcb::ProjectVersions",
+                                                            "the version cannot be read"));
+        return false;
+    }
+    QString projectPath;
+    return unpackProjectVersion(path, copy.path(), projectPath, error)
+           && DesignFiles::read(projectPath, design, error);
 }
 
 } // namespace ppcb
