@@ -22,6 +22,12 @@ bool operator==(const RatsnestLine &a, const RatsnestLine &b);
 // to the nearest one already in the tree, with no line between pads the
 // copper joins already (copperGroups()). A net with one pad has none.
 QList<RatsnestLine> ratsnest(const Board &board, const Library &library);
+// Which way each of 'lines' is bent when drawn as an arc: 1 to the left of
+// its way from 'from' to 'to', -1 to the right. At a point where lines
+// meet, each bends away from the line nearest to it in angle there, so that
+// arcs from one pad part; where its two ends disagree, the end whose
+// neighbour is nearer decides. A line meeting none bends left.
+QList<int> ratsnestBends(const QList<RatsnestLine> &lines);
 
 // How far the routing is: the connections still to be made (the lines of
 // the ratsnest) and all there are, one fewer than the pads of each net; the

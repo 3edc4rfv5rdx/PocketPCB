@@ -266,6 +266,19 @@ private slots:
         QCOMPARE(pads.size(), 2);
         QCOMPARE(pads.at(1).sizeX, 5 * NM_PER_MM);
     }
+
+    // Arcs from one pad bend away from each other; a line alone bends left.
+    void arcsFromOnePadPart()
+    {
+        const Lines lines = {{mm(0, 0), mm(10, 0), QStringLiteral("A")},
+                             {mm(0, 0), mm(10, -2), QStringLiteral("A")},
+                             {mm(30, 0), mm(40, 0), QStringLiteral("B")}};
+        QCOMPARE(ratsnestBends(lines), (QList<int>{-1, 1, 1}));
+        // Met at their 'to' ends, the same two bend the other way round.
+        const Lines reversed = {{mm(10, 0), mm(0, 0), QStringLiteral("A")},
+                                {mm(10, -2), mm(0, 0), QStringLiteral("A")}};
+        QCOMPARE(ratsnestBends(reversed), (QList<int>{1, -1}));
+    }
 };
 
 QTEST_APPLESS_MAIN(TestRatsnest)

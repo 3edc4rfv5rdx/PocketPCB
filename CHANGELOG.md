@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Ratsnest arcs meeting at a pad bend away from each other
 - N: The grid is a little brighter, and a button beside Actual size makes it much brighter while held
 - N: Properties in the menu of a part on the schematic opens the Properties panel ready for typing
 - I: The build script prints the time right after the build result

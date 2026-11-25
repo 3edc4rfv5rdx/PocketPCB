@@ -176,6 +176,55 @@ QSet<ObjectId> joinedCopper(const Board &board, const Library &library, const Ob
     return joined;
 }
 
+QList<int> ratsnestBends(const QList<RatsnestLine> &lines)
+{
+    // The lines at each point, by index.
+    QHash<QPair<Coord, Coord>, QList<int>> at;
+    for (int i = 0; i < lines.size(); ++i) {
+        at[qMakePair(lines.at(i).from.x, lines.at(i).from.y)].append(i);
+        at[qMakePair(lines.at(i).to.x, lines.at(i).to.y)].append(i);
+    }
+    QList<int> bends;
+    for (int i = 0; i < lines.size(); ++i) {
+        const RatsnestLine &line = lines.at(i);
+        // At each end: the bend away from the nearest line in angle, and
+        // that angle; no wish when none meets it there or it runs alike.
+        int wish[2] = {0, 0};
+        double nearest[2] = {std::numeric_limits<double>::max(),
+                             std::numeric_limits<double>::max()};
+        for (int end = 0; end < 2; ++end) {
+            const Point here = end == 0 ? line.from : line.to;
+            const Point there = end == 0 ? line.to : line.from;
+            const QLineF own(toMm(here), toMm(there));
+            for (const int j : at.value(qMakePair(here.x, here.y))) {
+                if (j == i)
+                    continue;
+                const RatsnestLine &other = lines.at(j);
+                const QLineF away(toMm(here), toMm(other.from == here ? other.to : other.from));
+                const double angle = std::min(own.angleTo(away), away.angleTo(own));
+                if (angle >= nearest[end])
+                    continue;
+                nearest[end] = angle;
+                // Which side of this line's way the other lies on, seen
+                // from this end; it bends to the other side. A bend of 1
+                // seen from 'to' is to the right.
+                const QPointF d = own.p2() - own.p1();
+                const QPointF o = away.p2() - away.p1();
+                const double side = d.x() * o.y() - d.y() * o.x();
+                const int wanted = side > 0 ? 1 : side < 0 ? -1 : 0;
+                wish[end] = end == 0 ? wanted : -wanted;
+            }
+        }
+        int bend = 1;
+        if (wish[0] != 0 && (wish[1] == 0 || nearest[0] <= nearest[1]))
+            bend = wish[0];
+        else if (wish[1] != 0)
+            bend = wish[1];
+        bends.append(bend);
+    }
+    return bends;
+}
+
 RoutingProgress routingProgress(const Board &board, const Library &library)
 {
     Board withoutLinks = board;

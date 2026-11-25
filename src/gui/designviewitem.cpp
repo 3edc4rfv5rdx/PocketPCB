@@ -251,7 +251,10 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     const double endRadius = RATSNEST_END_PIXELS / painter.worldTransform().m11();
     // And the unrouted connections of the copper chosen whole.
     const QString joined = editor == nullptr ? QString() : editor->joinedChosenNet();
-    for (const RatsnestLine &line : ratsnest(board, design.library)) {
+    const QList<RatsnestLine> lines = ratsnest(board, design.library);
+    const QList<int> bends = m_ratsnestArcs ? ratsnestBends(lines) : QList<int>();
+    for (int i = 0; i < lines.size(); ++i) {
+        const RatsnestLine &line = lines.at(i);
         const bool bold =
             m_ratsnestBright || lit.contains(line.net) || (!joined.isEmpty() && line.net == joined);
         if (bold)
@@ -261,9 +264,11 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
         const QPointF from = toMm(line.from);
         const QPointF to = toMm(line.to);
         if (m_ratsnestArcs) {
-            // Bent to the left of its way by a part of its length.
+            // Bent to a side of its way by a part of its length, arcs
+            // from one pad parting.
             const QPointF along = to - from;
-            const QPointF bend = (from + to) / 2 + QPointF(along.y(), -along.x()) * RATSNEST_BEND;
+            const QPointF bend = (from + to) / 2
+                                 + QPointF(along.y(), -along.x()) * (RATSNEST_BEND * bends.at(i));
             QPainterPath arc(from);
             arc.quadTo(bend, to);
             painter.drawPath(arc);
