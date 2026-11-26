@@ -374,6 +374,11 @@ FootprintEditor::FootprintEditor(const QString &name, const Footprint &footprint
     connect(&m_undoStack, &QUndoStack::cleanChanged, this, &FootprintEditor::titleChanged);
     connect(this, &FootprintEditor::changed, m_canvas->scene(), [this] { m_canvas->scene()->update(); });
     connect(this, &FootprintEditor::changed, this, &FootprintEditor::showPanel);
+    // A short right click calls off what is being placed or drawn, as Esc.
+    connect(m_canvas, &CanvasView::contextMenuRequested, this, [this] {
+        if (m_mode != Mode::Select || m_dragging || m_framing)
+            escape();
+    });
     showPanel();
     // Once the tab is shown and the canvas knows its size.
     QTimer::singleShot(0, this, [this] { m_canvas->fitRect(footprintBounds(m_footprint)); });

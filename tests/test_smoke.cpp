@@ -727,7 +727,8 @@ private slots:
         QCOMPARE(editor->footprint().pads.at(1).at, (Point{2540000, 0}));
         QVERIFY(!editor->isSaved());
 
-        editor->escape();
+        // A short right click calls the pads off, as Esc.
+        emit editor->canvas()->contextMenuRequested(QPoint());
         QCOMPARE(editor->mode(), FootprintEditor::Mode::Select);
         editor->chooseAll();
         editor->rotate();
