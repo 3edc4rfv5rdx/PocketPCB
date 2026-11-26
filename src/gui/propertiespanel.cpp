@@ -129,6 +129,11 @@ bool PropertiesPanel::havePower(const QList<Component> &components, const Librar
               });
 }
 
+QString PropertiesPanel::differentMark()
+{
+    return QLatin1Char('(') + tr("different") + QLatin1Char(')');
+}
+
 bool PropertiesPanel::eventFilter(QObject *watched, QEvent *event)
 {
     if (watched != m_designator && watched != m_value && watched != m_comment)
@@ -163,7 +168,7 @@ void PropertiesPanel::refresh(bool force)
     // Other components: what is typed belongs to the ones before.
     force = force || ids != m_ids;
     m_ids = ids;
-    const QString different = QLatin1Char('(') + tr("different") + QLatin1Char(')');
+    const QString different = differentMark();
 
     QStringList names;
     for (const Component &component : chosen)

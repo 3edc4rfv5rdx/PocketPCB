@@ -3,6 +3,8 @@
 #include <QColor>
 #include <QIcon>
 
+class QToolBar;
+
 namespace ppcb {
 
 // The pictures of the buttons on the strip of tools over the canvas, and of
@@ -46,6 +48,10 @@ enum class ToolIcon {
     Drc,
     Bom,
     Versions,
+    FootprintEditor,
+    Pad,
+    PadRow,
+    Origin,
 };
 
 // 'icon' drawn in lines of 'color' on a square of TOOL_ICON_SIZE pixels,
@@ -54,6 +60,9 @@ QIcon toolIcon(ToolIcon icon, const QColor &color);
 // The layer button: two sheets, 'front' over 'back', framed in 'color'.
 QIcon layerIcon(const QColor &front, const QColor &back, const QColor &color);
 constexpr int TOOL_ICON_SIZE = 24;
+// Dresses 'bar' as a strip of tools over a canvas: pictures alone, of
+// TOOL_ICON_SIZE, the buttons lit under the mouse and framed while pressed.
+void styleToolBar(QToolBar *bar);
 // A bold question mark of 'color' for a question box, 'size' pixels high,
 // sharp on a screen of 'ratio' pixels to one.
 QPixmap questionPixmap(const QColor &color, int size, qreal ratio);

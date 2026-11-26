@@ -9,6 +9,7 @@ add_library(pocketpcb_gui STATIC
     drcpanel.h drcpanel.cpp
     rulescheck.h rulescheck.cpp
     ercpanel.h ercpanel.cpp
+    footprinteditor.h footprinteditor.cpp
     format.h format.cpp
     gerberexport.h gerberexport.cpp
     inplaceedit.h inplaceedit.cpp

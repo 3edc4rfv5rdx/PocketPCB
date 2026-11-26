@@ -8,6 +8,7 @@
 
 #include <QHash>
 #include <QMainWindow>
+#include <QPointer>
 #include <QTemporaryDir>
 
 #include <memory>
@@ -39,6 +40,7 @@ class PropertiesPanel;
 class SheetEditor;
 class SheetTabs;
 class LibraryViewItem;
+class FootprintEditor;
 
 class MainWindow : public QMainWindow
 {
@@ -129,6 +131,11 @@ public:
     LibraryViewItem *libraryItem() const { return m_libraryItem; }
 
     LibraryPanel *libraryPanel() const { return m_libraryPanel; }
+    // Opens the footprint chosen in the library panel in a footprint
+    // editor of its own, or a new footprint when 'newOne' or none is
+    // chosen; an editor already open on it comes to the front instead. A
+    // footprint saved there reloads the library.
+    FootprintEditor *openFootprintEditor(bool newOne);
 
     // The message last put into the status bar, beside the saved mark.
     QString statusText() const;
@@ -139,6 +146,17 @@ public:
     // bar and left out.
     void loadLibrary();
 
+    // Names of commands the library editors have as well.
+    static QString saveTitle();
+    static QString undoTitle();
+    static QString redoTitle();
+    static QString selectTitle();
+    static QString selectAllTitle();
+    static QString zoomInTitle();
+    static QString zoomOutTitle();
+    static QString fitDrawingTitle();
+    // "2.54 mm": a grid step in the status bar and in a step's name.
+    static QString gridStepText(Coord step);
 protected:
     void closeEvent(QCloseEvent *event) override;
     // The swatches of the paper's colours: the mouse over one previews it.
@@ -300,8 +318,6 @@ private:
     // and a step chosen by the user goes into the project.
     void applyProjectGrid();
     void storeGridStep(Coord step);
-    // "2.54 mm": a grid step in the status bar and in a step's name.
-    static QString gridStepText(Coord step);
 
     void showCursorPosition(Coord x, Coord y);
     void showGridStep(Coord step);
@@ -327,6 +343,8 @@ private:
     QString m_libraryPath;
     // Owned by the canvas scene.
     LibraryViewItem *m_libraryItem = nullptr;
+    // The footprint editors open; closed ones are gone from it.
+    QList<QPointer<FootprintEditor>> m_footprintEditors;
     QTimer *m_autosaveTimer = nullptr;
 
     // How the pages of the open project were last looked at, and the key of

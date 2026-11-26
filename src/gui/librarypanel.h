@@ -107,6 +107,9 @@ public:
     QString currentPart() const;
     Source currentSource() const;
     bool currentIsPower() const;
+    // The footprint chosen below the list for the chosen part; empty when
+    // no part is chosen or it has none.
+    QString currentFootprint() const;
     // Chooses the project's part 'part' and, below the list, 'footprint'
     // when the part allows it. False when the project has no such part.
     bool showProjectPart(const QString &part, const QString &footprint);

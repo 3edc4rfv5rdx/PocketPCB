@@ -100,9 +100,16 @@ QRectF symbolBounds(const Symbol &symbol);
 // texts of the program left out. Null when the symbol has no drawings.
 QRectF symbolBodyBounds(const Symbol &symbol);
 QRectF footprintBounds(const Footprint &footprint);
+// The rectangle the silkscreen drawings of 'footprint' take, its body;
+// null when it has none.
+QRectF footprintBodyBounds(const Footprint &footprint);
+// The rectangle of the copper of 'pad', in millimetres.
+QRectF padRect(const Pad &pad);
 
 void paintSymbol(QPainter &painter, const Symbol &symbol);
 void paintFootprint(QPainter &painter, const Footprint &footprint);
+// The pads alone, as paintFootprint() draws them.
+void paintFootprintPads(QPainter &painter, const QList<Pad> &pads);
 
 // The paper of a sheet: its top left corner is the origin, the long side
 // along X, or along Y on portrait paper.

@@ -9,6 +9,7 @@
 #include "drcpanel.h"
 #include "ercpanel.h"
 #include "document.h"
+#include "footprinteditor.h"
 #include "format.h"
 #include "gerberexport.h"
 #include "grid.h"
@@ -93,16 +94,6 @@ const int MS_PER_MINUTE = 60 * 1000;
 // The size Rectangular board offers for a board without an outline.
 const Coord DEFAULT_BOARD_WIDTH = 100 * NM_PER_MM;
 const Coord DEFAULT_BOARD_HEIGHT = 80 * NM_PER_MM;
-// The buttons of the strip of tools: how much of the colour of the text
-// shows behind one under the mouse and one held down, and how much of the
-// colour of a choice behind one that stays pressed, 0 to 255; a frame of
-// that colour goes round it. Every button has a frame, unseen unless
-// pressed, so that none grows when pressed and moves the others.
-const int HOVER_ALPHA = 30;
-const int HELD_ALPHA = 60;
-const int PRESSED_ALPHA = 90;
-// The arrow beside a button that has a menu, in pixels.
-const int MENU_ARROW_WIDTH = 12;
 // How long the autorouter runs before its progress box shows, milliseconds.
 const int ROUTE_BOX_DELAY_MS = 500;
 // The question mark of a question asked before deleting much, in pixels.
@@ -397,6 +388,13 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    // The footprint editors first: each may keep the window open.
+    for (const QPointer<FootprintEditor> &editor : std::as_const(m_footprintEditors)) {
+        if (!editor.isNull() && !editor->close()) {
+            event->ignore();
+            return;
+        }
+    }
     if (!confirmLeavingProject()) {
         event->ignore();
         return;
@@ -452,7 +450,7 @@ void MainWindow::createMenus()
     connect(fileMenu, &QMenu::aboutToShow, this, &MainWindow::updateRecentMenu);
     updateRecentMenu();
 
-    QAction *saveAction = fileMenu->addAction(tr("&Save"));
+    QAction *saveAction = fileMenu->addAction(saveTitle());
     saveAction->setObjectName(QStringLiteral("actionSaveProject"));
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &MainWindow::saveProject);
@@ -525,11 +523,11 @@ void MainWindow::createMenus()
     // The stack's own actions: they carry the name of the step ("Undo Move")
     // and switch themselves off when there is nothing to undo.
     QMenu *editMenu = m_mainMenu->addMenu(tr("&Edit"));
-    QAction *undoAction = m_document->undoStack()->createUndoAction(this, tr("Undo"));
+    QAction *undoAction = m_document->undoStack()->createUndoAction(this, undoTitle());
     undoAction->setObjectName(QStringLiteral("actionUndo"));
     undoAction->setShortcut(QKeySequence::Undo);
     editMenu->addAction(undoAction);
-    QAction *redoAction = m_document->undoStack()->createRedoAction(this, tr("Redo"));
+    QAction *redoAction = m_document->undoStack()->createRedoAction(this, redoTitle());
     redoAction->setObjectName(QStringLiteral("actionRedo"));
     redoAction->setShortcut(QKeySequence::Redo);
     editMenu->addAction(redoAction);
@@ -611,7 +609,7 @@ void MainWindow::createMenus()
             m_boardEditor->deleteChosen();
     });
     editMenu->addSeparator();
-    QAction *selectAllAction = editMenu->addAction(tr("Select all"));
+    QAction *selectAllAction = editMenu->addAction(selectAllTitle());
     selectAllAction->setObjectName(QStringLiteral("actionSelectAll"));
     selectAllAction->setShortcut(QKeySequence::SelectAll);
     connect(selectAllAction, &QAction::triggered, this, [this] {
@@ -768,13 +766,13 @@ void MainWindow::createMenus()
     viewMenu->addAction(m_versionsDock->toggleViewAction());
     viewMenu->addSeparator();
 
-    QAction *zoomInAction = viewMenu->addAction(tr("Zoom in"));
+    QAction *zoomInAction = viewMenu->addAction(zoomInTitle());
     zoomInAction->setObjectName(QStringLiteral("actionZoomIn"));
     zoomInAction->setShortcut(QKeySequence::ZoomIn);
     connect(zoomInAction, &QAction::triggered, this, [this] {
         m_canvas->setView(m_canvas->viewCenter(), m_canvas->pixelsPerMm() * CanvasView::ZOOM_STEP);
     });
-    QAction *zoomOutAction = viewMenu->addAction(tr("Zoom out"));
+    QAction *zoomOutAction = viewMenu->addAction(zoomOutTitle());
     zoomOutAction->setObjectName(QStringLiteral("actionZoomOut"));
     zoomOutAction->setShortcut(QKeySequence::ZoomOut);
     connect(zoomOutAction, &QAction::triggered, this, [this] {
@@ -784,7 +782,7 @@ void MainWindow::createMenus()
     fitAction->setObjectName(QStringLiteral("actionZoomFit"));
     fitAction->setShortcut(QKeySequence(Qt::Key_Home));
     connect(fitAction, &QAction::triggered, this, &MainWindow::fitView);
-    QAction *fitDrawingAction = viewMenu->addAction(tr("Fit the drawing"));
+    QAction *fitDrawingAction = viewMenu->addAction(fitDrawingTitle());
     fitDrawingAction->setObjectName(QStringLiteral("actionZoomFitDrawing"));
     fitDrawingAction->setShortcut(QKeySequence(Qt::SHIFT | Qt::Key_Home));
     connect(fitDrawingAction, &QAction::triggered, this, &MainWindow::fitDrawing);
@@ -1788,25 +1786,9 @@ void MainWindow::createToolBar()
     bar->setMovable(false);
     // The menu is on it: it cannot be hidden.
     bar->toggleViewAction()->setVisible(false);
-    bar->setIconSize(QSize(TOOL_ICON_SIZE, TOOL_ICON_SIZE));
-    bar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    styleToolBar(bar);
     addToolBar(Qt::TopToolBarArea, bar);
     const QColor color = bar->palette().color(QPalette::WindowText);
-    const QColor pressed = bar->palette().color(QPalette::Highlight);
-    const auto rgba = [](const QColor &c, int alpha) {
-        return QStringLiteral("rgba(%1, %2, %3, %4)").arg(c.red()).arg(c.green()).arg(c.blue()).arg(alpha);
-    };
-    bar->setStyleSheet(
-        QStringLiteral("QToolButton { border: 1px solid transparent; border-radius: 3px; "
-                       "padding: 2px; background: transparent; }"
-                       "QToolButton:hover { background-color: %1; }"
-                       "QToolButton:pressed { background-color: %2; }"
-                       "QToolButton:checked { background-color: %3; border-color: %4; }"
-                       "QToolButton::menu-indicator { image: none; }"
-                       "QToolButton[popupMode=\"1\"] { padding-right: %5px; }"
-                       "QToolButton::menu-button { border: none; width: %5px; }")
-            .arg(rgba(color, HOVER_ALPHA), rgba(color, HELD_ALPHA), rgba(pressed, PRESSED_ALPHA),
-                 pressed.name(), QString::number(MENU_ARROW_WIDTH)));
 
     // The menus hold the actions but are not on the window: the window
     // takes their keys itself.
@@ -1962,7 +1944,7 @@ void MainWindow::createToolBar()
     // The lock a gap before the modes.
     put("actionLock", ToolIcon::Lock);
     gap();
-    QAction *select = new QAction(tr("Select"), this);
+    QAction *select = new QAction(selectTitle(), this);
     select->setObjectName(QStringLiteral("actionSelectTool"));
     select->setCheckable(true);
     connect(select, &QAction::triggered, this, &MainWindow::chooseSelectTool);
@@ -2083,8 +2065,25 @@ void MainWindow::createToolBar()
     m_sheetActions.append(dress("actionMirror", ToolIcon::Mirror));
     dress("actionDelete", ToolIcon::Delete);
 
-    // The switches of the panels, on the right.
+    // The switches of the panels, on the right, after the footprint
+    // editor: a click opens the footprint chosen in the library, the arrow
+    // offers a new one.
     stretch();
+    QAction *footprintTool = new QAction(FootprintEditor::editorTitle(), this);
+    footprintTool->setObjectName(QStringLiteral("actionFootprintEditor"));
+    footprintTool->setIcon(toolIcon(ToolIcon::FootprintEditor, color));
+    connect(footprintTool, &QAction::triggered, this, [this] { openFootprintEditor(false); });
+    QMenu *footprintMenu = new QMenu(this);
+    QAction *newFootprint = footprintMenu->addAction(FootprintEditor::newFootprintTitle());
+    newFootprint->setObjectName(QStringLiteral("actionNewFootprint"));
+    connect(newFootprint, &QAction::triggered, this, [this] { openFootprintEditor(true); });
+    QToolButton *footprintButton = new QToolButton(bar);
+    footprintButton->setObjectName(QStringLiteral("footprintEditorButton"));
+    footprintButton->setDefaultAction(footprintTool);
+    footprintButton->setMenu(footprintMenu);
+    footprintButton->setPopupMode(QToolButton::MenuButtonPopup);
+    bar->addWidget(footprintButton);
+    gap();
     const QList<QPair<QAction *, ToolIcon>> panels = {
         {m_libraryDock->toggleViewAction(), ToolIcon::Library},
         {m_propertiesDock->toggleViewAction(), ToolIcon::Properties},
@@ -2275,6 +2274,76 @@ void MainWindow::showActualSize()
     if (screen == nullptr)
         return;
     m_canvas->setView(m_canvas->viewCenter(), screenPixelsPerMm(screen));
+}
+
+FootprintEditor *MainWindow::openFootprintEditor(bool newOne)
+{
+    const QString name = newOne ? QString() : m_libraryPanel->currentFootprint();
+    m_footprintEditors.removeAll(QPointer<FootprintEditor>());
+    if (!name.isEmpty()) {
+        for (const QPointer<FootprintEditor> &open : std::as_const(m_footprintEditors)) {
+            if (open->name() == name) {
+                open->raise();
+                open->activateWindow();
+                return open;
+            }
+        }
+    }
+    Footprint footprint;
+    if (!name.isEmpty()) {
+        const Library &library = m_libraryPanel->currentSource() == LibraryPanel::Source::Project
+                                     ? m_document->design().library
+                                     : m_library.items;
+        if (const Footprint *found = library.findFootprint(name))
+            footprint = *found;
+    }
+    FootprintEditor *editor =
+        new FootprintEditor(name, footprint, !name.isEmpty() && FootprintEditor::isInUserLibrary(name),
+                            this);
+    connect(editor, &FootprintEditor::saved, this, &MainWindow::loadLibrary);
+    m_footprintEditors.append(editor);
+    editor->show();
+    return editor;
+}
+
+QString MainWindow::saveTitle()
+{
+    return tr("&Save");
+}
+
+QString MainWindow::undoTitle()
+{
+    return tr("Undo");
+}
+
+QString MainWindow::redoTitle()
+{
+    return tr("Redo");
+}
+
+QString MainWindow::selectTitle()
+{
+    return tr("Select");
+}
+
+QString MainWindow::selectAllTitle()
+{
+    return tr("Select all");
+}
+
+QString MainWindow::zoomInTitle()
+{
+    return tr("Zoom in");
+}
+
+QString MainWindow::zoomOutTitle()
+{
+    return tr("Zoom out");
+}
+
+QString MainWindow::fitDrawingTitle()
+{
+    return tr("Fit the drawing");
 }
 
 QString MainWindow::aboutTitle()

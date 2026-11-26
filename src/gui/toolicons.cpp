@@ -5,6 +5,7 @@
 #include <QPainterPath>
 #include <QPixmap>
 #include <QPolygonF>
+#include <QToolBar>
 
 namespace ppcb {
 
@@ -23,6 +24,16 @@ const qreal DOT_RADIUS = 2.0;
 const qreal KNOB_RADIUS = 3.0;
 // Pixels per unit of the larger of the two pixmaps.
 const int SHARP_SCALE = 2;
+// The buttons of the strip of tools: how much of the colour of the text
+// shows behind one under the mouse and one held down, and how much of the
+// colour of a choice behind one that stays pressed, 0 to 255; a frame of
+// that colour goes round it. Every button has a frame, unseen unless
+// pressed, so that none grows when pressed and moves the others.
+const int HOVER_ALPHA = 30;
+const int HELD_ALPHA = 60;
+const int PRESSED_ALPHA = 90;
+// The arrow beside a button that has a menu, in pixels.
+const int MENU_ARROW_WIDTH = 12;
 
 QPolygonF polygon(std::initializer_list<QPointF> points)
 {
@@ -319,6 +330,31 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
                          QStringLiteral("Ver"));
         break;
     }
+    case ToolIcon::FootprintEditor:
+        // The body of a DIP package seen from above, three pads on each side.
+        painter.drawRect(QRectF(8, 3, 8, 18));
+        for (const qreal y : {6.0, 12.0, 18.0}) {
+            painter.drawLine(QPointF(3, y), QPointF(6, y));
+            painter.drawLine(QPointF(18, y), QPointF(21, y));
+        }
+        break;
+    case ToolIcon::Pad:
+        // A round pad with its hole.
+        painter.drawEllipse(QPointF(12, 12), 8, 8);
+        painter.drawEllipse(QPointF(12, 12), 3, 3);
+        break;
+    case ToolIcon::PadRow:
+        // A column of pads, the first square.
+        painter.drawRect(QRectF(9, 2, 6, 6));
+        painter.drawEllipse(QPointF(12, 13), 3, 3);
+        painter.drawEllipse(QPointF(12, 20), 3, 3);
+        break;
+    case ToolIcon::Origin:
+        // A cross with a ring: the point the part is held by.
+        painter.drawEllipse(QPointF(12, 12), 5, 5);
+        painter.drawLine(QPointF(12, 2), QPointF(12, 22));
+        painter.drawLine(QPointF(2, 12), QPointF(22, 12));
+        break;
     }
 }
 
@@ -383,6 +419,28 @@ QIcon layerIcon(const QColor &front, const QColor &back, const QColor &color)
         painter.setBrush(front);
         painter.drawRect(QRectF(3, 9, 12, 12));
     });
+}
+
+void styleToolBar(QToolBar *bar)
+{
+    bar->setIconSize(QSize(TOOL_ICON_SIZE, TOOL_ICON_SIZE));
+    bar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    const QColor color = bar->palette().color(QPalette::WindowText);
+    const QColor pressed = bar->palette().color(QPalette::Highlight);
+    const auto rgba = [](const QColor &c, int alpha) {
+        return QStringLiteral("rgba(%1, %2, %3, %4)").arg(c.red()).arg(c.green()).arg(c.blue()).arg(alpha);
+    };
+    bar->setStyleSheet(
+        QStringLiteral("QToolButton { border: 1px solid transparent; border-radius: 3px; "
+                       "padding: 2px; background: transparent; }"
+                       "QToolButton:hover { background-color: %1; }"
+                       "QToolButton:pressed { background-color: %2; }"
+                       "QToolButton:checked { background-color: %3; border-color: %4; }"
+                       "QToolButton::menu-indicator { image: none; }"
+                       "QToolButton[popupMode=\"1\"] { padding-right: %5px; }"
+                       "QToolButton::menu-button { border: none; width: %5px; }")
+            .arg(rgba(color, HOVER_ALPHA), rgba(color, HELD_ALPHA), rgba(pressed, PRESSED_ALPHA),
+                 pressed.name(), QString::number(MENU_ARROW_WIDTH)));
 }
 
 } // namespace ppcb

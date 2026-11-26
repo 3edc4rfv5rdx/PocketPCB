@@ -482,6 +482,8 @@ QColor padColor(PadLayers layers, BoardSide partSide, std::optional<BoardSide> b
     return paintcolor::padBoth();
 }
 
+} // namespace
+
 QRectF padRect(const Pad &pad)
 {
     const QPointF at = toMm(pad.at);
@@ -489,6 +491,8 @@ QRectF padRect(const Pad &pad)
     const double height = nmToMm(pad.sizeY);
     return QRectF(at.x() - width / 2, at.y() - height / 2, width, height);
 }
+
+namespace {
 
 // What shows through a hole, and the colour of a pad's number over it.
 struct HoleColors
@@ -1161,6 +1165,14 @@ QRectF symbolBodyBounds(const Symbol &symbol)
     return body.rect();
 }
 
+QRectF footprintBodyBounds(const Footprint &footprint)
+{
+    Bounds body;
+    for (const Graphic &graphic : footprint.graphics)
+        body.add(graphicBounds(graphic));
+    return body.rect();
+}
+
 QRectF footprintBounds(const Footprint &footprint)
 {
     Bounds bounds;
@@ -1188,13 +1200,18 @@ void paintSymbol(QPainter &painter, const Symbol &symbol)
     painter.restore();
 }
 
+void paintFootprintPads(QPainter &painter, const QList<Pad> &pads)
+{
+    for (const Pad &pad : pads)
+        paintPad(painter, pad, paperHoles());
+}
+
 void paintFootprint(QPainter &painter, const Footprint &footprint)
 {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
     // Copper first, silkscreen over it, as on a real board.
-    for (const Pad &pad : footprint.pads)
-        paintPad(painter, pad, paperHoles());
+    paintFootprintPads(painter, footprint.pads);
     for (const Graphic &graphic : footprint.graphics)
         paintGraphic(painter, graphic, paintcolor::silkscreen());
     paintOriginMark(painter);

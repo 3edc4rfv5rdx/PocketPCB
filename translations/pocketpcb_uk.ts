@@ -2136,4 +2136,166 @@
         <translation>версію не вдається прочитати</translation>
     </message>
 </context>
+<context>
+    <name>ppcb::FootprintEditor</name>
+    <message>
+        <source>Footprint editor</source>
+        <translation>Редактор посадкових місць</translation>
+    </message>
+    <message>
+        <source>Pad properties</source>
+        <translation>Властивості площадки</translation>
+    </message>
+    <message>
+        <source>New footprint</source>
+        <translation>Нове посадкове місце</translation>
+    </message>
+    <message>
+        <source>built-in</source>
+        <translation>вбудоване</translation>
+    </message>
+    <message>
+        <source>Row of pads</source>
+        <translation>Ряд площадок</translation>
+    </message>
+    <message>
+        <source>Origin here</source>
+        <translation>Початок тут</translation>
+    </message>
+    <message>
+        <source>Origin in the middle</source>
+        <translation>Початок посередині</translation>
+    </message>
+    <message>
+        <source>Place pad</source>
+        <translation>Поставити площадку</translation>
+    </message>
+    <message>
+        <source>Place row of pads</source>
+        <translation>Поставити ряд площадок</translation>
+    </message>
+    <message>
+        <source>Move origin</source>
+        <translation>Перенести початок</translation>
+    </message>
+    <message>
+        <source>One column</source>
+        <translation>Один ряд</translation>
+    </message>
+    <message>
+        <source>Two columns, numbered across</source>
+        <translation>Два ряди, нумерація впоперек</translation>
+    </message>
+    <message>
+        <source>DIP, numbered around</source>
+        <translation>DIP, нумерація по колу</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Розташування</translation>
+    </message>
+    <message>
+        <source>Pads</source>
+        <translation>Площадок</translation>
+    </message>
+    <message>
+        <source>Pitch</source>
+        <translation>Крок</translation>
+    </message>
+    <message>
+        <source>Between columns</source>
+        <translation>Між рядами</translation>
+    </message>
+    <message>
+        <source>First number</source>
+        <translation>Перший номер</translation>
+    </message>
+    <message>
+        <source>First pad square</source>
+        <translation>Перша площадка квадратна</translation>
+    </message>
+    <message>
+        <source>Two columns need an even number of pads</source>
+        <translation>Для двох рядів потрібна парна кількість площадок</translation>
+    </message>
+    <message>
+        <source>Footprint name</source>
+        <translation>Назва посадкового місця</translation>
+    </message>
+    <message>
+        <source>A name may hold Latin letters, digits and these signs</source>
+        <translation>У назві допустимі латинські літери, цифри та знаки</translation>
+    </message>
+    <message>
+        <source>The library has a footprint %1 already. Replace it</source>
+        <translation>У бібліотеці вже є посадкове місце %1. Замінити його</translation>
+    </message>
+    <message>
+        <source>The footprint has changes that are not saved. Save them</source>
+        <translation>У посадковому місці є незбережені зміни. Зберегти їх</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::PadPanel</name>
+    <message>
+        <source>Pad</source>
+        <translation>Площадка</translation>
+    </message>
+    <message>
+        <source>New pads</source>
+        <translation>Нові площадки</translation>
+    </message>
+    <message>
+        <source>Pads chosen</source>
+        <translation>Вибрано площадок</translation>
+    </message>
+    <message>
+        <source>Round</source>
+        <translation>Кругла</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>Прямокутна</translation>
+    </message>
+    <message>
+        <source>Oval</source>
+        <translation>Овальна</translation>
+    </message>
+    <message>
+        <source>Both sides</source>
+        <translation>Обидві сторони</translation>
+    </message>
+    <message>
+        <source>Side of the part</source>
+        <translation>Сторона деталі</translation>
+    </message>
+    <message>
+        <source>Other side</source>
+        <translation>Інша сторона</translation>
+    </message>
+    <message>
+        <source>Number</source>
+        <translation>Номер</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>Форма</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Ширина</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Висота</translation>
+    </message>
+    <message>
+        <source>Hole</source>
+        <translation>Отвір</translation>
+    </message>
+    <message>
+        <source>Copper</source>
+        <translation>Мідь</translation>
+    </message>
+</context>
 </TS>

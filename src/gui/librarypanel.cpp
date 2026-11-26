@@ -482,6 +482,13 @@ bool LibraryPanel::currentIsPower() const
     return isPowerItem(m_tree->currentItem());
 }
 
+QString LibraryPanel::currentFootprint() const
+{
+    if (currentPart().isEmpty() || currentIsPower())
+        return QString();
+    return m_footprintBox->currentText();
+}
+
 bool LibraryPanel::requestPlacing(const QTreeWidgetItem *item, bool drag)
 {
     const QString name = item == nullptr ? QString() : item->data(0, PART_ROLE).toString();

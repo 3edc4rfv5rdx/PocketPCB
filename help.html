@@ -23,7 +23,11 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
 <ul>
   <li><a href="#projects">Projects</a></li>
   <li><a href="#window">The window</a></li>
-  <li><a href="#library">Library</a></li>
+  <li><a href="#library">Library</a>
+    <ul>
+      <li><a href="#footprinteditor">Footprint editor</a></li>
+    </ul>
+  </li>
   <li><a href="#schematic">Schematic</a>
     <ul>
       <li><a href="#sheets">Sheets</a></li>
@@ -128,6 +132,23 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
     file (<kbd>Ctrl+L</kbd>) shows a symbol or footprint file and redraws it each time the file is saved.</li>
   <li>File &gt; Update parts from library lists the project's parts that differ from the library and updates
     those you tick.</li>
+</ul>
+
+<h3 id="footprinteditor">Footprint editor</h3>
+<ul>
+  <li>The <b>Footprint editor</b> button on the strip opens the footprint chosen under the library list in a
+    window of its own; its arrow starts a new one. Each window has its own Undo.</li>
+  <li><b>Pad</b> (<kbd>P</kbd>): each click places a pad on the grid, numbered on, like the last one; the arrow
+    offers the usual sizes. <b>Row of pads</b> sets up one column, two columns numbered across or a DIP
+    numbered around; the row follows the cursor by pad 1 and a click places it.</li>
+  <li>Choose pads with a click, <kbd>Ctrl</kbd>+click or a frame; drag them on the grid, <kbd>R</kbd> turns them,
+    <kbd>Del</kbd> deletes them, a double click types the number. The <b>Pad</b> panel sets number, shape,
+    sizes, hole, copper side and place, for all the pads chosen at once; with none chosen, those of the next
+    pad.</li>
+  <li><b>Origin here</b> (<kbd>O</kbd>) moves the point the part is held by and turns about on the board to a
+    click; its arrow puts it in the middle of the part.</li>
+  <li>Save (<kbd>Ctrl+S</kbd>) writes it into your library; a built-in footprint saved there is replaced by your
+    copy. A new one is named when first saved.</li>
 </ul>
 
 <h2 id="schematic">Schematic</h2>

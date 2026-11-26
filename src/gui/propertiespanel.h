@@ -42,6 +42,8 @@ public:
     // The rated power as a field and a menu, and what it offers: none, then
     // the standard powers (standardPowersMw()), each with its milliwatts.
     static QString powerTitle();
+    // What an empty field shows when the things chosen differ in it.
+    static QString differentMark();
     static QList<QPair<QString, int>> powerChoices();
     // True when every one of 'components' is of a part with a rated power.
     static bool havePower(const QList<Component> &components, const Library &library);

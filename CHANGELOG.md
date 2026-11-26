@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Footprint editor in a window of its own: pads one by one or in rows, their properties, the origin, saved into the user library
 - F: A part dragged on the board lands on the grid by its pad 1, so its pads stand on the grid
 - F: Wire links are named xx1, xx2… in any designator style, old JP and XN names read as xx
 - N: ERC reports a part whose designator a wire link on the board has too

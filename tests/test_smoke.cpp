@@ -3,6 +3,7 @@
 #include "canvasview.h"
 #include "designviewitem.h"
 #include "document.h"
+#include "footprinteditor.h"
 #include "format.h"
 #include "gerberexport.h"
 #include "projectversions.h"
@@ -698,6 +699,54 @@ private slots:
         QVERIFY(window.openProject(path));
         QCOMPARE(window.document()->design().schematic.sheets.at(0).title, QString());
         QVERIFY(!Document::hasAutosave(path));
+    }
+
+    // Pads placed one by one go on in number, turn, step back with Undo
+    // and are saved into the user's library, which the window reads again.
+    void aFootprintIsDrawnAndSaved()
+    {
+        MainWindow window;
+        const QString name = QStringLiteral("test-editor-pads");
+        const QString path =
+            QDir(AppSettings::userLibraryFolder()).filePath(QStringLiteral("footprints/") + name
+                                                            + QStringLiteral(".json"));
+        // Left by an earlier run.
+        QFile::remove(path);
+        FootprintEditor *editor = window.openFootprintEditor(true);
+        QVERIFY(editor != nullptr);
+        QVERIFY(editor->name().isEmpty());
+        editor->setMode(FootprintEditor::Mode::Pad);
+        editor->press(QPointF(0, 0), false);
+        editor->release(QPointF(0, 0));
+        editor->press(QPointF(2.54, 0), false);
+        editor->release(QPointF(2.54, 0));
+        QCOMPARE(editor->footprint().pads.size(), 2);
+        QCOMPARE(editor->footprint().pads.at(1).number, QStringLiteral("2"));
+        QCOMPARE(editor->footprint().pads.at(1).at, (Point{2540000, 0}));
+        QVERIFY(!editor->isSaved());
+
+        editor->escape();
+        QCOMPARE(editor->mode(), FootprintEditor::Mode::Select);
+        editor->chooseAll();
+        editor->rotate();
+        QCOMPARE(editor->footprint().pads.at(1).at.x, editor->footprint().pads.at(0).at.x);
+        editor->undoStack()->undo();
+        QCOMPARE(editor->footprint().pads.at(1).at, (Point{2540000, 0}));
+
+        // A drag of a chosen pad moves it on the grid.
+        editor->setChosen({1});
+        editor->press(QPointF(2.54, 0), false);
+        editor->move(QPointF(3.9, 1.2));
+        editor->release(QPointF(3.9, 1.2));
+        QCOMPARE(editor->footprint().pads.at(1).at, (Point{3810000, 1270000}));
+
+        QVERIFY(editor->saveAs(name, true));
+        QVERIFY(editor->isSaved());
+        QVERIFY(QFileInfo::exists(path));
+        QVERIFY(window.library().items.footprints.contains(name));
+        QVERIFY(FootprintEditor::isInUserLibrary(name));
+        editor->close();
+        QFile::remove(path);
     }
 
     void librariesAreLoadedOnStart()
