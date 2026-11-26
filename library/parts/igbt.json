@@ -2,7 +2,7 @@
   "type": "pocketpcb-part",
   "format": 1,
   "symbol": "igbt",
-  "footprints": ["to220-gce"],
+  "footprints": ["to220-gce", "to220-lying-gce"],
   "prefix": "Q",
   "prefixGost": "VT",
   "value": "",

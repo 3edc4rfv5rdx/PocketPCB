@@ -2,7 +2,7 @@
   "type": "pocketpcb-part",
   "format": 1,
   "symbol": "pmos",
-  "footprints": ["to92-sgd", "to220-gds"],
+  "footprints": ["to92-sgd", "to220-gds", "to220-lying-gds"],
   "prefix": "Q",
   "prefixGost": "VT",
   "value": "",

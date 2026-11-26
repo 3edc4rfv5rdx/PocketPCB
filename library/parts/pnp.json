@@ -2,7 +2,7 @@
   "type": "pocketpcb-part",
   "format": 1,
   "symbol": "pnp",
-  "footprints": ["to92-cbe", "to92-ebc", "to220-bce"],
+  "footprints": ["to92-cbe", "to92-ebc", "to220-bce", "to220-lying-bce"],
   "prefix": "Q",
   "prefixGost": "VT",
   "value": "",

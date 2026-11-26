@@ -2,7 +2,7 @@
   "type": "pocketpcb-part",
   "format": 1,
   "symbol": "regulator-adj",
-  "footprints": ["to220-adj-out-in", "to92-adj-out-in"],
+  "footprints": ["to220-adj-out-in", "to220-lying-adj-out-in", "to92-adj-out-in"],
   "prefix": "U",
   "prefixGost": "DA",
   "value": "LM317",

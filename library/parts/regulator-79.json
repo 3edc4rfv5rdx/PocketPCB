@@ -2,7 +2,7 @@
   "type": "pocketpcb-part",
   "format": 1,
   "symbol": "regulator",
-  "footprints": ["to220-gnd-in-out", "to92-gnd-in-out"],
+  "footprints": ["to220-gnd-in-out", "to220-lying-gnd-in-out", "to92-gnd-in-out"],
   "prefix": "U",
   "prefixGost": "DA",
   "value": "7905",

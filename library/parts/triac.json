@@ -2,7 +2,7 @@
   "type": "pocketpcb-part",
   "format": 1,
   "symbol": "triac",
-  "footprints": ["to220-t1t2g"],
+  "footprints": ["to220-t1t2g", "to220-lying-t1t2g"],
   "prefix": "Q",
   "prefixGost": "VS",
   "value": "",
