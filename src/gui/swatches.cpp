@@ -2,7 +2,9 @@
 
 #include "paint.h"
 
+#include <QEvent>
 #include <QGridLayout>
+#include <QLabel>
 #include <QMenu>
 #include <QPainter>
 #include <QToolButton>
@@ -17,9 +19,52 @@ const int DENSE_SPACING = 1;
 // The one chosen has a frame in the selection colour.
 const char SWATCH_STYLE[] = "QToolButton { border: 1px solid #a0a0a0; padding: 2px; }"
                             "QToolButton:checked { border: 3px solid %1; padding: 0px; }";
-const char DENSE_STYLE[] = "QToolButton { border: 1px solid transparent; padding: 0px; }"
-                           "QToolButton:hover { border: 1px solid #404040; }"
-                           "QToolButton:checked { border: 1px solid %1; }";
+// The one chosen in a dense table: a thick black frame.
+// Every frame as thick, unseen but there, so that none moves the others.
+const char DENSE_STYLE[] = "QToolButton { border: 3px solid transparent; padding: 0px; }"
+                           "QToolButton:hover { border: 3px solid #909090; }"
+                           "QToolButton:checked { border: 3px solid #000000; }";
+// The large swatch beside a dense table, of the colour under the mouse.
+const int LOUPE_SIZE = 96;
+
+// Shows in 'loupe' the colour of a swatch the mouse enters, and 'rest'
+// once it leaves.
+class SwatchLoupe : public QObject
+{
+public:
+    SwatchLoupe(QLabel *loupe, const QColor &rest, QObject *parent)
+        : QObject(parent)
+        , m_loupe(loupe)
+        , m_rest(rest)
+    {
+        show(rest);
+    }
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        if (event->type() == QEvent::Enter)
+            show(watched->property(SWATCH_COLOR_PROPERTY).value<QColor>());
+        else if (event->type() == QEvent::Leave)
+            show(m_rest);
+        return QObject::eventFilter(watched, event);
+    }
+
+private:
+    void show(const QColor &color)
+    {
+        if (!color.isValid()) {
+            m_loupe->clear();
+            m_loupe->setToolTip(QString());
+            return;
+        }
+        m_loupe->setPixmap(colorSwatch(color, QSize(LOUPE_SIZE, LOUPE_SIZE)));
+        m_loupe->setToolTip(color.name().toUpper());
+    }
+
+    QLabel *m_loupe;
+    QColor m_rest;
+};
 
 } // namespace
 
@@ -39,6 +84,17 @@ void addSwatchTable(QMenu *menu, const QList<QColor> &colors, const QColor &curr
     grid->setSpacing(spacing);
     grid->setContentsMargins(SWATCH_SPACING, SWATCH_SPACING, SWATCH_SPACING, SWATCH_SPACING);
     QMenu *toClose = closing != nullptr ? closing : menu;
+    // Beside a dense table, the colour under the mouse at large.
+    SwatchLoupe *loupe = nullptr;
+    if (dense) {
+        QLabel *label = new QLabel(table);
+        label->setObjectName(QStringLiteral("swatchLoupe"));
+        label->setFixedSize(LOUPE_SIZE, LOUPE_SIZE);
+        loupe = new SwatchLoupe(label, current, table);
+        const int rows = (int(colors.size()) + columns - 1) / columns;
+        grid->addWidget(label, 0, columns, rows, 1, Qt::AlignTop);
+        grid->setColumnMinimumWidth(columns, LOUPE_SIZE + SWATCH_SPACING);
+    }
     for (int i = 0; i < colors.size(); ++i) {
         const QColor color = colors.at(i);
         QToolButton *button = new QToolButton(table);
@@ -51,6 +107,8 @@ void addSwatchTable(QMenu *menu, const QList<QColor> &colors, const QColor &curr
         button->setProperty(SWATCH_COLOR_PROPERTY, color);
         if (previewer != nullptr)
             button->installEventFilter(previewer);
+        if (loupe != nullptr)
+            button->installEventFilter(loupe);
         grid->addWidget(button, i / columns, i % columns);
         QObject::connect(button, &QToolButton::clicked, menu, [chosen, color, toClose] {
             chosen(color);
