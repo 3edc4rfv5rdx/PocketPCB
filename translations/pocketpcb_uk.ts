@@ -1776,6 +1776,10 @@
 <context>
     <name>ppcb::BoardEditor</name>
     <message>
+        <source>On the wrong side of a one-sided board</source>
+        <translation>Не на тому боці односторонньої плати</translation>
+    </message>
+    <message>
         <source>Flip to other side</source>
         <translation>На інший бік</translation>
     </message>

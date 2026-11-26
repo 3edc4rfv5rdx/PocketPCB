@@ -7,6 +7,7 @@
 #include <QPointF>
 #include <QRectF>
 #include <QSet>
+#include <QStringList>
 
 namespace ppcb {
 
@@ -27,6 +28,12 @@ QRectF placementsBounds(const Board &board, const Library &library, const QSet<O
 // point in its middle; its first pad when none is numbered 1, its own
 // point when it has no pads or the library lacks its footprint.
 Point placementGridPoint(const Placement &placement, const Library &library);
+// The designators of the placements 'ids' on the wrong side of a board
+// with copper on one side, in the order of the board: a part with leads
+// through holes on the side of the copper, which it is soldered to from
+// the other, or one of surface pads only away from it. None on a board with
+// copper on both sides.
+QStringList partsOnWrongSide(const Board &board, const Library &library, const QSet<ObjectId> &ids);
 
 // A text a placement shows on the silkscreen: its designator or its value;
 // or the designator of a wire link, its owner then the link.

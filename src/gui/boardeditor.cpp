@@ -641,6 +641,7 @@ void BoardEditor::flipChosen()
             if (const Placement *flipped = findById(m_dragBase.placements, m_dragTaken))
                 m_dragAnchor = placementGridPoint(*flipped, library);
             m_movedBoard = draggedBoard(m_lastAt);
+            warnWrongSide(m_dragBase, ids);
             emit changed();
         }
         return;
@@ -655,11 +656,17 @@ void BoardEditor::flipChosen()
     const Point center =
         one != nullptr ? one->at
                        : m_canvas->snapped(placementsBounds(board, design.library, ids).center());
-    applyBoard(Action::FlipParts,
-               withoutShortingStretches(board,
-                                        withPartsFlipped(board, design.library, ids, center),
-                                        design),
-               ids);
+    const Board flipped = withPartsFlipped(board, design.library, ids, center);
+    applyBoard(Action::FlipParts, withoutShortingStretches(board, flipped, design), ids);
+    warnWrongSide(flipped, ids);
+}
+
+void BoardEditor::warnWrongSide(const Board &board, const QSet<ObjectId> &ids)
+{
+    const QStringList wrong = partsOnWrongSide(board, m_document->design().library, ids);
+    if (!wrong.isEmpty())
+        emit message(tr("On the wrong side of a one-sided board") + QStringLiteral(": ")
+                     + wrong.join(QStringLiteral(", ")));
 }
 
 void BoardEditor::deleteChosen()

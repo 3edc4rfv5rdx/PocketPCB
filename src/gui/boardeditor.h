@@ -210,6 +210,10 @@ public:
     // dragged, they flip about the point of the one taken, and the drag
     // goes on.
     void flipChosen();
+    // Tells in the status bar of the placements 'ids' of 'board' that stand
+    // on the wrong side of a board with copper on one side
+    // (partsOnWrongSide()).
+    void warnWrongSide(const Board &board, const QSet<ObjectId> &ids);
     // Delete, as one step: the holes chosen are taken off the board, and
     // the placements chosen, which come and go with the schematic, are
     // packed off it to the right (withPlacementsPacked()). Locked ones stay.

@@ -71,6 +71,25 @@ Point placementGridPoint(const Placement &placement, const Library &library)
     return placedPadPoint(placement, pad.at);
 }
 
+QStringList partsOnWrongSide(const Board &board, const Library &library, const QSet<ObjectId> &ids)
+{
+    if (board.copper == CopperSides::Both)
+        return {};
+    const BoardSide copperSide =
+        board.copper == CopperSides::Top ? BoardSide::Top : BoardSide::Bottom;
+    QStringList wrong;
+    for (const Placement &placement : board.placements) {
+        const Footprint *footprint = library.findFootprint(placement.footprint);
+        if (!ids.contains(placement.id) || footprint == nullptr || footprint->pads.isEmpty())
+            continue;
+        const bool leads = std::any_of(footprint->pads.cbegin(), footprint->pads.cend(),
+                                       [](const Pad &pad) { return pad.hole > 0; });
+        if (leads == (placement.side == copperSide))
+            wrong.append(placement.designator);
+    }
+    return wrong;
+}
+
 QRectF placementsBounds(const Board &board, const Library &library, const QSet<ObjectId> &ids)
 {
     QRectF bounds;

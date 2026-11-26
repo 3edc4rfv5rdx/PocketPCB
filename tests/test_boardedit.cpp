@@ -80,6 +80,27 @@ private slots:
         QVERIFY(placementsBounds(board, library(), {}).isNull());
     }
 
+    // On a board of one side, leads go through from the side away from the
+    // copper, surface pads sit on it.
+    void partsOnTheWrongSideOfAOneSidedBoardAreTold()
+    {
+        Board board = twoPlacements();
+        const ObjectId r1 = board.placements.at(0).id;
+        const ObjectId r2 = board.placements.at(1).id;
+        board.placements[1].side = BoardSide::Bottom;
+        QVERIFY(partsOnWrongSide(board, library(), {r1, r2}).isEmpty());
+        board.copper = CopperSides::Bottom;
+        QCOMPARE(partsOnWrongSide(board, library(), {r1, r2}), QStringList({QStringLiteral("R2")}));
+        QVERIFY(partsOnWrongSide(board, library(), {r1}).isEmpty());
+        // Surface pads only: the other way round.
+        Library surface = library();
+        for (Pad &pad : surface.footprints[QStringLiteral("fp")].pads) {
+            pad.hole = 0;
+            pad.layers = PadLayers::Front;
+        }
+        QCOMPARE(partsOnWrongSide(board, surface, {r1, r2}), QStringList({QStringLiteral("R1")}));
+    }
+
     // A dragged part lands on the grid by its pad 1, wherever its own point is.
     void aPartIsPutOnTheGridByItsPadOne()
     {
