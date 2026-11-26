@@ -401,8 +401,8 @@ public:
     explicit BodyPanel(FootprintEditor *editor, QWidget *parent = nullptr);
 
     static QString bodyTitle();
-    // The colours a body is offered in: 128, greys and the colour wheel
-    // in seven shades.
+    // The colours a body is offered in: 160, greys and the colour wheel
+    // in nine shades, dull ones among them.
     static QList<QColor> bodyColors();
     void refresh(bool force = false);
 

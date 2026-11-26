@@ -10,5 +10,5 @@
   ],
   "refAt": [0, -2.3],
   "valueAt": [0, 2.3],
-  "body": {"shape": "box", "height": 5, "raised": 0.5, "color": "#e6732e"}
+  "body": {"shape": "box", "height": 5, "raised": 0.5, "color": "#cc6628"}
 }

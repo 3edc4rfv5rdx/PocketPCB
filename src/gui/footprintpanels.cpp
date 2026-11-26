@@ -90,7 +90,7 @@ const Coord NEW_BODY_HEIGHT = 3000000;
 // The colour button's swatch, and those of its table, in pixels.
 const QSize BODY_SWATCH(14, 14);
 const QSize BODY_BUTTON_SWATCH(48, 16);
-// 16 columns of 8 rows: 128 colours.
+// 16 columns of 10 rows: 160 colours.
 const int BODY_COLOR_COLUMNS = 16;
 // The first of the greys: a black plastic, not quite black.
 const int BODY_DARKEST_GREY = 24;
@@ -698,9 +698,10 @@ QList<QColor> BodyPanel::bodyColors()
         double saturation;
         double value;
     };
+    // Deep to pale, then the dull ones: browns, tans, beiges and olives.
     static const Shade shades[] = {
-        {0.90, 0.30}, {0.90, 0.50}, {0.85, 0.70}, {0.80, 0.90},
-        {0.55, 0.95}, {0.35, 0.97}, {0.18, 0.99},
+        {0.90, 0.30}, {0.85, 0.55}, {0.80, 0.80}, {0.70, 0.95}, {0.45, 0.97}, {0.20, 0.99},
+        {0.45, 0.60}, {0.35, 0.80}, {0.25, 0.90},
     };
     QList<QColor> colors;
     for (int i = 0; i < BODY_COLOR_COLUMNS; ++i) {

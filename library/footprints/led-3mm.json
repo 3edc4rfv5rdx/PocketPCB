@@ -11,5 +11,5 @@
   ],
   "refAt": [0, -2.9],
   "valueAt": [0, 2.9],
-  "body": {"shape": "upright", "size": [3, 3], "height": 5.3, "raised": 1, "color": "#b31a1a"}
+  "body": {"shape": "upright", "size": [3, 3], "height": 5.3, "raised": 1, "color": "#cc2828"}
 }
