@@ -78,6 +78,12 @@ Symbol fullSymbol()
     polygon.width = 120000;
     symbol.graphics.append(polygon);
 
+    Graphic oval;
+    oval.kind = GraphicKind::Oval;
+    oval.a = Point{-2540000, -1270000};
+    oval.b = Point{2540000, 1270000};
+    symbol.graphics.append(oval);
+
     Pin pin;
     pin.number = QStringLiteral("A1");
     pin.name = QStringLiteral("CLK");

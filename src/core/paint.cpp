@@ -233,6 +233,15 @@ double lineWidth(const Graphic &graphic, double minWidth)
 }
 
 // 'upright': see drawText().
+// An oval in 'rect': its shorter sides half circles.
+QPainterPath ovalPath(const QRectF &rect)
+{
+    const double radius = std::min(rect.width(), rect.height()) / 2;
+    QPainterPath path;
+    path.addRoundedRect(rect, radius, radius);
+    return path;
+}
+
 void paintGraphic(QPainter &painter, const Graphic &graphic, const QColor &color,
                   bool upright = false, double minWidth = 0)
 {
@@ -250,6 +259,9 @@ void paintGraphic(QPainter &painter, const Graphic &graphic, const QColor &color
         break;
     case GraphicKind::Rect:
         painter.drawRect(QRectF(a, b).normalized());
+        break;
+    case GraphicKind::Oval:
+        painter.drawPath(ovalPath(QRectF(a, b).normalized()));
         break;
     case GraphicKind::Circle:
         painter.drawEllipse(a, radius, radius);
@@ -285,6 +297,7 @@ QRectF graphicBounds(const Graphic &graphic, double minWidth = 0)
     switch (graphic.kind) {
     case GraphicKind::Line:
     case GraphicKind::Rect:
+    case GraphicKind::Oval:
         bounds = QRectF(a, b).normalized();
         break;
     case GraphicKind::Circle:
@@ -320,6 +333,12 @@ QPolygonF graphicLine(const Graphic &graphic)
     case GraphicKind::Rect:
         line << a << QPointF(b.x(), a.y()) << b << QPointF(a.x(), b.y()) << a;
         break;
+    case GraphicKind::Oval: {
+        const QList<QPolygonF> pieces = ovalPath(QRectF(a, b).normalized()).toSubpathPolygons();
+        if (!pieces.isEmpty())
+            line = pieces.first();
+        break;
+    }
     case GraphicKind::Circle:
     case GraphicKind::Arc: {
         const bool whole = graphic.kind == GraphicKind::Circle;

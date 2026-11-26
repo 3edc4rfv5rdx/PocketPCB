@@ -594,7 +594,8 @@ QWidget *FootprintEditor::createToolBar()
     };
     const QList<DrawingMode> drawing = {
         {Mode::Line, tr("Line"), "actionDrawLine", QKeySequence(Qt::Key_L), ToolIcon::DrawLine},
-        {Mode::Rect, tr("Rectangle"), "actionDrawRect", QKeySequence(), ToolIcon::DrawRect},
+        {Mode::Rect, tr("Rectangle, with Shift an oval"), "actionDrawRect", QKeySequence(),
+         ToolIcon::DrawRect},
         {Mode::Circle, tr("Circle"), "actionDrawCircle", QKeySequence(), ToolIcon::DrawCircle},
         {Mode::Arc, tr("Arc"), "actionDrawArc", QKeySequence(), ToolIcon::DrawArc},
         {Mode::Polygon, tr("Polygon"), "actionDrawPolygon", QKeySequence(), ToolIcon::DrawPolygon},
@@ -829,7 +830,7 @@ QList<Graphic> FootprintEditor::floatingGraphics() const
         graphics.append(lineBetween(m_drawPoints.last(), at));
         break;
     case Mode::Rect:
-        graphics.append(rectBetween(first, at));
+        graphics.append(m_free ? ovalBetween(first, at) : rectBetween(first, at));
         break;
     case Mode::Circle:
         if (at != first)
@@ -926,7 +927,9 @@ void FootprintEditor::drawClick(const Point &cursor)
         if (m_drawPoints.isEmpty()) {
             m_drawPoints = {at};
         } else if (at.x != m_drawPoints.first().x && at.y != m_drawPoints.first().y) {
-            addGraphic(step, rectBetween(m_drawPoints.first(), at));
+            // With Shift an oval in it.
+            addGraphic(step, m_free ? ovalBetween(m_drawPoints.first(), at)
+                                    : rectBetween(m_drawPoints.first(), at));
             m_drawPoints.clear();
         }
         break;

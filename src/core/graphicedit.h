@@ -51,6 +51,8 @@ Point keptStraightOrDiagonal(const Point &from, const Point &to);
 // The drawings begun by a click at 'first'.
 Graphic lineBetween(const Point &from, const Point &to);
 Graphic rectBetween(const Point &a, const Point &b);
+// The oval in the rectangle of 'a' and 'b' (GraphicKind::Oval).
+Graphic ovalBetween(const Point &a, const Point &b);
 // A circle about 'center' through 'through'.
 Graphic circleThrough(const Point &center, const Point &through);
 // The arc from 'start' through 'middle' to 'end', whichever way round that

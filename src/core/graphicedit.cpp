@@ -144,6 +144,7 @@ QList<Point> graphicCorners(const Graphic &graphic)
     case GraphicKind::Line:
         return {graphic.a, graphic.b};
     case GraphicKind::Rect:
+    case GraphicKind::Oval:
         return {graphic.a, Point{graphic.b.x, graphic.a.y}, graphic.b,
                 Point{graphic.a.x, graphic.b.y}};
     case GraphicKind::Polygon:
@@ -182,6 +183,7 @@ Graphic withCornerMoved(const Graphic &graphic, int corner, const Point &to)
             result.b = to;
         break;
     case GraphicKind::Rect:
+    case GraphicKind::Oval:
         // The corners go round: a, then across from a along X, b, then
         // across from a along Y.
         if (corner == 0) {
@@ -239,6 +241,13 @@ Graphic rectBetween(const Point &a, const Point &b)
     graphic.kind = GraphicKind::Rect;
     graphic.a = a;
     graphic.b = b;
+    return graphic;
+}
+
+Graphic ovalBetween(const Point &a, const Point &b)
+{
+    Graphic graphic = rectBetween(a, b);
+    graphic.kind = GraphicKind::Oval;
     return graphic;
 }
 

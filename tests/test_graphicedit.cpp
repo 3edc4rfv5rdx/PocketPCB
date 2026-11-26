@@ -74,6 +74,17 @@ private slots:
         QCOMPARE(circleThrough(mm(0, 0), mm(3, 4)).radius, 5 * MM);
     }
 
+    void anOvalIsFoundByItsRoundOutline()
+    {
+        const Graphic oval = ovalBetween(mm(0, 0), mm(10, 4));
+        QCOMPARE(oval.kind, GraphicKind::Oval);
+        // On its round end, not on the corner of its box.
+        QCOMPARE(graphicAt({oval}, QPointF(0, 2), 0.1), 0);
+        QCOMPARE(graphicAt({oval}, QPointF(0.1, 0.1), 0.1), -1);
+        QCOMPARE(graphicCorners(oval).size(), 4);
+        QCOMPARE(withCornerMoved(oval, 2, mm(12, 6)).kind, GraphicKind::Oval);
+    }
+
     void linesKeepToEightWays()
     {
         QCOMPARE(keptStraightOrDiagonal(mm(0, 0), mm(10, 2)), mm(10, 0));

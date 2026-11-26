@@ -8,7 +8,9 @@
 
 namespace ppcb {
 
-enum class GraphicKind { Line, Rect, Circle, Arc, Text, Polygon };
+// An oval is the rectangle of 'a' and 'b' with its shorter sides made half
+// circles: the outline of a body with round ends.
+enum class GraphicKind { Line, Rect, Circle, Arc, Text, Polygon, Oval };
 enum class TextAlign { Left, Center, Right };
 
 // Line width used when a file does not give one.

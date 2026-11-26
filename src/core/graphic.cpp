@@ -29,6 +29,7 @@ const QStringList &kindNames()
     static const QStringList names = {
         QStringLiteral("line"), QStringLiteral("rect"), QStringLiteral("circle"),
         QStringLiteral("arc"), QStringLiteral("text"), QStringLiteral("polygon"),
+        QStringLiteral("oval"),
     };
     return names;
 }
@@ -60,6 +61,7 @@ QJsonObject graphicToJson(const Graphic &graphic)
     switch (graphic.kind) {
     case GraphicKind::Line:
     case GraphicKind::Rect:
+    case GraphicKind::Oval:
         object.insert(QLatin1String(KEY_FROM), pointToJson(graphic.a));
         object.insert(QLatin1String(KEY_TO), pointToJson(graphic.b));
         break;
@@ -106,6 +108,7 @@ Graphic graphicFromJson(const QJsonObject &object, const QString &where, JsonRea
     switch (graphic.kind) {
     case GraphicKind::Line:
     case GraphicKind::Rect:
+    case GraphicKind::Oval:
         graphic.a = reader.point(object, KEY_FROM, where);
         graphic.b = reader.point(object, KEY_TO, where);
         break;

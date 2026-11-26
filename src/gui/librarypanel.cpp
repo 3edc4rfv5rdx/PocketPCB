@@ -140,6 +140,7 @@ QIcon symbolIcon(const Symbol &symbol, int size, const QColor &color)
         switch (graphic.kind) {
         case GraphicKind::Line:
         case GraphicKind::Rect:
+        case GraphicKind::Oval:
             take(a);
             take(toMm(graphic.b));
             break;
@@ -196,6 +197,12 @@ QIcon symbolIcon(const Symbol &symbol, int size, const QColor &color)
             case GraphicKind::Rect:
                 painter.drawRect(QRectF(a, map(toMm(graphic.b))).normalized());
                 break;
+            case GraphicKind::Oval: {
+                const QRectF box = QRectF(a, map(toMm(graphic.b))).normalized();
+                const double round = std::min(box.width(), box.height()) / 2;
+                painter.drawRoundedRect(box, round, round);
+                break;
+            }
             case GraphicKind::Circle:
                 painter.drawEllipse(circle);
                 break;

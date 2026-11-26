@@ -65,7 +65,8 @@ public:
         // A click puts the origin there, then Select.
         Origin,
         // The silkscreen: a line from click to click, until Esc or a double
-        // click; a rectangle by two corners; a circle by its centre and a
+        // click; a rectangle by two corners, with Shift an oval in them; a
+        // circle by its centre and a
         // point on it; an arc by its start, a point in its middle and its
         // end; a polygon by its corners, closed on its first one or by a
         // double click; a text typed where it is clicked.

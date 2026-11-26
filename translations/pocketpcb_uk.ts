@@ -2170,8 +2170,8 @@
         <translation>Лінія</translation>
     </message>
     <message>
-        <source>Rectangle</source>
-        <translation>Прямокутник</translation>
+        <source>Rectangle, with Shift an oval</source>
+        <translation>Прямокутник, із Shift овал</translation>
     </message>
     <message>
         <source>Circle</source>
