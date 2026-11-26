@@ -85,6 +85,23 @@ private slots:
         QCOMPARE(withCornerMoved(oval, 2, mm(12, 6)).kind, GraphicKind::Oval);
     }
 
+    // A measurement takes the nearest corner, centre or arc end.
+    void pointsNearAreTaken()
+    {
+        Graphic arc;
+        arc.kind = GraphicKind::Arc;
+        arc.a = mm(10, 0);
+        arc.radius = 2 * NM_PER_MM;
+        arc.startAngle = 0;
+        arc.spanAngle = 90;
+        const QList<Graphic> graphics = {lineBetween(mm(0, 0), mm(3, 4)), arc};
+        QCOMPARE(graphicPointNear(graphics, QPointF(2.9, 4.1), 0.5), std::optional<Point>(mm(3, 4)));
+        QCOMPARE(graphicPointNear(graphics, QPointF(10.2, 0.1), 0.5), std::optional<Point>(mm(10, 0)));
+        // The arc's end at 90 degrees, below its centre.
+        QCOMPARE(graphicPointNear(graphics, QPointF(10.1, 1.8), 0.5), std::optional<Point>(mm(10, 2)));
+        QVERIFY(!graphicPointNear(graphics, QPointF(6, 6), 0.5));
+    }
+
     void aCircleIsTakenFromInside()
     {
         const QList<Graphic> graphics = {circleThrough(mm(0, 0), mm(5, 0)),

@@ -99,7 +99,8 @@ public:
         Text,
         // Click, then click again: the distance between, across and up and
         // down, shown till Esc; a point near a terminal is taken at its
-        // point.
+        // point, one near a drawing at its corner, centre or arc end, any
+        // other on the grid, or off it with Shift.
         Measure,
     };
 
@@ -324,8 +325,9 @@ private:
     // A name typed for the item, asked with 'title'; empty when none is or
     // the user keeps it from replacing another.
     QString askName(const QString &title);
-    // A point the Measure mode takes at 'at': a terminal's point there,
-    // else the grid point.
+    // A point the Measure mode takes at 'at': a terminal's point there, else
+    // a corner, centre or arc end of a drawing near, else the grid point,
+    // or with Shift ('m_free') 'at' itself.
     virtual Point measurePoint(const QPointF &at) const = 0;
 
     QString m_status;

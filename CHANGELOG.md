@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Measure takes the corners, ends and centres of drawings, and with Shift any point off the grid
 - E: The footprint editor keeps what is chosen after a drag, a turn or a change in its panels
 - N: Symbol editor in the library editor window: pins on the 2.54 mm grid, drawings, pin names, power symbols
 ## v0.15.387 (2026-11-26)

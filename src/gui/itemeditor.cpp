@@ -651,8 +651,12 @@ void ItemEditor::hover(const QPointF &at, bool free)
 {
     m_hoverAt = at;
     const Point cursor = snapped(at);
-    if (m_cursorKnown && cursor == m_cursor && free == m_free)
+    if (m_cursorKnown && cursor == m_cursor && free == m_free) {
+        // A measurement under way follows the mouse off the grid too.
+        if (m_mode == Mode::Measure && m_measureFrom && !m_measureTo)
+            emit changed();
         return;
+    }
     m_cursor = cursor;
     m_cursorKnown = true;
     m_free = free;
@@ -926,7 +930,14 @@ template <class Item>
 Point ItemEditorOf<Item>::measurePoint(const QPointF &at) const
 {
     const int terminal = terminalAt(at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
-    return terminal >= 0 ? terminalPoint(terminal) : snapped(at);
+    if (terminal >= 0)
+        return terminalPoint(terminal);
+    const std::optional<Point> drawn =
+        graphicPointNear(m_item.graphics, at, m_canvas->pixelsToMm(CanvasView::END_PIXELS));
+    if (drawn)
+        return *drawn;
+    // With Shift the very point, off the grid.
+    return m_free ? Point{mmToNm(at.x()), mmToNm(at.y())} : snapped(at);
 }
 
 template <class Item>

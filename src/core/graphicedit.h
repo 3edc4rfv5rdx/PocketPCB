@@ -48,6 +48,11 @@ QList<Graphic> withoutGraphics(const QList<Graphic> &graphics, const QSet<int> &
 QList<Point> graphicCorners(const Graphic &graphic);
 // The corner of 'graphic' within 'reach' of 'at' (millimetres); -1 for none.
 int cornerAt(const Graphic &graphic, const QPointF &at, double reach);
+// The points of 'graphics' a measurement takes: the corners, the centre
+// of a circle or an arc and the ends of an arc; the one nearest 'at'
+// (millimetres) within 'reach', none when there is none.
+std::optional<Point> graphicPointNear(const QList<Graphic> &graphics, const QPointF &at,
+                                      double reach);
 // 'graphic' with its corner 'corner' (graphicCorners()) at 'to'; a
 // rectangle keeps its corner across from it.
 Graphic withCornerMoved(const Graphic &graphic, int corner, const Point &to);

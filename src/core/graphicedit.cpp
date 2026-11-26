@@ -171,6 +171,36 @@ QList<Point> graphicCorners(const Graphic &graphic)
     return {};
 }
 
+std::optional<Point> graphicPointNear(const QList<Graphic> &graphics, const QPointF &at,
+                                      double reach)
+{
+    std::optional<Point> nearest;
+    double best = reach;
+    const auto consider = [&](const Point &point) {
+        const double length = QLineF(toMm(point), at).length();
+        if (length <= best) {
+            best = length;
+            nearest = point;
+        }
+    };
+    for (const Graphic &graphic : graphics) {
+        for (const Point &corner : graphicCorners(graphic))
+            consider(corner);
+        if (graphic.kind != GraphicKind::Circle && graphic.kind != GraphicKind::Arc)
+            continue;
+        consider(graphic.a);
+        if (graphic.kind != GraphicKind::Arc)
+            continue;
+        for (const int angle : {graphic.startAngle, graphic.startAngle + graphic.spanAngle}) {
+            const double radians = angle * M_PI / 180.0;
+            consider(graphic.a
+                     + Point{Coord(std::llround(graphic.radius * std::cos(radians))),
+                             Coord(std::llround(graphic.radius * std::sin(radians)))});
+        }
+    }
+    return nearest;
+}
+
 int cornerAt(const Graphic &graphic, const QPointF &at, double reach)
 {
     const QList<Point> corners = graphicCorners(graphic);
