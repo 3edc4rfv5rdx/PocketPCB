@@ -2154,6 +2154,14 @@
 <context>
     <name>ppcb::FootprintEditor</name>
     <message>
+        <source>Measure</source>
+        <translation>Виміряти</translation>
+    </message>
+    <message>
+        <source>Pads %1 and %2: %3 between the copper, %4 between the centres</source>
+        <translation>Площадки %1 і %2: %3 між міддю, %4 між центрами</translation>
+    </message>
+    <message>
         <source>Drawing properties</source>
         <translation>Властивості рисунка</translation>
     </message>

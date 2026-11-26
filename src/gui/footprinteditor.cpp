@@ -80,6 +80,11 @@ const double CHOSEN_PEN_PIXELS = 2.0;
 const double HANDLE_PIXELS = 3.0;
 // The line a new text is typed into, its width in mm.
 const double NEW_TEXT_WIDTH_MM = 12.0;
+// The ends of a measurement, how far its text stands off its end, in
+// screen pixels, and how much its white back hides.
+const double MEASURE_END_PIXELS = 3.0;
+const int MEASURE_TEXT_OFFSET = 10;
+const int MEASURE_BACK_ALPHA = 220;
 // The cross of the origin, its arms and its ring, in screen pixels.
 const double ORIGIN_ARM_PIXELS = 14.0;
 const double ORIGIN_RING_PIXELS = 5.0;
@@ -138,6 +143,7 @@ bool isDrawingMode(FootprintEditor::Mode mode)
     case FootprintEditor::Mode::Pad:
     case FootprintEditor::Mode::Row:
     case FootprintEditor::Mode::Origin:
+    case FootprintEditor::Mode::Measure:
         break;
     }
     return false;
@@ -256,6 +262,33 @@ public:
             const QPointF at = toMm(*origin);
             painter->drawLine(at - QPointF(ORIGIN_CROSS_MM, 0), at + QPointF(ORIGIN_CROSS_MM, 0));
             painter->drawLine(at - QPointF(0, ORIGIN_CROSS_MM), at + QPointF(0, ORIGIN_CROSS_MM));
+        }
+        if (const std::optional<QLineF> measured = m_editor->measurement()) {
+            const QLineF line = *measured;
+            const double pixel = m_editor->canvas()->pixelsToMm(1);
+            painter->setPen(cosmetic(paintcolor::selection(), Qt::DashLine));
+            painter->drawLine(line);
+            painter->setPen(cosmetic(paintcolor::selection()));
+            for (const QPointF &end : {line.p1(), line.p2()})
+                painter->drawEllipse(end, MEASURE_END_PIXELS * pixel, MEASURE_END_PIXELS * pixel);
+            const QString text =
+                QStringLiteral("ΔX %1   ΔY %2   %3")
+                    .arg(formatMmShort(mmToNm(line.dx())), formatMmShort(mmToNm(line.dy())),
+                         formatMmShortUnit(mmToNm(line.length())));
+            // Beside the far end, the same size at any zoom, on white.
+            painter->save();
+            painter->translate(line.p2());
+            painter->scale(pixel, pixel);
+            const QRectF box = painter->fontMetrics()
+                                   .boundingRect(text)
+                                   .translated(MEASURE_TEXT_OFFSET, -MEASURE_TEXT_OFFSET)
+                                   .adjusted(-3, -2, 3, 2);
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(QColor(255, 255, 255, MEASURE_BACK_ALPHA));
+            painter->drawRect(box);
+            painter->setPen(paintcolor::selection());
+            painter->drawText(QPointF(MEASURE_TEXT_OFFSET, -MEASURE_TEXT_OFFSET), text);
+            painter->restore();
         }
         // The origin, the point the part is held by and turns about, over
         // all, the same size on screen at any zoom.
@@ -572,6 +605,9 @@ QWidget *FootprintEditor::createToolBar()
                              action(mode.text, mode.name, mode.key, mode.icon,
                                     [this, m = mode.mode] { setMode(m); }));
     }
+    m_modeActions.insert(int(Mode::Measure),
+                         action(tr("Measure"), "actionMeasure", QKeySequence(Qt::Key_M),
+                                ToolIcon::Measure, [this] { setMode(Mode::Measure); }));
     gap();
     QAction *origin = action(tr("Origin here"), "actionOriginHere", QKeySequence(Qt::Key_O),
                              std::nullopt, [this] { setMode(Mode::Origin); });
@@ -682,6 +718,8 @@ void FootprintEditor::setMode(Mode mode)
     m_dragging = false;
     m_framing = false;
     m_drawPoints.clear();
+    m_measureFrom.reset();
+    m_measureTo.reset();
     updateModeButtons();
     emit changed();
 }
@@ -702,6 +740,7 @@ void FootprintEditor::setChosen(const FootprintChoice &chosen)
     if (valid == m_chosen)
         return;
     m_chosen = valid;
+    describeChoice();
     emit changed();
 }
 
@@ -729,6 +768,8 @@ void FootprintEditor::change(const QString &text, const Footprint &changed,
     }
     m_undoStack.push(new FootprintStep(this, text, m_footprint, changed));
     setChosen(chosen);
+    // The same pads chosen, moved: told again.
+    describeChoice();
 }
 
 void FootprintEditor::applyStep(const Footprint &footprint)
@@ -811,6 +852,7 @@ QList<Graphic> FootprintEditor::floatingGraphics() const
     case Mode::Row:
     case Mode::Origin:
     case Mode::Text:
+    case Mode::Measure:
         break;
     }
     return withLineOf(graphics, m_nextGraphic);
@@ -826,6 +868,34 @@ std::optional<Point> FootprintEditor::floatingOrigin() const
 QRectF FootprintEditor::frame() const
 {
     return m_framing ? QRectF(m_frameFrom, m_frameTo).normalized() : QRectF();
+}
+
+Point FootprintEditor::measurePoint(const QPointF &at) const
+{
+    const int pad = padAtPoint(m_footprint, at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
+    return pad >= 0 ? m_footprint.pads.at(pad).at : snapped(at);
+}
+
+std::optional<QLineF> FootprintEditor::measurement() const
+{
+    if (m_mode != Mode::Measure || !m_measureFrom)
+        return std::nullopt;
+    const Point to = m_measureTo ? *m_measureTo : measurePoint(m_hoverAt);
+    return QLineF(toMm(*m_measureFrom), toMm(to));
+}
+
+void FootprintEditor::describeChoice()
+{
+    if (m_chosen.pads.size() != 2 || !m_chosen.graphics.isEmpty())
+        return;
+    QList<int> two(m_chosen.pads.cbegin(), m_chosen.pads.cend());
+    std::sort(two.begin(), two.end());
+    const Pad &a = m_footprint.pads.at(two.first());
+    const Pad &b = m_footprint.pads.at(two.last());
+    const Coord centres = mmToNm(QLineF(toMm(a.at), toMm(b.at)).length());
+    showStatus(tr("Pads %1 and %2: %3 between the copper, %4 between the centres")
+                   .arg(a.number, b.number, formatMmShortUnit(padsApart(a, b)),
+                        formatMmShortUnit(centres)));
 }
 
 void FootprintEditor::addGraphic(const QString &text, Graphic graphic)
@@ -893,6 +963,7 @@ void FootprintEditor::drawClick(const Point &cursor)
     case Mode::Pad:
     case Mode::Row:
     case Mode::Origin:
+    case Mode::Measure:
         break;
     }
     emit changed();
@@ -952,6 +1023,18 @@ void FootprintEditor::press(const QPointF &at, bool adding, bool free)
     case Mode::Text:
         drawClick(m_cursor);
         return;
+    case Mode::Measure: {
+        const Point point = measurePoint(at);
+        // A new measurement after one is done.
+        if (!m_measureFrom || m_measureTo) {
+            m_measureFrom = point;
+            m_measureTo.reset();
+        } else {
+            m_measureTo = point;
+        }
+        emit changed();
+        return;
+    }
     case Mode::Select:
         break;
     }
@@ -1107,6 +1190,7 @@ void FootprintEditor::doubleClick(const QPointF &at)
     case Mode::Circle:
     case Mode::Arc:
     case Mode::Text:
+    case Mode::Measure:
         // The second of two quick clicks is a click of its own.
         press(at, false, m_free);
         return;
@@ -1174,6 +1258,7 @@ void FootprintEditor::editText(const Point &at, int graphic)
 
 void FootprintEditor::hover(const QPointF &at, bool free)
 {
+    m_hoverAt = at;
     const Point cursor = snapped(at);
     if (m_cursorKnown && cursor == m_cursor && free == m_free)
         return;
@@ -1242,6 +1327,10 @@ void FootprintEditor::escape()
     } else if (!m_drawPoints.isEmpty()) {
         // A line ends where it got to; a polygon not closed is dropped.
         m_drawPoints.clear();
+        emit changed();
+    } else if (m_measureFrom) {
+        m_measureFrom.reset();
+        m_measureTo.reset();
         emit changed();
     } else if (m_mode != Mode::Select) {
         setMode(Mode::Select);

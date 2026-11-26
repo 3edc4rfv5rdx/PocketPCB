@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Footprint editor measures (M) from point to point, pad centres caught, and tells the copper between two pads chosen
 - F: The footprint editor shows the origin as a red orange cross with a ring, over all, the same size at any zoom
 - R: Two compiler warnings quieted: a loop copying strings and a choice not filled in whole
 - F: A short right click in the footprint editor calls off the pad, row or drawing being placed, as Esc

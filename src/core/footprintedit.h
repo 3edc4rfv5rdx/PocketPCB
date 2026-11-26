@@ -57,6 +57,9 @@ struct PadStroke
     Coord radius = 0;
 };
 PadStroke padStroke(const Pad &pad);
+// The copper between 'a' and 'b', edge to edge as padStroke() takes them;
+// 0 for pads that touch or overlap.
+Coord padsApart(const Pad &a, const Pad &b);
 
 // Two pads of a footprint nearer than a clearance: their indices, the gap
 // between their copper, and the point between them.

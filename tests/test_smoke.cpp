@@ -775,6 +775,17 @@ private slots:
         editor->release(beside + QPointF(2.54, 0));
         QCOMPARE(editor->footprint().refAt, (ref + Point{2540000, 0}));
 
+        // Measured from pad centre to pad centre, taken off them.
+        editor->setMode(FootprintEditor::Mode::Measure);
+        editor->press(QPointF(0.3, 0.2), false);
+        editor->hover(QPointF(3.7, 1.0));
+        editor->press(QPointF(3.7, 1.0), false);
+        QCOMPARE(editor->measurement(), (std::optional<QLineF>(QLineF(0, 0, 3.81, 1.27))));
+        editor->escape();
+        QVERIFY(!editor->measurement());
+        editor->escape();
+        QCOMPARE(editor->mode(), FootprintEditor::Mode::Select);
+
         // Pads nearer than the project's clearance are found.
         QVERIFY(editor->padGaps().isEmpty());
         editor->setClearance(5000000);

@@ -141,6 +141,9 @@ private slots:
         QCOMPARE(gaps.first().first, 0);
         QCOMPARE(gaps.first().second, 1);
         QCOMPARE(gaps.first().gap, 300000);
+        QCOMPARE(padsApart(footprint.pads.at(0), footprint.pads.at(1)), 300000);
+        // Touching: none.
+        QCOMPARE(padsApart(footprint.pads.at(0), footprint.pads.at(0)), 0);
         QCOMPARE(gaps.first().at, (Point{1150000, 0}));
         // One number is one pin.
         footprint.pads[1].number = QStringLiteral("1");

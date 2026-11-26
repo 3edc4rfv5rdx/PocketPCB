@@ -4,6 +4,7 @@
 #include "paint.h"
 
 #include <QHash>
+#include <QLineF>
 #include <QSet>
 #include <QUndoStack>
 #include <QWidget>
@@ -74,6 +75,9 @@ public:
         Arc,
         Polygon,
         Text,
+        // Click, then click again: the distance between, across and up and
+        // down, shown till Esc; a point near a pad is taken at its centre.
+        Measure,
     };
 
     // 'name' is the footprint's name in the library; empty for a new one,
@@ -170,6 +174,9 @@ public:
     std::optional<Point> floatingOrigin() const;
     // The frame being drawn; null when none is.
     QRectF frame() const;
+    // What the Measure mode measures, in millimetres: from its first click
+    // to its second, or to the cursor until then; none before the first.
+    std::optional<QLineF> measurement() const;
 
     // R: what is chosen turns a quarter about its middle, or the pad or the
     // row about to be placed turns.
@@ -224,6 +231,12 @@ private:
     // The point a drawing mode puts at 'cursor': across, up and down or at
     // 45 degrees from the last one for a line, unless 'm_free'.
     Point drawPoint(const Point &cursor) const;
+    // The point the Measure mode takes at 'at': the centre of a pad there,
+    // else the grid point.
+    Point measurePoint(const QPointF &at) const;
+    // With two pads chosen, the copper and the centres between them in the
+    // status bar.
+    void describeChoice();
     // A drawing added as one step, with 'm_nextGraphic''s line.
     void addGraphic(const QString &text, Graphic graphic);
     Point snapped(const QPointF &at) const;
@@ -255,6 +268,10 @@ private:
     bool m_free = false;
     // The points clicked of the drawing being drawn.
     QList<Point> m_drawPoints;
+    // Where the mouse is, off the grid, and the ends of a measurement.
+    QPointF m_hoverAt;
+    std::optional<Point> m_measureFrom;
+    std::optional<Point> m_measureTo;
     // A drag of what is chosen from 'm_dragAnchor', the point taken, which
     // lands on the grid; by 'm_dragDelta' so far. With 'm_dragGraphic' set,
     // only its corner 'm_dragCorner' moves.

@@ -380,6 +380,12 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
     case ToolIcon::DrawPolygon:
         painter.drawPolygon(polygon({{4, 18}, {9, 5}, {20, 9}, {17, 19}}));
         break;
+    case ToolIcon::Measure:
+        // A ruler with its marks.
+        painter.drawRect(QRectF(2, 8, 20, 8));
+        for (const qreal x : {6.0, 10.0, 14.0, 18.0})
+            painter.drawLine(QPointF(x, 8), QPointF(x, x == 10.0 || x == 18.0 ? 13 : 11));
+        break;
     case ToolIcon::DrawText:
         // A T.
         painter.drawLine(QPointF(5, 5), QPointF(19, 5));

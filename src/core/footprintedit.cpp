@@ -172,6 +172,14 @@ PadStroke padStroke(const Pad &pad)
     return PadStroke{pad.at - half, pad.at + half, narrow / 2};
 }
 
+Coord padsApart(const Pad &a, const Pad &b)
+{
+    const PadStroke sa = padStroke(a);
+    const PadStroke sb = padStroke(b);
+    const double apart = piecesApart(toMm(sa.from), toMm(sa.to), toMm(sb.from), toMm(sb.to));
+    return std::max<Coord>(0, mmToNm(apart) - sa.radius - sb.radius);
+}
+
 bool operator==(const PadGap &a, const PadGap &b)
 {
     return a.first == b.first && a.second == b.second && a.gap == b.gap && a.at == b.at;
@@ -191,15 +199,11 @@ QList<PadGap> padsTooNear(const Footprint &footprint, Coord clearance)
                 continue;
             if (!a.number.isEmpty() && a.number == b.number)
                 continue;
-            const PadStroke sa = padStroke(a);
-            const PadStroke sb = padStroke(b);
-            const double apart =
-                piecesApart(toMm(sa.from), toMm(sa.to), toMm(sb.from), toMm(sb.to));
-            const Coord gap = mmToNm(apart) - sa.radius - sb.radius;
+            const Coord gap = padsApart(a, b);
             if (gap >= clearance)
                 continue;
             const Point at{(a.at.x + b.at.x) / 2, (a.at.y + b.at.y) / 2};
-            gaps.append(PadGap{i, j, std::max<Coord>(0, gap), at});
+            gaps.append(PadGap{i, j, gap, at});
         }
     }
     return gaps;
