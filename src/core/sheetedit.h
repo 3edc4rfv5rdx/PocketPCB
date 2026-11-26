@@ -205,10 +205,6 @@ Schematic withDesignatorStyle(const Schematic &schematic, const Library &library
 // deleted R3 is filled.
 QString nextDesignator(const Schematic &schematic, const QString &prefix,
                        const QStringList &alsoTaken = {});
-// The designator prefix of the board's wire links in 'style': that of the
-// library's wire link part ("jumper"), so that the links laid on the board
-// and those drawn on the schematic are numbered as one.
-QString linkPrefix(DesignatorStyle style);
 // A component of the part 'partName' of 'library', not placed yet: a new id,
 // at the origin, with the symbol's text places, the part's value and
 // 'footprint'. It stays off the board when the part has no footprints.

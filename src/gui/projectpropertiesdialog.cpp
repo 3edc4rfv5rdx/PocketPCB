@@ -533,8 +533,6 @@ Design ProjectPropertiesDialog::design() const
     if (style != result.project.designatorStyle) {
         result.schematic = withDesignatorStyle(result.schematic, result.library,
                                                result.project.designatorStyle, style);
-        result.board = withLinkDesignatorStyle(result.board, result.schematic,
-                                               result.project.designatorStyle, style);
         result.project.designatorStyle = style;
     }
 

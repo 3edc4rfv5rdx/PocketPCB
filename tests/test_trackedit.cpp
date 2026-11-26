@@ -492,15 +492,14 @@ private slots:
         QCOMPARE(withTracksSpread(held, design, MM), held);
     }
 
-    // Wire links without a designator are numbered on after the wire link
-    // parts of the schematic and the other links; a switch of style keeps
-    // the numbers, but one already taken.
+    // Wire links without a designator are numbered on after the components
+    // of the schematic with the links' prefix and the other links.
     void wireLinksAreNumberedWithTheSchematic()
     {
         Schematic schematic;
         Component part;
         part.id = ObjectId{1};
-        part.designator = QStringLiteral("JP1");
+        part.designator = QStringLiteral("xx1");
         schematic.sheets = {Sheet()};
         schematic.sheets[0].components = {part};
         Board board;
@@ -509,21 +508,13 @@ private slots:
             link.id = ObjectId{id};
             board.links.append(link);
         }
-        board.links[0].designator = QStringLiteral("JP2");
-        const Board named = withLinkDesignators(board, schematic, DesignatorStyle::International);
-        QCOMPARE(named.links.at(0).designator, QStringLiteral("JP2"));
-        QCOMPARE(named.links.at(1).designator, QStringLiteral("JP3"));
-        QCOMPARE(named.links.at(2).designator, QStringLiteral("JP4"));
-        QCOMPARE(linkDesignators(board), QStringList({QStringLiteral("JP2")}));
-        QCOMPARE(withLinkDesignators(named, schematic, DesignatorStyle::Gost), named);
-
-        // The schematic switched already, its part now XN3.
-        schematic.sheets[0].components[0].designator = QStringLiteral("XN3");
-        const Board gost = withLinkDesignatorStyle(named, schematic, DesignatorStyle::International,
-                                                   DesignatorStyle::Gost);
-        QCOMPARE(gost.links.at(0).designator, QStringLiteral("XN2"));
-        QCOMPARE(gost.links.at(1).designator, QStringLiteral("XN1"));
-        QCOMPARE(gost.links.at(2).designator, QStringLiteral("XN4"));
+        board.links[0].designator = QStringLiteral("xx2");
+        const Board named = withLinkDesignators(board, schematic);
+        QCOMPARE(named.links.at(0).designator, QStringLiteral("xx2"));
+        QCOMPARE(named.links.at(1).designator, QStringLiteral("xx3"));
+        QCOMPARE(named.links.at(2).designator, QStringLiteral("xx4"));
+        QCOMPARE(linkDesignators(board), QStringList({QStringLiteral("xx2")}));
+        QCOMPARE(withLinkDesignators(named, schematic), named);
     }
 
     // Flipped about its point, top to bottom as its pads lie level: the

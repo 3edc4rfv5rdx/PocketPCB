@@ -133,16 +133,19 @@ struct Via
 // copper on one side has where a track cannot go.
 // The wire it is made of, across; it lies on the board between the parts.
 constexpr Coord WIRE_LINK_WIRE = 600000;
+// The designator prefix of the wire links.
+QString linkPrefix();
 struct WireLink
 {
     ObjectId id;
     Point from;
     Point to;
     QString net;
-    // JP1, or XN1 in GOST style (linkPrefix()), numbered with the wire link
-    // parts of the schematic; printed on the silkscreen. Empty for one laid
-    // before links had designators, until the next autorouting names it.
-    // Not written when empty.
+    // xx1 (linkPrefix()), in any designator style: a prefix no part has, so
+    // that the links never meet the designators of the schematic; printed
+    // on the silkscreen. Empty for one laid before links had designators,
+    // until the next autorouting names it. Not written when empty; one
+    // written as JP1 or XN1, as links were named before, is read as xx1.
     QString designator;
     // Where the designator stands, from its own place beside the middle of
     // the wire (linkTextPoint()): moved by hand. Not written when zero.

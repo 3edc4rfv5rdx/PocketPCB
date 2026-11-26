@@ -173,15 +173,9 @@ Board withTracksByHand(const Board &board, const QSet<ObjectId> &ids);
 // The designators the wire links of 'board' have, the empty ones left out.
 QStringList linkDesignators(const Board &board);
 // 'board' with each wire link lacking a designator given the first free
-// one of linkPrefix('style'), free of the components of 'schematic' and of
-// the other links, in the order the links are on the board.
-Board withLinkDesignators(const Board &board, const Schematic &schematic, DesignatorStyle style);
-// 'board' with the designators of its wire links switched from style
-// 'from' to 'to', as withDesignatorStyle() switches those of 'schematic',
-// which has them switched already: the prefix changes, the rest stays; one
-// that would repeat a designator gets the first free number instead.
-Board withLinkDesignatorStyle(const Board &board, const Schematic &schematic,
-                              DesignatorStyle from, DesignatorStyle to);
+// one of linkPrefix(), free of the components of 'schematic' and of the
+// other links, in the order the links are on the board.
+Board withLinkDesignators(const Board &board, const Schematic &schematic);
 // The tracks 'ids' 'width' wide.
 Board withTracksWidth(const Board &board, const QSet<ObjectId> &ids, Coord width);
 // The tracks 'ids' moved to 'side'.

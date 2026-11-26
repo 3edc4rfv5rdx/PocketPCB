@@ -655,12 +655,6 @@ QString nextDesignator(const Schematic &schematic, const QString &prefix,
     return prefix + QString::number(number);
 }
 
-QString linkPrefix(DesignatorStyle style)
-{
-    // As library/parts/jumper.json has them.
-    return style == DesignatorStyle::Gost ? QStringLiteral("XN") : QStringLiteral("JP");
-}
-
 Component newComponent(const Library &library, const QString &partName, const QString &footprint)
 {
     Component component;

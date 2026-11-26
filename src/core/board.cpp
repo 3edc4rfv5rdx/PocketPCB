@@ -282,6 +282,18 @@ QJsonObject linkToJson(const WireLink &link)
     return object;
 }
 
+// 'designator' with the prefix links had before linkPrefix(), JP or XN by
+// the designator style, switched to it.
+QString withLinkPrefix(const QString &designator)
+{
+    for (const QString old : {QStringLiteral("JP"), QStringLiteral("XN")}) {
+        if (designator.startsWith(old) && designator.size() > old.size()
+            && designator.at(old.size()).isDigit())
+            return linkPrefix() + designator.mid(old.size());
+    }
+    return designator;
+}
+
 WireLink linkFromJson(const QJsonObject &object, const QString &where, ReadContext &context)
 {
     JsonReader &reader = context.reader;
@@ -291,7 +303,7 @@ WireLink linkFromJson(const QJsonObject &object, const QString &where, ReadConte
     link.from = reader.point(object, KEY_FROM, where);
     link.to = reader.point(object, KEY_TO, where);
     if (object.contains(QLatin1String(KEY_DESIGNATOR)))
-        link.designator = reader.string(object, KEY_DESIGNATOR, where);
+        link.designator = withLinkPrefix(reader.string(object, KEY_DESIGNATOR, where));
     if (object.contains(QLatin1String(KEY_TEXT_AT)))
         link.textAt = reader.point(object, KEY_TEXT_AT, where);
     link.drill = reader.positiveMm(object, KEY_DRILL, where);
@@ -583,6 +595,11 @@ bool BoardFile::write(const QString &path, const Board &board, QString &error)
     QJsonObject root = boardToJson(board);
     writeHeader(root, FILE_TYPE_BOARD);
     return JsonFile::write(path, root, error);
+}
+
+QString linkPrefix()
+{
+    return QStringLiteral("xx");
 }
 
 } // namespace ppcb

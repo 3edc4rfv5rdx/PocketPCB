@@ -1009,8 +1009,7 @@ AutorouteResult autorouted(const Design &design, const QSet<QString> &nets,
     result.board = laid.isEmpty() ? router->board()
                                   : withTracksSpread(router->board(), design, router->step(), laid);
     // The links laid named, and those laid before links had names.
-    result.board =
-        withLinkDesignators(result.board, design.schematic, design.project.designatorStyle);
+    result.board = withLinkDesignators(result.board, design.schematic);
     // What is left to lay, however it is drawn now, and what was laid of
     // what there was.
     result.unrouted = int(waiting(none).size());

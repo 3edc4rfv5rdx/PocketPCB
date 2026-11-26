@@ -79,7 +79,7 @@ Board fullBoard()
     link.from = Point{20 * MM, 8 * MM};
     link.to = Point{20 * MM, 18 * MM};
     link.net = QStringLiteral("GND");
-    link.designator = QStringLiteral("JP1");
+    link.designator = QStringLiteral("xx1");
     link.textAt = Point{1 * MM, -2 * MM};
     link.drill = 800000;
     link.size = 1800000;
@@ -443,6 +443,23 @@ private slots:
                     .startsWith(QStringLiteral("wireLinks[0].drill")));
         QVERIFY(errorOfChange("wireLinks", 0, "to", QJsonArray{20.0, 8.0})
                     .startsWith(QStringLiteral("wireLinks[0].to")));
+    }
+
+    // Links named JP1 or XN1, as before the prefix xx, are read as xx1.
+    void oldLinkDesignatorsAreReadWithTheLinkPrefix()
+    {
+        for (const QString old : {QStringLiteral("JP7"), QStringLiteral("XN7")}) {
+            QJsonObject root = boardToJson(fullBoard());
+            QJsonArray links = root.value(QStringLiteral("wireLinks")).toArray();
+            QJsonObject first = links.at(0).toObject();
+            first.insert(QStringLiteral("designator"), old);
+            links[0] = first;
+            root.insert(QStringLiteral("wireLinks"), links);
+            QString error;
+            const Board back = readBack(root, error);
+            QVERIFY2(error.isEmpty(), qPrintable(error));
+            QCOMPARE(back.links.at(0).designator, QStringLiteral("xx7"));
+        }
     }
 
     void everyListMustBePresent()
