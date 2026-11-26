@@ -151,6 +151,15 @@ public:
     // The same under 'name', asking nothing; for a name already taken
     // only with 'replace'.
     bool saveAs(const QString &name, bool replace);
+    // A footprint of the user's library under a new name asked for: saved
+    // so, its old file gone and the parts of the user's library listing it
+    // given the new name. Built-in parts cannot follow: when some list it,
+    // the user is asked first. False when it is not renamed.
+    bool renameFootprint();
+    // The same to 'name', asking nothing.
+    bool renameTo(const QString &name);
+    // Only one of the user's library can be renamed.
+    bool canRename() const { return m_inUserLibrary && !m_name.isEmpty(); }
 
     // The left mouse button and the mouse, in scene millimetres; with
     // 'adding' (Ctrl) what is clicked is added to the chosen or taken away,
@@ -254,6 +263,7 @@ private:
     QComboBox *m_gridBox = nullptr;
     QString m_status;
     QHash<int, QAction *> m_modeActions;
+    QAction *m_renameAction = nullptr;
     Coord m_clearance = 0;
     QList<PadGap> m_gaps;
 

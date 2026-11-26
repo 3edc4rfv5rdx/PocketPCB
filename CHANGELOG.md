@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Rename a footprint of the user library, its parts there following the new name
 - N: Ovals on the silkscreen of a footprint: a rectangle drawn with Shift, its short sides round
 - F: The diameter of a circle or an arc in the footprint editor is typed in the drawing panel, off the grid
 - F: An arc in the footprint editor is drawn by three points on it: start, middle, end

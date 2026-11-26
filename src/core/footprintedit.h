@@ -1,6 +1,7 @@
 #pragma once
 
 #include "footprint.h"
+#include "library.h"
 
 #include <QList>
 #include <QPointF>
@@ -77,6 +78,11 @@ bool operator==(const PadGap &a, const PadGap &b);
 // than 'clearance', in the order of their indices. Pads of one number are
 // one pin and may touch.
 QList<PadGap> padsTooNear(const Footprint &footprint, Coord clearance);
+
+// The parts of 'library' that list the footprint 'name', by name.
+QStringList partsUsingFootprint(const Library &library, const QString &name);
+// 'part' listing the footprint 'to' in the place of 'from'.
+Part withFootprintRenamed(const Part &part, const QString &from, const QString &to);
 
 // Why 'pad' cannot be in a footprint file, as footprintFromJson() would
 // refuse it; empty when it can.

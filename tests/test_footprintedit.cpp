@@ -167,6 +167,25 @@ private slots:
         QCOMPARE(stroke.radius, MM);
     }
 
+    void partsFollowARenamedFootprint()
+    {
+        Library library;
+        Part resistor;
+        resistor.footprints = {QStringLiteral("old"), QStringLiteral("new")};
+        Part other;
+        other.footprints = {QStringLiteral("else")};
+        library.parts.insert(QStringLiteral("resistor"), resistor);
+        library.parts.insert(QStringLiteral("other"), other);
+        QCOMPARE(partsUsingFootprint(library, QStringLiteral("old")),
+                 QStringList({QStringLiteral("resistor")}));
+        QVERIFY(partsUsingFootprint(library, QStringLiteral("none")).isEmpty());
+        // The new name listed already: once.
+        QCOMPARE(withFootprintRenamed(resistor, QStringLiteral("old"), QStringLiteral("new")).footprints,
+                 QStringList({QStringLiteral("new")}));
+        QCOMPARE(withFootprintRenamed(other, QStringLiteral("old"), QStringLiteral("x")).footprints,
+                 other.footprints);
+    }
+
     void aPadIsCheckedAsTheFileReaderChecksIt()
     {
         Pad good = pad(QStringLiteral("1"), mm(0, 0));

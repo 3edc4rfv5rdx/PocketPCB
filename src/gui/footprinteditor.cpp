@@ -22,6 +22,7 @@
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QDoubleSpinBox>
+#include <QFile>
 #include <QFileInfo>
 #include <QFormLayout>
 #include <QGraphicsItem>
@@ -97,10 +98,16 @@ const QRegularExpression &nameRule()
     return rule;
 }
 
+// The file of the item 'name' of the kind kept in 'subfolder'.
+QString itemPath(const QString &libraryFolder, const char *subfolder, const QString &name)
+{
+    return QDir(QDir(libraryFolder).filePath(QLatin1String(subfolder)))
+        .filePath(name + QLatin1String(LIBRARY_FILE_EXT));
+}
+
 QString footprintPath(const QString &libraryFolder, const QString &name)
 {
-    return QDir(QDir(libraryFolder).filePath(QLatin1String(LIBRARY_FOOTPRINTS_FOLDER)))
-        .filePath(name + QStringLiteral(".json"));
+    return itemPath(libraryFolder, LIBRARY_FOOTPRINTS_FOLDER, name);
 }
 
 Pad firstPad()
@@ -522,8 +529,15 @@ QWidget *FootprintEditor::createToolBar()
     saveAction->setIcon(toolIcon(ToolIcon::Save, color));
     QAction *saveAs = action(MainWindow::saveAsTitle() + QStringLiteral("…"), "actionSaveFootprintAs",
                              QKeySequence::SaveAs, std::nullopt, [this] { saveUnderNewName(); });
+    m_renameAction = action(SheetEditor::actionName(SheetEditor::Action::Rename) + QStringLiteral("…"),
+                            "actionRenameFootprint", QKeySequence(), std::nullopt,
+                            [this] { renameFootprint(); });
+    m_renameAction->setEnabled(canRename());
+    connect(this, &FootprintEditor::titleChanged, m_renameAction,
+            [this] { m_renameAction->setEnabled(canRename()); });
     QMenu *saveMenu = new QMenu(this);
     saveMenu->addAction(saveAs);
+    saveMenu->addAction(m_renameAction);
     menuButton(saveAction, saveMenu, "saveFootprintButton");
     gap();
     QAction *undo = m_undoStack.createUndoAction(this, MainWindow::undoTitle());
@@ -1500,6 +1514,63 @@ bool FootprintEditor::saveAs(const QString &name, bool replace)
     m_undoStack.setClean();
     emit titleChanged();
     showStatus(writtenMessage(path));
+    emit saved(name);
+    return true;
+}
+
+bool FootprintEditor::renameFootprint()
+{
+    if (!canRename())
+        return false;
+    const QString title = SheetEditor::actionName(SheetEditor::Action::Rename);
+    const QString name = askName(title);
+    if (name.isEmpty() || name == m_name)
+        return false;
+    // Built-in parts listing it, not replaced by parts of the user's own,
+    // keep the old name.
+    QStringList problems;
+    const Library builtIn = LibraryFolder::read(AppSettings::builtInLibraryFolder(), problems);
+    const Library user = LibraryFolder::read(AppSettings::userLibraryFolder(), problems);
+    QStringList stranded;
+    for (const QString &part : partsUsingFootprint(builtIn, m_name)) {
+        if (!user.parts.contains(part))
+            stranded.append(part);
+    }
+    if (!stranded.isEmpty()
+        && QMessageBox::question(
+               this, title,
+               tr("Built-in parts list the footprint %1 and keep that name: %2. Rename it anyway")
+                       .arg(m_name, stranded.join(QStringLiteral(", ")))
+                   + QLatin1Char('?'))
+               != QMessageBox::Yes)
+        return false;
+    return renameTo(name);
+}
+
+bool FootprintEditor::renameTo(const QString &name)
+{
+    if (!canRename() || name.isEmpty() || name == m_name)
+        return false;
+    const QString old = m_name;
+    const QString userFolder = AppSettings::userLibraryFolder();
+    QStringList problems;
+    const Library user = LibraryFolder::read(userFolder, problems);
+    if (!saveAs(name, true))
+        return false;
+    // The user's parts follow it.
+    for (const QString &partName : partsUsingFootprint(user, old)) {
+        LibraryItem item;
+        item.kind = LibraryKind::Part;
+        item.part = withFootprintRenamed(user.parts.value(partName), old, name);
+        QString error;
+        if (!LibraryFile::write(itemPath(userFolder, LIBRARY_PARTS_FOLDER, partName), item, error)) {
+            showStatus(error);
+            emit saved(name);
+            return false;
+        }
+    }
+    QFile::remove(footprintPath(userFolder, old));
+    showStatus(tr("Footprint %1 renamed to %2").arg(old, name));
     emit saved(name);
     return true;
 }

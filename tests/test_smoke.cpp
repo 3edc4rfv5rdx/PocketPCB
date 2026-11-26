@@ -811,6 +811,34 @@ private slots:
         QVERIFY(FootprintEditor::isInUserLibrary(name));
         QCOMPARE(editor->tabTitle(), name);
 
+        // Renamed, the user's part listing it follows.
+        const QDir userLibrary(AppSettings::userLibraryFolder());
+        const QString partPath = userLibrary.filePath(QStringLiteral("parts/test-editor-part.json"));
+        LibraryItem partItem;
+        partItem.kind = LibraryKind::Part;
+        partItem.part.symbol = QStringLiteral("resistor");
+        partItem.part.prefix = QStringLiteral("R");
+        partItem.part.prefixGost = QStringLiteral("R");
+        partItem.part.footprints = {name};
+        QString partError;
+        QVERIFY2(LibraryFile::write(partPath, partItem, partError), qPrintable(partError));
+        const QString renamed = name + QStringLiteral("-renamed");
+        const QString renamedPath = userLibrary.filePath(QStringLiteral("footprints/") + renamed
+                                                         + QStringLiteral(".json"));
+        QFile::remove(renamedPath);
+        QVERIFY(editor->canRename());
+        QVERIFY(editor->renameTo(renamed));
+        QCOMPARE(editor->name(), renamed);
+        QVERIFY(!QFileInfo::exists(path));
+        QVERIFY(QFileInfo::exists(renamedPath));
+        LibraryItem readBack;
+        QVERIFY(LibraryFile::read(partPath, readBack, partError));
+        QCOMPARE(readBack.part.footprints, QStringList({renamed}));
+        QVERIFY(window.library().items.footprints.contains(renamed));
+        QVERIFY(!window.library().items.footprints.contains(name));
+        QFile::remove(partPath);
+        QFile::remove(renamedPath);
+
         // One window, a tab for each footprint; a new one in a tab of its
         // own beside it.
         LibraryEditor *libraryWindow = window.libraryEditor();

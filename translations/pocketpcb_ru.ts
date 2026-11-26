@@ -2154,6 +2154,14 @@
 <context>
     <name>ppcb::FootprintEditor</name>
     <message>
+        <source>Built-in parts list the footprint %1 and keep that name: %2. Rename it anyway</source>
+        <translation>Встроенные детали ссылаются на посадочное место %1 и сохранят это имя: %2. Всё равно переименовать</translation>
+    </message>
+    <message>
+        <source>Footprint %1 renamed to %2</source>
+        <translation>Посадочное место %1 переименовано в %2</translation>
+    </message>
+    <message>
         <source>Measure</source>
         <translation>Измерить</translation>
     </message>

@@ -209,6 +209,28 @@ QList<PadGap> padsTooNear(const Footprint &footprint, Coord clearance)
     return gaps;
 }
 
+QStringList partsUsingFootprint(const Library &library, const QString &name)
+{
+    QStringList using_;
+    for (auto it = library.parts.constBegin(); it != library.parts.constEnd(); ++it) {
+        if (it.value().footprints.contains(name))
+            using_.append(it.key());
+    }
+    return using_;
+}
+
+Part withFootprintRenamed(const Part &part, const QString &from, const QString &to)
+{
+    Part result = part;
+    for (QString &footprint : result.footprints) {
+        if (footprint == from)
+            footprint = to;
+    }
+    // Listed twice now: once is enough.
+    result.footprints.removeDuplicates();
+    return result;
+}
+
 QString padProblem(const Pad &pad)
 {
     // The messages of the file reader, so that the two say it alike.
