@@ -1,5 +1,7 @@
 #pragma once
 
+#include "alerts.h"
+
 #include "board.h"
 #include "boardedit.h"
 #include "drc.h"
@@ -344,6 +346,8 @@ signals:
     void changed();
     // Why something could not be done, for the status bar.
     void message(const QString &text);
+    // A warning, in a box (Alerts::show()).
+    void alert(const ppcb::Alert &alert);
     // problems() changed.
     void problemsChanged();
 

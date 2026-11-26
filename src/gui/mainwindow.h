@@ -1,5 +1,6 @@
 #pragma once
 
+#include "alerts.h"
 #include "appsettings.h"
 #include "library.h"
 #include "librarypanel.h"
@@ -300,6 +301,8 @@ private:
     // Puts 'text' into the status bar until the next one. Not
     // QStatusBar::showMessage(), which would hide the saved mark.
     void showStatus(const QString &text);
+    // An error or a warning in a box as well (Alerts::show()).
+    void alert(const Alert &alert);
 
     void chooseLibraryFile();
     void openLibraryFolder();
@@ -350,6 +353,8 @@ private:
     // Owned by the canvas scene.
     LibraryViewItem *m_libraryItem = nullptr;
     QPointer<LibraryEditor> m_libraryEditor;
+    // Writing the history of steps failed once: told in the status bar since.
+    bool m_historyFailed = false;
     QTimer *m_autosaveTimer = nullptr;
 
     // How the pages of the open project were last looked at, and the key of

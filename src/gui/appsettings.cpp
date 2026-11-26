@@ -37,6 +37,7 @@ const char KEY_USER_LIBRARY_FOLDER[] = "library/folder";
 const char KEY_LAST_PROJECT_FOLDER[] = "project/lastFolder";
 const char KEY_PROJECTS_FOLDER[] = "project/projectsFolder";
 const char KEY_RECENT_PROJECTS[] = "project/recent";
+const char KEY_HIDDEN_WARNINGS[] = "view/hiddenWarnings";
 const char KEY_BACKUP_COUNT[] = "project/backupCount";
 const char KEY_AUTOSAVE_MINUTES[] = "project/autosaveMinutes";
 
@@ -321,6 +322,18 @@ QString AppSettings::projectDialogFolder()
     const QString projects = projectsFolder();
     QDir().mkpath(projects);
     return projects;
+}
+
+QStringList AppSettings::hiddenWarnings()
+{
+    QStringList keys = readValue(KEY_HIDDEN_WARNINGS, QStringList()).toStringList();
+    keys.removeAll(QString());
+    return keys;
+}
+
+void AppSettings::setHiddenWarnings(const QStringList &keys)
+{
+    writeValue(KEY_HIDDEN_WARNINGS, keys);
 }
 
 QStringList AppSettings::recentProjects()

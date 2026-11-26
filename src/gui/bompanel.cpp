@@ -236,7 +236,7 @@ QString BomPanel::outputFile(const QString &extension)
     const QString path = projectOutputFile(*m_document,
                                            QLatin1String(FILE_SUFFIX), extension, problem);
     if (path.isEmpty())
-        tell(problem);
+        tell(Alert::error(problem));
     return path;
 }
 
@@ -247,10 +247,10 @@ void BomPanel::writeOutput(const QString &extension, const QByteArray &data)
         return;
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly) || file.write(data) < 0 || !file.commit()) {
-        tell(cannotWriteMessage(path));
+        tell(Alert::error(cannotWriteMessage(path)));
         return;
     }
-    tell(writtenMessage(path));
+    tell(Alert::info(writtenMessage(path)));
 }
 
 void BomPanel::exportText()
@@ -305,15 +305,15 @@ void BomPanel::exportPdf()
     text.setHtml(html);
     text.print(&writer);
     if (!QFileInfo(path).isFile()) {
-        tell(cannotWriteMessage(path));
+        tell(Alert::error(cannotWriteMessage(path)));
         return;
     }
-    tell(writtenMessage(path));
+    tell(Alert::info(writtenMessage(path)));
 }
 
-void BomPanel::tell(const QString &message)
+void BomPanel::tell(const Alert &alert)
 {
-    m_message->setText(message);
+    Alerts::show(this, alert, [this](const QString &text) { m_message->setText(text); });
 }
 
 } // namespace ppcb

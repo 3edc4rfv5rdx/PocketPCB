@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 
+#include "alerts.h"
 #include "autoroute.h"
 #include "boardeditor.h"
 #include "boardprintdialog.h"
@@ -205,6 +206,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_sheetEditor, &SheetEditor::changed, this, [this] { m_designItem->update(); });
     connect(m_boardEditor, &BoardEditor::changed, this, [this] { m_designItem->update(); });
     connect(m_boardEditor, &BoardEditor::message, this, &MainWindow::showStatus);
+    connect(m_boardEditor, &BoardEditor::alert, this, &MainWindow::alert);
     connect(m_sheetEditor, &SheetEditor::message, this, &MainWindow::showStatus);
     connect(m_document, &Document::stepApplied, this, &MainWindow::showStep);
     connect(m_document, &Document::stepMade, this, &MainWindow::recordStep);
@@ -455,23 +457,17 @@ void MainWindow::createMenus()
     printAction->setObjectName(QStringLiteral("actionPrintSchematic"));
     printAction->setShortcut(QKeySequence::Print);
     connect(printAction, &QAction::triggered, this, [this] {
-        const QString message = printSchematic(this, *m_document, m_sheetEditor->sheet());
-        if (!message.isEmpty())
-            showStatus(message);
+        alert(printSchematic(this, *m_document, m_sheetEditor->sheet()));
     });
     QAction *pdfAction = fileMenu->addAction(exportSchematicPdfTitle());
     pdfAction->setObjectName(QStringLiteral("actionExportSchematicPdf"));
     connect(pdfAction, &QAction::triggered, this, [this] {
-        const QString message = exportSchematicPdf(this, *m_document, m_sheetEditor->sheet());
-        if (!message.isEmpty())
-            showStatus(message);
+        alert(exportSchematicPdf(this, *m_document, m_sheetEditor->sheet()));
     });
     QAction *boardPrintAction = fileMenu->addAction(printBoardTitle() + QStringLiteral("…"));
     boardPrintAction->setObjectName(QStringLiteral("actionPrintBoard"));
     connect(boardPrintAction, &QAction::triggered, this, [this] {
-        const QString message = printBoard(this, *m_document);
-        if (!message.isEmpty())
-            showStatus(message);
+        alert(printBoard(this, *m_document));
     });
     QAction *gerberAction = fileMenu->addAction(exportGerberTitle());
     gerberAction->setObjectName(QStringLiteral("actionExportGerber"));
@@ -853,6 +849,11 @@ void MainWindow::createMenus()
     historyAction->setCheckable(true);
     historyAction->setChecked(AppSettings::keepStepHistory());
     connect(historyAction, &QAction::toggled, this, &AppSettings::setKeepStepHistory);
+    // The warnings hidden by "Do not show again" come back.
+    QAction *warningsAction = settingsMenu->addAction(Alerts::showWarningsAgainTitle());
+    warningsAction->setObjectName(QStringLiteral("actionShowWarningsAgain"));
+    connect(warningsAction, &QAction::triggered, this,
+            [] { AppSettings::setHiddenWarnings(QStringList()); });
 
     QMenu *helpMenu = m_mainMenu->addMenu(tr("&Help"));
     QAction *guideAction = helpMenu->addAction(tr("User guide"));
@@ -1295,7 +1296,7 @@ bool MainWindow::openProject(const QString &path)
     const bool fromBoard = m_boardEditor->isActive();
     storeViews();
     if (!m_document->open(path, error, &problems)) {
-        showStatus(error);
+        alert(Alert::error(error));
         return false;
     }
     m_views = readProjectView(path);
@@ -1303,13 +1304,17 @@ bool MainWindow::openProject(const QString &path)
     showPage(fromBoard ? m_designItem->boardPage() : 0);
     updateTitle();
     AppSettings::addRecentProject(path);
-    // The first problem in full, and how many more there are.
-    QString message = problems.value(0, path);
-    if (problems.size() > 1) {
-        message += QStringLiteral(" — ") + tr("more problems with the project library")
-                   + QStringLiteral(": ") + QString::number(problems.size() - 1);
+    // The first problem in full, and how many more there are; or where it is.
+    if (problems.isEmpty()) {
+        showStatus(path);
+    } else {
+        QString message = problems.first();
+        if (problems.size() > 1) {
+            message += QStringLiteral(" — ") + tr("more problems with the project library")
+                       + QStringLiteral(": ") + QString::number(problems.size() - 1);
+        }
+        alert(Alert::warning(message, QStringLiteral("projectLibraryProblems")));
     }
-    showStatus(message);
     offerAutosave();
     return true;
 }
@@ -1318,7 +1323,7 @@ bool MainWindow::saveProjectAs(const QString &parentFolder, const QString &name)
 {
     QString error;
     if (!m_document->saveAsNewFolder(parentFolder, name, error)) {
-        showStatus(error);
+        alert(Alert::error(error));
         return false;
     }
     updateTitle();
@@ -1355,7 +1360,7 @@ void MainWindow::autosaveProject()
 {
     QString error;
     if (!m_document->autosave(error))
-        showStatus(error);
+        alert(Alert::error(error));
 }
 
 void MainWindow::offerAutosave()
@@ -1374,7 +1379,7 @@ void MainWindow::offerAutosave()
     }
     QString error;
     if (!m_document->restoreAutosave(error))
-        showStatus(error);
+        alert(Alert::error(error));
 }
 
 void MainWindow::chooseProjectsFolder()
@@ -1462,8 +1467,8 @@ void MainWindow::openRecentProject(const QString &path)
 {
     if (!QFileInfo::exists(path)) {
         AppSettings::removeRecentProject(path);
-        showStatus(tr("The project is no longer there") + QStringLiteral(": ")
-                   + QDir::toNativeSeparators(path));
+        alert(Alert::error(tr("The project is no longer there") + QStringLiteral(": ")
+                           + QDir::toNativeSeparators(path)));
         return;
     }
     leaveAndOpenProject(path);
@@ -1475,7 +1480,7 @@ bool MainWindow::saveProject()
         return chooseProjectToSaveAs();
     QString error;
     if (!m_document->save(error)) {
-        showStatus(error);
+        alert(Alert::error(error));
         return false;
     }
     showStatus(m_document->projectPath());
@@ -1498,7 +1503,7 @@ void MainWindow::openVersionCopy(int number, const QString &path)
     auto *window = new MainWindow;
     window->setAttribute(Qt::WA_DeleteOnClose);
     if (!window->showVersionCopy(number, path, m_document->projectPath())) {
-        QMessageBox::warning(this, VersionsPanel::openCopyTitle(), window->statusText());
+        alert(Alert::error(window->statusText()));
         window->deleteLater();
         return;
     }
@@ -1512,6 +1517,7 @@ bool MainWindow::showVersionCopy(int number, const QString &path, const QString 
     QString error;
     if (!folder->isValid() || !unpackProjectVersion(path, folder->path(), copyPath, error)
         || !m_document->open(copyPath, error)) {
+        // The window opening it tells it.
         showStatus(error.isEmpty() ? Document::readOnlyMessage() : error);
         return false;
     }
@@ -2339,8 +2345,8 @@ void MainWindow::showUserGuide()
 {
     const QString path = AppSettings::helpFile();
     if (!QFileInfo(path).isFile() || !QDesktopServices::openUrl(QUrl::fromLocalFile(path)))
-        showStatus(tr("Cannot open the user guide") + QLatin1Char(' ')
-                   + QDir::toNativeSeparators(path));
+        alert(Alert::error(tr("Cannot open the user guide") + QLatin1Char(' ')
+                           + QDir::toNativeSeparators(path)));
 }
 
 void MainWindow::showAbout()
@@ -2405,9 +2411,13 @@ void MainWindow::recordStep(const QString &text, int page, const Design &before)
     const QString folder = DesignFiles::historyPath(m_document->projectPath());
     if (!writeStep(folder, text, page, m_document->projectPath(), AppSettings::wireRouting(),
                    before.schematic, m_document->design().schematic, before.board,
-                   m_document->design().board))
-        showStatus(tr("Cannot write the history of steps into") + QLatin1Char(' ')
-                   + QDir::toNativeSeparators(folder));
+                   m_document->design().board)) {
+        // Once a session in a box: it would come again at every step.
+        const QString text = tr("Cannot write the history of steps into") + QLatin1Char(' ')
+                             + QDir::toNativeSeparators(folder);
+        alert(m_historyFailed ? Alert::info(text) : Alert::error(text));
+        m_historyFailed = true;
+    }
 }
 
 void MainWindow::showStep(int page, const QSet<ObjectId> &ids)
@@ -2557,6 +2567,11 @@ void MainWindow::showStatus(const QString &text)
     m_statusText->setText(text);
 }
 
+void MainWindow::alert(const Alert &alert)
+{
+    Alerts::show(this, alert, [this](const QString &text) { showStatus(text); });
+}
+
 QString MainWindow::statusText() const
 {
     return m_statusText->text();
@@ -2574,7 +2589,7 @@ void MainWindow::loadLibrary()
     updateLibraryPanel();
     updatePowerIcon();
     if (!problems.isEmpty())
-        showStatus(problems.first());
+        alert(Alert::warning(problems.first(), QStringLiteral("libraryProblems")));
 }
 
 bool MainWindow::placePart(LibraryPanel::Source source, const QString &part,
@@ -2842,7 +2857,7 @@ bool MainWindow::showLibraryFile(const QString &path)
     LibraryItem content;
     QString error;
     if (!LibraryFile::read(path, content, error)) {
-        showStatus(error);
+        alert(Alert::error(error));
         return false;
     }
 

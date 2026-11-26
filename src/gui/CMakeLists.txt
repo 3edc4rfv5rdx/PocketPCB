@@ -1,5 +1,6 @@
 # GUI library: a thin layer over pocketpcb_core. Tests link it too.
 add_library(pocketpcb_gui STATIC
+    alerts.h alerts.cpp
     appsettings.h appsettings.cpp
     boardeditor.h boardeditor.cpp
     boardprintdialog.h boardprintdialog.cpp

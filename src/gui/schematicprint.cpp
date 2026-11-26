@@ -62,11 +62,11 @@ QString exportSchematicPdfTitle()
     return QCoreApplication::translate("ppcb::SchematicPrint", "Export schematic to PDF");
 }
 
-QString printSchematic(QWidget *parent, const Document &document, int current)
+Alert printSchematic(QWidget *parent, const Document &document, int current)
 {
     const QList<Sheet> &sheets = document.design().schematic.sheets;
     if (sheets.isEmpty())
-        return QString();
+        return Alert();
     QPrinter printer(QPrinter::HighResolution);
     printer.setDocName(projectName(document.projectPath()));
     printer.setFullPage(true);
@@ -77,7 +77,7 @@ QString printSchematic(QWidget *parent, const Document &document, int current)
     dialog.setOption(QAbstractPrintDialog::PrintCurrentPage, current >= 0);
     dialog.setOption(QAbstractPrintDialog::PrintSelection, false);
     if (dialog.exec() != QDialog::Accepted)
-        return QString();
+        return Alert();
 
     int from = 0;
     int to = int(sheets.size()) - 1;
@@ -89,8 +89,8 @@ QString printSchematic(QWidget *parent, const Document &document, int current)
         to = qBound(from, printer.toPage() - 1, to);
     }
     if (!printSheets(printer, document, from, to))
-        return cannotPrintMessage();
-    return sentToPrinterMessage();
+        return Alert::error(cannotPrintMessage());
+    return Alert::info(sentToPrinterMessage());
 }
 
 bool printSheets(QPrinter &printer, const Document &document, int from, int to)
@@ -112,11 +112,11 @@ bool printSheets(QPrinter &printer, const Document &document, int from, int to)
     return painter.end();
 }
 
-QString exportSchematicPdf(QWidget *parent, const Document &document, int current)
+Alert exportSchematicPdf(QWidget *parent, const Document &document, int current)
 {
     const QList<Sheet> &sheets = document.design().schematic.sheets;
     if (sheets.isEmpty())
-        return QString();
+        return Alert();
     int from = 0;
     int to = int(sheets.size()) - 1;
     if (sheets.size() > 1 && current >= 0) {
@@ -137,7 +137,7 @@ QString exportSchematicPdf(QWidget *parent, const Document &document, int curren
             from = current;
             to = current;
         } else if (ask.clickedButton() != all) {
-            return QString();
+            return Alert();
         }
     }
 
@@ -145,10 +145,10 @@ QString exportSchematicPdf(QWidget *parent, const Document &document, int curren
     const QString path = projectOutputFile(document, QLatin1String(FILE_SUFFIX),
                                            QLatin1String(PDF_EXTENSION), problem);
     if (path.isEmpty())
-        return problem;
+        return Alert::error(problem);
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly))
-        return cannotWriteMessage(path);
+        return Alert::error(cannotWriteMessage(path));
     {
         QPdfWriter writer(&file);
         writer.setTitle(projectName(document.projectPath()));
@@ -157,7 +157,7 @@ QString exportSchematicPdf(QWidget *parent, const Document &document, int curren
         writer.setPageLayout(layout);
         QPainter painter;
         if (!painter.begin(&writer))
-            return cannotWriteMessage(path);
+            return Alert::error(cannotWriteMessage(path));
         for (int index = from; index <= to; ++index) {
             if (index > from) {
                 // Each page has the paper of its sheet.
@@ -170,8 +170,8 @@ QString exportSchematicPdf(QWidget *parent, const Document &document, int curren
         painter.end();
     }
     if (!file.commit())
-        return cannotWriteMessage(path);
-    return writtenMessage(path);
+        return Alert::error(cannotWriteMessage(path));
+    return Alert::info(writtenMessage(path));
 }
 
 } // namespace ppcb

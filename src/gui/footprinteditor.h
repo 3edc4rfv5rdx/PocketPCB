@@ -1,5 +1,6 @@
 #pragma once
 
+#include "alerts.h"
 #include "footprintedit.h"
 #include "paint.h"
 
@@ -207,6 +208,8 @@ public:
     void askRow();
     // Puts 'text' into the status bar of the window.
     void showStatus(const QString &text);
+    // An error or a warning in a box as well (Alerts::show()).
+    void alert(const Alert &alert);
 
 signals:
     // The footprint, the choice, the mode or what follows the cursor

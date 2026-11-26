@@ -2487,4 +2487,15 @@
         <translation>Медь</translation>
     </message>
 </context>
+<context>
+    <name>ppcb::Alerts</name>
+    <message>
+        <source>Do not show again</source>
+        <translation>Больше не показывать</translation>
+    </message>
+    <message>
+        <source>Show all warnings again</source>
+        <translation>Снова показывать все предупреждения</translation>
+    </message>
+</context>
 </TS>

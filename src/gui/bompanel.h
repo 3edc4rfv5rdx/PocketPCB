@@ -1,5 +1,7 @@
 #pragma once
 
+#include "alerts.h"
+
 #include "bom.h"
 
 #include <QWidget>
@@ -61,7 +63,7 @@ private:
     QString outputFile(const QString &extension);
     // Writes 'data' there and says where, or that it could not.
     void writeOutput(const QString &extension, const QByteArray &data);
-    void tell(const QString &message);
+    void tell(const Alert &alert);
 
     Document *m_document;
     QTableWidget *m_table = nullptr;

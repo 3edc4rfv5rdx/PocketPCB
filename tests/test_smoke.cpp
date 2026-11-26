@@ -1,3 +1,4 @@
+#include "alerts.h"
 #include "appsettings.h"
 #include "boardeditor.h"
 #include "canvasview.h"
@@ -118,6 +119,8 @@ private slots:
     {
         QStandardPaths::setTestModeEnabled(true);
         AppSettings::initApplication();
+        // No one answers a box here: errors and warnings go to the status bar.
+        Alerts::setBoxesShown(false);
         QLocale::setDefault(QLocale::c());
     }
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "alerts.h"
+
 #include "boardprint.h"
 
 #include <QDialog>
@@ -25,8 +27,9 @@ QString exportBoardPdfTitle();
 // prints it 1:1 on the printer chosen then, or writes it into
 // "<project>-copper-top.pdf" (-copper-bottom, -silkscreen-top,
 // -silkscreen-bottom) in the project's output folder, on A4 or, for a
-// larger board, A3. What to tell the user, empty when cancelled.
-QString printBoard(QWidget *parent, const Document &document);
+// larger board, A3. What to tell the user: an error when it is not done, a
+// warning when the copy does not fit on the paper; none when cancelled.
+Alert printBoard(QWidget *parent, const Document &document);
 
 // Paints the copies 'print' asks for on 'device', a page of paper 'page'
 // (millimetres, upright) at a time, 1:1 at 'dotsPerMm', each page with the

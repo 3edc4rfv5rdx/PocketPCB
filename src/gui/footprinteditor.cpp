@@ -715,6 +715,11 @@ void FootprintEditor::showStatus(const QString &text)
     emit statusChanged(text);
 }
 
+void FootprintEditor::alert(const Alert &alert)
+{
+    Alerts::show(this, alert, [this](const QString &text) { showStatus(text); });
+}
+
 Point FootprintEditor::snapped(const QPointF &at) const
 {
     return m_canvas->snapped(at);
@@ -1490,8 +1495,9 @@ QString FootprintEditor::askName(const QString &title)
     if (!ok || name.isEmpty())
         return QString();
     if (!nameRule().match(name).hasMatch()) {
-        showStatus(tr("A name may hold Latin letters, digits and these signs")
-                   + QStringLiteral(": . _ + -"));
+        alert(Alert::warning(tr("A name may hold Latin letters, digits and these signs")
+                                 + QStringLiteral(": . _ + -"),
+                             QStringLiteral("footprintName")));
         return QString();
     }
     // Its own name it keeps without asking.
@@ -1516,20 +1522,20 @@ bool FootprintEditor::saveAs(const QString &name, bool replace)
     for (const Pad &pad : m_footprint.pads) {
         const QString problem = padProblem(pad);
         if (!problem.isEmpty()) {
-            showStatus(capitalized(problem));
+            alert(Alert::error(capitalized(problem)));
             return false;
         }
     }
     QString error;
     if (!AppSettings::makeUserLibraryFolders(error)) {
-        showStatus(error);
+        alert(Alert::error(error));
         return false;
     }
     LibraryItem item;
     item.kind = LibraryKind::Footprint;
     item.footprint = m_footprint;
     if (!LibraryFile::write(path, item, error)) {
-        showStatus(error);
+        alert(Alert::error(error));
         return false;
     }
     m_name = name;
@@ -1587,7 +1593,7 @@ bool FootprintEditor::renameTo(const QString &name)
         item.part = withFootprintRenamed(user.parts.value(partName), old, name);
         QString error;
         if (!LibraryFile::write(itemPath(userFolder, LIBRARY_PARTS_FOLDER, partName), item, error)) {
-            showStatus(error);
+            alert(Alert::error(error));
             emit saved(name);
             return false;
         }

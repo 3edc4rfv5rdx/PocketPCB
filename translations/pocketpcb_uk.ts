@@ -2487,4 +2487,15 @@
         <translation>Мідь</translation>
     </message>
 </context>
+<context>
+    <name>ppcb::Alerts</name>
+    <message>
+        <source>Do not show again</source>
+        <translation>Більше не показувати</translation>
+    </message>
+    <message>
+        <source>Show all warnings again</source>
+        <translation>Знову показувати всі попередження</translation>
+    </message>
+</context>
 </TS>

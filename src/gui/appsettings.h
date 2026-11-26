@@ -107,6 +107,9 @@ public:
     // RECENT_PROJECTS_MAX of them.
     static const int RECENT_PROJECTS_MAX = 7;
     static QStringList recentProjects();
+    // The kinds of warnings the user asked not to see again (Alert::key).
+    static QStringList hiddenWarnings();
+    static void setHiddenWarnings(const QStringList &keys);
     // Puts 'path' first, once; the oldest beyond the limit drops out.
     static void addRecentProject(const QString &path);
     static void removeRecentProject(const QString &path);

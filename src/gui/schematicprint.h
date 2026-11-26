@@ -1,5 +1,7 @@
 #pragma once
 
+#include "alerts.h"
+
 #include <QString>
 
 class QPrinter;
@@ -20,9 +22,9 @@ QString exportSchematicPdfTitle();
 // Asks with the printer dialog for the printer and the sheets: all of them,
 // a range, or the sheet 'current' (-1 when no sheet is shown), and prints
 // each on a page of the printer's paper, turned and sized to fit it; a
-// sheet of that paper fills the page 1:1. What to tell the user, empty when
-// the dialog was cancelled.
-QString printSchematic(QWidget *parent, const Document &document, int current);
+// sheet of that paper fills the page 1:1. What to tell the user: an error
+// when it cannot be printed; none when the dialog was cancelled.
+Alert printSchematic(QWidget *parent, const Document &document, int current);
 
 // Prints the sheets 'from' to 'to' of 'document' (indices, both in range)
 // on 'printer' as the dialog set it up, on upright pages of its paper
@@ -33,7 +35,8 @@ bool printSheets(QPrinter &printer, const Document &document, int from, int to);
 // Writes the sheets into "<project>-schematic.pdf" in the project's output
 // folder, each on a page of its own paper, 1:1. With several sheets and one
 // of them shown ('current', -1 when none) it asks first whether that one
-// or all of them. What to tell the user, empty when cancelled.
-QString exportSchematicPdf(QWidget *parent, const Document &document, int current);
+// or all of them. What to tell the user: an error when it is not written;
+// none when cancelled.
+Alert exportSchematicPdf(QWidget *parent, const Document &document, int current);
 
 } // namespace ppcb

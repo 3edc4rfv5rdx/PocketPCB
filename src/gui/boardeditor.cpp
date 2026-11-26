@@ -665,8 +665,9 @@ void BoardEditor::warnWrongSide(const Board &board, const QSet<ObjectId> &ids)
 {
     const QStringList wrong = partsOnWrongSide(board, m_document->design().library, ids);
     if (!wrong.isEmpty())
-        emit message(tr("On the wrong side of a one-sided board") + QStringLiteral(": ")
-                     + wrong.join(QStringLiteral(", ")));
+        emit alert(Alert::warning(tr("On the wrong side of a one-sided board") + QStringLiteral(": ")
+                                      + wrong.join(QStringLiteral(", ")),
+                                  QStringLiteral("wrongSide")));
 }
 
 void BoardEditor::deleteChosen()

@@ -31,6 +31,9 @@ namespace ppcb {
 
 namespace {
 
+// The warning that a copy does not fit on the paper, hidden by its key.
+const char NOT_FITTING_KEY[] = "boardDoesNotFit";
+
 const char PDF_EXTENSION[] = "pdf";
 const double MM_PER_INCH = 25.4;
 // The centre holes typed, in mm: from none to this, by this step.
@@ -184,11 +187,11 @@ bool paintBoardPages(QPagedPaintDevice &device, const QSizeF &page, double dotsP
     return painter.end();
 }
 
-QString printBoard(QWidget *parent, const Document &document)
+Alert printBoard(QWidget *parent, const Document &document)
 {
     BoardPrintDialog choices(document.design(), parent);
     if (choices.exec() != QDialog::Accepted)
-        return QString();
+        return Alert();
     const BoardPrint print = choices.print();
     const QString notFitting = BoardPrintDialog::tr("The board does not fit on the paper");
     bool fits = true;
@@ -203,7 +206,7 @@ QString printBoard(QWidget *parent, const Document &document)
         dialog.setOption(QAbstractPrintDialog::PrintCurrentPage, false);
         dialog.setOption(QAbstractPrintDialog::PrintSelection, false);
         if (dialog.exec() != QDialog::Accepted)
-            return QString();
+            return Alert();
         // Black from the black toner alone, not mixed of colours.
         printer.setColorMode(QPrinter::GrayScale);
         // Upright pages, as for the schematic: the layout turns the copies
@@ -213,8 +216,9 @@ QString printBoard(QWidget *parent, const Document &document)
         const QSizeF page = printer.pageLayout().fullRect(QPageLayout::Millimeter).size();
         if (!paintBoardPages(printer, page, printer.resolution() / MM_PER_INCH, document, print,
                              fits))
-            return cannotPrintMessage();
-        return fits ? sentToPrinterMessage() : notFitting;
+            return Alert::error(cannotPrintMessage());
+        return fits ? Alert::info(sentToPrinterMessage())
+                    : Alert::warning(notFitting, QLatin1String(NOT_FITTING_KEY));
     }
 
     const QString suffix =
@@ -225,7 +229,7 @@ QString printBoard(QWidget *parent, const Document &document)
     const QString path = projectOutputFile(document, suffix,
                                            QLatin1String(PDF_EXTENSION), problem);
     if (path.isEmpty())
-        return problem;
+        return Alert::error(problem);
     // A4, or A3 when a copy does not fit on A4.
     const Design &design = document.design();
     const QRectF copy = boardPrintCopyRect(printArea(design), print.registrationMarks);
@@ -236,7 +240,7 @@ QString printBoard(QWidget *parent, const Document &document)
         paper = QPageSize::A3;
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly))
-        return cannotWriteMessage(path);
+        return Alert::error(cannotWriteMessage(path));
     {
         QPdfWriter writer(&file);
         writer.setTitle(projectName(document.projectPath()));
@@ -244,11 +248,13 @@ QString printBoard(QWidget *parent, const Document &document)
         writer.setPageLayout(QPageLayout(QPageSize(paper), QPageLayout::Portrait, QMarginsF()));
         if (!paintBoardPages(writer, uprightSize(paper), writer.resolution() / MM_PER_INCH,
                              document, print, fits))
-            return cannotWriteMessage(path);
+            return Alert::error(cannotWriteMessage(path));
     }
     if (!file.commit())
-        return cannotWriteMessage(path);
-    return fits ? writtenMessage(path) : writtenMessage(path) + QStringLiteral(". ") + notFitting;
+        return Alert::error(cannotWriteMessage(path));
+    return fits ? Alert::info(writtenMessage(path))
+                : Alert::warning(writtenMessage(path) + QStringLiteral(". ") + notFitting,
+                                 QLatin1String(NOT_FITTING_KEY));
 }
 
 BoardPrintDialog::BoardPrintDialog(const Design &design, QWidget *parent)

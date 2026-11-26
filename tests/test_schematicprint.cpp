@@ -33,7 +33,9 @@ private slots:
         QVERIFY2(document.saveAs(project, error), qPrintable(error));
 
         const QString pdf = DesignFiles::outputPath(project) + QStringLiteral("/amp-schematic.pdf");
-        QCOMPARE(exportSchematicPdf(nullptr, document, -1), writtenMessage(pdf));
+        const Alert written = exportSchematicPdf(nullptr, document, -1);
+        QCOMPARE(written.level, AlertLevel::Info);
+        QCOMPARE(written.text, writtenMessage(pdf));
         QFile file(pdf);
         QVERIFY(file.open(QIODevice::ReadOnly));
         const QString text = QString::fromLatin1(file.readAll());
@@ -80,9 +82,10 @@ private slots:
     void pdfNeedsASavedProject()
     {
         Document document;
-        const QString message = exportSchematicPdf(nullptr, document, -1);
-        QVERIFY(!message.isEmpty());
-        QVERIFY(!message.startsWith(writtenMessage(QString()).trimmed()));
+        const Alert message = exportSchematicPdf(nullptr, document, -1);
+        QCOMPARE(message.level, AlertLevel::Error);
+        QVERIFY(!message.text.isEmpty());
+        QVERIFY(!message.text.startsWith(writtenMessage(QString()).trimmed()));
     }
 };
 
