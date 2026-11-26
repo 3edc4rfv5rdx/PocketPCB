@@ -84,7 +84,7 @@ void addSwatchTable(QMenu *menu, const QList<QColor> &colors, const QColor &curr
     grid->setSpacing(spacing);
     grid->setContentsMargins(SWATCH_SPACING, SWATCH_SPACING, SWATCH_SPACING, SWATCH_SPACING);
     QMenu *toClose = closing != nullptr ? closing : menu;
-    // Beside a dense table, the colour under the mouse at large.
+    // Left of a dense table, the colour under the mouse at large.
     SwatchLoupe *loupe = nullptr;
     if (dense) {
         QLabel *label = new QLabel(table);
@@ -92,9 +92,11 @@ void addSwatchTable(QMenu *menu, const QList<QColor> &colors, const QColor &curr
         label->setFixedSize(LOUPE_SIZE, LOUPE_SIZE);
         loupe = new SwatchLoupe(label, current, table);
         const int rows = (int(colors.size()) + columns - 1) / columns;
-        grid->addWidget(label, 0, columns, rows, 1, Qt::AlignTop);
-        grid->setColumnMinimumWidth(columns, LOUPE_SIZE + SWATCH_SPACING);
+        grid->addWidget(label, 0, 0, rows, 1, Qt::AlignTop);
+        grid->setColumnMinimumWidth(0, LOUPE_SIZE + SWATCH_SPACING);
     }
+    // The swatches right of the large one, in a dense table.
+    const int firstColumn = dense ? 1 : 0;
     for (int i = 0; i < colors.size(); ++i) {
         const QColor color = colors.at(i);
         QToolButton *button = new QToolButton(table);
@@ -109,7 +111,7 @@ void addSwatchTable(QMenu *menu, const QList<QColor> &colors, const QColor &curr
             button->installEventFilter(previewer);
         if (loupe != nullptr)
             button->installEventFilter(loupe);
-        grid->addWidget(button, i / columns, i % columns);
+        grid->addWidget(button, i / columns, firstColumn + i % columns);
         QObject::connect(button, &QToolButton::clicked, menu, [chosen, color, toClose] {
             chosen(color);
             toClose->close();

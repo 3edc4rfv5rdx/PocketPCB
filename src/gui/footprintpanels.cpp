@@ -625,11 +625,11 @@ BodyPanel::BodyPanel(FootprintEditor *editor, QWidget *parent)
     m_raised = panelLineEdit(this, "bodyRaised");
     m_color = new QToolButton(this);
     m_color->setObjectName(QStringLiteral("bodyColor"));
-    m_color->setPopupMode(QToolButton::InstantPopup);
     m_color->setIconSize(BODY_BUTTON_SWATCH);
     QMenu *colors = new QMenu(m_color);
-    // Filled as it opens, the colour there is pressed.
-    connect(colors, &QMenu::aboutToShow, this, [this, colors] {
+    // Filled before it opens, so that it is placed knowing its size: under
+    // the button, its right edge at the button's, over the window.
+    connect(m_color, &QToolButton::clicked, this, [this, colors] {
         colors->clear();
         const std::optional<Body> &body = m_editor->footprint().body;
         addSwatchTable(colors, bodyColors(), body ? QColor(body->color) : QColor(), BODY_SWATCH,
@@ -643,8 +643,10 @@ BodyPanel::BodyPanel(FootprintEditor *editor, QWidget *parent)
                            commit(changed);
                        },
                        nullptr, nullptr, true);
+        const QSize size = colors->sizeHint();
+        colors->popup(m_color->mapToGlobal(QPoint(m_color->width() - size.width(),
+                                                   m_color->height())));
     });
-    m_color->setMenu(colors);
 
     QHBoxLayout *shapeRow = new QHBoxLayout;
     shapeRow->addWidget(m_shape, 1);

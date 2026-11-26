@@ -21,7 +21,7 @@ extern const char SWATCH_COLOR_PROPERTY[];
 // A click gives the colour to 'chosen' and closes 'closing', or 'menu' when
 // it is null. 'previewer', when not null, watches each button's Enter and
 // Leave (see SWATCH_COLOR_PROPERTY). 'dense' sets them close, with thin
-// frames, the one chosen in a thick black one, and a large swatch beside
+// frames, the one chosen in a thick black one, and a large swatch left of
 // them of the colour under the mouse: a table of many small swatches.
 void addSwatchTable(QMenu *menu, const QList<QColor> &colors, const QColor &current,
                     const QSize &size, int columns,
