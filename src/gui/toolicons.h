@@ -59,6 +59,7 @@ enum class ToolIcon {
     DrawPolygon,
     DrawText,
     Measure,
+    Pin,
 };
 
 // 'icon' drawn in lines of 'color' on a square of TOOL_ICON_SIZE pixels,

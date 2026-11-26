@@ -11,11 +11,16 @@
 
 namespace ppcb {
 
-// Editing the drawings of a footprint's silkscreen, and later of a symbol:
+// Editing the drawings of a footprint's silkscreen or of a symbol:
 // a list of Graphic, each told by its index in it.
 
 // A text drawn on the silkscreen of a footprint at first, its height.
 constexpr Coord DEFAULT_TEXT_HEIGHT = 1000000;
+
+// 'point' turned a quarter clockwise on screen about 'center'.
+Point turnedQuarter(const Point &point, const Point &center);
+// 'graphic' moved by 'delta'.
+Graphic graphicMoved(Graphic graphic, const Point &delta);
 
 // The drawing under 'at' (millimetres), the one drawn last of several:
 // within 'reach' of its line, or inside its rectangle grown by 'reach' for

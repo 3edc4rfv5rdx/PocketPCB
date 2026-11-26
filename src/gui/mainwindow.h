@@ -43,6 +43,7 @@ class SheetTabs;
 class LibraryViewItem;
 class FootprintEditor;
 class LibraryEditor;
+class SymbolEditor;
 
 class MainWindow : public QMainWindow
 {
@@ -140,6 +141,10 @@ public:
     // the editor shown, null for none. Something saved there reloads the
     // library.
     FootprintEditor *openFootprintEditor(bool newOne);
+    // The same for the symbol of the part, or the power symbol, chosen in
+    // the library panel; with 'newOne' a new symbol. Null when none is
+    // opened.
+    SymbolEditor *openSymbolEditor(bool newOne);
     // The library editor window; null while it is closed.
     LibraryEditor *libraryEditor() const;
 
@@ -171,6 +176,8 @@ protected:
     void showEvent(QShowEvent *event) override;
 
 private:
+    // The library editor window shown, made first when it is closed.
+    LibraryEditor *showLibraryEditor();
     void createMenus();
     // The strip of tools over the canvas (see updateTools()): the menu, save,
     // undo and redo, the scale, the modes of the sheet in the middle and the

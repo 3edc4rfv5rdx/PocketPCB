@@ -11,6 +11,7 @@
 #include "ercpanel.h"
 #include "document.h"
 #include "footprinteditor.h"
+#include "symboleditor.h"
 #include "libraryeditor.h"
 #include "format.h"
 #include "gerberexport.h"
@@ -2047,6 +2048,12 @@ void MainWindow::createToolBar()
     QAction *newFootprint = footprintMenu->addAction(FootprintEditor::newFootprintTitle());
     newFootprint->setObjectName(QStringLiteral("actionNewFootprint"));
     connect(newFootprint, &QAction::triggered, this, [this] { openFootprintEditor(true); });
+    QAction *newSymbol = footprintMenu->addAction(SymbolEditor::newSymbolTitle());
+    newSymbol->setObjectName(QStringLiteral("actionNewSymbol"));
+    connect(newSymbol, &QAction::triggered, this, [this] { openSymbolEditor(true); });
+    QAction *editSymbol = footprintMenu->addAction(tr("Edit symbol of chosen part"));
+    editSymbol->setObjectName(QStringLiteral("actionEditSymbol"));
+    connect(editSymbol, &QAction::triggered, this, [this] { openSymbolEditor(false); });
     QToolButton *footprintButton = new QToolButton(bar);
     footprintButton->setObjectName(QStringLiteral("footprintEditorButton"));
     footprintButton->setDefaultAction(footprintTool);
@@ -2251,11 +2258,8 @@ LibraryEditor *MainWindow::libraryEditor() const
     return m_libraryEditor;
 }
 
-FootprintEditor *MainWindow::openFootprintEditor(bool newOne)
+LibraryEditor *MainWindow::showLibraryEditor()
 {
-    // Only a choice in sight is opened: with the panel hidden it is not.
-    const QString name =
-        newOne || !m_libraryDock->isVisible() ? QString() : m_libraryPanel->currentFootprint();
     if (m_libraryEditor.isNull()) {
         m_libraryEditor = new LibraryEditor(this);
         // In the middle of this window, not where the window manager likes.
@@ -2273,22 +2277,51 @@ FootprintEditor *MainWindow::openFootprintEditor(bool newOne)
     m_libraryEditor->show();
     m_libraryEditor->raise();
     m_libraryEditor->activateWindow();
-    FootprintEditor *editor = nullptr;
-    if (newOne) {
-        editor = m_libraryEditor->openNewFootprint();
-    } else if (!name.isEmpty()) {
+    return m_libraryEditor;
+}
+
+FootprintEditor *MainWindow::openFootprintEditor(bool newOne)
+{
+    // Only a choice in sight is opened: with the panel hidden it is not.
+    const QString name =
+        newOne || !m_libraryDock->isVisible() ? QString() : m_libraryPanel->currentFootprint();
+    LibraryEditor *editorWindow = showLibraryEditor();
+    if (newOne)
+        return editorWindow->openNewFootprint();
+    if (!name.isEmpty()) {
         const Library &library = m_libraryPanel->currentSource() == LibraryPanel::Source::Project
                                      ? m_document->design().library
                                      : m_library.items;
         const Footprint *found = library.findFootprint(name);
-        editor = m_libraryEditor->openFootprint(name, found != nullptr ? *found : Footprint(),
-                                                FootprintEditor::isInUserLibrary(name));
-    } else {
-        // The window as it was, empty at first: +, Open… and Copy are
-        // over its tabs.
-        editor = m_libraryEditor->currentFootprintEditor();
+        return editorWindow->openFootprint(name, found != nullptr ? *found : Footprint(),
+                                           FootprintEditor::isInUserLibrary(name));
     }
-    return editor;
+    // The window as it was, empty at first: +, Open… and Copy are over its
+    // tabs.
+    return editorWindow->currentFootprintEditor();
+}
+
+SymbolEditor *MainWindow::openSymbolEditor(bool newOne)
+{
+    if (newOne)
+        return showLibraryEditor()->openNewSymbol();
+    // The symbol of the part chosen in sight, or the power symbol itself.
+    const QString part = m_libraryDock->isVisible() ? m_libraryPanel->currentPart() : QString();
+    const Library &library = m_libraryPanel->currentSource() == LibraryPanel::Source::Project
+                                 ? m_document->design().library
+                                 : m_library.items;
+    QString name;
+    if (m_libraryPanel->currentIsPower()) {
+        name = part;
+    } else if (const Part *found = library.findPart(part)) {
+        name = found->symbol;
+    }
+    const Symbol *symbol = library.findSymbol(name);
+    if (symbol == nullptr) {
+        showStatus(tr("Choose a part in the library panel first"));
+        return nullptr;
+    }
+    return showLibraryEditor()->openSymbol(name, *symbol, SymbolEditor::isInUserLibrary(name));
 }
 
 QString MainWindow::saveTitle()

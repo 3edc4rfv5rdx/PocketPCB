@@ -120,6 +120,9 @@ void paintFootprint(QPainter &painter, const Footprint &footprint);
 // paintFootprint() draws them.
 void paintFootprintPads(QPainter &painter, const QList<Pad> &pads);
 void paintFootprintGraphics(QPainter &painter, const QList<Graphic> &graphics);
+// The drawings alone, and the pins alone, as paintSymbol() draws them.
+void paintSymbolGraphics(QPainter &painter, const QList<Graphic> &graphics);
+void paintSymbolPins(QPainter &painter, const QList<Pin> &pins, bool showNumbers, bool showNames);
 
 // The paper of a sheet: its top left corner is the origin, the long side
 // along X, or along Y on portrait paper.

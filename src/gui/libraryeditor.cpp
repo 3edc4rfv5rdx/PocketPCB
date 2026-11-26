@@ -4,9 +4,10 @@
 #include "footprinteditor.h"
 #include "format.h"
 #include "librarypanel.h"
-#include "propertiespanel.h"
+#include "symboleditor.h"
 #include "toolicons.h"
 
+#include <QButtonGroup>
 #include <QCloseEvent>
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -14,7 +15,9 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QMenu>
 #include <QPushButton>
+#include <QRadioButton>
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QTabWidget>
@@ -35,6 +38,19 @@ const int START_BUTTON_WIDTH = 220;
 const int EDITOR_WIDTH = 900;
 const int EDITOR_HEIGHT = 650;
 
+// The tab of 'tabs' where an editor of the kind 'Editor' has the item
+// 'name' open; null when none has.
+template <class Editor>
+Editor *openTab(const QTabWidget *tabs, const QString &name)
+{
+    for (int i = 0; i < tabs->count(); ++i) {
+        Editor *open = qobject_cast<Editor *>(tabs->widget(i));
+        if (open != nullptr && open->name() == name)
+            return open;
+    }
+    return nullptr;
+}
+
 } // namespace
 
 LibraryEditor::LibraryEditor(QWidget *parent)
@@ -53,15 +69,18 @@ LibraryEditor::LibraryEditor(QWidget *parent)
     m_start = new QWidget(this);
     m_start->setObjectName(QStringLiteral("libraryEditorStart"));
     m_start->setStyleSheet(panelButtonStyle(QString()));
-    QPushButton *startNew = new QPushButton(FootprintEditor::newFootprintTitle(), m_start);
-    startNew->setObjectName(QStringLiteral("startNewFootprint"));
-    connect(startNew, &QPushButton::clicked, this, &LibraryEditor::openNewFootprint);
+    QPushButton *startFootprint = new QPushButton(FootprintEditor::newFootprintTitle(), m_start);
+    startFootprint->setObjectName(QStringLiteral("startNewFootprint"));
+    connect(startFootprint, &QPushButton::clicked, this, &LibraryEditor::openNewFootprint);
+    QPushButton *startSymbol = new QPushButton(SymbolEditor::newSymbolTitle(), m_start);
+    startSymbol->setObjectName(QStringLiteral("startNewSymbol"));
+    connect(startSymbol, &QPushButton::clicked, this, &LibraryEditor::openNewSymbol);
     QPushButton *startOpen = new QPushButton(tr("Open") + QStringLiteral("…"), m_start);
-    startOpen->setObjectName(QStringLiteral("startOpenFootprint"));
+    startOpen->setObjectName(QStringLiteral("startOpenItem"));
     connect(startOpen, &QPushButton::clicked, this, &LibraryEditor::askOpen);
     QVBoxLayout *startLayout = new QVBoxLayout(m_start);
     startLayout->addStretch();
-    for (QPushButton *button : {startNew, startOpen}) {
+    for (QPushButton *button : {startFootprint, startSymbol, startOpen}) {
         button->setMinimumWidth(START_BUTTON_WIDTH);
         startLayout->addWidget(button, 0, Qt::AlignHCenter);
     }
@@ -76,22 +95,28 @@ LibraryEditor::LibraryEditor(QWidget *parent)
     corner->setStyleSheet(panelButtonStyle(QString()));
     QHBoxLayout *cornerLayout = new QHBoxLayout(corner);
     cornerLayout->setContentsMargins(2, 2, 2, 2);
+    // + offers a new footprint or a new symbol.
     QToolButton *add = new QToolButton(corner);
-    add->setObjectName(QStringLiteral("newFootprintTab"));
+    add->setObjectName(QStringLiteral("newItemTab"));
     add->setText(QStringLiteral("+"));
-    add->setToolTip(FootprintEditor::newFootprintTitle());
     add->setAutoRaise(true);
+    add->setPopupMode(QToolButton::InstantPopup);
     QFont bold = add->font();
     bold.setBold(true);
     if (bold.pointSizeF() > 0)
         bold.setPointSizeF(bold.pointSizeF() * ADD_BUTTON_SCALE);
     add->setFont(bold);
-    connect(add, &QToolButton::clicked, this, &LibraryEditor::openNewFootprint);
+    QMenu *addMenu = new QMenu(add);
+    connect(addMenu->addAction(FootprintEditor::newFootprintTitle()), &QAction::triggered, this,
+            &LibraryEditor::openNewFootprint);
+    connect(addMenu->addAction(SymbolEditor::newSymbolTitle()), &QAction::triggered, this,
+            &LibraryEditor::openNewSymbol);
+    add->setMenu(addMenu);
     QPushButton *open = new QPushButton(tr("Open") + QStringLiteral("…"), corner);
-    open->setObjectName(QStringLiteral("openFootprintTab"));
+    open->setObjectName(QStringLiteral("openItemTab"));
     connect(open, &QPushButton::clicked, this, &LibraryEditor::askOpen);
     QPushButton *copy = new QPushButton(tr("Copy"), corner);
-    copy->setObjectName(QStringLiteral("copyFootprintTab"));
+    copy->setObjectName(QStringLiteral("copyItemTab"));
     connect(copy, &QPushButton::clicked, this, &LibraryEditor::openCopy);
     cornerLayout->addWidget(add);
     cornerLayout->addWidget(open);
@@ -112,23 +137,11 @@ QString LibraryEditor::libraryEditorTitle()
     return tr("Library editor");
 }
 
-FootprintEditor *LibraryEditor::openFootprint(const QString &name, const Footprint &footprint,
-                                              bool inUserLibrary)
+void LibraryEditor::addEditorTab(ItemEditor *editor)
 {
-    if (!name.isEmpty()) {
-        for (int i = 0; i < m_tabs->count(); ++i) {
-            FootprintEditor *open = qobject_cast<FootprintEditor *>(m_tabs->widget(i));
-            if (open != nullptr && open->name() == name) {
-                m_tabs->setCurrentIndex(i);
-                return open;
-            }
-        }
-    }
-    FootprintEditor *editor = new FootprintEditor(name, footprint, inUserLibrary, m_tabs);
-    editor->setClearance(m_clearance);
-    connect(editor, &FootprintEditor::titleChanged, this, [this, editor] { updateTab(editor); });
-    connect(editor, &FootprintEditor::saved, this, &LibraryEditor::saved);
-    connect(editor, &FootprintEditor::statusChanged, this, [this, editor](const QString &text) {
+    connect(editor, &ItemEditor::titleChanged, this, [this, editor] { updateTab(editor); });
+    connect(editor, &ItemEditor::saved, this, &LibraryEditor::saved);
+    connect(editor, &ItemEditor::statusChanged, this, [this, editor](const QString &text) {
         if (m_tabs->currentWidget() == editor)
             m_status->setText(text);
     });
@@ -139,6 +152,34 @@ FootprintEditor *LibraryEditor::openFootprint(const QString &name, const Footpri
     m_tabs->setCurrentIndex(m_tabs->addTab(editor, editor->tabTitle()));
     updateTab(editor);
     showTabsOrStart();
+}
+
+FootprintEditor *LibraryEditor::openFootprint(const QString &name, const Footprint &footprint,
+                                              bool inUserLibrary)
+{
+    if (!name.isEmpty()) {
+        if (FootprintEditor *open = openTab<FootprintEditor>(m_tabs, name)) {
+            m_tabs->setCurrentWidget(open);
+            return open;
+        }
+    }
+    FootprintEditor *editor = new FootprintEditor(name, footprint, inUserLibrary, m_tabs);
+    editor->setClearance(m_clearance);
+    addEditorTab(editor);
+    return editor;
+}
+
+SymbolEditor *LibraryEditor::openSymbol(const QString &name, const Symbol &symbol,
+                                        bool inUserLibrary)
+{
+    if (!name.isEmpty()) {
+        if (SymbolEditor *open = openTab<SymbolEditor>(m_tabs, name)) {
+            m_tabs->setCurrentWidget(open);
+            return open;
+        }
+    }
+    SymbolEditor *editor = new SymbolEditor(name, symbol, inUserLibrary, m_tabs);
+    addEditorTab(editor);
     return editor;
 }
 
@@ -156,79 +197,127 @@ FootprintEditor *LibraryEditor::openNewFootprint()
     return openFootprint(QString(), Footprint(), false);
 }
 
-FootprintEditor *LibraryEditor::openCopy()
+SymbolEditor *LibraryEditor::openNewSymbol()
 {
-    const FootprintEditor *shown = currentFootprintEditor();
-    if (shown == nullptr)
-        return nullptr;
-    FootprintEditor *copy = openFootprint(QString(), shown->footprint(), false);
+    return openSymbol(QString(), Symbol(), false);
+}
+
+ItemEditor *LibraryEditor::openCopy()
+{
+    ItemEditor *copy = nullptr;
+    if (const auto *footprint = qobject_cast<FootprintEditor *>(currentEditor()))
+        copy = openFootprint(QString(), footprint->footprint(), false);
+    else if (const auto *symbol = qobject_cast<SymbolEditor *>(currentEditor()))
+        copy = openSymbol(QString(), symbol->symbol(), false);
     // Not saved anywhere yet: closing it asks.
-    copy->undoStack()->resetClean();
+    if (copy != nullptr)
+        copy->undoStack()->resetClean();
     return copy;
 }
 
-FootprintEditor *LibraryEditor::askOpen()
+ItemEditor *LibraryEditor::askOpen()
 {
     if (m_library == nullptr)
         return nullptr;
+    // What the tab shown edits, at first.
+    if (qobject_cast<SymbolEditor *>(currentEditor()) != nullptr)
+        m_openSymbols = true;
+    else if (qobject_cast<FootprintEditor *>(currentEditor()) != nullptr)
+        m_openSymbols = false;
     QDialog dialog(this);
-    dialog.setWindowTitle(tr("Open") + QStringLiteral(" — ") + PropertiesPanel::footprintTitle());
+    dialog.setWindowTitle(tr("Open"));
+    QRadioButton *footprints = new QRadioButton(tr("Footprints"), &dialog);
+    footprints->setObjectName(QStringLiteral("openFootprints"));
+    QRadioButton *symbols = new QRadioButton(tr("Symbols"), &dialog);
+    symbols->setObjectName(QStringLiteral("openSymbols"));
+    QButtonGroup kinds(&dialog);
+    kinds.addButton(footprints);
+    kinds.addButton(symbols);
+    (m_openSymbols ? symbols : footprints)->setChecked(true);
     QLineEdit *search = new QLineEdit(&dialog);
-    search->setObjectName(QStringLiteral("openFootprintSearch"));
+    search->setObjectName(QStringLiteral("openItemSearch"));
     search->setClearButtonEnabled(true);
     QListWidget *list = new QListWidget(&dialog);
-    list->setObjectName(QStringLiteral("openFootprintList"));
-    list->addItems(m_library->footprints.keys());
+    list->setObjectName(QStringLiteral("openItemList"));
     // The drawing of the one chosen, on the right.
     PartPreview *preview = new PartPreview(&dialog);
-    preview->setObjectName(QStringLiteral("openFootprintPreview"));
-    preview->setFootprintAlone(true);
+    preview->setObjectName(QStringLiteral("openItemPreview"));
+    preview->setAlone(true);
     preview->setMinimumWidth(OPEN_PREVIEW_SIZE);
     const Library *library = m_library;
-    connect(list, &QListWidget::currentItemChanged, &dialog,
-            [preview, library](const QListWidgetItem *item) {
-                preview->setContent(nullptr, item != nullptr && !item->isHidden()
-                                                 ? library->findFootprint(item->text())
-                                                 : nullptr);
-            });
-    if (list->count() > 0)
-        list->setCurrentRow(0);
+    const auto shown = [list] {
+        const QListWidgetItem *item = list->currentItem();
+        return item != nullptr && !item->isHidden() ? item->text() : QString();
+    };
+    const auto draw = [preview, library, symbols, shown] {
+        const QString name = shown();
+        if (symbols->isChecked())
+            preview->setContent(library->findSymbol(name), nullptr);
+        else
+            preview->setContent(nullptr, library->findFootprint(name));
+    };
     // The list holds the names with the text searched for.
-    connect(search, &QLineEdit::textChanged, &dialog, [list, preview](const QString &text) {
+    const auto filter = [list, search, draw] {
         QListWidgetItem *first = nullptr;
         for (int i = 0; i < list->count(); ++i) {
             QListWidgetItem *item = list->item(i);
-            const bool shown = item->text().contains(text.trimmed(), Qt::CaseInsensitive);
-            item->setHidden(!shown);
-            if (shown && first == nullptr)
+            const bool match = item->text().contains(search->text().trimmed(), Qt::CaseInsensitive);
+            item->setHidden(!match);
+            if (match && first == nullptr)
                 first = item;
         }
         list->setCurrentItem(first);
-        // None left: nothing drawn.
-        if (first == nullptr)
-            preview->setContent(nullptr, nullptr);
-    });
+        draw();
+    };
+    const auto fill = [list, library, symbols, filter] {
+        list->clear();
+        list->addItems(symbols->isChecked() ? library->symbols.keys() : library->footprints.keys());
+        filter();
+    };
+    connect(list, &QListWidget::currentItemChanged, &dialog, draw);
+    connect(search, &QLineEdit::textChanged, &dialog, filter);
+    connect(symbols, &QRadioButton::toggled, &dialog, fill);
+    fill();
     QDialogButtonBox *buttons =
         new QDialogButtonBox(QDialogButtonBox::Open | QDialogButtonBox::Cancel, &dialog);
     connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     connect(list, &QListWidget::itemActivated, &dialog, &QDialog::accept);
+    QHBoxLayout *kindRow = new QHBoxLayout;
+    kindRow->addWidget(footprints);
+    kindRow->addWidget(symbols);
+    kindRow->addStretch();
     QHBoxLayout *choice = new QHBoxLayout;
     choice->addWidget(list, 1);
     choice->addWidget(preview, 1);
     QVBoxLayout *layout = new QVBoxLayout(&dialog);
+    layout->addLayout(kindRow);
     layout->addWidget(search);
     layout->addLayout(choice, 1);
     layout->addWidget(buttons);
     search->setFocus();
-    if (dialog.exec() != QDialog::Accepted || list->currentItem() == nullptr
-        || list->currentItem()->isHidden())
+    const bool accepted = dialog.exec() == QDialog::Accepted;
+    m_openSymbols = symbols->isChecked();
+    const QString name = shown();
+    // The preview points into the library: nothing is drawn any more.
+    preview->setContent(nullptr, nullptr);
+    if (!accepted || name.isEmpty())
         return nullptr;
-    const QString name = list->currentItem()->text();
+    if (m_openSymbols) {
+        const Symbol *symbol = m_library->findSymbol(name);
+        return symbol == nullptr
+                   ? nullptr
+                   : openSymbol(name, *symbol, SymbolEditor::isInUserLibrary(name));
+    }
     const Footprint *footprint = m_library->findFootprint(name);
-    if (footprint == nullptr)
-        return nullptr;
-    return openFootprint(name, *footprint, FootprintEditor::isInUserLibrary(name));
+    return footprint == nullptr
+               ? nullptr
+               : openFootprint(name, *footprint, FootprintEditor::isInUserLibrary(name));
+}
+
+ItemEditor *LibraryEditor::currentEditor() const
+{
+    return qobject_cast<ItemEditor *>(m_tabs->currentWidget());
 }
 
 FootprintEditor *LibraryEditor::currentFootprintEditor() const
@@ -238,7 +327,7 @@ FootprintEditor *LibraryEditor::currentFootprintEditor() const
 
 bool LibraryEditor::closeTab(int index)
 {
-    FootprintEditor *editor = qobject_cast<FootprintEditor *>(m_tabs->widget(index));
+    ItemEditor *editor = qobject_cast<ItemEditor *>(m_tabs->widget(index));
     if (editor != nullptr && !editor->confirmClose())
         return false;
     QWidget *tab = m_tabs->widget(index);
@@ -252,7 +341,7 @@ bool LibraryEditor::closeTab(int index)
 void LibraryEditor::closeEvent(QCloseEvent *event)
 {
     for (int i = 0; i < m_tabs->count(); ++i) {
-        FootprintEditor *editor = qobject_cast<FootprintEditor *>(m_tabs->widget(i));
+        ItemEditor *editor = qobject_cast<ItemEditor *>(m_tabs->widget(i));
         if (editor == nullptr)
             continue;
         m_tabs->setCurrentIndex(i);
@@ -271,7 +360,7 @@ void LibraryEditor::showTabsOrStart()
 
 void LibraryEditor::tabShown(int index)
 {
-    FootprintEditor *editor = qobject_cast<FootprintEditor *>(m_tabs->widget(index));
+    ItemEditor *editor = qobject_cast<ItemEditor *>(m_tabs->widget(index));
     m_status->setText(editor != nullptr ? editor->status() : QString());
     // The keys of a tab work while the keyboard is in it.
     if (editor != nullptr)
@@ -281,7 +370,7 @@ void LibraryEditor::tabShown(int index)
 void LibraryEditor::updateTab(QWidget *tab)
 {
     const int index = m_tabs->indexOf(tab);
-    FootprintEditor *editor = qobject_cast<FootprintEditor *>(tab);
+    ItemEditor *editor = qobject_cast<ItemEditor *>(tab);
     if (index < 0 || editor == nullptr)
         return;
     m_tabs->setTabText(index, editor->tabTitle());

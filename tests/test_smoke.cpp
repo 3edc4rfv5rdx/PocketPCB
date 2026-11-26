@@ -5,6 +5,7 @@
 #include "designviewitem.h"
 #include "document.h"
 #include "footprinteditor.h"
+#include "symboleditor.h"
 #include "libraryeditor.h"
 #include "format.h"
 #include "gerberexport.h"
@@ -720,7 +721,7 @@ private slots:
         FootprintEditor *editor = window.openFootprintEditor(true);
         QVERIFY(editor != nullptr);
         QVERIFY(editor->name().isEmpty());
-        editor->setMode(FootprintEditor::Mode::Pad);
+        editor->setMode(FootprintEditor::Mode::Place);
         editor->press(QPointF(0, 0), false);
         editor->release(QPointF(0, 0));
         editor->press(QPointF(2.54, 0), false);
@@ -740,8 +741,8 @@ private slots:
         QCOMPARE(editor->footprint().pads.at(1).at, (Point{2540000, 0}));
 
         // A drag of a chosen pad moves it on the grid.
-        FootprintChoice padTwo;
-        padTwo.pads = {1};
+        ItemChoice padTwo;
+        padTwo.terminals = {1};
         editor->setChosen(padTwo);
         editor->press(QPointF(2.54, 0), false);
         editor->move(QPointF(3.9, 1.2));
@@ -866,7 +867,7 @@ private slots:
         QVERIFY(libraryWindow->closeTab(1));
         QCOMPARE(libraryWindow->tabs()->count(), 1);
         // A copy has the pads and no name yet.
-        FootprintEditor *copy = libraryWindow->openCopy();
+        FootprintEditor *copy = qobject_cast<FootprintEditor *>(libraryWindow->openCopy());
         QVERIFY(copy != nullptr);
         QVERIFY(copy->name().isEmpty());
         QCOMPARE(copy->footprint(), editor->footprint());
@@ -876,6 +877,114 @@ private slots:
         // Dropped without asking.
         copy->undoStack()->setClean();
         QVERIFY(libraryWindow->closeTab(1));
+        libraryWindow->close();
+        QFile::remove(path);
+    }
+
+    // Pins land on the pin grid whatever the grid of the drawings, turn
+    // with their side, are dragged by whole steps of it, and the symbol is
+    // saved into the user's library.
+    void aSymbolIsDrawnAndSaved()
+    {
+        MainWindow window;
+        const QString name = QStringLiteral("test-editor-pins");
+        const QString path =
+            QDir(AppSettings::userLibraryFolder()).filePath(QStringLiteral("symbols/") + name
+                                                            + QStringLiteral(".json"));
+        // Left by an earlier run.
+        QFile::remove(path);
+        SymbolEditor *editor = window.openSymbolEditor(true);
+        QVERIFY(editor != nullptr);
+        QVERIFY(editor->name().isEmpty());
+        editor->setMode(ItemEditor::Mode::Place);
+        // It starts on the pin grid; off it, on a finer grid of the canvas.
+        QCOMPARE(editor->canvas()->gridStep(), PIN_GRID);
+        editor->canvas()->setGridStep(1270000);
+        editor->press(QPointF(-4.9, 0.3), false);
+        editor->release(QPointF(-4.9, 0.3));
+        QCOMPARE(editor->symbol().pins.size(), 1);
+        QCOMPARE(editor->symbol().pins.at(0).at, (Point{-5080000, 0}));
+        QCOMPARE(editor->symbol().pins.at(0).number, QStringLiteral("1"));
+        // R turns the pin about to be placed: it comes from the top.
+        editor->rotate();
+        QCOMPARE(editor->nextPin().side, PinSide::Up);
+        editor->press(QPointF(0, -5.08), false);
+        editor->release(QPointF(0, -5.08));
+        QCOMPARE(editor->symbol().pins.at(1).side, PinSide::Up);
+        QCOMPARE(editor->symbol().pins.at(1).number, QStringLiteral("2"));
+        editor->escape();
+        QCOMPARE(editor->mode(), ItemEditor::Mode::Select);
+
+        // Taken on its line and dragged a little more than half a step.
+        ItemChoice first;
+        first.terminals = {0};
+        editor->setChosen(first);
+        editor->press(QPointF(-4.5, 0), false);
+        editor->move(QPointF(-3.0, 1.4));
+        editor->release(QPointF(-3.0, 1.4));
+        QCOMPARE(editor->symbol().pins.at(0).at, (Point{-2540000, 2540000}));
+        // Turned about a point of the pin grid.
+        editor->rotate();
+        QCOMPARE(editor->symbol().pins.at(0).at, (Point{0, 0}));
+        QCOMPARE(editor->symbol().pins.at(0).side, PinSide::Up);
+
+        // Its end at the body dragged on the finer grid sets its length;
+        // the end a wire meets stays.
+        editor->canvas()->setGridStep(635000);
+        editor->canvas()->setView(QPointF(0, 0), 40);
+        editor->press(QPointF(0, 2.54), false);
+        editor->move(QPointF(0, 3.2));
+        editor->release(QPointF(0, 3.2));
+        QCOMPARE(editor->symbol().pins.at(0).at, (Point{0, 0}));
+        QCOMPARE(editor->symbol().pins.at(0).length, 3175000);
+        editor->canvas()->setGridStep(1270000);
+
+        // A drawing keeps the finer grid.
+        editor->setMode(ItemEditor::Mode::Rect);
+        editor->press(QPointF(-1.27, -1.27), false);
+        editor->press(QPointF(1.27, 1.27), false);
+        QCOMPARE(editor->symbol().graphics.size(), 1);
+        QCOMPARE(editor->symbol().graphics.at(0).a, (Point{-1270000, -1270000}));
+        editor->escape();
+
+        // A number taken already is refused; a name is set.
+        ItemChoice second;
+        second.terminals = {1};
+        editor->setChosen(second);
+        QLineEdit *number = editor->findChild<QLineEdit *>(QStringLiteral("pinNumber"));
+        QVERIFY(number != nullptr && number->isEnabled());
+        number->setText(QStringLiteral("1"));
+        emit number->editingFinished();
+        QCOMPARE(editor->symbol().pins.at(1).number, QStringLiteral("2"));
+        QLineEdit *pinName = editor->findChild<QLineEdit *>(QStringLiteral("pinName"));
+        pinName->setText(QStringLiteral("VCC"));
+        emit pinName->editingFinished();
+        QCOMPARE(editor->symbol().pins.at(1).name, QStringLiteral("VCC"));
+
+        QVERIFY(editor->saveAs(name, true));
+        QVERIFY(editor->isSaved());
+        QVERIFY(QFileInfo::exists(path));
+        QVERIFY(window.library().items.symbols.contains(name));
+        QVERIFY(SymbolEditor::isInUserLibrary(name));
+
+        // A power symbol has one pin, at its origin: with two it is not
+        // written.
+        QLineEdit *power = editor->findChild<QLineEdit *>(QStringLiteral("symbolPower"));
+        QVERIFY(power != nullptr);
+        power->setText(QStringLiteral("+5V"));
+        emit power->editingFinished();
+        QVERIFY(editor->symbol().isPower());
+        QVERIFY(!editor->saveAs(name, true));
+        editor->undoStack()->undo();
+        QVERIFY(!editor->symbol().isPower());
+        QVERIFY(editor->isSaved());
+
+        // A copy of a symbol is a symbol.
+        LibraryEditor *libraryWindow = window.libraryEditor();
+        ItemEditor *copy = libraryWindow->openCopy();
+        QVERIFY(qobject_cast<SymbolEditor *>(copy) != nullptr);
+        copy->undoStack()->setClean();
+
         libraryWindow->close();
         QFile::remove(path);
     }

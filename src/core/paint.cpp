@@ -1247,6 +1247,18 @@ void paintFootprintGraphics(QPainter &painter, const QList<Graphic> &graphics)
         paintGraphic(painter, graphic, paintcolor::silkscreen());
 }
 
+void paintSymbolGraphics(QPainter &painter, const QList<Graphic> &graphics)
+{
+    for (const Graphic &graphic : graphics)
+        paintGraphic(painter, graphic, paintcolor::symbol(), false, SYMBOL_LINE_WIDTH);
+}
+
+void paintSymbolPins(QPainter &painter, const QList<Pin> &pins, bool showNumbers, bool showNames)
+{
+    for (const Pin &pin : pins)
+        paintPin(painter, pin, showNumbers, showNames, false, true);
+}
+
 void paintFootprint(QPainter &painter, const Footprint &footprint)
 {
     painter.save();

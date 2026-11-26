@@ -1151,6 +1151,14 @@
         <source>Unrouted</source>
         <translation>Не розведено</translation>
     </message>
+    <message>
+        <source>Edit symbol of chosen part</source>
+        <translation>Змінити символ вибраної деталі</translation>
+    </message>
+    <message>
+        <source>Choose a part in the library panel first</source>
+        <translation>Спершу виберіть деталь на панелі бібліотеки</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>
@@ -2158,6 +2166,14 @@
         <source>Copy</source>
         <translation>Копія</translation>
     </message>
+    <message>
+        <source>Footprints</source>
+        <translation>Посадкові місця</translation>
+    </message>
+    <message>
+        <source>Symbols</source>
+        <translation>Символи</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::FootprintEditor</name>
@@ -2170,44 +2186,8 @@
         <translation>Посадкове місце %1 перейменовано на %2</translation>
     </message>
     <message>
-        <source>Measure</source>
-        <translation>Виміряти</translation>
-    </message>
-    <message>
         <source>Pads %1 and %2: %3 between the copper, %4 between the centres</source>
         <translation>Площадки %1 і %2: %3 між міддю, %4 між центрами</translation>
-    </message>
-    <message>
-        <source>Drawing properties</source>
-        <translation>Властивості рисунка</translation>
-    </message>
-    <message>
-        <source>Line</source>
-        <translation>Лінія</translation>
-    </message>
-    <message>
-        <source>Rectangle, with Shift an oval</source>
-        <translation>Прямокутник, із Shift овал</translation>
-    </message>
-    <message>
-        <source>Circle</source>
-        <translation>Коло</translation>
-    </message>
-    <message>
-        <source>Arc</source>
-        <translation>Дуга</translation>
-    </message>
-    <message>
-        <source>Polygon</source>
-        <translation>Багатокутник</translation>
-    </message>
-    <message>
-        <source>Text</source>
-        <translation>Текст</translation>
-    </message>
-    <message>
-        <source>Draw</source>
-        <translation>Малювання</translation>
     </message>
     <message>
         <source>Pads %1 and %2 are %3 apart, less than the clearance %4</source>
@@ -2226,20 +2206,8 @@
         <translation>Нове посадкове місце</translation>
     </message>
     <message>
-        <source>built-in</source>
-        <translation>вбудоване</translation>
-    </message>
-    <message>
         <source>Row of pads</source>
         <translation>Ряд площадок</translation>
-    </message>
-    <message>
-        <source>Origin here</source>
-        <translation>Початок тут</translation>
-    </message>
-    <message>
-        <source>Origin in the middle</source>
-        <translation>Початок посередині</translation>
     </message>
     <message>
         <source>Place pad</source>
@@ -2248,10 +2216,6 @@
     <message>
         <source>Place row of pads</source>
         <translation>Поставити ряд площадок</translation>
-    </message>
-    <message>
-        <source>Move origin</source>
-        <translation>Перенести початок</translation>
     </message>
     <message>
         <source>One column</source>
@@ -2296,10 +2260,6 @@
     <message>
         <source>Footprint name</source>
         <translation>Назва посадкового місця</translation>
-    </message>
-    <message>
-        <source>A name may hold Latin letters, digits and these signs</source>
-        <translation>У назві допустимі латинські літери, цифри та знаки</translation>
     </message>
     <message>
         <source>The library has a footprint %1 already. Replace it</source>
@@ -2496,6 +2456,182 @@
     <message>
         <source>Show all warnings again</source>
         <translation>Знову показувати всі попередження</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::ItemEditor</name>
+    <message>
+        <source>Measure</source>
+        <translation>Виміряти</translation>
+    </message>
+    <message>
+        <source>Drawing properties</source>
+        <translation>Властивості рисунка</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Лінія</translation>
+    </message>
+    <message>
+        <source>Rectangle, with Shift an oval</source>
+        <translation>Прямокутник, із Shift овал</translation>
+    </message>
+    <message>
+        <source>Circle</source>
+        <translation>Коло</translation>
+    </message>
+    <message>
+        <source>Arc</source>
+        <translation>Дуга</translation>
+    </message>
+    <message>
+        <source>Polygon</source>
+        <translation>Багатокутник</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Текст</translation>
+    </message>
+    <message>
+        <source>Draw</source>
+        <translation>Малювання</translation>
+    </message>
+    <message>
+        <source>Origin here</source>
+        <translation>Початок тут</translation>
+    </message>
+    <message>
+        <source>Origin in the middle</source>
+        <translation>Початок посередині</translation>
+    </message>
+    <message>
+        <source>Move origin</source>
+        <translation>Перенести початок</translation>
+    </message>
+    <message>
+        <source>A name may hold Latin letters, digits and these signs</source>
+        <translation>У назві допустимі латинські літери, цифри та знаки</translation>
+    </message>
+    <message>
+        <source>from the built-in library</source>
+        <translation>з вбудованої бібліотеки</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::SymbolEditor</name>
+    <message>
+        <source>Symbol editor</source>
+        <translation>Редактор символів</translation>
+    </message>
+    <message>
+        <source>Pin properties</source>
+        <translation>Властивості виводу</translation>
+    </message>
+    <message>
+        <source>Symbol properties</source>
+        <translation>Властивості символу</translation>
+    </message>
+    <message>
+        <source>New symbol</source>
+        <translation>Новий символ</translation>
+    </message>
+    <message>
+        <source>Symbol name</source>
+        <translation>Назва символу</translation>
+    </message>
+    <message>
+        <source>The library has a symbol %1 already. Replace it</source>
+        <translation>У бібліотеці вже є символ %1. Замінити його</translation>
+    </message>
+    <message>
+        <source>Built-in parts are drawn with the symbol %1 and keep that name: %2. Rename it anyway</source>
+        <translation>Вбудовані деталі малюються символом %1 і збережуть цю назву: %2. Все одно перейменувати</translation>
+    </message>
+    <message>
+        <source>The symbol has changes that are not saved. Save them</source>
+        <translation>У символі є незбережені зміни. Зберегти їх</translation>
+    </message>
+    <message>
+        <source>Symbol %1 renamed to %2</source>
+        <translation>Символ %1 перейменовано на %2</translation>
+    </message>
+    <message>
+        <source>Place pin</source>
+        <translation>Поставити вивід</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::PinPanel</name>
+    <message>
+        <source>Left</source>
+        <translation>Ліворуч</translation>
+    </message>
+    <message>
+        <source>Right</source>
+        <translation>Праворуч</translation>
+    </message>
+    <message>
+        <source>Top</source>
+        <translation>Згори</translation>
+    </message>
+    <message>
+        <source>Bottom</source>
+        <translation>Знизу</translation>
+    </message>
+    <message>
+        <source>Number</source>
+        <translation>Номер</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Назва</translation>
+    </message>
+    <message>
+        <source>Side</source>
+        <translation>Сторона</translation>
+    </message>
+    <message>
+        <source>Length</source>
+        <translation>Довжина</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Вивід</translation>
+    </message>
+    <message>
+        <source>New pins</source>
+        <translation>Нові виводи</translation>
+    </message>
+    <message>
+        <source>Pins chosen</source>
+        <translation>Вибрано виводів</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::SymbolPanel</name>
+    <message>
+        <source>Symbol</source>
+        <translation>Символ</translation>
+    </message>
+    <message>
+        <source>Show pin numbers</source>
+        <translation>Показувати номери виводів</translation>
+    </message>
+    <message>
+        <source>Show pin names</source>
+        <translation>Показувати назви виводів</translation>
+    </message>
+    <message>
+        <source>A power symbol joins every one of the same net; empty for a part</source>
+        <translation>Символ живлення з'єднує всі символи цього кола; порожньо для деталі</translation>
+    </message>
+    <message>
+        <source>Hide the net name</source>
+        <translation>Сховати назву кола</translation>
+    </message>
+    <message>
+        <source>Power net</source>
+        <translation>Коло живлення</translation>
     </message>
 </context>
 </TS>

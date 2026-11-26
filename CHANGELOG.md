@@ -3,6 +3,8 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: The footprint editor keeps what is chosen after a drag, a turn or a change in its panels
+- N: Symbol editor in the library editor window: pins on the 2.54 mm grid, drawings, pin names, power symbols
 ## v0.15.387 (2026-11-26)
 - F: Errors and warnings come in a box, a warning with Do not show again; all else stays in the status bar
 - F: Flipping a part onto the wrong side of a one-sided board is told in the status bar

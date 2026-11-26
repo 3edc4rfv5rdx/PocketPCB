@@ -18,21 +18,6 @@ const int QUARTER_DEGREES = 90;
 const Coord MAX_ARC_RADIUS = 1000 * NM_PER_MM;
 const int FULL_TURN = 360;
 
-Point turnedQuarter(const Point &point, const Point &center)
-{
-    const Point offset = point - center;
-    return center + Point{-offset.y, offset.x};
-}
-
-Graphic graphicMoved(Graphic graphic, const Point &delta)
-{
-    graphic.a = graphic.a + delta;
-    graphic.b = graphic.b + delta;
-    for (Point &point : graphic.points)
-        point = point + delta;
-    return graphic;
-}
-
 Graphic graphicTurned(Graphic graphic, const Point &center)
 {
     graphic.a = turnedQuarter(graphic.a, center);
@@ -59,6 +44,21 @@ Coord distance(const Point &a, const Point &b)
 }
 
 } // namespace
+
+Point turnedQuarter(const Point &point, const Point &center)
+{
+    const Point offset = point - center;
+    return center + Point{-offset.y, offset.x};
+}
+
+Graphic graphicMoved(Graphic graphic, const Point &delta)
+{
+    graphic.a = graphic.a + delta;
+    graphic.b = graphic.b + delta;
+    for (Point &point : graphic.points)
+        point = point + delta;
+    return graphic;
+}
 
 int graphicAt(const QList<Graphic> &graphics, const QPointF &at, double reach)
 {

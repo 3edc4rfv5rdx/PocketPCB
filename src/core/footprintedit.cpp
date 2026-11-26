@@ -1,5 +1,6 @@
 #include "footprintedit.h"
 
+#include "graphicedit.h"
 #include "jsonio.h"
 #include "paint.h"
 #include "trackedit.h"
@@ -10,26 +11,11 @@ namespace ppcb {
 
 namespace {
 
-Point turnedQuarter(const Point &point, const Point &center)
-{
-    const Point offset = point - center;
-    return center + Point{-offset.y, offset.x};
-}
-
 Pad padTurned(Pad pad, const Point &center)
 {
     pad.at = turnedQuarter(pad.at, center);
     std::swap(pad.sizeX, pad.sizeY);
     return pad;
-}
-
-Graphic graphicMoved(Graphic graphic, const Point &delta)
-{
-    graphic.a = graphic.a + delta;
-    graphic.b = graphic.b + delta;
-    for (Point &point : graphic.points)
-        point = point + delta;
-    return graphic;
 }
 
 } // namespace

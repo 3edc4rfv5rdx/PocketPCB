@@ -391,6 +391,12 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         painter.drawLine(QPointF(5, 5), QPointF(19, 5));
         painter.drawLine(QPointF(12, 5), QPointF(12, 20));
         break;
+    case ToolIcon::Pin:
+        // The edge of a body and a pin out of it, its end where a wire goes.
+        painter.drawLine(QPointF(14, 4), QPointF(14, 20));
+        painter.drawLine(QPointF(4, 12), QPointF(14, 12));
+        dot(painter, {4, 12}, color);
+        break;
     }
 }
 

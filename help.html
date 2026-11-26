@@ -26,6 +26,7 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
   <li><a href="#library">Library</a>
     <ul>
       <li><a href="#footprinteditor">Footprint editor</a></li>
+      <li><a href="#symboleditor">Symbol editor</a></li>
     </ul>
   </li>
   <li><a href="#schematic">Schematic</a>
@@ -137,9 +138,9 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
 <h3 id="footprinteditor">Footprint editor</h3>
 <ul>
   <li>The <b>Library editor</b> button on the strip opens the footprint chosen under the library list in a tab
-    of the library editor window; with the Library panel closed it shows the window as it was; an empty one offers <b>New footprint</b>
-    and <b>Open…</b> in its middle. Its arrow starts a new footprint. Each tab has its own strip and its own Undo.</li>
-  <li>Over the tabs: <b>+</b> starts a new footprint, <b>Open…</b> picks one of the library from a list with a
+    of the library editor window; with the Library panel closed it shows the window as it was; an empty one offers <b>New footprint</b>,
+    <b>New symbol</b> and <b>Open…</b> in its middle. Its arrow starts a new footprint or symbol. Each tab has its own strip and its own Undo.</li>
+  <li>Over the tabs: <b>+</b> starts a new footprint or symbol, <b>Open…</b> picks a footprint or, switched over, a symbol of the library from a list with a
     search field and a drawing of the one chosen, <b>Copy</b> opens a copy of the one shown, to be saved under a name of its own.</li>
   <li><b>Pad</b> (<kbd>P</kbd>): each click places a pad on the grid, numbered on, like the last one; the arrow
     offers the usual sizes. <b>Row of pads</b> sets up one column, two columns numbered across or a DIP
@@ -171,6 +172,22 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
     copy under a new name and goes on with it; the one opened stays as it was. <b>Rename…</b> there renames a
     footprint of your library: the old file goes, and your parts listing it take the new name. Built-in parts
     cannot follow, so you are asked first when some list it.</li>
+</ul>
+
+<h3 id="symboleditor">Symbol editor</h3>
+<ul>
+  <li>The arrow of the <b>Library editor</b> button: <b>New symbol</b>, or <b>Edit symbol of chosen part</b> for the
+    part or power symbol chosen in the Library panel. It works as the footprint editor: the same drawing tools,
+    choosing, dragging, <b>Measure</b>, origin, Save, Save as and Rename.</li>
+  <li><b>Pin</b> (<kbd>P</kbd>): each click places a pin, numbered on; <kbd>R</kbd> before the click turns the side
+    it comes out of. The editor starts on the 2.54&nbsp;mm grid; the end a wire meets stays on it whatever grid the drawing is on;
+    pins dragged or turned stay on it.</li>
+  <li>The panel sets number, name, side, length and place of the pins chosen, for all at once; with none chosen,
+    the side and length of the next. A double click types a pin's number. The end of a pin at the body, a small
+    square while the pin is chosen, is dragged on the grid of the drawing to set its length; the rest of the pin moves it whole. A pin of no length
+    is lengthened in the panel.</li>
+  <li><b>Symbol</b>, under the panel: show pin numbers, show pin names, and <b>Power net</b> — a net name makes it a
+    power symbol (GND, +5V), which needs its one pin at the origin; its name may be hidden.</li>
 </ul>
 
 <h2 id="schematic">Schematic</h2>

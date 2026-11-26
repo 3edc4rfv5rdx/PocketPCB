@@ -244,9 +244,9 @@ void PartPreview::setContent(const Symbol *symbol, const Footprint *footprint)
     update();
 }
 
-void PartPreview::setFootprintAlone(bool alone)
+void PartPreview::setAlone(bool alone)
 {
-    m_footprintAlone = alone;
+    m_alone = alone;
     update();
 }
 
@@ -318,12 +318,12 @@ void PartPreview::paintEvent(QPaintEvent *event)
     const QRectF bottom(whole.left(), top.bottom(), whole.width(), whole.height() / 2);
     if (m_symbol != nullptr) {
         const Symbol &symbol = *m_symbol;
-        paintFitted(painter, top, symbolBounds(symbol),
+        paintFitted(painter, m_alone && m_footprint == nullptr ? whole : top, symbolBounds(symbol),
                     [&symbol](QPainter &p) { paintSymbol(p, symbol); });
     }
     if (m_footprint != nullptr) {
         const Footprint &footprint = *m_footprint;
-        paintFitted(painter, m_footprintAlone && m_symbol == nullptr ? whole : bottom,
+        paintFitted(painter, m_alone && m_symbol == nullptr ? whole : bottom,
                     footprintBounds(footprint),
                     [&footprint](QPainter &p) { paintFootprint(p, footprint); });
     }

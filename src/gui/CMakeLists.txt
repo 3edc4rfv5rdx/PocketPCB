@@ -15,6 +15,8 @@ add_library(pocketpcb_gui STATIC
     format.h format.cpp
     gerberexport.h gerberexport.cpp
     inplaceedit.h inplaceedit.cpp
+    itemeditor.h itemeditor.cpp
+    itempanels.h itempanels.cpp
     language.h language.cpp
     libraryeditor.h libraryeditor.cpp
     librarypanel.h librarypanel.cpp
@@ -27,6 +29,8 @@ add_library(pocketpcb_gui STATIC
     sheeteditor.h sheeteditor.cpp
     sheettabs.h sheettabs.cpp
     swatches.h swatches.cpp
+    symboleditor.h symboleditor.cpp
+    symbolpanels.cpp
     toolicons.h toolicons.cpp
     updateboarddialog.h updateboarddialog.cpp
     updatepartsdialog.h updatepartsdialog.cpp

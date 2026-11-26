@@ -1151,6 +1151,14 @@
         <source>Unrouted</source>
         <translation>Не разведено</translation>
     </message>
+    <message>
+        <source>Edit symbol of chosen part</source>
+        <translation>Изменить символ выбранной детали</translation>
+    </message>
+    <message>
+        <source>Choose a part in the library panel first</source>
+        <translation>Сначала выберите деталь в панели библиотеки</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>
@@ -2158,6 +2166,14 @@
         <source>Copy</source>
         <translation>Копия</translation>
     </message>
+    <message>
+        <source>Footprints</source>
+        <translation>Посадочные места</translation>
+    </message>
+    <message>
+        <source>Symbols</source>
+        <translation>Символы</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::FootprintEditor</name>
@@ -2170,44 +2186,8 @@
         <translation>Посадочное место %1 переименовано в %2</translation>
     </message>
     <message>
-        <source>Measure</source>
-        <translation>Измерить</translation>
-    </message>
-    <message>
         <source>Pads %1 and %2: %3 between the copper, %4 between the centres</source>
         <translation>Площадки %1 и %2: %3 между медью, %4 между центрами</translation>
-    </message>
-    <message>
-        <source>Drawing properties</source>
-        <translation>Свойства рисунка</translation>
-    </message>
-    <message>
-        <source>Line</source>
-        <translation>Линия</translation>
-    </message>
-    <message>
-        <source>Rectangle, with Shift an oval</source>
-        <translation>Прямоугольник, с Shift овал</translation>
-    </message>
-    <message>
-        <source>Circle</source>
-        <translation>Окружность</translation>
-    </message>
-    <message>
-        <source>Arc</source>
-        <translation>Дуга</translation>
-    </message>
-    <message>
-        <source>Polygon</source>
-        <translation>Многоугольник</translation>
-    </message>
-    <message>
-        <source>Text</source>
-        <translation>Текст</translation>
-    </message>
-    <message>
-        <source>Draw</source>
-        <translation>Рисование</translation>
     </message>
     <message>
         <source>Pads %1 and %2 are %3 apart, less than the clearance %4</source>
@@ -2226,20 +2206,8 @@
         <translation>Новое посадочное место</translation>
     </message>
     <message>
-        <source>built-in</source>
-        <translation>встроенное</translation>
-    </message>
-    <message>
         <source>Row of pads</source>
         <translation>Ряд площадок</translation>
-    </message>
-    <message>
-        <source>Origin here</source>
-        <translation>Начало здесь</translation>
-    </message>
-    <message>
-        <source>Origin in the middle</source>
-        <translation>Начало в середине</translation>
     </message>
     <message>
         <source>Place pad</source>
@@ -2248,10 +2216,6 @@
     <message>
         <source>Place row of pads</source>
         <translation>Поставить ряд площадок</translation>
-    </message>
-    <message>
-        <source>Move origin</source>
-        <translation>Перенести начало</translation>
     </message>
     <message>
         <source>One column</source>
@@ -2296,10 +2260,6 @@
     <message>
         <source>Footprint name</source>
         <translation>Имя посадочного места</translation>
-    </message>
-    <message>
-        <source>A name may hold Latin letters, digits and these signs</source>
-        <translation>В имени допустимы латинские буквы, цифры и знаки</translation>
     </message>
     <message>
         <source>The library has a footprint %1 already. Replace it</source>
@@ -2496,6 +2456,182 @@
     <message>
         <source>Show all warnings again</source>
         <translation>Снова показывать все предупреждения</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::ItemEditor</name>
+    <message>
+        <source>Measure</source>
+        <translation>Измерить</translation>
+    </message>
+    <message>
+        <source>Drawing properties</source>
+        <translation>Свойства рисунка</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Линия</translation>
+    </message>
+    <message>
+        <source>Rectangle, with Shift an oval</source>
+        <translation>Прямоугольник, с Shift овал</translation>
+    </message>
+    <message>
+        <source>Circle</source>
+        <translation>Окружность</translation>
+    </message>
+    <message>
+        <source>Arc</source>
+        <translation>Дуга</translation>
+    </message>
+    <message>
+        <source>Polygon</source>
+        <translation>Многоугольник</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Текст</translation>
+    </message>
+    <message>
+        <source>Draw</source>
+        <translation>Рисование</translation>
+    </message>
+    <message>
+        <source>Origin here</source>
+        <translation>Начало здесь</translation>
+    </message>
+    <message>
+        <source>Origin in the middle</source>
+        <translation>Начало в середине</translation>
+    </message>
+    <message>
+        <source>Move origin</source>
+        <translation>Перенести начало</translation>
+    </message>
+    <message>
+        <source>A name may hold Latin letters, digits and these signs</source>
+        <translation>В имени допустимы латинские буквы, цифры и знаки</translation>
+    </message>
+    <message>
+        <source>from the built-in library</source>
+        <translation>из встроенной библиотеки</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::SymbolEditor</name>
+    <message>
+        <source>Symbol editor</source>
+        <translation>Редактор символов</translation>
+    </message>
+    <message>
+        <source>Pin properties</source>
+        <translation>Свойства вывода</translation>
+    </message>
+    <message>
+        <source>Symbol properties</source>
+        <translation>Свойства символа</translation>
+    </message>
+    <message>
+        <source>New symbol</source>
+        <translation>Новый символ</translation>
+    </message>
+    <message>
+        <source>Symbol name</source>
+        <translation>Имя символа</translation>
+    </message>
+    <message>
+        <source>The library has a symbol %1 already. Replace it</source>
+        <translation>В библиотеке уже есть символ %1. Заменить его</translation>
+    </message>
+    <message>
+        <source>Built-in parts are drawn with the symbol %1 and keep that name: %2. Rename it anyway</source>
+        <translation>Встроенные детали рисуются символом %1 и сохранят это имя: %2. Всё равно переименовать</translation>
+    </message>
+    <message>
+        <source>The symbol has changes that are not saved. Save them</source>
+        <translation>В символе есть несохранённые изменения. Сохранить их</translation>
+    </message>
+    <message>
+        <source>Symbol %1 renamed to %2</source>
+        <translation>Символ %1 переименован в %2</translation>
+    </message>
+    <message>
+        <source>Place pin</source>
+        <translation>Поставить вывод</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::PinPanel</name>
+    <message>
+        <source>Left</source>
+        <translation>Слева</translation>
+    </message>
+    <message>
+        <source>Right</source>
+        <translation>Справа</translation>
+    </message>
+    <message>
+        <source>Top</source>
+        <translation>Сверху</translation>
+    </message>
+    <message>
+        <source>Bottom</source>
+        <translation>Снизу</translation>
+    </message>
+    <message>
+        <source>Number</source>
+        <translation>Номер</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Имя</translation>
+    </message>
+    <message>
+        <source>Side</source>
+        <translation>Сторона</translation>
+    </message>
+    <message>
+        <source>Length</source>
+        <translation>Длина</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Вывод</translation>
+    </message>
+    <message>
+        <source>New pins</source>
+        <translation>Новые выводы</translation>
+    </message>
+    <message>
+        <source>Pins chosen</source>
+        <translation>Выбрано выводов</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::SymbolPanel</name>
+    <message>
+        <source>Symbol</source>
+        <translation>Символ</translation>
+    </message>
+    <message>
+        <source>Show pin numbers</source>
+        <translation>Показывать номера выводов</translation>
+    </message>
+    <message>
+        <source>Show pin names</source>
+        <translation>Показывать имена выводов</translation>
+    </message>
+    <message>
+        <source>A power symbol joins every one of the same net; empty for a part</source>
+        <translation>Символ питания соединяет все символы этой цепи; пусто для детали</translation>
+    </message>
+    <message>
+        <source>Hide the net name</source>
+        <translation>Скрыть имя цепи</translation>
+    </message>
+    <message>
+        <source>Power net</source>
+        <translation>Цепь питания</translation>
     </message>
 </context>
 </TS>
