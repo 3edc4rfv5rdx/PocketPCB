@@ -703,15 +703,6 @@ void MainWindow::createMenus()
     connect(fullCrossAction, &QAction::triggered, this,
             [this] { applyCursorStyle(CursorStyle::FullCross); });
 
-    // A table of pale colours, each a piece of paper with a wire and a
-    // symbol on it; its code is its tip. The sheet shown takes the colour
-    // under the mouse until the mouse leaves it or the menu closes.
-    QMenu *backgroundMenu = viewMenu->addMenu(tr("Sheet background"));
-    connect(backgroundMenu, &QMenu::aboutToHide, this, &MainWindow::updateCanvasBackground);
-    addSwatchTable(backgroundMenu, AppSettings::sheetBackgrounds(), AppSettings::sheetBackground(),
-                   QSize(SWATCH_WIDTH, SWATCH_HEIGHT), SWATCH_COLUMNS, paperSwatch,
-                   [this](const QColor &color) { applySheetBackground(color); }, this, viewMenu);
-
     // What the menu of a sheet's tab does, for the sheet shown.
     QMenu *sheetMenu = viewMenu->addMenu(tr("Sheet"));
     connect(sheetMenu, &QMenu::aboutToShow, this, [this, sheetMenu] {
@@ -825,6 +816,16 @@ void MainWindow::createMenus()
             addChoice(languageMenu, languageGroup, languageName(code), language == code);
         connect(action, &QAction::triggered, this, [this, code] { setInterfaceLanguage(code); });
     }
+
+    // A table of pale colours, each a piece of paper with a wire and a
+    // symbol on it; its code is its tip. The sheet shown takes the colour
+    // under the mouse until the mouse leaves it or the menu closes.
+    QMenu *backgroundMenu = settingsMenu->addMenu(tr("Sheet background"));
+    connect(backgroundMenu, &QMenu::aboutToHide, this, &MainWindow::updateCanvasBackground);
+    addSwatchTable(backgroundMenu, AppSettings::sheetBackgrounds(), AppSettings::sheetBackground(),
+                   QSize(SWATCH_WIDTH, SWATCH_HEIGHT), SWATCH_COLUMNS, paperSwatch,
+                   [this](const QColor &color) { applySheetBackground(color); }, this,
+                   settingsMenu);
 
     QAction *screenAction = settingsMenu->addAction(ScreenSizeDialog::title() + QStringLiteral("…"));
     screenAction->setObjectName(QStringLiteral("actionScreenSize"));
