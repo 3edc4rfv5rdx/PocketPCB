@@ -60,6 +60,17 @@ QSet<ObjectId> placementsInside(const Board &board, const Library &library, cons
     return inside;
 }
 
+Point placementGridPoint(const Placement &placement, const Library &library)
+{
+    const Footprint *footprint = library.findFootprint(placement.footprint);
+    if (footprint == nullptr || footprint->pads.isEmpty())
+        return placement.at;
+    const auto first = std::find_if(footprint->pads.cbegin(), footprint->pads.cend(),
+                                    [](const Pad &pad) { return pad.number == QLatin1String("1"); });
+    const Pad &pad = first != footprint->pads.cend() ? *first : footprint->pads.first();
+    return placedPadPoint(placement, pad.at);
+}
+
 QRectF placementsBounds(const Board &board, const Library &library, const QSet<ObjectId> &ids)
 {
     QRectF bounds;

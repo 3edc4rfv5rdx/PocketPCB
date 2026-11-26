@@ -80,6 +80,24 @@ private slots:
         QVERIFY(placementsBounds(board, library(), {}).isNull());
     }
 
+    // A dragged part lands on the grid by its pad 1, wherever its own point is.
+    void aPartIsPutOnTheGridByItsPadOne()
+    {
+        Placement r1 = placement(QStringLiteral("R1"), mm(20, 10));
+        QCOMPARE(placementGridPoint(r1, library()), mm(15, 10));
+        // Pad 1 listed second.
+        Library swapped = library();
+        Footprint &footprint = swapped.footprints[QStringLiteral("fp")];
+        std::swap(footprint.pads[0], footprint.pads[1]);
+        QCOMPARE(placementGridPoint(r1, swapped), mm(15, 10));
+        // None numbered 1: the first pad.
+        footprint.pads[1].number = QStringLiteral("A");
+        QCOMPARE(placementGridPoint(r1, swapped), mm(25, 10));
+        // No footprint: its own point.
+        r1.footprint = QStringLiteral("none");
+        QCOMPARE(placementGridPoint(r1, library()), mm(20, 10));
+    }
+
     void theDesignatorAndTheValueAreFoundWhereTheyAreShown()
     {
         Board board = twoPlacements();

@@ -588,9 +588,14 @@ void BoardEditor::rotateChosen()
         return;
     if (m_dragging) {
         if (m_dragPlacements && !m_dragWhole) {
+            const Library &library = m_document->design().library;
+            // About the point of the one taken, its grid point following it.
+            const Placement *taken = findById(m_dragBase.placements, m_dragTaken);
+            const Point center = taken != nullptr ? taken->at : m_dragAnchor;
             m_dragBase = withTracksFollowingPads(
-                m_dragBase, withPlacementsRotated(m_dragBase, ids, m_dragAnchor),
-                m_document->design().library);
+                m_dragBase, withPlacementsRotated(m_dragBase, ids, center), library);
+            if (const Placement *turned = findById(m_dragBase.placements, m_dragTaken))
+                m_dragAnchor = placementGridPoint(*turned, library);
             m_movedBoard = draggedBoard(m_lastAt);
             emit changed();
         }
@@ -1001,8 +1006,10 @@ bool BoardEditor::pressChoosable(const QPointF &at, bool adding, bool joined)
         m_outlineChosen = false;
     }
     m_dragPlacements = true;
-    m_dragAnchor = hole.isNull() ? findById(design.board.placements, hit)->at
-                                 : findById(design.board.holes, hit)->at;
+    m_dragTaken = hit;
+    m_dragAnchor = hole.isNull()
+                       ? placementGridPoint(*findById(design.board.placements, hit), design.library)
+                       : findById(design.board.holes, hit)->at;
     return true;
 }
 

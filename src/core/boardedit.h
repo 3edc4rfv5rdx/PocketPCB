@@ -21,6 +21,12 @@ ObjectId placementAt(const Board &board, const Library &library, const QPointF &
 QSet<ObjectId> placementsInside(const Board &board, const Library &library, const QRectF &rect);
 // The rectangle holding the placements 'ids'; empty when there are none.
 QRectF placementsBounds(const Board &board, const Library &library, const QSet<ObjectId> &ids);
+// The point of 'placement' that lands on the grid when it is dragged: its
+// pad 1 where it stands on the board, so that pads a whole number of grid
+// steps from it land on the grid too, while the part turns about its own
+// point in its middle; its first pad when none is numbered 1, its own
+// point when it has no pads or the library lacks its footprint.
+Point placementGridPoint(const Placement &placement, const Library &library);
 
 // A text a placement shows on the silkscreen: its designator or its value;
 // or the designator of a wire link, its owner then the link.

@@ -443,7 +443,9 @@ private:
     PlacementText m_chosenText;
     QList<DrcProblem> m_problems;
     // The press took a placement chosen, or a text: a drag moves them from
-    // 'm_dragAnchor', the point of the one taken, which lands on the grid.
+    // 'm_dragAnchor', the point of the one taken that lands on the grid
+    // (placementGridPoint() of a placement); 'm_dragTaken' is the placement
+    // or the hole taken.
     bool m_dragPlacements = false;
     bool m_dragText = false;
     // A piece of track taken: dragged across itself, or by its corner at
@@ -453,6 +455,7 @@ private:
     // The board with the piece or the corner taken where 'at' puts it.
     Board trackDragged(const QPointF &at) const;
     Point m_dragAnchor;
+    ObjectId m_dragTaken;
     std::optional<Board> m_movedBoard;
     // The board the drag starts from, with the turns made while dragging,
     // and where the mouse was last.
