@@ -2251,6 +2251,8 @@ FootprintEditor *MainWindow::openFootprintEditor(bool newOne)
         newOne || !m_libraryDock->isVisible() ? QString() : m_libraryPanel->currentFootprint();
     if (m_libraryEditor.isNull()) {
         m_libraryEditor = new LibraryEditor(this);
+        // In the middle of this window, not where the window manager likes.
+        m_libraryEditor->move(frameGeometry().center() - m_libraryEditor->rect().center());
         connect(m_libraryEditor, &LibraryEditor::saved, this, &MainWindow::loadLibrary);
         // The pads are checked with the clearance of the project open.
         const auto clearance = [this] {
