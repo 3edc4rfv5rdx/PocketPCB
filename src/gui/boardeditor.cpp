@@ -624,8 +624,27 @@ void BoardEditor::rotateChosen()
 void BoardEditor::flipChosen()
 {
     const QSet<ObjectId> ids = chosenPlacements();
-    if (ids.isEmpty() || m_dragging)
+    if (ids.isEmpty())
         return;
+    if (m_dragging) {
+        // As R while dragging: about the point of the one taken, its grid
+        // point following it; the move and the flip are one step.
+        if (m_dragPlacements && !m_dragWhole) {
+            if (arePlacementsLocked(m_dragBase, ids)) {
+                emit message(partLockedMessage());
+                return;
+            }
+            const Library &library = m_document->design().library;
+            const Placement *taken = findById(m_dragBase.placements, m_dragTaken);
+            const Point center = taken != nullptr ? taken->at : m_dragAnchor;
+            m_dragBase = withPartsFlipped(m_dragBase, library, ids, center);
+            if (const Placement *flipped = findById(m_dragBase.placements, m_dragTaken))
+                m_dragAnchor = placementGridPoint(*flipped, library);
+            m_movedBoard = draggedBoard(m_lastAt);
+            emit changed();
+        }
+        return;
+    }
     const Design &design = m_document->design();
     const Board &board = design.board;
     if (arePlacementsLocked(board, ids)) {

@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: F flips the parts on the board while they are dragged too, as R turns them
 - E: The demo project's resistor footprints have the bodies of the library's
 - N: TO-220 footprints lying flat, with a pad for the screw of the tab, offered by every part in TO-220
 - F: Sheet background is in the Settings menu, not View

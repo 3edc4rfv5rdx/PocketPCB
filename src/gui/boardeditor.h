@@ -206,8 +206,9 @@ public:
     void rotateChosen();
     // The placements chosen put on the other side as one step
     // (withPartsFlipped()): one mirrored about its own point, several about
-    // the middle of them on the grid. Locked ones stay; nothing while
-    // dragging.
+    // the middle of them on the grid. Locked ones stay. While they are
+    // dragged, they flip about the point of the one taken, and the drag
+    // goes on.
     void flipChosen();
     // Delete, as one step: the holes chosen are taken off the board, and
     // the placements chosen, which come and go with the schematic, are
