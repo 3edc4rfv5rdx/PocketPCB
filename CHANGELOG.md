@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The footprint editor shows the origin as a red orange cross with a ring, over all, the same size at any zoom
 - R: Two compiler warnings quieted: a loop copying strings and a choice not filled in whole
 - F: A short right click in the footprint editor calls off the pad, row or drawing being placed, as Esc
 - N: Footprint editor draws the silkscreen (lines, rectangles, circles, arcs, polygons, texts), drags the REF and VALUE places and frames pads nearer than the project clearance

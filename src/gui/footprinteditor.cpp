@@ -80,6 +80,9 @@ const double CHOSEN_PEN_PIXELS = 2.0;
 const double HANDLE_PIXELS = 3.0;
 // The line a new text is typed into, its width in mm.
 const double NEW_TEXT_WIDTH_MM = 12.0;
+// The cross of the origin, its arms and its ring, in screen pixels.
+const double ORIGIN_ARM_PIXELS = 14.0;
+const double ORIGIN_RING_PIXELS = 5.0;
 // The cross of the origin about to be placed, its half length in mm.
 const double ORIGIN_CROSS_MM = 2.0;
 // What a footprint's name may hold: it is the name of its file.
@@ -249,10 +252,21 @@ public:
             painter->setOpacity(1.0);
         }
         if (const std::optional<Point> origin = m_editor->floatingOrigin()) {
-            painter->setPen(cosmetic(paintcolor::boardOrigin()));
+            painter->setPen(cosmetic(paintcolor::footprintOrigin()));
             const QPointF at = toMm(*origin);
             painter->drawLine(at - QPointF(ORIGIN_CROSS_MM, 0), at + QPointF(ORIGIN_CROSS_MM, 0));
             painter->drawLine(at - QPointF(0, ORIGIN_CROSS_MM), at + QPointF(0, ORIGIN_CROSS_MM));
+        }
+        // The origin, the point the part is held by and turns about, over
+        // all, the same size on screen at any zoom.
+        if (!m_editor->floatingOrigin()) {
+            const double pixel = m_editor->canvas()->pixelsToMm(1);
+            const double arm = ORIGIN_ARM_PIXELS * pixel;
+            painter->setPen(cosmetic(paintcolor::footprintOrigin()));
+            painter->drawLine(QPointF(-arm, 0), QPointF(arm, 0));
+            painter->drawLine(QPointF(0, -arm), QPointF(0, arm));
+            painter->drawEllipse(QPointF(0, 0), ORIGIN_RING_PIXELS * pixel,
+                                 ORIGIN_RING_PIXELS * pixel);
         }
         const QRectF frame = m_editor->frame();
         if (!frame.isNull()) {

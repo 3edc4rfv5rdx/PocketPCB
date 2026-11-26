@@ -71,6 +71,8 @@ inline QColor lockedPart() { return QColor(230, 200, 0); }
 inline QColor ratsnest() { return QColor(150, 240, 150); }
 // The mark of the origin, which coordinates on the board count from.
 inline QColor boardOrigin() { return QColor(0, 200, 220); }
+// The origin of a footprint in its editor: red orange, seen on anything.
+inline QColor footprintOrigin() { return QColor(255, 80, 0); }
 inline QColor bareHole() { return QColor(100, 100, 100); }
 // The plating of a hole, a line round the inside of its pad.
 inline QColor platedWall() { return QColor(255, 255, 255); }
