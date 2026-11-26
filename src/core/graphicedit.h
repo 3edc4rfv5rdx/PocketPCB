@@ -7,6 +7,8 @@
 #include <QRectF>
 #include <QSet>
 
+#include <optional>
+
 namespace ppcb {
 
 // Editing the drawings of a footprint's silkscreen, and later of a symbol:
@@ -51,9 +53,10 @@ Graphic lineBetween(const Point &from, const Point &to);
 Graphic rectBetween(const Point &a, const Point &b);
 // A circle about 'center' through 'through'.
 Graphic circleThrough(const Point &center, const Point &through);
-// An arc about 'center' from where 'start' lies, clockwise on screen, to
-// where 'end' lies, of the radius of 'start'; whole degrees.
-Graphic arcThrough(const Point &center, const Point &start, const Point &end);
+// The arc from 'start' through 'middle' to 'end', whichever way round that
+// goes; its centre to the nanometre, its angles in whole degrees. None when
+// the three lie on one line or two of them meet.
+std::optional<Graphic> arcThrough(const Point &start, const Point &middle, const Point &end);
 Graphic polygonOf(const QList<Point> &points);
 Graphic textAt(const Point &at, const QString &text);
 

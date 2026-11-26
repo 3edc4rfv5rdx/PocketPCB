@@ -13,6 +13,9 @@ namespace ppcb {
 namespace {
 
 const int QUARTER_DEGREES = 90;
+// The largest radius an arc through three points is given: beyond it the
+// points are as good as on one line.
+const Coord MAX_ARC_RADIUS = 1000 * NM_PER_MM;
 const int FULL_TURN = 360;
 
 Point turnedQuarter(const Point &point, const Point &center)
@@ -248,18 +251,41 @@ Graphic circleThrough(const Point &center, const Point &through)
     return graphic;
 }
 
-Graphic arcThrough(const Point &center, const Point &start, const Point &end)
+std::optional<Graphic> arcThrough(const Point &start, const Point &middle, const Point &end)
 {
+    // The centre is where the middle lines of start-middle and middle-end
+    // meet.
+    const double ax = double(start.x), ay = double(start.y);
+    const double bx = double(middle.x), by = double(middle.y);
+    const double cx = double(end.x), cy = double(end.y);
+    const double d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+    // On one line: no circle; a radius beyond a metre is taken as one too.
+    if (std::abs(d) < 1.0)
+        return std::nullopt;
+    const double a2 = ax * ax + ay * ay;
+    const double b2 = bx * bx + by * by;
+    const double c2 = cx * cx + cy * cy;
+    const Point center{Coord(std::llround((a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / d)),
+                       Coord(std::llround((a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / d))};
+    const Coord radius = distance(center, start);
+    if (radius <= 0 || radius > MAX_ARC_RADIUS)
+        return std::nullopt;
+    const int from = angleTo(center, start);
+    const int through = angleTo(center, middle);
+    const int to = angleTo(center, end);
+    // Angles grow clockwise on screen: clockwise from the start, does the
+    // middle come before the end? Else the arc goes the other way, and is
+    // kept as the clockwise one from the end.
+    const auto clockwise = [](int a, int b) { return (b - a + FULL_TURN) % FULL_TURN; };
+    const bool forward = clockwise(from, through) < clockwise(from, to);
     Graphic graphic;
     graphic.kind = GraphicKind::Arc;
     graphic.a = center;
-    graphic.radius = distance(center, start);
-    graphic.startAngle = angleTo(center, start);
-    int span = (angleTo(center, end) - graphic.startAngle + FULL_TURN) % FULL_TURN;
-    // The end on the start: the whole way round.
-    if (span == 0)
-        span = FULL_TURN;
-    graphic.spanAngle = span;
+    graphic.radius = radius;
+    graphic.startAngle = forward ? from : to;
+    graphic.spanAngle = forward ? clockwise(from, to) : clockwise(to, from);
+    if (graphic.spanAngle == 0)
+        return std::nullopt;
     return graphic;
 }
 

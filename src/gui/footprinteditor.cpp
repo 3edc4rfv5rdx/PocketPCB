@@ -836,11 +836,11 @@ QList<Graphic> FootprintEditor::floatingGraphics() const
             graphics.append(circleThrough(first, at));
         break;
     case Mode::Arc:
-        // The radius shown until the start is clicked.
+        // From the start to the middle clicked, then the arc through both.
         if (m_drawPoints.size() == 1)
             graphics.append(lineBetween(first, at));
-        else if (at != first)
-            graphics.append(arcThrough(first, m_drawPoints.at(1), at));
+        else if (const std::optional<Graphic> arc = arcThrough(first, m_drawPoints.at(1), at))
+            graphics.append(*arc);
         break;
     case Mode::Polygon:
         for (int i = 1; i < m_drawPoints.size(); ++i)
@@ -939,14 +939,16 @@ void FootprintEditor::drawClick(const Point &cursor)
         }
         break;
     case Mode::Arc:
+        // The start, a point in the middle, the end; a point again, or one
+        // on the line of the others, is passed over.
         if (m_drawPoints.isEmpty()) {
             m_drawPoints = {at};
-        } else if (at == m_drawPoints.first()) {
-            // The centre again: nothing.
+        } else if (m_drawPoints.contains(at)) {
         } else if (m_drawPoints.size() == 1) {
             m_drawPoints.append(at);
-        } else {
-            addGraphic(step, arcThrough(m_drawPoints.first(), m_drawPoints.at(1), at));
+        } else if (const std::optional<Graphic> arc =
+                       arcThrough(m_drawPoints.first(), m_drawPoints.at(1), at)) {
+            addGraphic(step, *arc);
             m_drawPoints.clear();
         }
         break;

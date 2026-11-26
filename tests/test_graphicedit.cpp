@@ -39,7 +39,9 @@ private slots:
 
     void drawingsMoveTurnAndGo()
     {
-        Graphic arc = arcThrough(mm(0, 0), mm(5, 0), mm(0, 5));
+        // A quarter about the origin, from the right to below it.
+        const Graphic arc = *arcThrough(mm(5, 0), Point{3535534, 3535534}, mm(0, 5));
+        QCOMPARE(arc.a, mm(0, 0));
         QCOMPARE(arc.radius, 5 * MM);
         QCOMPARE(arc.startAngle, 0);
         QCOMPARE(arc.spanAngle, 90);
@@ -80,13 +82,21 @@ private slots:
         QCOMPARE(keptStraightOrDiagonal(mm(1, 1), mm(1, 1)), mm(1, 1));
     }
 
-    void anArcEndingOnItsStartGoesRound()
+    void anArcGoesWhereItsMiddleIs()
     {
-        const Graphic arc = arcThrough(mm(0, 0), mm(0, -5), mm(0, -3));
-        QCOMPARE(arc.startAngle, 270);
-        QCOMPARE(arc.spanAngle, 360);
-        // Back the other way: three quarters clockwise.
-        QCOMPARE(arcThrough(mm(0, 0), mm(5, 0), mm(0, -5)).spanAngle, 270);
+        // Right, up and left of the origin: the half above, which is
+        // anticlockwise on screen, kept as clockwise from the end.
+        const Graphic upper = *arcThrough(mm(5, 0), mm(0, -5), mm(-5, 0));
+        QCOMPARE(upper.a, mm(0, 0));
+        QCOMPARE(upper.startAngle, 180);
+        QCOMPARE(upper.spanAngle, 180);
+        // Through below: the half below, clockwise from the start.
+        const Graphic lower = *arcThrough(mm(5, 0), mm(0, 5), mm(-5, 0));
+        QCOMPARE(lower.startAngle, 0);
+        QCOMPARE(lower.spanAngle, 180);
+        // Three on a line make no arc.
+        QVERIFY(!arcThrough(mm(0, 0), mm(1, 1), mm(2, 2)));
+        QVERIFY(!arcThrough(mm(0, 0), mm(0, 0), mm(2, 2)));
     }
 };
 

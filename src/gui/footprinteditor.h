@@ -66,9 +66,9 @@ public:
         Origin,
         // The silkscreen: a line from click to click, until Esc or a double
         // click; a rectangle by two corners; a circle by its centre and a
-        // point on it; an arc by its centre, its start and its end,
-        // clockwise; a polygon by its corners, closed on its first one or
-        // by a double click; a text typed where it is clicked.
+        // point on it; an arc by its start, a point in its middle and its
+        // end; a polygon by its corners, closed on its first one or by a
+        // double click; a text typed where it is clicked.
         Line,
         Rect,
         Circle,
