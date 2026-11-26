@@ -85,6 +85,17 @@ private slots:
         QCOMPARE(withCornerMoved(oval, 2, mm(12, 6)).kind, GraphicKind::Oval);
     }
 
+    void aCircleIsTakenFromInside()
+    {
+        const QList<Graphic> graphics = {circleThrough(mm(0, 0), mm(5, 0)),
+                                         circleThrough(mm(1, 0), mm(3, 0)),
+                                         lineBetween(mm(0, 0), mm(1, 0))};
+        // The smaller of two round it.
+        QCOMPARE(circleAround(graphics, QPointF(1.5, 0)), 1);
+        QCOMPARE(circleAround(graphics, QPointF(-4, 0)), 0);
+        QCOMPARE(circleAround(graphics, QPointF(6, 0)), -1);
+    }
+
     void linesKeepToEightWays()
     {
         QCOMPARE(keptStraightOrDiagonal(mm(0, 0), mm(10, 2)), mm(10, 0));

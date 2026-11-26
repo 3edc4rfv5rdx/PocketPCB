@@ -76,6 +76,20 @@ int graphicAt(const QList<Graphic> &graphics, const QPointF &at, double reach)
     return -1;
 }
 
+int circleAround(const QList<Graphic> &graphics, const QPointF &at)
+{
+    int smallest = -1;
+    for (int i = 0; i < graphics.size(); ++i) {
+        const Graphic &graphic = graphics.at(i);
+        if (graphic.kind != GraphicKind::Circle
+            || QLineF(toMm(graphic.a), at).length() > nmToMm(graphic.radius))
+            continue;
+        if (smallest < 0 || graphic.radius < graphics.at(smallest).radius)
+            smallest = i;
+    }
+    return smallest;
+}
+
 QSet<int> graphicsInside(const QList<Graphic> &graphics, const QRectF &rect)
 {
     QSet<int> inside;

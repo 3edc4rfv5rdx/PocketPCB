@@ -21,6 +21,9 @@ constexpr Coord DEFAULT_TEXT_HEIGHT = 1000000;
 // within 'reach' of its line, or inside its rectangle grown by 'reach' for
 // one found by its area (a text, a filled polygon); -1 when there is none.
 int graphicAt(const QList<Graphic> &graphics, const QPointF &at, double reach);
+// The smallest circle of 'graphics' that 'at' (millimetres) lies inside;
+// -1 for none. Taken by a click inside it, after everything else there.
+int circleAround(const QList<Graphic> &graphics, const QPointF &at);
 // The drawings lying wholly inside 'rect' (millimetres).
 QSet<int> graphicsInside(const QList<Graphic> &graphics, const QRectF &rect);
 // The rectangle holding the drawings 'chosen'; null when there are none.

@@ -1097,7 +1097,8 @@ void FootprintEditor::press(const QPointF &at, bool adding, bool free)
         return;
     }
     // What is under the press: the drawings over the pads, then the pads,
-    // then the places of the texts, which stand on the origin at first.
+    // then the places of the texts, which stand on the origin at first,
+    // then a circle round it.
     FootprintChoice hit;
     Point anchor;
     const int graphic = graphicAt(m_footprint.graphics, at, reach);
@@ -1115,6 +1116,10 @@ void FootprintEditor::press(const QPointF &at, bool adding, bool free)
     } else if (placeholderRect(m_footprint.valueAt, ComponentText::Value).contains(at)) {
         hit.value = true;
         anchor = m_footprint.valueAt;
+    } else if (const int around = circleAround(m_footprint.graphics, at); around >= 0) {
+        // Inside a circle with nothing else there: the circle.
+        hit.graphics = {around};
+        anchor = m_footprint.graphics.at(around).a;
     }
     if (hit.isEmpty()) {
         m_framing = true;
