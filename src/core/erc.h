@@ -8,6 +8,7 @@
 #include <QList>
 #include <QSet>
 #include <QString>
+#include <QStringList>
 
 namespace ppcb {
 
@@ -18,6 +19,9 @@ enum class ErcKind {
     EmptyValue,
     // A designator two or more components have; one problem for each of them.
     DuplicateDesignator,
+    // A designator a component has and a wire link of the board has too;
+    // one problem for each such component.
+    LinkDesignator,
     // A pin of a component joined to no other pin, with no name on its net
     // and no no-connect mark.
     UnconnectedPin,
@@ -68,9 +72,11 @@ struct ErcProblem
 bool operator==(const ErcProblem &a, const ErcProblem &b);
 
 // The problems of 'schematic' drawn with 'library', 'all' being its nets
-// (see nets()) in 'project': sheet by sheet, in the order of the kinds
-// above, then those of the project as a whole.
+// (see nets()) in 'project', the designators of the wire links of its
+// board being 'links' (linkDesignators()): sheet by sheet, in the order of
+// the kinds above, then those of the project as a whole.
 QList<ErcProblem> checkSchematic(const Schematic &schematic, const Library &library,
-                                 const Project &project, const QList<Net> &all);
+                                 const Project &project, const QList<Net> &all,
+                                 const QStringList &links);
 
 } // namespace ppcb

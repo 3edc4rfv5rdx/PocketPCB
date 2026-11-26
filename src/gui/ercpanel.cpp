@@ -70,6 +70,8 @@ QString ErcPanel::problemText(const ErcProblem &problem)
         return tr("%1 has no value").arg(problem.subject);
     case ErcKind::DuplicateDesignator:
         return tr("Designator %1 repeats").arg(problem.subject);
+    case ErcKind::LinkDesignator:
+        return tr("Designator %1 is also a wire link on the board").arg(problem.subject);
     case ErcKind::UnconnectedPin:
         return tr("Pin %1 is not connected").arg(problem.subject);
     case ErcKind::MisplacedNoConnect:

@@ -56,7 +56,8 @@ bool hasNameGiver(const Net &net, const QSet<ObjectId> &givers)
 }
 
 void checkComponents(const Sheet &sheet, int index, const Library &library,
-                     const QHash<QString, int> &designatorCount, QList<ErcProblem> &problems)
+                     const QHash<QString, int> &designatorCount, const QSet<QString> &links,
+                     QList<ErcProblem> &problems)
 {
     for (const Component &component : sheet.components) {
         const Part *part = library.findPart(component.part);
@@ -69,6 +70,12 @@ void checkComponents(const Sheet &sheet, int index, const Library &library,
         if (designatorCount.value(component.designator) > 1) {
             problems.append(problem(ErcKind::DuplicateDesignator, index, component.at,
                                     component.id, component.designator));
+        }
+    }
+    for (const Component &component : sheet.components) {
+        if (links.contains(component.designator)) {
+            problems.append(problem(ErcKind::LinkDesignator, index, component.at, component.id,
+                                    component.designator));
         }
     }
 }
@@ -347,8 +354,10 @@ bool operator==(const ErcProblem &a, const ErcProblem &b)
 }
 
 QList<ErcProblem> checkSchematic(const Schematic &schematic, const Library &library,
-                                 const Project &project, const QList<Net> &all)
+                                 const Project &project, const QList<Net> &all,
+                                 const QStringList &links)
 {
+    const QSet<QString> linkSet(links.cbegin(), links.cend());
     QHash<QString, int> designatorCount;
     for (const Sheet &sheet : schematic.sheets) {
         for (const Component &component : sheet.components) {
@@ -366,7 +375,7 @@ QList<ErcProblem> checkSchematic(const Schematic &schematic, const Library &libr
     QList<ErcProblem> problems;
     for (int s = 0; s < schematic.sheets.size(); ++s) {
         const Sheet &sheet = schematic.sheets.at(s);
-        checkComponents(sheet, s, library, designatorCount, problems);
+        checkComponents(sheet, s, library, designatorCount, linkSet, problems);
         checkPins(sheet, s, library, all, netOfPin, givers, problems);
         checkLabelsAndWires(sheet, s, library, problems);
         checkOverlaps(sheet, s, problems);

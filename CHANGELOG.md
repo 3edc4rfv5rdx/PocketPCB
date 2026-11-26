@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: ERC reports a part whose designator a wire link on the board has too
 ## v0.14.357 (2026-11-25)
 - N: F flips the parts chosen to the other side of the board, mirrored, with their tracks
 - F: The board print dialog shows a picture of a copy as it will be printed

@@ -73,10 +73,11 @@ NoConnect noConnect(const Point &at)
     return result;
 }
 
-QList<ErcProblem> check(const Schematic &schematic, const Project &project = Project())
+QList<ErcProblem> check(const Schematic &schematic, const Project &project = Project(),
+                        const QStringList &links = {})
 {
     const Library library = twoPinLibrary();
-    return checkSchematic(schematic, library, project, nets(schematic, library, project));
+    return checkSchematic(schematic, library, project, nets(schematic, library, project), links);
 }
 
 // "UnconnectedPin R1.1": the kinds and subjects, one per line.
@@ -84,6 +85,7 @@ QStringList describe(const QList<ErcProblem> &problems)
 {
     static const QStringList kinds = {
         QStringLiteral("EmptyValue"),       QStringLiteral("DuplicateDesignator"),
+        QStringLiteral("LinkDesignator"),
         QStringLiteral("UnconnectedPin"),   QStringLiteral("MisplacedNoConnect"),
         QStringLiteral("LooseLabel"),       QStringLiteral("LooseWireEnd"),
         QStringLiteral("OverlappingWires"), QStringLiteral("WireLoop"),
@@ -119,6 +121,17 @@ private slots:
         Schematic schematic;
         schematic.sheets = {cleanSheet()};
         QCOMPARE(describe(check(schematic)), QStringList());
+    }
+
+    void aDesignatorOfAWireLink()
+    {
+        Schematic schematic;
+        schematic.sheets = {cleanSheet()};
+        const QList<ErcProblem> problems =
+            check(schematic, Project(), {QStringLiteral("xx1"), QStringLiteral("R2")});
+        QCOMPARE(describe(problems), QStringList({QStringLiteral("LinkDesignator R2")}));
+        QCOMPARE(problems.at(0).sheet, 0);
+        QVERIFY(problems.at(0).object == schematic.sheets.at(0).components.at(1).id);
     }
 
     void valuesAndDesignators()

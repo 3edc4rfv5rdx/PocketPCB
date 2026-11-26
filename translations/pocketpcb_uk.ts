@@ -591,6 +591,10 @@
         <translation>%1 не має номіналу</translation>
     </message>
     <message>
+        <source>Designator %1 is also a wire link on the board</source>
+        <translation>Позначення %1 має й перемичка на платі</translation>
+    </message>
+    <message>
         <source>Designator %1 repeats</source>
         <translation>Позначення %1 повторюється</translation>
     </message>

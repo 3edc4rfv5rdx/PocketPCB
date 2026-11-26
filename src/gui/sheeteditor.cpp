@@ -1191,7 +1191,8 @@ const QList<Net> &SheetEditor::nets() const
 void SheetEditor::findProblems()
 {
     const Design &design = m_document->design();
-    m_problems = checkSchematic(design.schematic, design.library, design.project, nets());
+    m_problems = checkSchematic(design.schematic, design.library, design.project, nets(),
+                                linkDesignators(design.board));
     emit problemsChanged();
 }
 
