@@ -79,6 +79,12 @@ bool operator==(const PadGap &a, const PadGap &b);
 // one pin and may touch.
 QList<PadGap> padsTooNear(const Footprint &footprint, Coord clearance);
 
+// Where the body of 'footprint' stands, seen from above, in millimetres:
+// its size about the middle of the part (footprintMiddle()), or the
+// drawing of the silkscreen; a square for an upright cylinder, the circle
+// in it. Null with no body, or with no size and no drawing.
+QRectF bodyPlan(const Footprint &footprint);
+
 // The parts of 'library' that list the footprint 'name', by name.
 QStringList partsUsingFootprint(const Library &library, const QString &name);
 // 'part' listing the footprint 'to' in the place of 'from'.

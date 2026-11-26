@@ -3,6 +3,7 @@
 #include "footprintedit.h"
 #include "paint.h"
 
+#include <QColor>
 #include <QHash>
 #include <QLineF>
 #include <QSet>
@@ -18,9 +19,11 @@ class QLabel;
 class QLineEdit;
 class QMenu;
 class QStackedWidget;
+class QToolButton;
 
 namespace ppcb {
 
+class BodyPanel;
 class CanvasView;
 class GraphicPanel;
 class InPlaceEdit;
@@ -259,6 +262,7 @@ private:
     QStackedWidget *m_panels = nullptr;
     PadPanel *m_padPanel = nullptr;
     GraphicPanel *m_graphicPanel = nullptr;
+    BodyPanel *m_bodyPanel = nullptr;
     InPlaceEdit *m_numberEdit = nullptr;
     QComboBox *m_gridBox = nullptr;
     QString m_status;
@@ -382,6 +386,46 @@ private:
     QLineEdit *m_text = nullptr;
     QLineEdit *m_height = nullptr;
     QComboBox *m_align = nullptr;
+};
+
+// The body of the footprint, under the other panel: its shape or none, a
+// ready-made one, its size (empty for the drawing of the silkscreen), its
+// height, how far above the board it stands, and its colour from a table;
+// under them the footprint in three dimensions. Each field set is a step
+// of its own.
+class BodyPanel : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit BodyPanel(FootprintEditor *editor, QWidget *parent = nullptr);
+
+    static QString bodyTitle();
+    // The colours a body is offered in: 128, greys and the colour wheel
+    // in seven shades.
+    static QList<QColor> bodyColors();
+    void refresh(bool force = false);
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
+private:
+    // The footprint with 'body', as one step; the fields again when it is
+    // the same.
+    void commit(const std::optional<Body> &body);
+    // A size field typed into the body there is.
+    void commitMm();
+
+    FootprintEditor *m_editor;
+    QComboBox *m_shape = nullptr;
+    QLineEdit *m_sizeX = nullptr;
+    QLineEdit *m_sizeY = nullptr;
+    QLineEdit *m_height = nullptr;
+    QLineEdit *m_raised = nullptr;
+    QToolButton *m_color = nullptr;
+    QToolButton *m_presets = nullptr;
+    // The footprint on a piece of board in three dimensions.
+    QWidget *m_preview = nullptr;
 };
 
 // Esc in one of the line fields of a panel: the panel shows what is chosen

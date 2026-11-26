@@ -209,6 +209,25 @@ QList<PadGap> padsTooNear(const Footprint &footprint, Coord clearance)
     return gaps;
 }
 
+QRectF bodyPlan(const Footprint &footprint)
+{
+    if (!footprint.body)
+        return QRectF();
+    const Body &body = *footprint.body;
+    QRectF plan;
+    if (body.sizeX > 0 && body.sizeY > 0) {
+        const QPointF middle = toMm(footprintMiddle(footprint));
+        const QSizeF size(nmToMm(body.sizeX), nmToMm(body.sizeY));
+        plan = QRectF(middle - QPointF(size.width() / 2, size.height() / 2), size);
+    } else {
+        plan = footprintBodyBounds(footprint);
+    }
+    if (plan.isNull() || body.shape != BodyShape::Upright)
+        return plan;
+    const double across = std::min(plan.width(), plan.height());
+    return QRectF(plan.center() - QPointF(across / 2, across / 2), QSizeF(across, across));
+}
+
 QStringList partsUsingFootprint(const Library &library, const QString &name)
 {
     QStringList using_;

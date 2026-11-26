@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "graphic.h"
 
 #include <QList>
@@ -32,6 +34,34 @@ struct Pad
 bool operator==(const Pad &a, const Pad &b);
 inline bool operator!=(const Pad &a, const Pad &b) { return !(a == b); }
 
+// The body of a part over the board, for the picture of the board in
+// three dimensions: a box, a cylinder standing up, or one lying along the
+// longer side of its plan.
+enum class BodyShape { Box, Upright, Lying };
+
+struct Body
+{
+    BodyShape shape = BodyShape::Box;
+    // Across and down the page; 0 for both takes the drawing of the body
+    // on the silkscreen. An upright cylinder is as wide as the smaller,
+    // a lying one as thick.
+    Coord sizeX = 0;
+    Coord sizeY = 0;
+    // How high it stands, its top above its bottom; a lying cylinder's is
+    // its thickness, and this is not used.
+    Coord height = 0;
+    // How far its bottom stands above the board.
+    Coord raised = 0;
+    // "#rrggbb".
+    QString color;
+};
+
+bool operator==(const Body &a, const Body &b);
+inline bool operator!=(const Body &a, const Body &b) { return !(a == b); }
+
+// The colour of a body that is given none: a black plastic.
+extern const char DEFAULT_BODY_COLOR[];
+
 // A footprint. Coordinates are relative to the footprint's origin, as seen
 // from the side the part is mounted on.
 struct Footprint
@@ -42,6 +72,9 @@ struct Footprint
     // Where the reference designator and the value are first placed.
     Point refAt;
     Point valueAt;
+    // None for a part drawn in three dimensions as a thin box over the
+    // drawing of its silkscreen.
+    std::optional<Body> body;
 };
 
 bool operator==(const Footprint &a, const Footprint &b);

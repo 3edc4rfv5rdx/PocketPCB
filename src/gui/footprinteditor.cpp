@@ -222,6 +222,15 @@ public:
             return pen;
         };
         painter->setBrush(Qt::NoBrush);
+        // The body seen from above, dashed in its colour.
+        const QRectF plan = bodyPlan(shown);
+        if (!plan.isNull()) {
+            painter->setPen(cosmetic(QColor(shown.body->color), Qt::DashLine));
+            if (shown.body->shape == BodyShape::Upright)
+                painter->drawEllipse(plan);
+            else
+                painter->drawRect(plan);
+        }
         // Pads too near each other, in red.
         painter->setPen(cosmetic(paintcolor::ercMark()));
         for (const PadGap &gap : m_editor->padGaps()) {
@@ -411,11 +420,19 @@ FootprintEditor::FootprintEditor(const QString &name, const Footprint &footprint
     m_panels = new QStackedWidget(this);
     m_panels->addWidget(m_padPanel);
     m_panels->addWidget(m_graphicPanel);
+    m_bodyPanel = new BodyPanel(this, this);
+    // The panel of what is chosen, the body under it.
+    QWidget *side = new QWidget(this);
+    QVBoxLayout *sideLayout = new QVBoxLayout(side);
+    sideLayout->setContentsMargins(0, 0, 0, 0);
+    sideLayout->addWidget(m_panels);
+    sideLayout->addWidget(m_bodyPanel);
+    sideLayout->addStretch();
 
     // The strip over the canvas, the panel beside it.
     QSplitter *splitter = new QSplitter(Qt::Horizontal, this);
     splitter->addWidget(m_canvas);
-    splitter->addWidget(m_panels);
+    splitter->addWidget(side);
     splitter->setStretchFactor(0, 1);
     splitter->setStretchFactor(1, 0);
     splitter->setChildrenCollapsible(false);
@@ -689,6 +706,7 @@ void FootprintEditor::showPanel()
     m_panels->setCurrentWidget(drawings ? static_cast<QWidget *>(m_graphicPanel) : m_padPanel);
     m_padPanel->refresh();
     m_graphicPanel->refresh();
+    m_bodyPanel->refresh();
 }
 
 void FootprintEditor::showStatus(const QString &text)

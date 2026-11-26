@@ -1,17 +1,25 @@
 #include "footprinteditor.h"
 
 #include "format.h"
+#include "isometric.h"
+#include "paint.h"
 #include "propertiespanel.h"
+#include "swatches.h"
 
 #include <QCheckBox>
 #include <QComboBox>
 #include <QFormLayout>
+#include <QHBoxLayout>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMenu>
+#include <QPainter>
+#include <QToolButton>
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <climits>
 
 namespace ppcb {
 
@@ -75,6 +83,74 @@ QList<int> inOrder(const QSet<int> &chosen)
 QString mmText(Coord nm)
 {
     return formatMmShort(nm);
+}
+
+// The body a new one starts as: 3 mm high, black.
+const Coord NEW_BODY_HEIGHT = 3000000;
+// The colour button's swatch, and those of its table, in pixels.
+const QSize BODY_SWATCH(14, 14);
+const QSize BODY_BUTTON_SWATCH(48, 16);
+// 16 columns of 8 rows: 128 colours.
+const int BODY_COLOR_COLUMNS = 16;
+// The first of the greys: a black plastic, not quite black.
+const int BODY_DARKEST_GREY = 24;
+
+// The colour of the table of bodies nearest to 'code', so that a
+// ready-made body's colour is found in it.
+QString nearestBodyColor(const QString &code)
+{
+    const QColor wanted(code);
+    QColor best = wanted;
+    int bestDistance = INT_MAX;
+    for (const QColor &color : BodyPanel::bodyColors()) {
+        const int r = color.red() - wanted.red();
+        const int g = color.green() - wanted.green();
+        const int b = color.blue() - wanted.blue();
+        const int distance = r * r + g * g + b * b;
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            best = color;
+        }
+    }
+    return best.name();
+}
+
+// The footprint as it would stand on a board, drawn in three dimensions.
+class BodyPreview : public QWidget
+{
+public:
+    BodyPreview(const FootprintEditor *editor, QWidget *parent)
+        : QWidget(parent)
+        , m_editor(editor)
+    {
+        setMinimumHeight(PREVIEW_HEIGHT);
+    }
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        Q_UNUSED(event);
+        QPainter painter(this);
+        painter.fillRect(rect(), paintcolor::background());
+        paintIsometric(painter, footprintFaces(m_editor->footprint()), QRectF(rect()));
+    }
+
+private:
+    static constexpr int PREVIEW_HEIGHT = 160;
+    const FootprintEditor *m_editor;
+};
+
+Body bodyOf(BodyShape shape, Coord sizeX, Coord sizeY, Coord height, Coord raised,
+            const char *color)
+{
+    Body body;
+    body.shape = shape;
+    body.sizeX = sizeX;
+    body.sizeY = sizeY;
+    body.height = height;
+    body.raised = raised;
+    body.color = nearestBodyColor(QLatin1String(color));
+    return body;
 }
 
 } // namespace
@@ -504,6 +580,215 @@ void GraphicPanel::commit(Apply apply)
     }
     m_editor->change(FootprintEditor::drawingPropertiesStep(), changed, m_editor->chosen());
     refresh(true);
+}
+
+// BodyPanel
+
+BodyPanel::BodyPanel(FootprintEditor *editor, QWidget *parent)
+    : QWidget(parent)
+    , m_editor(editor)
+{
+    QLabel *heading = headingLabel(this);
+    heading->setText(bodyTitle());
+    m_shape = new QComboBox(this);
+    m_shape->setObjectName(QStringLiteral("bodyShape"));
+    // None, then in the order of BodyShape.
+    m_shape->addItems({tr("None"), tr("Box"), tr("Upright cylinder"), tr("Lying cylinder")});
+    m_presets = new QToolButton(this);
+    m_presets->setObjectName(QStringLiteral("bodyPresets"));
+    m_presets->setText(tr("Ready-made"));
+    m_presets->setPopupMode(QToolButton::InstantPopup);
+    QMenu *presets = new QMenu(m_presets);
+    struct Preset
+    {
+        QString name;
+        Body body;
+    };
+    const QList<Preset> ready = {
+        {QStringLiteral("TO-92"), bodyOf(BodyShape::Upright, 4800000, 4800000, 4800000, 2500000, "#202020")},
+        {QStringLiteral("TO-220"), bodyOf(BodyShape::Box, 10200000, 4600000, 9200000, 0, "#202020")},
+        {QStringLiteral("DIP"), bodyOf(BodyShape::Box, 0, 0, 3500000, 500000, "#202020")},
+        {tr("Resistor 0.25 W"), bodyOf(BodyShape::Lying, 6500000, 2500000, 2500000, 500000, "#d9c3a0")},
+        {tr("Electrolytic 5 × 11"), bodyOf(BodyShape::Upright, 5000000, 5000000, 11000000, 0, "#1f4fa0")},
+        {tr("LED 5 mm"), bodyOf(BodyShape::Upright, 5000000, 5000000, 8600000, 1000000, "#c03030")},
+    };
+    for (const Preset &preset : ready) {
+        connect(presets->addAction(preset.name), &QAction::triggered, this,
+                [this, body = preset.body] { commit(body); });
+    }
+    m_presets->setMenu(presets);
+    m_sizeX = panelLineEdit(this, "bodySizeX");
+    m_sizeY = panelLineEdit(this, "bodySizeY");
+    m_sizeX->setPlaceholderText(tr("by the silkscreen"));
+    m_sizeY->setPlaceholderText(tr("by the silkscreen"));
+    m_height = panelLineEdit(this, "bodyHeight");
+    m_raised = panelLineEdit(this, "bodyRaised");
+    m_color = new QToolButton(this);
+    m_color->setObjectName(QStringLiteral("bodyColor"));
+    m_color->setPopupMode(QToolButton::InstantPopup);
+    m_color->setIconSize(BODY_BUTTON_SWATCH);
+    QMenu *colors = new QMenu(m_color);
+    // Filled as it opens, the colour there is pressed.
+    connect(colors, &QMenu::aboutToShow, this, [this, colors] {
+        colors->clear();
+        const std::optional<Body> &body = m_editor->footprint().body;
+        addSwatchTable(colors, bodyColors(), body ? QColor(body->color) : QColor(), BODY_SWATCH,
+                       BODY_COLOR_COLUMNS,
+                       [](const QColor &color) { return colorSwatch(color, BODY_SWATCH); },
+                       [this](const QColor &color) {
+                           std::optional<Body> changed = m_editor->footprint().body;
+                           if (!changed)
+                               return;
+                           changed->color = color.name();
+                           commit(changed);
+                       },
+                       nullptr, nullptr, true);
+    });
+    m_color->setMenu(colors);
+
+    QHBoxLayout *shapeRow = new QHBoxLayout;
+    shapeRow->addWidget(m_shape, 1);
+    shapeRow->addWidget(m_presets);
+    QHBoxLayout *sizeRow = new QHBoxLayout;
+    sizeRow->addWidget(m_sizeX);
+    sizeRow->addWidget(new QLabel(QStringLiteral("×"), this));
+    sizeRow->addWidget(m_sizeY);
+    QFormLayout *form = new QFormLayout;
+    const QString unit = QStringLiteral(", ") + mmUnit() + QLatin1Char(':');
+    form->addRow(tr("Shape") + QLatin1Char(':'), shapeRow);
+    form->addRow(tr("Size") + unit, sizeRow);
+    form->addRow(tr("Height") + unit, m_height);
+    form->addRow(tr("Above the board") + unit, m_raised);
+    form->addRow(tr("Colour") + QLatin1Char(':'), m_color);
+    m_preview = new BodyPreview(editor, this);
+    m_preview->setObjectName(QStringLiteral("bodyPreview"));
+    QVBoxLayout *layout = new QVBoxLayout(this);
+    layout->addWidget(heading);
+    layout->addLayout(form);
+    layout->addWidget(m_preview);
+
+    connect(m_shape, &QComboBox::activated, this, [this](int index) {
+        if (index <= 0) {
+            commit(std::nullopt);
+            return;
+        }
+        Body body = m_editor->footprint().body.value_or(
+            bodyOf(BodyShape::Box, 0, 0, NEW_BODY_HEIGHT, 0, DEFAULT_BODY_COLOR));
+        body.shape = BodyShape(index - 1);
+        commit(body);
+    });
+    for (QLineEdit *edit : {m_sizeX, m_sizeY, m_height, m_raised})
+        connect(edit, &QLineEdit::editingFinished, this, &BodyPanel::commitMm);
+    refresh(true);
+}
+
+QString BodyPanel::bodyTitle()
+{
+    return tr("Body");
+}
+
+QList<QColor> BodyPanel::bodyColors()
+{
+    // A row of greys from black to white, then a row for each shade of
+    // the colours round the wheel, from dark to pale.
+    struct Shade
+    {
+        double saturation;
+        double value;
+    };
+    static const Shade shades[] = {
+        {0.90, 0.30}, {0.90, 0.50}, {0.85, 0.70}, {0.80, 0.90},
+        {0.55, 0.95}, {0.35, 0.97}, {0.18, 0.99},
+    };
+    QList<QColor> colors;
+    for (int i = 0; i < BODY_COLOR_COLUMNS; ++i) {
+        const int grey = BODY_DARKEST_GREY
+                         + (255 - BODY_DARKEST_GREY) * i / (BODY_COLOR_COLUMNS - 1);
+        colors.append(QColor(grey, grey, grey));
+    }
+    for (const Shade &shade : shades) {
+        for (int i = 0; i < BODY_COLOR_COLUMNS; ++i)
+            // Through its code, as a body keeps it, so that the one a body
+            // has is found among them.
+            colors.append(QColor(QColor::fromHsvF(double(i) / BODY_COLOR_COLUMNS,
+                                                  shade.saturation, shade.value)
+                                     .name()));
+    }
+    return colors;
+}
+
+bool BodyPanel::eventFilter(QObject *watched, QEvent *event)
+{
+    return panelFieldEscape(watched, event, [this] { refresh(true); })
+           || QWidget::eventFilter(watched, event);
+}
+
+void BodyPanel::refresh(bool force)
+{
+    const std::optional<Body> &body = m_editor->footprint().body;
+    m_shape->setCurrentIndex(body ? int(body->shape) + 1 : 0);
+    for (QWidget *field : {static_cast<QWidget *>(m_sizeX), static_cast<QWidget *>(m_sizeY),
+                           static_cast<QWidget *>(m_height), static_cast<QWidget *>(m_raised),
+                           static_cast<QWidget *>(m_color)})
+        field->setEnabled(body.has_value());
+    // A lying cylinder is as high as it is thick.
+    m_height->setEnabled(body && body->shape != BodyShape::Lying);
+    const auto show = [force](QLineEdit *edit, const QString &text) {
+        if (!isTyping(edit, force))
+            edit->setText(text);
+    };
+    const bool sized = body && body->sizeX > 0 && body->sizeY > 0;
+    show(m_sizeX, sized ? mmText(body->sizeX) : QString());
+    show(m_sizeY, sized ? mmText(body->sizeY) : QString());
+    show(m_height, body ? mmText(body->height) : QString());
+    show(m_raised, body ? mmText(body->raised) : QString());
+    m_color->setIcon(body ? QIcon(colorSwatch(QColor(body->color), BODY_BUTTON_SWATCH)) : QIcon());
+    m_color->setToolTip(body ? body->color.toUpper() : QString());
+    m_preview->update();
+}
+
+void BodyPanel::commit(const std::optional<Body> &body)
+{
+    if (body == m_editor->footprint().body) {
+        refresh(true);
+        return;
+    }
+    Footprint changed = m_editor->footprint();
+    changed.body = body;
+    m_editor->change(bodyTitle(), changed, m_editor->chosen());
+    refresh(true);
+}
+
+void BodyPanel::commitMm()
+{
+    std::optional<Body> body = m_editor->footprint().body;
+    if (!body)
+        return;
+    const auto read = [](const QLineEdit *edit, Coord &nm) {
+        return parseMm(edit->text(), nm);
+    };
+    Coord sizeX = 0;
+    Coord sizeY = 0;
+    // Both sizes, or neither for the drawing of the silkscreen.
+    const bool noSize = m_sizeX->text().trimmed().isEmpty() && m_sizeY->text().trimmed().isEmpty();
+    if (!noSize && !(read(m_sizeX, sizeX) && read(m_sizeY, sizeY) && sizeX > 0 && sizeY > 0)) {
+        // One typed of two: waits for the other.
+        if (m_sizeX->text().trimmed().isEmpty() || m_sizeY->text().trimmed().isEmpty())
+            return;
+        refresh(true);
+        return;
+    }
+    Coord height = body->height;
+    Coord raised = 0;
+    if (!read(m_height, height) || height <= 0 || !read(m_raised, raised) || raised < 0) {
+        refresh(true);
+        return;
+    }
+    body->sizeX = sizeX;
+    body->sizeY = sizeY;
+    body->height = height;
+    body->raised = raised;
+    commit(body);
 }
 
 } // namespace ppcb

@@ -798,6 +798,19 @@ private slots:
         emit diameter->editingFinished();
         QCOMPARE(editor->footprint().graphics.last().radius, 1650000);
 
+        // A body: a cylinder standing up, its height typed.
+        QComboBox *bodyShape = editor->findChild<QComboBox *>(QStringLiteral("bodyShape"));
+        QVERIFY(bodyShape != nullptr);
+        emit bodyShape->activated(int(BodyShape::Upright) + 1);
+        QVERIFY(editor->footprint().body.has_value());
+        QCOMPARE(editor->footprint().body->shape, BodyShape::Upright);
+        QLineEdit *bodyHeight = editor->findChild<QLineEdit *>(QStringLiteral("bodyHeight"));
+        bodyHeight->setText(QStringLiteral("7"));
+        emit bodyHeight->editingFinished();
+        QCOMPARE(editor->footprint().body->height, 7000000);
+        emit bodyShape->activated(0);
+        QVERIFY(!editor->footprint().body.has_value());
+
         // Pads nearer than the project's clearance are found.
         QVERIFY(editor->padGaps().isEmpty());
         editor->setClearance(5000000);

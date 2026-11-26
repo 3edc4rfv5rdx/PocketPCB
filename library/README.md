@@ -44,7 +44,8 @@ middle; Y grows downwards.
 - `graphics`: `line` (`from`, `to`), `rect` (two corners), `circle` (`center`,
   `radius`), `arc` (`start` and `span` in whole degrees, 0 pointing right, growing
   clockwise on the screen), `polygon` (three corners or more, `filled` optional),
-  `text` (`at`, `text`, `height`, `align`: `left`, `center` or `right`). Every kind
+  `text` (`at`, `text`, `height`, `align`: `left`, `center` or `right`), `oval` (two
+  corners, the shorter sides round). Every kind
   but text takes `width` (0.2 by default) and `dashed`.
 - `pins`: `number` is unique and must match a pad number of the footprints; `name`
   is optional. `at` is the end a wire joins and must lie on the 2.54 grid; `side`
@@ -74,7 +75,8 @@ Keep to the look of the symbols already here: bodies on whole or half steps of
     {"kind": "rect", "from": [-2.5, -1.2], "to": [2.5, 1.2]}
   ],
   "refAt": [0, -2.4],
-  "valueAt": [0, 2.4]
+  "valueAt": [0, 2.4],
+  "body": {"shape": "lying", "size": [6.5, 2.5], "height": 2.5, "raised": 0.5, "color": "#d9c3a0"}
 }
 ```
 
@@ -83,7 +85,13 @@ Keep to the look of the symbols already here: bodies on whole or half steps of
   (the default for a pad with a hole), `front` or `back` (a pad with no hole).
   Pad 1 is usually square. The pitch is usually 2.54 or a multiple.
 - `graphics`: the outline of the body on the silkscreen, as in a symbol, kept
-  clear of the pads.
+  clear of the pads; `oval` too (two corners, its short sides round).
+- `body` (optional): the part over the board for the picture in three dimensions.
+  `shape` is `box`, `upright` (a cylinder standing up, as wide as the smaller side
+  of `size`) or `lying` (a cylinder along the longer side, as thick as the shorter);
+  `size` across and down about the middle of the part, left out for the drawing of
+  the silkscreen; `height` (not used by `lying`); `raised` how far above the board,
+  0 by default; `color` as `#rrggbb`.
 
 ## Part
 

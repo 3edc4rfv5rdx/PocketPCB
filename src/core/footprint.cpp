@@ -1,5 +1,7 @@
 #include "footprint.h"
 
+#include <QRegularExpression>
+
 #include <algorithm>
 
 namespace ppcb {
@@ -17,6 +19,62 @@ const char KEY_SHAPE[] = "shape";
 const char KEY_SIZE[] = "size";
 const char KEY_HOLE[] = "hole";
 const char KEY_LAYERS[] = "layers";
+const char KEY_BODY[] = "body";
+const char KEY_BODY_SHAPE[] = "shape";
+const char KEY_BODY_HEIGHT[] = "height";
+const char KEY_BODY_RAISED[] = "raised";
+const char KEY_BODY_COLOR[] = "color";
+
+// In the order of BodyShape.
+const QStringList &bodyShapeNames()
+{
+    static const QStringList names = {
+        QStringLiteral("box"), QStringLiteral("upright"), QStringLiteral("lying"),
+    };
+    return names;
+}
+
+bool isColorCode(const QString &text)
+{
+    static const QRegularExpression code(QStringLiteral("^#[0-9a-fA-F]{6}$"));
+    return code.match(text).hasMatch();
+}
+
+QJsonObject bodyToJson(const Body &body)
+{
+    QJsonObject object;
+    object.insert(QLatin1String(KEY_BODY_SHAPE), bodyShapeNames().at(int(body.shape)));
+    if (body.sizeX > 0 || body.sizeY > 0)
+        object.insert(QLatin1String(KEY_SIZE), pointToJson(Point{body.sizeX, body.sizeY}));
+    object.insert(QLatin1String(KEY_BODY_HEIGHT), mmToJson(body.height));
+    if (body.raised > 0)
+        object.insert(QLatin1String(KEY_BODY_RAISED), mmToJson(body.raised));
+    object.insert(QLatin1String(KEY_BODY_COLOR), body.color);
+    return object;
+}
+
+Body bodyFromJson(const QJsonObject &object, const QString &where, JsonReader &reader)
+{
+    Body body;
+    body.shape = BodyShape(reader.choice(object, KEY_BODY_SHAPE, where, bodyShapeNames()));
+    // Optional: the drawing of the silkscreen when absent.
+    if (object.contains(QLatin1String(KEY_SIZE))) {
+        const Point size = reader.point(object, KEY_SIZE, where);
+        if (reader.ok() && (size.x <= 0 || size.y <= 0))
+            reader.fail(JsonReader::pathOf(where, KEY_SIZE),
+                        JsonReader::tr("a size greater than zero is expected"));
+        body.sizeX = size.x;
+        body.sizeY = size.y;
+    }
+    body.height = reader.positiveMm(object, KEY_BODY_HEIGHT, where);
+    if (object.contains(QLatin1String(KEY_BODY_RAISED)))
+        body.raised = reader.nonNegativeMm(object, KEY_BODY_RAISED, where);
+    body.color = reader.string(object, KEY_BODY_COLOR, where);
+    if (reader.ok() && !isColorCode(body.color))
+        reader.fail(JsonReader::pathOf(where, KEY_BODY_COLOR),
+                    JsonReader::tr("a colour as #rrggbb is expected"));
+    return body;
+}
 
 // In the order of PadShape.
 const QStringList &shapeNames()
@@ -95,10 +153,18 @@ bool operator==(const Pad &a, const Pad &b)
            && a.sizeY == b.sizeY && a.hole == b.hole && a.layers == b.layers;
 }
 
+const char DEFAULT_BODY_COLOR[] = "#202020";
+
+bool operator==(const Body &a, const Body &b)
+{
+    return a.shape == b.shape && a.sizeX == b.sizeX && a.sizeY == b.sizeY && a.height == b.height
+           && a.raised == b.raised && a.color == b.color;
+}
+
 bool operator==(const Footprint &a, const Footprint &b)
 {
     return a.pads == b.pads && a.graphics == b.graphics && a.refAt == b.refAt
-           && a.valueAt == b.valueAt;
+           && a.valueAt == b.valueAt && a.body == b.body;
 }
 
 QJsonObject footprintToJson(const Footprint &footprint)
@@ -115,6 +181,8 @@ QJsonObject footprintToJson(const Footprint &footprint)
     object.insert(QLatin1String(KEY_GRAPHICS), graphics);
     object.insert(QLatin1String(KEY_REF_AT), pointToJson(footprint.refAt));
     object.insert(QLatin1String(KEY_VALUE_AT), pointToJson(footprint.valueAt));
+    if (footprint.body)
+        object.insert(QLatin1String(KEY_BODY), bodyToJson(*footprint.body));
     return object;
 }
 
@@ -136,6 +204,11 @@ Footprint footprintFromJson(const QJsonObject &object, const QString &where, Jso
 
     footprint.refAt = reader.point(object, KEY_REF_AT, where);
     footprint.valueAt = reader.point(object, KEY_VALUE_AT, where);
+    // Optional: a thin box over the silkscreen when absent.
+    if (object.contains(QLatin1String(KEY_BODY))) {
+        footprint.body = bodyFromJson(reader.object(object, KEY_BODY, where),
+                                      JsonReader::pathOf(where, KEY_BODY), reader);
+    }
     return footprint;
 }
 

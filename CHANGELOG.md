@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: A footprint has a body for the picture in three dimensions: box or cylinder, size, height, colour from a table of 128, ready-made ones, a picture of it on a piece of board
 - N: Rename a footprint of the user library, its parts there following the new name
 - N: Ovals on the silkscreen of a footprint: a rectangle drawn with Shift, its short sides round
 - F: The diameter of a circle or an arc in the footprint editor is typed in the drawing panel, off the grid

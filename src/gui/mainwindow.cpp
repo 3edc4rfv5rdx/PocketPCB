@@ -25,6 +25,7 @@
 #include "rectangleboarddialog.h"
 #include "sheeteditor.h"
 #include "sheettabs.h"
+#include "swatches.h"
 #include "toolicons.h"
 #include "version.h"
 #include "updateboarddialog.h"
@@ -107,13 +108,8 @@ const int GROUP_GAP = TOOL_ICON_SIZE;
 // many stand in a row. The one chosen has a frame in the selection colour.
 const int SWATCH_WIDTH = 72;
 const int SWATCH_HEIGHT = 45;
-const int SWATCH_SPACING = 6;
 const int SWATCH_COLUMNS = 5;
 const int SWATCH_EDGE = 3;
-// The property of a swatch that holds its colour, for the preview.
-const char SWATCH_COLOR_PROPERTY[] = "paperColor";
-const char SWATCH_STYLE[] = "QToolButton { border: 1px solid #a0a0a0; padding: 2px; }"
-                            "QToolButton:checked { border: 3px solid %1; padding: 0px; }";
 // The menu of the sheet stands out from the paper under it: a dark frame,
 // the item under the mouse in the colour of the selection.
 // The columns of the drills in the menu of a hole's diameter.
@@ -712,33 +708,9 @@ void MainWindow::createMenus()
     // under the mouse until the mouse leaves it or the menu closes.
     QMenu *backgroundMenu = viewMenu->addMenu(tr("Sheet background"));
     connect(backgroundMenu, &QMenu::aboutToHide, this, &MainWindow::updateCanvasBackground);
-    QWidget *table = new QWidget(backgroundMenu);
-    table->setStyleSheet(QString::fromLatin1(SWATCH_STYLE).arg(paintcolor::selection().name()));
-    QGridLayout *grid = new QGridLayout(table);
-    grid->setSpacing(SWATCH_SPACING);
-    grid->setContentsMargins(SWATCH_SPACING, SWATCH_SPACING, SWATCH_SPACING, SWATCH_SPACING);
-    const QColor background = AppSettings::sheetBackground();
-    const QList<QColor> colors = AppSettings::sheetBackgrounds();
-    for (int i = 0; i < colors.size(); ++i) {
-        const QColor color = colors.at(i);
-        QToolButton *button = new QToolButton(table);
-        button->setCheckable(true);
-        button->setAutoExclusive(true);
-        button->setChecked(color == background);
-        button->setIcon(QIcon(paperSwatch(color)));
-        button->setIconSize(QSize(SWATCH_WIDTH, SWATCH_HEIGHT));
-        button->setToolTip(color.name().toUpper());
-        button->setProperty(SWATCH_COLOR_PROPERTY, color);
-        button->installEventFilter(this);
-        grid->addWidget(button, i / SWATCH_COLUMNS, i % SWATCH_COLUMNS);
-        connect(button, &QToolButton::clicked, this, [this, color, viewMenu] {
-            applySheetBackground(color);
-            viewMenu->close();
-        });
-    }
-    QWidgetAction *tableAction = new QWidgetAction(backgroundMenu);
-    tableAction->setDefaultWidget(table);
-    backgroundMenu->addAction(tableAction);
+    addSwatchTable(backgroundMenu, AppSettings::sheetBackgrounds(), AppSettings::sheetBackground(),
+                   QSize(SWATCH_WIDTH, SWATCH_HEIGHT), SWATCH_COLUMNS, paperSwatch,
+                   [this](const QColor &color) { applySheetBackground(color); }, this, viewMenu);
 
     // What the menu of a sheet's tab does, for the sheet shown.
     QMenu *sheetMenu = viewMenu->addMenu(tr("Sheet"));

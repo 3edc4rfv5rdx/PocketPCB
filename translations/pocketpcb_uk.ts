@@ -283,6 +283,10 @@
 <context>
     <name>ppcb::JsonReader</name>
     <message>
+        <source>a colour as #rrggbb is expected</source>
+        <translation>очікується колір виду #rrggbb</translation>
+    </message>
+    <message>
         <source>this is not a PocketPCB file of the expected kind</source>
         <translation>це не файл PocketPCB потрібного виду</translation>
     </message>
@@ -2351,6 +2355,69 @@
     <message>
         <source>Alignment</source>
         <translation>Вирівнювання</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::BodyPanel</name>
+    <message>
+        <source>None</source>
+        <translation>Немає</translation>
+    </message>
+    <message>
+        <source>Box</source>
+        <translation>Коробка</translation>
+    </message>
+    <message>
+        <source>Upright cylinder</source>
+        <translation>Стоячий циліндр</translation>
+    </message>
+    <message>
+        <source>Lying cylinder</source>
+        <translation>Лежачий циліндр</translation>
+    </message>
+    <message>
+        <source>Ready-made</source>
+        <translation>Готові</translation>
+    </message>
+    <message>
+        <source>Resistor 0.25 W</source>
+        <translation>Резистор 0,25 Вт</translation>
+    </message>
+    <message>
+        <source>Electrolytic 5 × 11</source>
+        <translation>Електроліт 5 × 11</translation>
+    </message>
+    <message>
+        <source>LED 5 mm</source>
+        <translation>Світлодіод 5 мм</translation>
+    </message>
+    <message>
+        <source>by the silkscreen</source>
+        <translation>за шовкографією</translation>
+    </message>
+    <message>
+        <source>Body</source>
+        <translation>Тіло</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>Форма</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>Розмір</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Висота</translation>
+    </message>
+    <message>
+        <source>Above the board</source>
+        <translation>Над платою</translation>
+    </message>
+    <message>
+        <source>Colour</source>
+        <translation>Колір</translation>
     </message>
 </context>
 <context>

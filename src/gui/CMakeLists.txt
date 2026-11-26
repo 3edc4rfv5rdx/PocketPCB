@@ -25,6 +25,7 @@ add_library(pocketpcb_gui STATIC
     rectangleboarddialog.h rectangleboarddialog.cpp
     sheeteditor.h sheeteditor.cpp
     sheettabs.h sheettabs.cpp
+    swatches.h swatches.cpp
     toolicons.h toolicons.cpp
     updateboarddialog.h updateboarddialog.cpp
     updatepartsdialog.h updatepartsdialog.cpp

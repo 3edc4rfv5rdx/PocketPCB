@@ -64,6 +64,15 @@ Footprint fullFootprint()
 
     footprint.refAt = Point{0, -4000000};
     footprint.valueAt = Point{500000, 4000000};
+
+    Body body;
+    body.shape = BodyShape::Upright;
+    body.sizeX = 5000000;
+    body.sizeY = 5000000;
+    body.height = 11000000;
+    body.raised = 500000;
+    body.color = QStringLiteral("#1f4fa0");
+    footprint.body = body;
     return footprint;
 }
 
@@ -152,6 +161,13 @@ private slots:
         other = footprint; other.graphics[0].radius += 1;              QVERIFY(other != footprint);
         other = footprint; other.refAt.y += 1;                         QVERIFY(other != footprint);
         other = footprint; other.valueAt.x += 1;                       QVERIFY(other != footprint);
+        other = footprint; other.body->shape = BodyShape::Box;         QVERIFY(other != footprint);
+        other = footprint; other.body->sizeX += 1;                     QVERIFY(other != footprint);
+        other = footprint; other.body->sizeY += 1;                     QVERIFY(other != footprint);
+        other = footprint; other.body->height += 1;                    QVERIFY(other != footprint);
+        other = footprint; other.body->raised += 1;                    QVERIFY(other != footprint);
+        other = footprint; other.body->color = QStringLiteral("#000000"); QVERIFY(other != footprint);
+        other = footprint; other.body.reset();                         QVERIFY(other != footprint);
     }
 
     void padsMayShareANumber()
@@ -250,6 +266,32 @@ private slots:
                           QStringLiteral("fp"), noValueAt);
         QVERIFY2(noValueAt.error().startsWith(QStringLiteral("fp.valueAt: ")),
                  qPrintable(noValueAt.error()));
+    }
+
+    // A body without a size takes the silkscreen; one with a colour not
+    // written as a colour code or no height is refused.
+    void bodyIsOptionalAndChecked()
+    {
+        JsonReader reader;
+        const Footprint footprint = footprintFromJson(
+            parse("{\"pads\":[],\"graphics\":[],\"refAt\":[0,0],\"valueAt\":[0,0],\"body\":{\"shape\":\"lying\",\"height\":2.5,\"color\":\"#d9c3a0\"}}"),
+            QString(), reader);
+        QVERIFY2(reader.ok(), qPrintable(reader.error()));
+        QVERIFY(footprint.body.has_value());
+        QCOMPARE(footprint.body->shape, BodyShape::Lying);
+        QCOMPARE(footprint.body->sizeX, 0);
+        QCOMPARE(footprint.body->raised, 0);
+
+        JsonReader badColor;
+        footprintFromJson(parse("{\"pads\":[],\"graphics\":[],\"refAt\":[0,0],\"valueAt\":[0,0],\"body\":{\"shape\":\"box\",\"height\":1,\"color\":\"red\"}}"),
+                          QStringLiteral("fp"), badColor);
+        QVERIFY2(badColor.error().startsWith(QStringLiteral("fp.body.color: ")),
+                 qPrintable(badColor.error()));
+        JsonReader noHeight;
+        footprintFromJson(parse("{\"pads\":[],\"graphics\":[],\"refAt\":[0,0],\"valueAt\":[0,0],\"body\":{\"shape\":\"box\",\"color\":\"#000000\"}}"),
+                          QStringLiteral("fp"), noHeight);
+        QVERIFY2(noHeight.error().startsWith(QStringLiteral("fp.body.height: ")),
+                 qPrintable(noHeight.error()));
     }
 
     void emptyFootprintIsAllowed()

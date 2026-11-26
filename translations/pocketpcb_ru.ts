@@ -283,6 +283,10 @@
 <context>
     <name>ppcb::JsonReader</name>
     <message>
+        <source>a colour as #rrggbb is expected</source>
+        <translation>ожидается цвет вида #rrggbb</translation>
+    </message>
+    <message>
         <source>this is not a PocketPCB file of the expected kind</source>
         <translation>это не файл PocketPCB нужного вида</translation>
     </message>
@@ -2351,6 +2355,69 @@
     <message>
         <source>Alignment</source>
         <translation>Выравнивание</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::BodyPanel</name>
+    <message>
+        <source>None</source>
+        <translation>Нет</translation>
+    </message>
+    <message>
+        <source>Box</source>
+        <translation>Коробка</translation>
+    </message>
+    <message>
+        <source>Upright cylinder</source>
+        <translation>Стоячий цилиндр</translation>
+    </message>
+    <message>
+        <source>Lying cylinder</source>
+        <translation>Лежачий цилиндр</translation>
+    </message>
+    <message>
+        <source>Ready-made</source>
+        <translation>Готовые</translation>
+    </message>
+    <message>
+        <source>Resistor 0.25 W</source>
+        <translation>Резистор 0,25 Вт</translation>
+    </message>
+    <message>
+        <source>Electrolytic 5 × 11</source>
+        <translation>Электролит 5 × 11</translation>
+    </message>
+    <message>
+        <source>LED 5 mm</source>
+        <translation>Светодиод 5 мм</translation>
+    </message>
+    <message>
+        <source>by the silkscreen</source>
+        <translation>по шелкографии</translation>
+    </message>
+    <message>
+        <source>Body</source>
+        <translation>Тело</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>Форма</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>Размер</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Высота</translation>
+    </message>
+    <message>
+        <source>Above the board</source>
+        <translation>Над платой</translation>
+    </message>
+    <message>
+        <source>Colour</source>
+        <translation>Цвет</translation>
     </message>
 </context>
 <context>

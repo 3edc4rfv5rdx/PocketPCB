@@ -167,6 +167,34 @@ private slots:
         QCOMPARE(stroke.radius, MM);
     }
 
+    void theBodyStandsOverTheMiddleOfThePart()
+    {
+        Footprint footprint;
+        footprint.pads = {pad(QStringLiteral("1"), mm(0, 0)), pad(QStringLiteral("2"), mm(10, 0))};
+        QVERIFY(bodyPlan(footprint).isNull());
+        Body body;
+        body.sizeX = 6 * MM;
+        body.sizeY = 2 * MM;
+        body.height = 2 * MM;
+        footprint.body = body;
+        // No drawing: about the middle of the pads.
+        QCOMPARE(bodyPlan(footprint), QRectF(2, -1, 6, 2));
+        footprint.body->shape = BodyShape::Upright;
+        QCOMPARE(bodyPlan(footprint), QRectF(4, -1, 2, 2));
+        // No size: the drawing of the silkscreen.
+        footprint.body->shape = BodyShape::Box;
+        footprint.body->sizeX = 0;
+        footprint.body->sizeY = 0;
+        QVERIFY(bodyPlan(footprint).isNull());
+        Graphic outline;
+        outline.kind = GraphicKind::Rect;
+        outline.a = mm(1, -2);
+        outline.b = mm(9, 2);
+        outline.width = 0;
+        footprint.graphics = {outline};
+        QCOMPARE(bodyPlan(footprint), QRectF(1, -2, 8, 4));
+    }
+
     void partsFollowARenamedFootprint()
     {
         Library library;
