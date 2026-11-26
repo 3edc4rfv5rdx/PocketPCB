@@ -41,6 +41,7 @@ add_library(pocketpcb_core STATIC
     strokefont.h strokefont.cpp strokefont_data.cpp
     symbol.h symbol.cpp
     symboledit.h symboledit.cpp
+    symbolpieces.h symbolpieces.cpp
     wiring.h wiringdetail.h wiregeometry.cpp wireroute.cpp wirefollow.cpp wireedit.cpp
     zipfile.h zipfile.cpp
 )

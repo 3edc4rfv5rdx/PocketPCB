@@ -81,8 +81,8 @@ public:
         Select,
         // Each click places a terminal like the last one, numbered on.
         Place,
-        // A click places the row set up in the Row dialog, then Select;
-        // footprints only.
+        // A click places what was set up, then Select: a row of pads in a
+        // footprint, a ready-made piece or a chip in a symbol.
         Row,
         // A click puts the origin there, then Select.
         Origin,

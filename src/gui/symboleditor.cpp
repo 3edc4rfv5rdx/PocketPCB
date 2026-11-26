@@ -4,9 +4,21 @@
 #include "inplaceedit.h"
 #include "paint.h"
 
+#include "format.h"
+#include "graphicedit.h"
+
 #include <QAction>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QDoubleSpinBox>
+#include <QFormLayout>
+#include <QLineEdit>
+#include <QMenu>
 #include <QPainter>
+#include <QSpinBox>
 #include <QToolBar>
+#include <QToolButton>
+#include <QVBoxLayout>
 
 namespace ppcb {
 
@@ -58,6 +70,44 @@ QString SymbolEditor::newSymbolTitle()
     return tr("New symbol");
 }
 
+QString SymbolEditor::newSymbolFromTitle()
+{
+    return tr("New symbol from");
+}
+
+QString SymbolEditor::pieceTitle(SymbolPiece piece)
+{
+    switch (piece) {
+    case SymbolPiece::Resistor:
+        return tr("Resistor");
+    case SymbolPiece::Capacitor:
+        return tr("Capacitor");
+    case SymbolPiece::ElectrolyticCapacitor:
+        return tr("Electrolytic capacitor");
+    case SymbolPiece::Diode:
+        return tr("Diode");
+    case SymbolPiece::NpnTransistor:
+        return tr("NPN transistor");
+    case SymbolPiece::PnpTransistor:
+        return tr("PNP transistor");
+    case SymbolPiece::Inductor:
+        return tr("Inductor");
+    }
+    return QString();
+}
+
+void SymbolEditor::addPieceActions(QMenu *menu, const std::function<void(SymbolPiece)> &chosen,
+                                   const std::function<void()> &chip)
+{
+    for (const SymbolPiece piece : symbolPieces()) {
+        QAction *action = menu->addAction(pieceTitle(piece));
+        QObject::connect(action, &QAction::triggered, menu, [chosen, piece] { chosen(piece); });
+    }
+    menu->addSeparator();
+    QAction *chipAction = menu->addAction(tr("Chip") + QStringLiteral("…"));
+    QObject::connect(chipAction, &QAction::triggered, menu, chip);
+}
+
 bool SymbolEditor::isInUserLibrary(const QString &name)
 {
     return userLibraryHas(LIBRARY_SYMBOLS_FOLDER, name);
@@ -73,9 +123,18 @@ void SymbolEditor::setNextPin(const Pin &pin)
     emit changed();
 }
 
+Point SymbolEditor::placingAt() const
+{
+    return terminalSnapped(m_hoverAt);
+}
+
 QList<Pin> SymbolEditor::floatingPins() const
 {
-    if (!m_cursorKnown || m_mode != Mode::Place)
+    if (!m_cursorKnown)
+        return {};
+    if (m_mode == Mode::Row)
+        return withPiece(Symbol(), m_placing, placingAt()).pins;
+    if (m_mode != Mode::Place)
         return {};
     Pin pin = m_nextPin;
     pin.at = terminalSnapped(m_hoverAt);
@@ -88,6 +147,67 @@ void SymbolEditor::addPlacingTools(QToolBar *bar)
     QAction *pin = addTool(bar, PinPanel::pinTitle(), "actionPinTool", QKeySequence(Qt::Key_P),
                            ToolIcon::Pin, [this] { setMode(Mode::Place); });
     m_modeActions.insert(int(Mode::Place), pin);
+    // Ready-made pieces drawn to the standards, and a chip of any size.
+    // Its menu chooses what: the action itself only shows the mode.
+    QAction *readyMade = addTool(bar, tr("Ready-made"), "actionReadyMade", QKeySequence(),
+                                 ToolIcon::PadRow, [] {});
+    m_modeActions.insert(int(Mode::Row), readyMade);
+    QMenu *pieces = new QMenu(this);
+    addPieceActions(
+        pieces, [this](SymbolPiece piece) { placePiece(pieceSymbol(piece)); },
+        [this] { askChip(); });
+    // The button opens the menu: a click alone has nothing to place yet.
+    bar->removeAction(readyMade);
+    QToolButton *button = new QToolButton(bar);
+    button->setObjectName(QStringLiteral("readyMadeButton"));
+    button->setDefaultAction(readyMade);
+    button->setMenu(pieces);
+    button->setPopupMode(QToolButton::InstantPopup);
+    bar->addWidget(button);
+}
+
+void SymbolEditor::placePiece(const Symbol &piece)
+{
+    m_placing = piece;
+    setMode(Mode::Row);
+}
+
+void SymbolEditor::askChip()
+{
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("Chip"));
+    QFormLayout *form = new QFormLayout;
+    QSpinBox *left = new QSpinBox(&dialog);
+    left->setObjectName(QStringLiteral("chipLeft"));
+    left->setRange(0, 100);
+    left->setValue(m_chipLeft);
+    form->addRow(tr("Pins on the left") + QLatin1Char(':'), left);
+    QSpinBox *right = new QSpinBox(&dialog);
+    right->setObjectName(QStringLiteral("chipRight"));
+    right->setRange(0, 100);
+    right->setValue(m_chipRight);
+    form->addRow(tr("Pins on the right") + QLatin1Char(':'), right);
+    QDoubleSpinBox *width = mmSizeBox(m_chipWidth, nmToMm(CHIP_MIN_WIDTH), 200, 2.54, &dialog);
+    form->addRow(tr("Width") + QStringLiteral(", ") + mmUnit() + QLatin1Char(':'), width);
+    QLineEdit *function = new QLineEdit(m_chipFunction, &dialog);
+    function->setPlaceholderText(QStringLiteral("&, 1, =1, DD"));
+    form->addRow(tr("Function") + QLatin1Char(':'), function);
+    QDialogButtonBox *buttons =
+        new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    QVBoxLayout *layout = new QVBoxLayout(&dialog);
+    layout->addLayout(form);
+    layout->addWidget(buttons);
+    if (dialog.exec() != QDialog::Accepted || left->value() + right->value() == 0) {
+        updateModeButtons();
+        return;
+    }
+    m_chipLeft = left->value();
+    m_chipRight = right->value();
+    m_chipWidth = mmSizeOf(width);
+    m_chipFunction = function->text().trimmed();
+    placePiece(chipSymbol(m_chipLeft, m_chipRight, m_chipWidth, m_chipFunction));
 }
 
 QRectF SymbolEditor::shownBounds() const
@@ -198,6 +318,18 @@ Symbol SymbolEditor::withTerminalEnd(const Symbol &item, int terminal, const Poi
 
 void SymbolEditor::placeAt(const QPointF &at)
 {
+    if (m_mode == Mode::Row) {
+        const Symbol changed = withPiece(m_item, m_placing, terminalSnapped(at));
+        ItemChoice placed;
+        for (int i = int(m_item.pins.size()); i < changed.pins.size(); ++i)
+            placed.terminals.insert(i);
+        for (int i = int(m_item.graphics.size()); i < changed.graphics.size(); ++i)
+            placed.graphics.insert(i);
+        m_mode = Mode::Select;
+        updateModeButtons();
+        change(tr("Place ready-made"), changed, placed);
+        return;
+    }
     if (m_mode != Mode::Place)
         return;
     Pin pin = m_nextPin;
@@ -210,6 +342,21 @@ void SymbolEditor::placeAt(const QPointF &at)
 
 void SymbolEditor::rotatePlacing()
 {
+    if (m_mode == Mode::Row) {
+        // The whole piece about its origin, a point of the pin grid.
+        QSet<int> all;
+        for (int i = 0; i < m_placing.pins.size(); ++i)
+            all.insert(i);
+        QSet<int> drawings;
+        for (int i = 0; i < m_placing.graphics.size(); ++i)
+            drawings.insert(i);
+        m_placing = withPinsRotated(m_placing, all, Point{});
+        m_placing.graphics = withGraphicsRotated(m_placing.graphics, drawings, Point{});
+        m_placing.refAt = turnedQuarter(m_placing.refAt, Point{});
+        m_placing.valueAt = turnedQuarter(m_placing.valueAt, Point{});
+        emit changed();
+        return;
+    }
     m_nextPin.side = sideTurned(m_nextPin.side);
     emit changed();
 }
@@ -257,6 +404,8 @@ void SymbolEditor::paintFloating(QPainter &painter, const QList<Graphic> &graphi
 {
     paintSymbolPins(painter, floatingPins(), m_item.showPinNumbers, m_item.showPinNames);
     paintSymbolGraphics(painter, graphics);
+    if (m_mode == Mode::Row && m_cursorKnown)
+        paintSymbolGraphics(painter, withPiece(Symbol(), m_placing, placingAt()).graphics);
 }
 
 } // namespace ppcb

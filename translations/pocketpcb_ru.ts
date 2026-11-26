@@ -2559,6 +2559,66 @@
         <source>Place pin</source>
         <translation>Поставить вывод</translation>
     </message>
+    <message>
+        <source>New symbol from</source>
+        <translation>Новый символ из</translation>
+    </message>
+    <message>
+        <source>Resistor</source>
+        <translation>Резистор</translation>
+    </message>
+    <message>
+        <source>Capacitor</source>
+        <translation>Конденсатор</translation>
+    </message>
+    <message>
+        <source>Electrolytic capacitor</source>
+        <translation>Электролитический конденсатор</translation>
+    </message>
+    <message>
+        <source>Diode</source>
+        <translation>Диод</translation>
+    </message>
+    <message>
+        <source>NPN transistor</source>
+        <translation>Транзистор NPN</translation>
+    </message>
+    <message>
+        <source>PNP transistor</source>
+        <translation>Транзистор PNP</translation>
+    </message>
+    <message>
+        <source>Inductor</source>
+        <translation>Катушка индуктивности</translation>
+    </message>
+    <message>
+        <source>Chip</source>
+        <translation>Микросхема</translation>
+    </message>
+    <message>
+        <source>Ready-made</source>
+        <translation>Готовые</translation>
+    </message>
+    <message>
+        <source>Pins on the left</source>
+        <translation>Выводов слева</translation>
+    </message>
+    <message>
+        <source>Pins on the right</source>
+        <translation>Выводов справа</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Ширина</translation>
+    </message>
+    <message>
+        <source>Function</source>
+        <translation>Функция</translation>
+    </message>
+    <message>
+        <source>Place ready-made</source>
+        <translation>Поставить готовый</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::PinPanel</name>

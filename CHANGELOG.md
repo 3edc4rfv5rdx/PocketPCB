@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Ready-made symbol pieces to the ESKD sizes and a chip builder, put into a symbol or starting a new one
 - F: Measure takes the corners, ends and centres of drawings, and with Shift any point off the grid
 - E: The footprint editor keeps what is chosen after a drag, a turn or a change in its panels
 - N: Symbol editor in the library editor window: pins on the 2.54 mm grid, drawings, pin names, power symbols

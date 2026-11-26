@@ -985,6 +985,20 @@ private slots:
         QVERIFY(qobject_cast<SymbolEditor *>(copy) != nullptr);
         copy->undoStack()->setClean();
 
+        // A new symbol from a ready-made one, a diode put into it.
+        SymbolEditor *fresh = libraryWindow->openSymbolFrom(pieceSymbol(SymbolPiece::Resistor));
+        QCOMPARE(fresh->symbol(), pieceSymbol(SymbolPiece::Resistor));
+        QVERIFY(!fresh->isSaved());
+        fresh->placePiece(pieceSymbol(SymbolPiece::Diode));
+        QCOMPARE(fresh->mode(), ItemEditor::Mode::Row);
+        fresh->press(QPointF(0.3, 10.0), false);
+        fresh->release(QPointF(0.3, 10.0));
+        QCOMPARE(fresh->mode(), ItemEditor::Mode::Select);
+        QCOMPARE(fresh->symbol().pins.size(), 4);
+        QCOMPARE(fresh->symbol().pins.at(2).number, QStringLiteral("A"));
+        QCOMPARE(fresh->symbol().pins.at(2).at, (Point{-5080000, 10160000}));
+        QCOMPARE(fresh->chosen().terminals, QSet<int>({2, 3}));
+        fresh->undoStack()->setClean();
         libraryWindow->close();
         QFile::remove(path);
     }

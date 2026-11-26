@@ -46,6 +46,11 @@ Symbol withoutPins(const Symbol &symbol, const QSet<int> &pins);
 // With 'changed' put in the places of the pins 'pins', one for each in the
 // order of their indices.
 Symbol withPinsReplaced(const Symbol &symbol, const QList<int> &pins, const QList<Pin> &changed);
+// 'symbol' with 'piece' put into it, moved by 'at', which must be on
+// PIN_GRID: its drawings and pins added after those there, a pin whose
+// number is taken given the next free one. An empty symbol takes the
+// places of the designator and the value of the piece too.
+Symbol withPiece(const Symbol &symbol, const Symbol &piece, const Point &at);
 // The same symbol with its origin at 'at', which must be on PIN_GRID:
 // everything moved by -at.
 Symbol withOriginAt(const Symbol &symbol, const Point &at);

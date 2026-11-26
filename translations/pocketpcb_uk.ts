@@ -2559,6 +2559,66 @@
         <source>Place pin</source>
         <translation>Поставити вивід</translation>
     </message>
+    <message>
+        <source>New symbol from</source>
+        <translation>Новий символ з</translation>
+    </message>
+    <message>
+        <source>Resistor</source>
+        <translation>Резистор</translation>
+    </message>
+    <message>
+        <source>Capacitor</source>
+        <translation>Конденсатор</translation>
+    </message>
+    <message>
+        <source>Electrolytic capacitor</source>
+        <translation>Електролітичний конденсатор</translation>
+    </message>
+    <message>
+        <source>Diode</source>
+        <translation>Діод</translation>
+    </message>
+    <message>
+        <source>NPN transistor</source>
+        <translation>Транзистор NPN</translation>
+    </message>
+    <message>
+        <source>PNP transistor</source>
+        <translation>Транзистор PNP</translation>
+    </message>
+    <message>
+        <source>Inductor</source>
+        <translation>Котушка індуктивності</translation>
+    </message>
+    <message>
+        <source>Chip</source>
+        <translation>Мікросхема</translation>
+    </message>
+    <message>
+        <source>Ready-made</source>
+        <translation>Готові</translation>
+    </message>
+    <message>
+        <source>Pins on the left</source>
+        <translation>Виводів ліворуч</translation>
+    </message>
+    <message>
+        <source>Pins on the right</source>
+        <translation>Виводів праворуч</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Ширина</translation>
+    </message>
+    <message>
+        <source>Function</source>
+        <translation>Функція</translation>
+    </message>
+    <message>
+        <source>Place ready-made</source>
+        <translation>Поставити готовий</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::PinPanel</name>

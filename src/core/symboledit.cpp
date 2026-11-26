@@ -173,6 +173,29 @@ Symbol withPinsReplaced(const Symbol &symbol, const QList<int> &pins, const QLis
     return result;
 }
 
+Symbol withPiece(const Symbol &symbol, const Symbol &piece, const Point &at)
+{
+    Symbol result = symbol;
+    const bool empty = symbol.graphics.isEmpty() && symbol.pins.isEmpty();
+    for (const Graphic &graphic : piece.graphics)
+        result.graphics.append(graphicMoved(graphic, at));
+    for (Pin pin : piece.pins) {
+        pin.at = pin.at + at;
+        const bool taken = std::any_of(result.pins.cbegin(), result.pins.cend(),
+                                       [&pin](const Pin &other) { return other.number == pin.number; });
+        if (taken)
+            pin.number = nextPinNumber(result);
+        result.pins.append(pin);
+    }
+    if (empty) {
+        result.refAt = piece.refAt + at;
+        result.valueAt = piece.valueAt + at;
+        result.showPinNumbers = piece.showPinNumbers;
+        result.showPinNames = piece.showPinNames;
+    }
+    return result;
+}
+
 Symbol withOriginAt(const Symbol &symbol, const Point &at)
 {
     const Point delta = Point{} - at;

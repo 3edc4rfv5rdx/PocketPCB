@@ -4,7 +4,10 @@
 
 #include <QMainWindow>
 
+#include <functional>
+
 class QLabel;
+class QMenu;
 class QStackedWidget;
 class QTabWidget;
 
@@ -51,6 +54,14 @@ public:
     // A new footprint, or symbol, in a new tab.
     FootprintEditor *openNewFootprint();
     SymbolEditor *openNewSymbol();
+    // A new symbol in a new tab, begun as 'symbol' (a ready-made one), not
+    // saved yet.
+    SymbolEditor *openSymbolFrom(const Symbol &symbol);
+    // The items of a New symbol from menu in 'menu': the ready-made pieces
+    // and a chip asked for, each in a new tab of the window 'window' gives
+    // when one is chosen.
+    static void addNewSymbolFromActions(QMenu *menu,
+                                        const std::function<LibraryEditor *()> &window);
     // A copy of the item shown in a new tab, with no name yet; null when no
     // tab is shown.
     ItemEditor *openCopy();

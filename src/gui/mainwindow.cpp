@@ -2051,6 +2051,9 @@ void MainWindow::createToolBar()
     QAction *newSymbol = footprintMenu->addAction(SymbolEditor::newSymbolTitle());
     newSymbol->setObjectName(QStringLiteral("actionNewSymbol"));
     connect(newSymbol, &QAction::triggered, this, [this] { openSymbolEditor(true); });
+    LibraryEditor::addNewSymbolFromActions(
+        footprintMenu->addMenu(SymbolEditor::newSymbolFromTitle()),
+        [this] { return showLibraryEditor(); });
     QAction *editSymbol = footprintMenu->addAction(tr("Edit symbol of chosen part"));
     editSymbol->setObjectName(QStringLiteral("actionEditSymbol"));
     connect(editSymbol, &QAction::triggered, this, [this] { openSymbolEditor(false); });

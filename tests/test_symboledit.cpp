@@ -92,6 +92,31 @@ private slots:
         QCOMPARE(pinBodyEnd(withBodyEndAt(down, Point{0, 3175000})), (Point{0, 3175000}));
     }
 
+    // A piece put in twice: its pins numbered on the second time.
+    void aPieceIsPutIn()
+    {
+        Symbol piece;
+        piece.pins = {pin(QStringLiteral("A"), grid(-1, 0), PinSide::Left),
+                      pin(QStringLiteral("K"), grid(1, 0), PinSide::Right)};
+        Graphic line;
+        line.b = grid(1, 0);
+        piece.graphics = {line};
+        piece.refAt = grid(0, -1);
+        piece.showPinNumbers = false;
+        const Symbol once = withPiece(Symbol(), piece, grid(2, 0));
+        QCOMPARE(once.pins.at(0).at, grid(1, 0));
+        QCOMPARE(once.refAt, grid(2, -1));
+        QVERIFY(!once.showPinNumbers);
+        const Symbol twice = withPiece(once, piece, grid(2, 4));
+        QCOMPARE(twice.pins.size(), 4);
+        QCOMPARE(twice.pins.at(2).number, QStringLiteral("1"));
+        QCOMPARE(twice.pins.at(3).number, QStringLiteral("2"));
+        QCOMPARE(twice.graphics.at(1).a, grid(2, 4));
+        // The places of the texts stay where they were.
+        QCOMPARE(twice.refAt, grid(2, -1));
+        QVERIFY(symbolProblem(twice).isEmpty());
+    }
+
     void theOriginMovesEverything()
     {
         Symbol symbol;

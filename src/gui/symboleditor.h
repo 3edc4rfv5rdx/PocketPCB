@@ -2,8 +2,11 @@
 
 #include "itemeditor.h"
 #include "symboledit.h"
+#include "symbolpieces.h"
 
 #include <QSet>
+
+#include <functional>
 
 class QCheckBox;
 class QComboBox;
@@ -28,8 +31,15 @@ public:
     // panel.
     static QString pinPropertiesStep();
     static QString symbolPropertiesStep();
-    // "New symbol".
+    // "New symbol", "New symbol from".
     static QString newSymbolTitle();
+    static QString newSymbolFromTitle();
+    // The name of a ready-made piece in a menu.
+    static QString pieceTitle(SymbolPiece piece);
+    // An action in 'menu' for every ready-made piece, 'chosen' told which,
+    // and under them Chip…, which calls 'chip'.
+    static void addPieceActions(QMenu *menu, const std::function<void(SymbolPiece)> &chosen,
+                                const std::function<void()> &chip);
     // True when the user's library has a symbol 'name' of its own.
     static bool isInUserLibrary(const QString &name);
     QString editorTitle() const override;
@@ -39,9 +49,16 @@ public:
     // The pin the Place mode places next, but for its place and number.
     const Pin &nextPin() const { return m_nextPin; }
     void setNextPin(const Pin &pin);
-    // The pin that follows the cursor in the Place mode, where it would be
-    // placed; none in the others.
+    // The pin that follows the cursor in the Place mode, or the pins of the
+    // piece in the Row mode, where they would be placed; none in the others.
     QList<Pin> floatingPins() const;
+    // Starts placing 'piece' (a ready-made one, a chip): it follows the
+    // cursor by its origin, R turns it, a click puts it in (withPiece()).
+    void placePiece(const Symbol &piece);
+    // The piece being placed.
+    const Symbol &placing() const { return m_placing; }
+    // Asks for the pins and the width of a chip, and starts placing it.
+    void askChip();
 
 protected:
     void addPlacingTools(QToolBar *bar) override;
@@ -80,7 +97,16 @@ protected:
     void paintFloating(QPainter &painter, const QList<Graphic> &graphics) const override;
 
 private:
+    // The piece being placed moved to where the cursor puts it.
+    Point placingAt() const;
+
     Pin m_nextPin;
+    Symbol m_placing;
+    // The chip asked for last.
+    int m_chipLeft = 4;
+    int m_chipRight = 4;
+    Coord m_chipWidth = CHIP_MIN_WIDTH;
+    QString m_chipFunction;
 };
 
 // The properties of the pins chosen in a symbol editor: number, name, the

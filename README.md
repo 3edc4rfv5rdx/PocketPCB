@@ -13,7 +13,7 @@ Early development. What works now (the user guide, Help > User guide or [`help.h
 - Project properties: title block, designator style, copper sides, net classes, rules.
 - Library: built-in, your own and the project's copy; Update parts from library.
 - Library editor: footprints in tabs, pads, rows and DIP, silkscreen, REF and VALUE places, pad clearance, body for 3D, origin, Save as.
-- Symbol editor: pins on the 2.54 mm grid, drawings, pin numbers and names, power symbols.
+- Symbol editor: pins on the 2.54 mm grid, drawings, pin numbers and names, power symbols, ready-made ESKD pieces and chips.
 - Schematic: sheets, parts, wires, buses, labels, power symbols, no-connect marks, lock.
 - Panels: Library, Properties, Nets, ERC, DRC, BOM, Versions.
 - Board: outline, parts on either side, holes, tracks, vias, wire links, ratsnest, lock.

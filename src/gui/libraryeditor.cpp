@@ -111,6 +111,8 @@ LibraryEditor::LibraryEditor(QWidget *parent)
             &LibraryEditor::openNewFootprint);
     connect(addMenu->addAction(SymbolEditor::newSymbolTitle()), &QAction::triggered, this,
             &LibraryEditor::openNewSymbol);
+    addNewSymbolFromActions(addMenu->addMenu(SymbolEditor::newSymbolFromTitle()),
+                            [this] { return this; });
     add->setMenu(addMenu);
     QPushButton *open = new QPushButton(tr("Open") + QStringLiteral("…"), corner);
     open->setObjectName(QStringLiteral("openItemTab"));
@@ -200,6 +202,22 @@ FootprintEditor *LibraryEditor::openNewFootprint()
 SymbolEditor *LibraryEditor::openNewSymbol()
 {
     return openSymbol(QString(), Symbol(), false);
+}
+
+SymbolEditor *LibraryEditor::openSymbolFrom(const Symbol &symbol)
+{
+    SymbolEditor *editor = openSymbol(QString(), symbol, false);
+    // Not saved anywhere yet: closing it asks.
+    editor->undoStack()->resetClean();
+    return editor;
+}
+
+void LibraryEditor::addNewSymbolFromActions(QMenu *menu,
+                                            const std::function<LibraryEditor *()> &window)
+{
+    SymbolEditor::addPieceActions(
+        menu, [window](SymbolPiece piece) { window()->openSymbolFrom(pieceSymbol(piece)); },
+        [window] { window()->openNewSymbol()->askChip(); });
 }
 
 ItemEditor *LibraryEditor::openCopy()
