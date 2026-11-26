@@ -786,6 +786,18 @@ private slots:
         editor->escape();
         QCOMPARE(editor->mode(), FootprintEditor::Mode::Select);
 
+        // A circle off the grid by its diameter typed.
+        editor->setMode(FootprintEditor::Mode::Circle);
+        editor->press(QPointF(0, 10.16), false);
+        editor->press(QPointF(2.54, 10.16), false);
+        editor->escape();
+        QLineEdit *diameter = editor->findChild<QLineEdit *>(QStringLiteral("drawingDiameter"));
+        QVERIFY(diameter != nullptr && diameter->isEnabled());
+        QCOMPARE(diameter->text(), QStringLiteral("5.08"));
+        diameter->setText(QStringLiteral("3.3"));
+        emit diameter->editingFinished();
+        QCOMPARE(editor->footprint().graphics.last().radius, 1650000);
+
         // Pads nearer than the project's clearance are found.
         QVERIFY(editor->padGaps().isEmpty());
         editor->setClearance(5000000);

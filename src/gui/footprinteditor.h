@@ -340,8 +340,8 @@ private:
 };
 
 // The properties of the drawings chosen in a footprint editor: the line
-// width and dashes, the fill of a polygon, and of a text its words, height
-// and alignment; fields that none of them has are off. Several chosen are
+// width and dashes, the diameter of a circle or an arc, the fill of a
+// polygon, and of a text its words, height and alignment; fields that none of them has are off. Several chosen are
 // set as one, as the pad panel does; with none chosen, the line of the
 // drawings drawn next.
 class GraphicPanel : public QWidget
@@ -366,6 +366,7 @@ private:
     QLabel *m_heading = nullptr;
     QLineEdit *m_width = nullptr;
     QCheckBox *m_dashed = nullptr;
+    QLineEdit *m_diameter = nullptr;
     QCheckBox *m_filled = nullptr;
     QLineEdit *m_text = nullptr;
     QLineEdit *m_height = nullptr;

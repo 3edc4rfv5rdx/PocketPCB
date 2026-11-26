@@ -296,6 +296,7 @@ GraphicPanel::GraphicPanel(FootprintEditor *editor, QWidget *parent)
     m_width = panelLineEdit(this, "drawingWidth");
     m_dashed = new QCheckBox(tr("Dashed"), this);
     m_dashed->setObjectName(QStringLiteral("drawingDashed"));
+    m_diameter = panelLineEdit(this, "drawingDiameter");
     m_filled = new QCheckBox(tr("Filled"), this);
     m_filled->setObjectName(QStringLiteral("drawingFilled"));
     m_text = panelLineEdit(this, "drawingText");
@@ -309,6 +310,7 @@ GraphicPanel::GraphicPanel(FootprintEditor *editor, QWidget *parent)
     const QString unit = QStringLiteral(", ") + mmUnit() + QLatin1Char(':');
     form->addRow(tr("Line") + unit, m_width);
     form->addRow(QString(), m_dashed);
+    form->addRow(tr("Diameter") + unit, m_diameter);
     form->addRow(QString(), m_filled);
     form->addRow(tr("Text") + QLatin1Char(':'), m_text);
     form->addRow(tr("Letters") + unit, m_height);
@@ -334,6 +336,19 @@ GraphicPanel::GraphicPanel(FootprintEditor *editor, QWidget *parent)
         commit([on](Graphic &graphic) {
             if (graphic.kind != GraphicKind::Text)
                 graphic.dashed = on;
+            return true;
+        });
+    });
+    connect(m_diameter, &QLineEdit::editingFinished, this, [this] {
+        Coord nm = 0;
+        if (m_diameter->text().trimmed().isEmpty() || !parseMm(m_diameter->text(), nm)
+            || nm < 2) {
+            refresh(true);
+            return;
+        }
+        commit([nm](Graphic &graphic) {
+            if (graphic.kind == GraphicKind::Circle || graphic.kind == GraphicKind::Arc)
+                graphic.radius = nm / 2;
             return true;
         });
     });
@@ -406,14 +421,23 @@ void GraphicPanel::refresh(bool force)
     // The fields of what there is among them.
     QList<Graphic> lines;
     QList<Graphic> texts;
+    QList<Graphic> rounds;
     bool polygons = false;
     for (const Graphic &graphic : std::as_const(graphics)) {
         if (graphic.kind == GraphicKind::Text)
             texts.append(graphic);
         else
             lines.append(graphic);
+        if (graphic.kind == GraphicKind::Circle || graphic.kind == GraphicKind::Arc)
+            rounds.append(graphic);
         polygons = polygons || graphic.kind == GraphicKind::Polygon;
     }
+    m_diameter->setEnabled(!rounds.isEmpty());
+    if (!rounds.isEmpty())
+        showSame(m_diameter, rounds, [](const Graphic &graphic) { return 2 * graphic.radius; },
+                 mmText, force);
+    else if (!isTyping(m_diameter, force))
+        m_diameter->clear();
     if (none)
         lines.append(m_editor->nextGraphic());
 

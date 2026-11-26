@@ -2297,6 +2297,10 @@
 <context>
     <name>ppcb::GraphicPanel</name>
     <message>
+        <source>Diameter</source>
+        <translation>Диаметр</translation>
+    </message>
+    <message>
         <source>Drawing</source>
         <translation>Рисунок</translation>
     </message>
