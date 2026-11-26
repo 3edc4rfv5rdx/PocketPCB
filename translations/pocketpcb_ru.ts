@@ -2154,6 +2154,42 @@
 <context>
     <name>ppcb::FootprintEditor</name>
     <message>
+        <source>Drawing properties</source>
+        <translation>Свойства рисунка</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Линия</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>Прямоугольник</translation>
+    </message>
+    <message>
+        <source>Circle</source>
+        <translation>Окружность</translation>
+    </message>
+    <message>
+        <source>Arc</source>
+        <translation>Дуга</translation>
+    </message>
+    <message>
+        <source>Polygon</source>
+        <translation>Многоугольник</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Текст</translation>
+    </message>
+    <message>
+        <source>Draw</source>
+        <translation>Рисование</translation>
+    </message>
+    <message>
+        <source>Pads %1 and %2 are %3 apart, less than the clearance %4</source>
+        <translation>Между площадками %1 и %2 %3, меньше зазора %4</translation>
+    </message>
+    <message>
         <source>Footprint editor</source>
         <translation>Редактор посадочных мест</translation>
     </message>
@@ -2248,6 +2284,53 @@
     <message>
         <source>The footprint has changes that are not saved. Save them</source>
         <translation>В посадочном месте есть несохранённые изменения. Сохранить их</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::GraphicPanel</name>
+    <message>
+        <source>Drawing</source>
+        <translation>Рисунок</translation>
+    </message>
+    <message>
+        <source>New drawings</source>
+        <translation>Новый рисунок</translation>
+    </message>
+    <message>
+        <source>Dashed</source>
+        <translation>Пунктир</translation>
+    </message>
+    <message>
+        <source>Filled</source>
+        <translation>Залить</translation>
+    </message>
+    <message>
+        <source>Left</source>
+        <translation>По левому краю</translation>
+    </message>
+    <message>
+        <source>Centre</source>
+        <translation>По центру</translation>
+    </message>
+    <message>
+        <source>Right</source>
+        <translation>По правому краю</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Линия</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Текст</translation>
+    </message>
+    <message>
+        <source>Letters</source>
+        <translation>Высота букв</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>Выравнивание</translation>
     </message>
 </context>
 <context>

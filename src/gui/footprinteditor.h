@@ -1,38 +1,61 @@
 #pragma once
 
 #include "footprintedit.h"
+#include "paint.h"
 
 #include <QHash>
-#include <QWidget>
 #include <QSet>
 #include <QUndoStack>
+#include <QWidget>
 
+#include <functional>
 #include <optional>
 
+class QCheckBox;
 class QComboBox;
 class QLabel;
 class QLineEdit;
 class QMenu;
+class QStackedWidget;
 
 namespace ppcb {
 
 class CanvasView;
+class GraphicPanel;
 class InPlaceEdit;
 class PadPanel;
 
+// What is chosen in a footprint editor: pads and drawings by index, and the
+// places of the designator and of the value.
+struct FootprintChoice
+{
+    QSet<int> pads;
+    QSet<int> graphics;
+    bool designator = false;
+    bool value = false;
+
+    bool isEmpty() const { return pads.isEmpty() && graphics.isEmpty() && !designator && !value; }
+};
+
+bool operator==(const FootprintChoice &a, const FootprintChoice &b);
+inline bool operator!=(const FootprintChoice &a, const FootprintChoice &b) { return !(a == b); }
+
 // A tab of the library editor window editing one footprint of the library,
 // with its own strip of tools and its own Undo: pads placed one by one or in
-// a row, chosen, dragged on the grid, turned, deleted and given their
-// properties in the panel beside, and the origin moved. It saves into the
-// user's library, where a footprint of the built-in one's name replaces it
-// (see mergeLibraries()). Its keys work while the keyboard is in it.
+// a row, the silkscreen drawn, both chosen, dragged on the grid, turned,
+// deleted and given their properties in the panel beside, the places of the
+// designator and the value dragged, and the origin moved. Pads nearer than
+// the clearance of the project are ringed in red. It saves into the user's
+// library, where a footprint of the built-in one's name replaces it (see
+// mergeLibraries()). Its keys work while the keyboard is in it.
 class FootprintEditor : public QWidget
 {
     Q_OBJECT
 
 public:
     enum class Mode {
-        // Clicks choose pads, drags move them or draw a frame.
+        // Clicks choose, drags move what is chosen, a corner of a drawing
+        // or draw a frame.
         Select,
         // Each click places a pad like the last one, numbered on.
         Pad,
@@ -40,6 +63,17 @@ public:
         Row,
         // A click puts the origin there, then Select.
         Origin,
+        // The silkscreen: a line from click to click, until Esc or a double
+        // click; a rectangle by two corners; a circle by its centre and a
+        // point on it; an arc by its centre, its start and its end,
+        // clockwise; a polygon by its corners, closed on its first one or
+        // by a double click; a text typed where it is clicked.
+        Line,
+        Rect,
+        Circle,
+        Arc,
+        Polygon,
+        Text,
     };
 
     // 'name' is the footprint's name in the library; empty for a new one,
@@ -48,11 +82,13 @@ public:
     // project does.
     FootprintEditor(const QString &name, const Footprint &footprint, bool inUserLibrary,
                     QWidget *parent = nullptr);
+    ~FootprintEditor() override;
 
     // "Footprint editor".
     static QString editorTitle();
-    // The step that sets the properties of pads in the panel.
+    // The step that sets the properties of pads, or of drawings, in the panel.
     static QString padPropertiesStep();
+    static QString drawingPropertiesStep();
     // "New footprint".
     static QString newFootprintTitle();
     // True when the user's library has a footprint 'name' of its own.
@@ -76,20 +112,29 @@ public:
     // them or stay. True when it may close; always true without changes.
     bool confirmClose();
 
+    // The least copper between two pads, of the open project's rules; 0
+    // checks nothing.
+    void setClearance(Coord clearance);
+    Coord clearance() const { return m_clearance; }
+    // The pads nearer than the clearance, as the footprint stands.
+    const QList<PadGap> &padGaps() const { return m_gaps; }
+
     Mode mode() const { return m_mode; }
     void setMode(Mode mode);
-    // The pads chosen, by index.
-    const QSet<int> &chosen() const { return m_chosen; }
-    void setChosen(const QSet<int> &pads);
+    const FootprintChoice &chosen() const { return m_chosen; }
+    void setChosen(const FootprintChoice &chosen);
     // The pad the Pad mode places next, but for its place and number.
     const Pad &nextPad() const { return m_nextPad; }
     void setNextPad(const Pad &pad);
+    // The line width and dashes of the drawings drawn next.
+    const Graphic &nextGraphic() const { return m_nextGraphic; }
+    void setNextGraphic(const Graphic &graphic);
     // The row the Row mode places, pad 1 at the origin.
     const QList<Pad> &rowPads() const { return m_rowPads; }
 
     // One step of Undo named 'text': the footprint becomes 'changed', with
     // 'chosen' chosen. Nothing is done when it is the same.
-    void change(const QString &text, const Footprint &changed, const QSet<int> &chosen);
+    void change(const QString &text, const Footprint &changed, const FootprintChoice &chosen);
 
     // Writes the footprint into the user's library, asking for its name
     // first when it has none. False, with the reason in the status bar,
@@ -103,32 +148,37 @@ public:
     bool saveAs(const QString &name, bool replace);
 
     // The left mouse button and the mouse, in scene millimetres; with
-    // 'adding' (Ctrl) a pad clicked is added to the chosen or taken away,
-    // and a frame adds what it holds.
-    void press(const QPointF &at, bool adding);
-    void move(const QPointF &at);
+    // 'adding' (Ctrl) what is clicked is added to the chosen or taken away,
+    // and a frame adds what it holds; with 'free' (Shift) a line goes at
+    // any angle.
+    void press(const QPointF &at, bool adding, bool free = false);
+    void move(const QPointF &at, bool free = false);
     void release(const QPointF &at);
     void doubleClick(const QPointF &at);
-    void hover(const QPointF &at);
+    void hover(const QPointF &at, bool free = false);
 
-    // What the drawing shows: the footprint with the chosen pads where a
-    // drag puts them.
+    // What the drawing shows: the footprint with what is chosen where a
+    // drag puts it.
     Footprint shownFootprint() const;
     // The pads that follow the cursor in the Pad and Row modes, where they
     // would be placed; none in the others.
     QList<Pad> floatingPads() const;
+    // The drawing being drawn, to where the cursor is; none before its
+    // first click.
+    QList<Graphic> floatingGraphics() const;
     // The origin where a click of the Origin mode would put it.
     std::optional<Point> floatingOrigin() const;
     // The frame being drawn; null when none is.
     QRectF frame() const;
 
-    // R: the pads chosen turn a quarter about their middle, or the pad or
-    // the row about to be placed turns.
+    // R: what is chosen turns a quarter about its middle, or the pad or the
+    // row about to be placed turns.
     void rotate();
+    // Del: the pads and drawings chosen go.
     void deleteChosen();
     void chooseAll();
-    // Esc: a drag or a frame is called off, else the mode ends, else
-    // nothing stays chosen.
+    // Esc: a drag or a frame is called off, a line or a polygon being
+    // drawn ends, else the mode ends, else nothing stays chosen.
     void escape();
     // The origin put in the middle of the part (footprintMiddle()), on the
     // grid.
@@ -159,7 +209,23 @@ private:
     // is or the user keeps it from replacing another.
     QString askName(const QString &title);
     void updateModeButtons();
+    // The pad panel, or the drawing panel while only drawings are chosen.
+    void showPanel();
+    // The gaps found again, and the first told in the status bar.
+    void checkGaps();
     void editNumber(int pad);
+    // A text typed at 'at': a new one, or the text of drawing 'graphic'.
+    void editText(const Point &at, int graphic);
+    // A click of a drawing mode at the grid point 'at'.
+    void drawClick(const Point &at);
+    // The line or the polygon being drawn ends; a polygon of three corners
+    // or more is added.
+    void finishDrawing();
+    // The point a drawing mode puts at 'cursor': across, up and down or at
+    // 45 degrees from the last one for a line, unless 'm_free'.
+    Point drawPoint(const Point &cursor) const;
+    // A drawing added as one step, with 'm_nextGraphic''s line.
+    void addGraphic(const QString &text, Graphic graphic);
     Point snapped(const QPointF &at) const;
 
     QString m_name;
@@ -167,29 +233,40 @@ private:
     Footprint m_footprint;
     QUndoStack m_undoStack;
     CanvasView *m_canvas = nullptr;
-    PadPanel *m_panel = nullptr;
+    QStackedWidget *m_panels = nullptr;
+    PadPanel *m_padPanel = nullptr;
+    GraphicPanel *m_graphicPanel = nullptr;
     InPlaceEdit *m_numberEdit = nullptr;
     QComboBox *m_gridBox = nullptr;
     QString m_status;
     QHash<int, QAction *> m_modeActions;
+    Coord m_clearance = 0;
+    QList<PadGap> m_gaps;
 
     Mode m_mode = Mode::Select;
-    QSet<int> m_chosen;
+    FootprintChoice m_chosen;
     Pad m_nextPad;
+    Graphic m_nextGraphic;
     QList<Pad> m_rowPads;
     PadRow m_row;
-    // Where the cursor is, on the grid.
+    // Where the cursor is, on the grid, and whether Shift is down.
     Point m_cursor;
     bool m_cursorKnown = false;
-    // A drag of the chosen pads from 'm_dragAnchor', the pad taken, which
-    // lands on the grid; by 'm_dragDelta' so far.
+    bool m_free = false;
+    // The points clicked of the drawing being drawn.
+    QList<Point> m_drawPoints;
+    // A drag of what is chosen from 'm_dragAnchor', the point taken, which
+    // lands on the grid; by 'm_dragDelta' so far. With 'm_dragGraphic' set,
+    // only its corner 'm_dragCorner' moves.
     bool m_dragging = false;
     Point m_dragAnchor;
     Point m_dragDelta;
+    int m_dragGraphic = -1;
+    int m_dragCorner = -1;
     QPointF m_pressAt;
-    // The pad the press took: a click on one of several chosen chooses it
-    // alone when the mouse is let go without a drag.
-    int m_pressPad = -1;
+    // What the press took of several chosen: chosen alone when the mouse
+    // is let go without a drag.
+    std::optional<FootprintChoice> m_pressAlone;
     // A frame from 'm_frameFrom' to 'm_frameTo'.
     bool m_framing = false;
     bool m_frameAdding = false;
@@ -231,7 +308,6 @@ private:
     void commitLayers(int index);
     // A size field typed: 'field' (width, height, hole, X or Y) set from it.
     void commitMm(QLineEdit *edit);
-    bool isTyping(const QWidget *field, bool force) const;
 
     FootprintEditor *m_editor;
     QSet<int> m_shown;
@@ -245,5 +321,43 @@ private:
     QLineEdit *m_x = nullptr;
     QLineEdit *m_y = nullptr;
 };
+
+// The properties of the drawings chosen in a footprint editor: the line
+// width and dashes, the fill of a polygon, and of a text its words, height
+// and alignment; fields that none of them has are off. Several chosen are
+// set as one, as the pad panel does; with none chosen, the line of the
+// drawings drawn next.
+class GraphicPanel : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit GraphicPanel(FootprintEditor *editor, QWidget *parent = nullptr);
+
+    static QString drawingTitle();
+    void refresh(bool force = false);
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
+private:
+    template <typename Apply>
+    void commit(Apply apply);
+
+    FootprintEditor *m_editor;
+    QSet<int> m_shown;
+    QLabel *m_heading = nullptr;
+    QLineEdit *m_width = nullptr;
+    QCheckBox *m_dashed = nullptr;
+    QCheckBox *m_filled = nullptr;
+    QLineEdit *m_text = nullptr;
+    QLineEdit *m_height = nullptr;
+    QComboBox *m_align = nullptr;
+};
+
+// Esc in one of the line fields of a panel: the panel shows what is chosen
+// again and the field lets go of the keyboard, the window keeping its Esc.
+// True when 'event' was that.
+bool panelFieldEscape(QObject *watched, QEvent *event, const std::function<void()> &refresh);
 
 } // namespace ppcb

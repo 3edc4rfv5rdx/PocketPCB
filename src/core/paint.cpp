@@ -390,10 +390,8 @@ void addCommonBounds(Bounds &bounds, const Point &refAt, const Point &valueAt)
 {
     bounds.add(QRectF(-ORIGIN_MARK_SIZE, -ORIGIN_MARK_SIZE, 2 * ORIGIN_MARK_SIZE,
                       2 * ORIGIN_MARK_SIZE));
-    bounds.add(textBounds(toMm(refAt), QLatin1String(REF_PLACEHOLDER), PLACEHOLDER_TEXT_HEIGHT,
-                          TextAlign::Center));
-    bounds.add(textBounds(toMm(valueAt), QLatin1String(VALUE_PLACEHOLDER),
-                          PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center));
+    bounds.add(placeholderRect(refAt, ComponentText::Designator));
+    bounds.add(placeholderRect(valueAt, ComponentText::Value));
 }
 
 bool isHorizontal(const Pin &pin)
@@ -1165,6 +1163,24 @@ QRectF symbolBodyBounds(const Symbol &symbol)
     return body.rect();
 }
 
+QRectF graphicRect(const Graphic &graphic)
+{
+    return graphicBounds(graphic);
+}
+
+QPolygonF graphicOutline(const Graphic &graphic)
+{
+    return graphicLine(graphic);
+}
+
+QRectF placeholderRect(const Point &at, ComponentText text)
+{
+    return textBounds(toMm(at),
+                      QLatin1String(text == ComponentText::Designator ? REF_PLACEHOLDER
+                                                                      : VALUE_PLACEHOLDER),
+                      PLACEHOLDER_TEXT_HEIGHT, TextAlign::Center);
+}
+
 QRectF footprintBodyBounds(const Footprint &footprint)
 {
     Bounds body;
@@ -1206,14 +1222,19 @@ void paintFootprintPads(QPainter &painter, const QList<Pad> &pads)
         paintPad(painter, pad, paperHoles());
 }
 
+void paintFootprintGraphics(QPainter &painter, const QList<Graphic> &graphics)
+{
+    for (const Graphic &graphic : graphics)
+        paintGraphic(painter, graphic, paintcolor::silkscreen());
+}
+
 void paintFootprint(QPainter &painter, const Footprint &footprint)
 {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
     // Copper first, silkscreen over it, as on a real board.
     paintFootprintPads(painter, footprint.pads);
-    for (const Graphic &graphic : footprint.graphics)
-        paintGraphic(painter, graphic, paintcolor::silkscreen());
+    paintFootprintGraphics(painter, footprint.graphics);
     paintOriginMark(painter);
     paintPlaceholders(painter, footprint.refAt, footprint.valueAt);
     painter.restore();

@@ -125,6 +125,7 @@ FootprintEditor *LibraryEditor::openFootprint(const QString &name, const Footpri
         }
     }
     FootprintEditor *editor = new FootprintEditor(name, footprint, inUserLibrary, m_tabs);
+    editor->setClearance(m_clearance);
     connect(editor, &FootprintEditor::titleChanged, this, [this, editor] { updateTab(editor); });
     connect(editor, &FootprintEditor::saved, this, &LibraryEditor::saved);
     connect(editor, &FootprintEditor::statusChanged, this, [this, editor](const QString &text) {
@@ -139,6 +140,15 @@ FootprintEditor *LibraryEditor::openFootprint(const QString &name, const Footpri
     updateTab(editor);
     showTabsOrStart();
     return editor;
+}
+
+void LibraryEditor::setClearance(Coord clearance)
+{
+    m_clearance = clearance;
+    for (int i = 0; i < m_tabs->count(); ++i) {
+        if (FootprintEditor *editor = qobject_cast<FootprintEditor *>(m_tabs->widget(i)))
+            editor->setClearance(clearance);
+    }
 }
 
 FootprintEditor *LibraryEditor::openNewFootprint()

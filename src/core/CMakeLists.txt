@@ -15,6 +15,7 @@ add_library(pocketpcb_core STATIC
     footprintedit.h footprintedit.cpp
     gerber.h gerber.cpp
     graphic.h graphic.cpp
+    graphicedit.h graphicedit.cpp
     gridroute.h gridroute.cpp
     grid.h grid.cpp
     joins.h

@@ -736,11 +736,47 @@ private slots:
         QCOMPARE(editor->footprint().pads.at(1).at, (Point{2540000, 0}));
 
         // A drag of a chosen pad moves it on the grid.
-        editor->setChosen({1});
+        editor->setChosen(FootprintChoice{{1}});
         editor->press(QPointF(2.54, 0), false);
         editor->move(QPointF(3.9, 1.2));
         editor->release(QPointF(3.9, 1.2));
         QCOMPARE(editor->footprint().pads.at(1).at, (Point{3810000, 1270000}));
+
+        // The silkscreen: a line from click to click, a rectangle by its
+        // corners, one of which is then dragged.
+        editor->setMode(FootprintEditor::Mode::Line);
+        editor->press(QPointF(0, 5.08), false);
+        editor->press(QPointF(5.08, 5.5), false);
+        editor->escape();
+        QCOMPARE(editor->footprint().graphics.size(), 1);
+        // Kept across, the click a little off.
+        QCOMPARE(editor->footprint().graphics.at(0).b, (Point{5080000, 5080000}));
+        editor->setMode(FootprintEditor::Mode::Rect);
+        editor->press(QPointF(-2.54, -2.54), false);
+        editor->press(QPointF(7.62, 2.54), false);
+        QCOMPARE(editor->footprint().graphics.size(), 2);
+        editor->escape();
+        QCOMPARE(editor->mode(), FootprintEditor::Mode::Select);
+        editor->press(QPointF(7.62, 2.54), false);
+        editor->move(QPointF(8.89, 3.81));
+        editor->release(QPointF(8.89, 3.81));
+        QCOMPARE(editor->footprint().graphics.at(1).b, (Point{8890000, 3810000}));
+        QCOMPARE(editor->footprint().graphics.at(1).a, (Point{-2540000, -2540000}));
+        // The designator's place is dragged, taken beside pad 1 on the
+        // origin: close in, the pad no longer reaches there.
+        editor->canvas()->setView(QPointF(0, 0), 40);
+        const Point ref = editor->footprint().refAt;
+        const QPointF beside = toMm(ref) + QPointF(1.4, 0);
+        editor->press(beside, false);
+        editor->move(beside + QPointF(2.54, 0));
+        editor->release(beside + QPointF(2.54, 0));
+        QCOMPARE(editor->footprint().refAt, (ref + Point{2540000, 0}));
+
+        // Pads nearer than the project's clearance are found.
+        QVERIFY(editor->padGaps().isEmpty());
+        editor->setClearance(5000000);
+        QCOMPARE(editor->padGaps().size(), 1);
+        editor->setClearance(0);
 
         QVERIFY(editor->saveAs(name, true));
         QVERIFY(editor->isSaved());

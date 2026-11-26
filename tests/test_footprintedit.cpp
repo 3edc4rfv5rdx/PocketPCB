@@ -130,6 +130,40 @@ private slots:
         QCOMPARE(footprintMiddle(moved), Point{});
     }
 
+    void padsTooNearAreFound()
+    {
+        Footprint footprint;
+        // Round pads 2 mm across, 2.3 mm apart: 0.3 mm of gap.
+        footprint.pads = {pad(QStringLiteral("1"), mm(0, 0)), pad(QStringLiteral("2"), Point{2300000, 0})};
+        QVERIFY(padsTooNear(footprint, 300000).isEmpty());
+        const QList<PadGap> gaps = padsTooNear(footprint, 400000);
+        QCOMPARE(gaps.size(), 1);
+        QCOMPARE(gaps.first().first, 0);
+        QCOMPARE(gaps.first().second, 1);
+        QCOMPARE(gaps.first().gap, 300000);
+        QCOMPARE(gaps.first().at, (Point{1150000, 0}));
+        // One number is one pin.
+        footprint.pads[1].number = QStringLiteral("1");
+        QVERIFY(padsTooNear(footprint, 400000).isEmpty());
+        // Pads on two sides apart.
+        footprint.pads[1].number = QStringLiteral("2");
+        footprint.pads[0].hole = 0;
+        footprint.pads[0].layers = PadLayers::Front;
+        footprint.pads[1].hole = 0;
+        footprint.pads[1].layers = PadLayers::Back;
+        QVERIFY(padsTooNear(footprint, 400000).isEmpty());
+        // A long pad is measured along its length.
+        const PadStroke stroke = padStroke([] {
+            Pad p;
+            p.sizeX = 4 * MM;
+            p.sizeY = 2 * MM;
+            return p;
+        }());
+        QCOMPARE(stroke.from, mm(-1, 0));
+        QCOMPARE(stroke.to, mm(1, 0));
+        QCOMPARE(stroke.radius, MM);
+    }
+
     void aPadIsCheckedAsTheFileReaderChecksIt()
     {
         Pad good = pad(QStringLiteral("1"), mm(0, 0));

@@ -144,10 +144,18 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
   <li><b>Pad</b> (<kbd>P</kbd>): each click places a pad on the grid, numbered on, like the last one; the arrow
     offers the usual sizes. <b>Row of pads</b> sets up one column, two columns numbered across or a DIP
     numbered around; the row follows the cursor by pad 1 and a click places it.</li>
-  <li>Choose pads with a click, <kbd>Ctrl</kbd>+click or a frame; drag them on the grid, <kbd>R</kbd> turns them,
-    <kbd>Del</kbd> deletes them, a double click types the number. The <b>Pad</b> panel sets number, shape,
-    sizes, hole, copper side and place, for all the pads chosen at once; with none chosen, those of the next
-    pad.</li>
+  <li>The silkscreen: <b>Line</b> (<kbd>L</kbd>) goes from click to click until <kbd>Esc</kbd> or a double click,
+    across, up and down or at 45&deg;, at any angle with <kbd>Shift</kbd>; <b>Rectangle</b> by two corners;
+    <b>Circle</b> by its centre and a point on it; <b>Arc</b> by its centre, start and end, clockwise;
+    <b>Polygon</b> by its corners, closed on the first one or by a double click; <b>Text</b> (<kbd>T</kbd>)
+    is typed where clicked.</li>
+  <li>Choose pads, drawings and the REF and VALUE marks with a click, <kbd>Ctrl</kbd>+click or a frame; drag them
+    on the grid, <kbd>R</kbd> turns them, <kbd>Del</kbd> deletes pads and drawings. A corner of a drawing is
+    dragged on its own. A double click types a pad's number or a text. The panel sets number, shape, sizes,
+    hole, copper side and place of the pads chosen, or line, dashes, fill and the text of the drawings chosen,
+    for all of them at once; with none chosen, those of the next.</li>
+  <li>Pads nearer each other than the clearance of the open project are framed in red, and the status bar
+    says by how much.</li>
   <li><b>Origin here</b> (<kbd>O</kbd>) moves the point the part is held by and turns about on the board to a
     click; its arrow puts it in the middle of the part.</li>
   <li>Save (<kbd>Ctrl+S</kbd>) writes it into your library; a built-in footprint saved there is replaced by your

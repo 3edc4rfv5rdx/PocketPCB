@@ -2280,8 +2280,15 @@ FootprintEditor *MainWindow::openFootprintEditor(bool newOne)
     if (m_libraryEditor.isNull()) {
         m_libraryEditor = new LibraryEditor(this);
         connect(m_libraryEditor, &LibraryEditor::saved, this, &MainWindow::loadLibrary);
+        // The pads are checked with the clearance of the project open.
+        const auto clearance = [this] {
+            m_libraryEditor->setClearance(m_document->design().project.rules.clearance);
+        };
+        connect(m_document, &Document::designChanged, m_libraryEditor.data(), clearance);
+        connect(m_document, &Document::designReset, m_libraryEditor.data(), clearance);
     }
     m_libraryEditor->setLibrary(&m_library.items);
+    m_libraryEditor->setClearance(m_document->design().project.rules.clearance);
     m_libraryEditor->show();
     m_libraryEditor->raise();
     m_libraryEditor->activateWindow();

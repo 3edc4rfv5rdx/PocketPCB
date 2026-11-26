@@ -52,6 +52,12 @@ enum class ToolIcon {
     Pad,
     PadRow,
     Origin,
+    DrawLine,
+    DrawRect,
+    DrawCircle,
+    DrawArc,
+    DrawPolygon,
+    DrawText,
 };
 
 // 'icon' drawn in lines of 'color' on a square of TOOL_ICON_SIZE pixels,

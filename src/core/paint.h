@@ -105,11 +105,19 @@ QRectF footprintBounds(const Footprint &footprint);
 QRectF footprintBodyBounds(const Footprint &footprint);
 // The rectangle of the copper of 'pad', in millimetres.
 QRectF padRect(const Pad &pad);
+// The rectangle 'graphic' covers, its line included, in millimetres.
+QRectF graphicRect(const Graphic &graphic);
+// The line 'graphic' is found by, in millimetres: its outline, circles and
+// arcs cut into straight pieces; empty for one found by its area (a text,
+// a filled polygon).
+QPolygonF graphicOutline(const Graphic &graphic);
 
 void paintSymbol(QPainter &painter, const Symbol &symbol);
 void paintFootprint(QPainter &painter, const Footprint &footprint);
-// The pads alone, as paintFootprint() draws them.
+// The pads alone, and the drawings of the silkscreen alone, as
+// paintFootprint() draws them.
 void paintFootprintPads(QPainter &painter, const QList<Pad> &pads);
+void paintFootprintGraphics(QPainter &painter, const QList<Graphic> &graphics);
 
 // The paper of a sheet: its top left corner is the origin, the long side
 // along X, or along Y on portrait paper.
@@ -191,6 +199,9 @@ QStringList titleBlockRows(const Schematic &schematic, int index, const TitleBlo
 
 // The texts a component shows beside its symbol.
 enum class ComponentText { Designator, Value };
+// Where the grey REF or VALUE mark of a symbol or a footprint of the
+// library stands at 'at', in millimetres.
+QRectF placeholderRect(const Point &at, ComponentText text);
 // What is drawn for the text: the designator, or the value; a grey "VALUE"
 // mark stands where the value is empty, to show where it goes and to be
 // taken there, unless the component's part in 'library' needs no value.

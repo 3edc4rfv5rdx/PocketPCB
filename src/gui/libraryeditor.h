@@ -39,6 +39,9 @@ public:
     // The library Open… offers; it must outlive the window, or be set
     // again before it goes.
     void setLibrary(const Library *library) { m_library = library; }
+    // The least copper between pads, of the open project's rules, for every
+    // tab (FootprintEditor::setClearance()).
+    void setClearance(Coord clearance);
     // A new footprint in a new tab.
     FootprintEditor *openNewFootprint();
     // A copy of the footprint shown in a new tab, with no name yet; null
@@ -65,6 +68,7 @@ private:
     void updateTab(QWidget *tab);
 
     const Library *m_library = nullptr;
+    Coord m_clearance = 0;
     QStackedWidget *m_pages = nullptr;
     QTabWidget *m_tabs = nullptr;
     QWidget *m_start = nullptr;

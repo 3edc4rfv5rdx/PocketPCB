@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Footprint editor draws the silkscreen (lines, rectangles, circles, arcs, polygons, texts), drags the REF and VALUE places and frames pads nearer than the project clearance
 - N: Library editor window, a tab for each footprint (+, Open…, Copy): pads one by one or in rows, their properties, the origin, Save and Save as into the user library
 - F: A part dragged on the board lands on the grid by its pad 1, so its pads stand on the grid
 - F: Wire links are named xx1, xx2… in any designator style, old JP and XN names read as xx

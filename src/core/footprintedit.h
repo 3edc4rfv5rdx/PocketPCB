@@ -48,6 +48,33 @@ Footprint withOriginAt(const Footprint &footprint, const Point &at);
 // neither. Not on any grid.
 Point footprintMiddle(const Footprint &footprint);
 
+// A pad as the rules check measures it: a stroke from 'from' to 'to',
+// 'radius' round it; a rectangle is taken as the oval it holds.
+struct PadStroke
+{
+    Point from;
+    Point to;
+    Coord radius = 0;
+};
+PadStroke padStroke(const Pad &pad);
+
+// Two pads of a footprint nearer than a clearance: their indices, the gap
+// between their copper, and the point between them.
+struct PadGap
+{
+    int first = -1;
+    int second = -1;
+    Coord gap = 0;
+    Point at;
+};
+
+bool operator==(const PadGap &a, const PadGap &b);
+
+// The pads of 'footprint' whose copper on a side they share comes nearer
+// than 'clearance', in the order of their indices. Pads of one number are
+// one pin and may touch.
+QList<PadGap> padsTooNear(const Footprint &footprint, Coord clearance);
+
 // Why 'pad' cannot be in a footprint file, as footprintFromJson() would
 // refuse it; empty when it can.
 QString padProblem(const Pad &pad);

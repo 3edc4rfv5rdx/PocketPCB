@@ -2,6 +2,7 @@
 
 #include "jsonio.h"
 #include "paint.h"
+#include "trackedit.h"
 
 #include <algorithm>
 
@@ -161,6 +162,47 @@ Point footprintMiddle(const Footprint &footprint)
     if (bounds.isNull())
         return Point{};
     return Point{mmToNm(bounds.center().x()), mmToNm(bounds.center().y())};
+}
+
+PadStroke padStroke(const Pad &pad)
+{
+    const Coord narrow = std::min(pad.sizeX, pad.sizeY);
+    const Point half = pad.sizeX > pad.sizeY ? Point{(pad.sizeX - narrow) / 2, 0}
+                                             : Point{0, (pad.sizeY - narrow) / 2};
+    return PadStroke{pad.at - half, pad.at + half, narrow / 2};
+}
+
+bool operator==(const PadGap &a, const PadGap &b)
+{
+    return a.first == b.first && a.second == b.second && a.gap == b.gap && a.at == b.at;
+}
+
+QList<PadGap> padsTooNear(const Footprint &footprint, Coord clearance)
+{
+    // A side of the part, or the other one, each pad is on.
+    const auto front = [](const Pad &pad) { return pad.layers != PadLayers::Back; };
+    const auto back = [](const Pad &pad) { return pad.layers != PadLayers::Front; };
+    QList<PadGap> gaps;
+    for (int i = 0; i < footprint.pads.size(); ++i) {
+        const Pad &a = footprint.pads.at(i);
+        for (int j = i + 1; j < footprint.pads.size(); ++j) {
+            const Pad &b = footprint.pads.at(j);
+            if (!((front(a) && front(b)) || (back(a) && back(b))))
+                continue;
+            if (!a.number.isEmpty() && a.number == b.number)
+                continue;
+            const PadStroke sa = padStroke(a);
+            const PadStroke sb = padStroke(b);
+            const double apart =
+                piecesApart(toMm(sa.from), toMm(sa.to), toMm(sb.from), toMm(sb.to));
+            const Coord gap = mmToNm(apart) - sa.radius - sb.radius;
+            if (gap >= clearance)
+                continue;
+            const Point at{(a.at.x + b.at.x) / 2, (a.at.y + b.at.y) / 2};
+            gaps.append(PadGap{i, j, std::max<Coord>(0, gap), at});
+        }
+    }
+    return gaps;
 }
 
 QString padProblem(const Pad &pad)

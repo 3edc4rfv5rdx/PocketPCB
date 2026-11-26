@@ -355,6 +355,36 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         painter.drawLine(QPointF(12, 2), QPointF(12, 22));
         painter.drawLine(QPointF(2, 12), QPointF(22, 12));
         break;
+    case ToolIcon::DrawLine:
+        // A line between its two ends.
+        painter.drawLine(QPointF(5, 19), QPointF(19, 5));
+        dot(painter, {5, 19}, color);
+        dot(painter, {19, 5}, color);
+        break;
+    case ToolIcon::DrawRect:
+        painter.drawRect(QRectF(4, 6, 16, 12));
+        break;
+    case ToolIcon::DrawCircle:
+        painter.drawEllipse(QPointF(12, 12), 8, 8);
+        dot(painter, {12, 12}, color);
+        break;
+    case ToolIcon::DrawArc: {
+        // A quarter round its centre.
+        QPainterPath arc;
+        arc.moveTo(20, 12);
+        arc.arcTo(QRectF(4, 4, 16, 16), 0, 90);
+        painter.drawPath(arc);
+        dot(painter, {12, 12}, color);
+        break;
+    }
+    case ToolIcon::DrawPolygon:
+        painter.drawPolygon(polygon({{4, 18}, {9, 5}, {20, 9}, {17, 19}}));
+        break;
+    case ToolIcon::DrawText:
+        // A T.
+        painter.drawLine(QPointF(5, 5), QPointF(19, 5));
+        painter.drawLine(QPointF(12, 5), QPointF(12, 20));
+        break;
     }
 }
 

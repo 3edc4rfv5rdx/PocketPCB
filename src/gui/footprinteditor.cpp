@@ -3,6 +3,7 @@
 #include "appsettings.h"
 #include "canvasview.h"
 #include "format.h"
+#include "graphicedit.h"
 #include "inplaceedit.h"
 #include "libraryfile.h"
 #include "library.h"
@@ -38,6 +39,7 @@
 #include <QRegularExpression>
 #include <QSpinBox>
 #include <QSplitter>
+#include <QStackedWidget>
 #include <QStatusBar>
 #include <QTimer>
 #include <QToolBar>
@@ -74,6 +76,10 @@ const int MAX_ROW_PADS = 200;
 const double FLOATING_OPACITY = 0.5;
 // The frame round a chosen pad, in screen pixels.
 const double CHOSEN_PEN_PIXELS = 2.0;
+// Half the side of the square on a corner of a chosen drawing, in pixels.
+const double HANDLE_PIXELS = 3.0;
+// The line a new text is typed into, its width in mm.
+const double NEW_TEXT_WIDTH_MM = 12.0;
 // The cross of the origin about to be placed, its half length in mm.
 const double ORIGIN_CROSS_MM = 2.0;
 // What a footprint's name may hold: it is the name of its file.
@@ -105,6 +111,72 @@ QList<Pad> padsMovedBy(QList<Pad> pads, const Point &delta)
     return pads;
 }
 
+// The drawings of 'graphics' given the line of 'line'.
+QList<Graphic> withLineOf(QList<Graphic> graphics, const Graphic &line)
+{
+    for (Graphic &graphic : graphics) {
+        graphic.width = line.width;
+        graphic.dashed = line.dashed;
+    }
+    return graphics;
+}
+
+bool isDrawingMode(FootprintEditor::Mode mode)
+{
+    switch (mode) {
+    case FootprintEditor::Mode::Line:
+    case FootprintEditor::Mode::Rect:
+    case FootprintEditor::Mode::Circle:
+    case FootprintEditor::Mode::Arc:
+    case FootprintEditor::Mode::Polygon:
+    case FootprintEditor::Mode::Text:
+        return true;
+    case FootprintEditor::Mode::Select:
+    case FootprintEditor::Mode::Pad:
+    case FootprintEditor::Mode::Row:
+    case FootprintEditor::Mode::Origin:
+        break;
+    }
+    return false;
+}
+
+// The rectangle round what is chosen; null when nothing is.
+QRectF choiceBounds(const Footprint &footprint, const FootprintChoice &chosen)
+{
+    QList<QRectF> rects;
+    if (!chosen.pads.isEmpty())
+        rects.append(padsBounds(footprint, chosen.pads));
+    if (!chosen.graphics.isEmpty())
+        rects.append(graphicsBounds(footprint.graphics, chosen.graphics));
+    if (chosen.designator)
+        rects.append(placeholderRect(footprint.refAt, ComponentText::Designator));
+    if (chosen.value)
+        rects.append(placeholderRect(footprint.valueAt, ComponentText::Value));
+    QRectF bounds;
+    for (int i = 0; i < rects.size(); ++i) {
+        const QRectF &rect = rects.at(i);
+        bounds = i == 0 ? rect
+                        : QRectF(QPointF(std::min(bounds.left(), rect.left()),
+                                         std::min(bounds.top(), rect.top())),
+                                 QPointF(std::max(bounds.right(), rect.right()),
+                                         std::max(bounds.bottom(), rect.bottom())));
+    }
+    return bounds;
+}
+
+// 'footprint' with what is chosen moved by 'delta'.
+Footprint withChoiceMoved(const Footprint &footprint, const FootprintChoice &chosen,
+                          const Point &delta)
+{
+    Footprint result = withPadsMoved(footprint, chosen.pads, delta);
+    result.graphics = withGraphicsMoved(result.graphics, chosen.graphics, delta);
+    if (chosen.designator)
+        result.refAt = result.refAt + delta;
+    if (chosen.value)
+        result.valueAt = result.valueAt + delta;
+    return result;
+}
+
 // The footprint on the canvas: it hands the mouse to the editor and draws
 // what the editor shows.
 class FootprintItem : public QGraphicsItem
@@ -128,32 +200,64 @@ public:
         paintFootprint(*painter, shown);
         painter->save();
         painter->setRenderHint(QPainter::Antialiasing, true);
-        QPen chosenPen(paintcolor::selection(), CHOSEN_PEN_PIXELS);
-        chosenPen.setCosmetic(true);
-        painter->setPen(chosenPen);
+        const auto cosmetic = [](const QColor &color, Qt::PenStyle style = Qt::SolidLine) {
+            QPen pen(color, CHOSEN_PEN_PIXELS, style);
+            pen.setCosmetic(true);
+            return pen;
+        };
         painter->setBrush(Qt::NoBrush);
-        for (const int i : m_editor->chosen()) {
+        // Pads too near each other, in red.
+        painter->setPen(cosmetic(paintcolor::ercMark()));
+        for (const PadGap &gap : m_editor->padGaps()) {
+            for (const int i : {gap.first, gap.second}) {
+                if (i < shown.pads.size())
+                    painter->drawRect(padRect(shown.pads.at(i)));
+            }
+        }
+        const FootprintChoice &chosen = m_editor->chosen();
+        painter->setPen(cosmetic(paintcolor::selection()));
+        for (const int i : chosen.pads) {
             if (i >= 0 && i < shown.pads.size())
                 painter->drawRect(padRect(shown.pads.at(i)));
         }
-        const QList<Pad> floating = m_editor->floatingPads();
-        if (!floating.isEmpty()) {
+        const double handle = m_editor->canvas()->pixelsToMm(HANDLE_PIXELS);
+        for (const int i : chosen.graphics) {
+            if (i < 0 || i >= shown.graphics.size())
+                continue;
+            const Graphic &graphic = shown.graphics.at(i);
+            const QPolygonF outline = graphicOutline(graphic);
+            if (outline.isEmpty())
+                painter->drawRect(graphicRect(graphic));
+            else
+                painter->drawPolyline(outline);
+            // The corners that can be dragged.
+            for (const Point &corner : graphicCorners(graphic))
+                painter->drawRect(QRectF(toMm(corner) - QPointF(handle, handle),
+                                         QSizeF(2 * handle, 2 * handle)));
+        }
+        if (chosen.designator)
+            painter->drawRect(placeholderRect(shown.refAt, ComponentText::Designator));
+        if (chosen.value)
+            painter->drawRect(placeholderRect(shown.valueAt, ComponentText::Value));
+
+        const QList<Pad> floatingPads = m_editor->floatingPads();
+        const QList<Graphic> floatingGraphics = m_editor->floatingGraphics();
+        if (!floatingPads.isEmpty() || !floatingGraphics.isEmpty()) {
             painter->setOpacity(FLOATING_OPACITY);
-            paintFootprintPads(*painter, floating);
+            paintFootprintPads(*painter, floatingPads);
+            paintFootprintGraphics(*painter, floatingGraphics);
             painter->setOpacity(1.0);
         }
         if (const std::optional<Point> origin = m_editor->floatingOrigin()) {
-            QPen crossPen(paintcolor::boardOrigin(), CHOSEN_PEN_PIXELS);
-            crossPen.setCosmetic(true);
-            painter->setPen(crossPen);
+            painter->setPen(cosmetic(paintcolor::boardOrigin()));
             const QPointF at = toMm(*origin);
             painter->drawLine(at - QPointF(ORIGIN_CROSS_MM, 0), at + QPointF(ORIGIN_CROSS_MM, 0));
             painter->drawLine(at - QPointF(0, ORIGIN_CROSS_MM), at + QPointF(0, ORIGIN_CROSS_MM));
         }
         const QRectF frame = m_editor->frame();
         if (!frame.isNull()) {
-            QPen framePen(paintcolor::selection(), 1, Qt::DashLine);
-            framePen.setCosmetic(true);
+            QPen framePen = cosmetic(paintcolor::selection(), Qt::DashLine);
+            framePen.setWidthF(1);
             painter->setPen(framePen);
             painter->drawRect(frame);
         }
@@ -167,12 +271,13 @@ protected:
             event->ignore();
             return;
         }
-        m_editor->press(event->scenePos(), event->modifiers().testFlag(Qt::ControlModifier));
+        m_editor->press(event->scenePos(), event->modifiers().testFlag(Qt::ControlModifier),
+                        event->modifiers().testFlag(Qt::ShiftModifier));
         event->accept();
     }
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override
     {
-        m_editor->move(event->scenePos());
+        m_editor->move(event->scenePos(), event->modifiers().testFlag(Qt::ShiftModifier));
     }
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override
     {
@@ -189,7 +294,7 @@ protected:
     }
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override
     {
-        m_editor->hover(event->scenePos());
+        m_editor->hover(event->scenePos(), event->modifiers().testFlag(Qt::ShiftModifier));
     }
 
 private:
@@ -198,6 +303,12 @@ private:
 };
 
 } // namespace
+
+bool operator==(const FootprintChoice &a, const FootprintChoice &b)
+{
+    return a.pads == b.pads && a.graphics == b.graphics && a.designator == b.designator
+           && a.value == b.value;
+}
 
 // One step of a footprint editor: the footprint before and after it.
 class FootprintStep : public QUndoCommand
@@ -241,12 +352,16 @@ FootprintEditor::FootprintEditor(const QString &name, const Footprint &footprint
     m_canvas->setGridStep(FOOTPRINT_GRID_STEP);
     m_canvas->scene()->addItem(new FootprintItem(this, m_canvas->scene()->sceneRect()));
     m_numberEdit = new InPlaceEdit(m_canvas, this);
-    m_panel = new PadPanel(this, this);
+    m_padPanel = new PadPanel(this, this);
+    m_graphicPanel = new GraphicPanel(this, this);
+    m_panels = new QStackedWidget(this);
+    m_panels->addWidget(m_padPanel);
+    m_panels->addWidget(m_graphicPanel);
 
     // The strip over the canvas, the panel beside it.
     QSplitter *splitter = new QSplitter(Qt::Horizontal, this);
     splitter->addWidget(m_canvas);
-    splitter->addWidget(m_panel);
+    splitter->addWidget(m_panels);
     splitter->setStretchFactor(0, 1);
     splitter->setStretchFactor(1, 0);
     splitter->setChildrenCollapsible(false);
@@ -258,9 +373,17 @@ FootprintEditor::FootprintEditor(const QString &name, const Footprint &footprint
 
     connect(&m_undoStack, &QUndoStack::cleanChanged, this, &FootprintEditor::titleChanged);
     connect(this, &FootprintEditor::changed, m_canvas->scene(), [this] { m_canvas->scene()->update(); });
-    connect(this, &FootprintEditor::changed, m_panel, [this] { m_panel->refresh(); });
+    connect(this, &FootprintEditor::changed, this, &FootprintEditor::showPanel);
+    showPanel();
     // Once the tab is shown and the canvas knows its size.
     QTimer::singleShot(0, this, [this] { m_canvas->fitRect(footprintBounds(m_footprint)); });
+}
+
+FootprintEditor::~FootprintEditor()
+{
+    // The stack going last says it is clean no more, or again: nobody is to
+    // hear it, the tab is gone.
+    m_undoStack.disconnect();
 }
 
 QString FootprintEditor::editorTitle()
@@ -271,6 +394,11 @@ QString FootprintEditor::editorTitle()
 QString FootprintEditor::padPropertiesStep()
 {
     return tr("Pad properties");
+}
+
+QString FootprintEditor::drawingPropertiesStep()
+{
+    return tr("Drawing properties");
 }
 
 QString FootprintEditor::newFootprintTitle()
@@ -291,8 +419,8 @@ QWidget *FootprintEditor::createToolBar()
     styleToolBar(bar);
     const QColor color = bar->palette().color(QPalette::WindowText);
 
-    // An action of the window with its picture and its key in its tip; on
-    // the strip when it has a picture.
+    // An action of the tab with its picture and its key in its tip; on the
+    // strip when it has a picture.
     const auto action = [this, bar, &color](const QString &text, const char *name,
                                             const QKeySequence &key, std::optional<ToolIcon> icon,
                                             auto slot) {
@@ -316,6 +444,15 @@ QWidget *FootprintEditor::createToolBar()
         }
         return result;
     };
+    // A button with the action 'main' and the menu 'menu' under its arrow.
+    const auto menuButton = [bar](QAction *main, QMenu *menu, const char *name) {
+        QToolButton *button = new QToolButton(bar);
+        button->setObjectName(QLatin1String(name));
+        button->setDefaultAction(main);
+        button->setMenu(menu);
+        button->setPopupMode(QToolButton::MenuButtonPopup);
+        bar->addWidget(button);
+    };
     const auto gap = [bar] {
         QWidget *spacer = new QWidget(bar);
         spacer->setFixedWidth(TOOL_ICON_SIZE / 2);
@@ -335,12 +472,7 @@ QWidget *FootprintEditor::createToolBar()
                              QKeySequence::SaveAs, std::nullopt, [this] { saveUnderNewName(); });
     QMenu *saveMenu = new QMenu(this);
     saveMenu->addAction(saveAs);
-    QToolButton *saveButton = new QToolButton(bar);
-    saveButton->setObjectName(QStringLiteral("saveFootprintButton"));
-    saveButton->setDefaultAction(saveAction);
-    saveButton->setMenu(saveMenu);
-    saveButton->setPopupMode(QToolButton::MenuButtonPopup);
-    bar->addWidget(saveButton);
+    menuButton(saveAction, saveMenu, "saveFootprintButton");
     gap();
     QAction *undo = m_undoStack.createUndoAction(this, MainWindow::undoTitle());
     undo->setObjectName(QStringLiteral("actionUndoFootprint"));
@@ -376,8 +508,8 @@ QWidget *FootprintEditor::createToolBar()
     QAction *select = action(MainWindow::selectTitle(), "actionSelectFootprint",
                              QKeySequence(Qt::Key_Escape), ToolIcon::Select, [this] { escape(); });
     m_modeActions.insert(int(Mode::Select), select);
-    QAction *pad = action(PadPanel::padTitle(), "actionPadTool", QKeySequence(Qt::Key_P), std::nullopt,
-                          [this] { setMode(Mode::Pad); });
+    QAction *pad = action(PadPanel::padTitle(), "actionPadTool", QKeySequence(Qt::Key_P),
+                          std::nullopt, [this] { setMode(Mode::Pad); });
     pad->setIcon(toolIcon(ToolIcon::Pad, color));
     m_modeActions.insert(int(Mode::Pad), pad);
     // The arrow offers pads of the usual sizes: the one chosen is placed.
@@ -395,15 +527,33 @@ QWidget *FootprintEditor::createToolBar()
             setMode(Mode::Pad);
         });
     }
-    QToolButton *padButton = new QToolButton(bar);
-    padButton->setObjectName(QStringLiteral("padButton"));
-    padButton->setDefaultAction(pad);
-    padButton->setMenu(padMenu);
-    padButton->setPopupMode(QToolButton::MenuButtonPopup);
-    bar->addWidget(padButton);
-    QAction *row = action(tr("Row of pads"), "actionPadRow", QKeySequence(),
-                          ToolIcon::PadRow, [this] { askRow(); });
+    menuButton(pad, padMenu, "padButton");
+    QAction *row = action(tr("Row of pads"), "actionPadRow", QKeySequence(), ToolIcon::PadRow,
+                          [this] { askRow(); });
     m_modeActions.insert(int(Mode::Row), row);
+    gap();
+    struct DrawingMode
+    {
+        Mode mode;
+        QString text;
+        const char *name;
+        QKeySequence key;
+        ToolIcon icon;
+    };
+    const QList<DrawingMode> drawing = {
+        {Mode::Line, tr("Line"), "actionDrawLine", QKeySequence(Qt::Key_L), ToolIcon::DrawLine},
+        {Mode::Rect, tr("Rectangle"), "actionDrawRect", QKeySequence(), ToolIcon::DrawRect},
+        {Mode::Circle, tr("Circle"), "actionDrawCircle", QKeySequence(), ToolIcon::DrawCircle},
+        {Mode::Arc, tr("Arc"), "actionDrawArc", QKeySequence(), ToolIcon::DrawArc},
+        {Mode::Polygon, tr("Polygon"), "actionDrawPolygon", QKeySequence(), ToolIcon::DrawPolygon},
+        {Mode::Text, tr("Text"), "actionDrawText", QKeySequence(Qt::Key_T), ToolIcon::DrawText},
+    };
+    for (const DrawingMode &mode : drawing) {
+        m_modeActions.insert(int(mode.mode),
+                             action(mode.text, mode.name, mode.key, mode.icon,
+                                    [this, m = mode.mode] { setMode(m); }));
+    }
+    gap();
     QAction *origin = action(tr("Origin here"), "actionOriginHere", QKeySequence(Qt::Key_O),
                              std::nullopt, [this] { setMode(Mode::Origin); });
     origin->setIcon(toolIcon(ToolIcon::Origin, color));
@@ -412,12 +562,7 @@ QWidget *FootprintEditor::createToolBar()
     QAction *middle = originMenu->addAction(tr("Origin in the middle"));
     middle->setObjectName(QStringLiteral("actionOriginMiddle"));
     connect(middle, &QAction::triggered, this, &FootprintEditor::originAtMiddle);
-    QToolButton *originButton = new QToolButton(bar);
-    originButton->setObjectName(QStringLiteral("originButton"));
-    originButton->setDefaultAction(origin);
-    originButton->setMenu(originMenu);
-    originButton->setPopupMode(QToolButton::MenuButtonPopup);
-    bar->addWidget(originButton);
+    menuButton(origin, originMenu, "originButton");
     for (QAction *mode : std::as_const(m_modeActions))
         mode->setCheckable(true);
     stretch();
@@ -436,11 +581,11 @@ QWidget *FootprintEditor::createToolBar()
     bar->addWidget(m_gridBox);
 
     // Keys with no button.
-    action(SheetEditor::actionName(SheetEditor::Action::Rotate), "actionRotatePads",
+    action(SheetEditor::actionName(SheetEditor::Action::Rotate), "actionRotateFootprint",
            QKeySequence(Qt::Key_R), std::nullopt, [this] { rotate(); });
-    action(SheetEditor::actionName(SheetEditor::Action::Delete), "actionDeletePads",
+    action(SheetEditor::actionName(SheetEditor::Action::Delete), "actionDeleteFootprint",
            QKeySequence::Delete, std::nullopt, [this] { deleteChosen(); });
-    action(MainWindow::selectAllTitle(), "actionChooseAllPads", QKeySequence::SelectAll,
+    action(MainWindow::selectAllTitle(), "actionChooseAllFootprint", QKeySequence::SelectAll,
            std::nullopt, [this] { chooseAll(); });
     updateModeButtons();
     return bar;
@@ -467,6 +612,15 @@ void FootprintEditor::updateModeButtons()
         it.value()->setChecked(it.key() == int(m_mode));
 }
 
+void FootprintEditor::showPanel()
+{
+    const bool drawings = isDrawingMode(m_mode)
+                          || (!m_chosen.graphics.isEmpty() && m_chosen.pads.isEmpty());
+    m_panels->setCurrentWidget(drawings ? static_cast<QWidget *>(m_graphicPanel) : m_padPanel);
+    m_padPanel->refresh();
+    m_graphicPanel->refresh();
+}
+
 void FootprintEditor::showStatus(const QString &text)
 {
     m_status = text;
@@ -478,22 +632,54 @@ Point FootprintEditor::snapped(const QPointF &at) const
     return m_canvas->snapped(at);
 }
 
+void FootprintEditor::setClearance(Coord clearance)
+{
+    if (clearance == m_clearance)
+        return;
+    m_clearance = clearance;
+    checkGaps();
+    emit changed();
+}
+
+void FootprintEditor::checkGaps()
+{
+    const QList<PadGap> gaps =
+        m_clearance > 0 ? padsTooNear(m_footprint, m_clearance) : QList<PadGap>();
+    const bool news = gaps != m_gaps;
+    m_gaps = gaps;
+    if (!news || gaps.isEmpty())
+        return;
+    const PadGap &first = gaps.first();
+    const QString number = m_footprint.pads.at(first.first).number;
+    const QString other = m_footprint.pads.at(first.second).number;
+    showStatus(tr("Pads %1 and %2 are %3 apart, less than the clearance %4")
+                   .arg(number, other, formatMmShortUnit(first.gap),
+                        formatMmShortUnit(m_clearance)));
+}
+
 void FootprintEditor::setMode(Mode mode)
 {
     m_mode = mode;
     m_dragging = false;
     m_framing = false;
+    m_drawPoints.clear();
     updateModeButtons();
     emit changed();
 }
 
-void FootprintEditor::setChosen(const QSet<int> &pads)
+void FootprintEditor::setChosen(const FootprintChoice &chosen)
 {
-    QSet<int> valid;
-    for (const int i : pads) {
+    FootprintChoice valid;
+    for (const int i : chosen.pads) {
         if (i >= 0 && i < m_footprint.pads.size())
-            valid.insert(i);
+            valid.pads.insert(i);
     }
+    for (const int i : chosen.graphics) {
+        if (i >= 0 && i < m_footprint.graphics.size())
+            valid.graphics.insert(i);
+    }
+    valid.designator = chosen.designator;
+    valid.value = chosen.value;
     if (valid == m_chosen)
         return;
     m_chosen = valid;
@@ -508,8 +694,15 @@ void FootprintEditor::setNextPad(const Pad &pad)
     emit changed();
 }
 
+void FootprintEditor::setNextGraphic(const Graphic &graphic)
+{
+    m_nextGraphic.width = graphic.width;
+    m_nextGraphic.dashed = graphic.dashed;
+    emit changed();
+}
+
 void FootprintEditor::change(const QString &text, const Footprint &changed,
-                             const QSet<int> &chosen)
+                             const FootprintChoice &chosen)
 {
     if (changed == m_footprint) {
         setChosen(chosen);
@@ -523,15 +716,22 @@ void FootprintEditor::applyStep(const Footprint &footprint)
 {
     m_footprint = footprint;
     m_dragging = false;
-    m_chosen.clear();
+    m_chosen = FootprintChoice();
+    checkGaps();
     emit changed();
 }
 
 Footprint FootprintEditor::shownFootprint() const
 {
-    if (m_dragging && m_dragDelta != Point{})
-        return withPadsMoved(m_footprint, m_chosen, m_dragDelta);
-    return m_footprint;
+    if (!m_dragging || m_dragDelta == Point{})
+        return m_footprint;
+    if (m_dragGraphic >= 0) {
+        Footprint result = m_footprint;
+        result.graphics[m_dragGraphic] = withCornerMoved(
+            m_footprint.graphics.at(m_dragGraphic), m_dragCorner, m_dragAnchor + m_dragDelta);
+        return result;
+    }
+    return withChoiceMoved(m_footprint, m_chosen, m_dragDelta);
 }
 
 QList<Pad> FootprintEditor::floatingPads() const
@@ -549,6 +749,54 @@ QList<Pad> FootprintEditor::floatingPads() const
     return {};
 }
 
+Point FootprintEditor::drawPoint(const Point &cursor) const
+{
+    const bool straight = m_mode == Mode::Line || m_mode == Mode::Polygon;
+    if (!straight || m_free || m_drawPoints.isEmpty())
+        return cursor;
+    return keptStraightOrDiagonal(m_drawPoints.last(), cursor);
+}
+
+QList<Graphic> FootprintEditor::floatingGraphics() const
+{
+    if (!m_cursorKnown || m_drawPoints.isEmpty())
+        return {};
+    const Point at = drawPoint(m_cursor);
+    const Point first = m_drawPoints.first();
+    QList<Graphic> graphics;
+    switch (m_mode) {
+    case Mode::Line:
+        graphics.append(lineBetween(m_drawPoints.last(), at));
+        break;
+    case Mode::Rect:
+        graphics.append(rectBetween(first, at));
+        break;
+    case Mode::Circle:
+        if (at != first)
+            graphics.append(circleThrough(first, at));
+        break;
+    case Mode::Arc:
+        // The radius shown until the start is clicked.
+        if (m_drawPoints.size() == 1)
+            graphics.append(lineBetween(first, at));
+        else if (at != first)
+            graphics.append(arcThrough(first, m_drawPoints.at(1), at));
+        break;
+    case Mode::Polygon:
+        for (int i = 1; i < m_drawPoints.size(); ++i)
+            graphics.append(lineBetween(m_drawPoints.at(i - 1), m_drawPoints.at(i)));
+        graphics.append(lineBetween(m_drawPoints.last(), at));
+        break;
+    case Mode::Select:
+    case Mode::Pad:
+    case Mode::Row:
+    case Mode::Origin:
+    case Mode::Text:
+        break;
+    }
+    return withLineOf(graphics, m_nextGraphic);
+}
+
 std::optional<Point> FootprintEditor::floatingOrigin() const
 {
     if (m_mode == Mode::Origin && m_cursorKnown)
@@ -561,10 +809,89 @@ QRectF FootprintEditor::frame() const
     return m_framing ? QRectF(m_frameFrom, m_frameTo).normalized() : QRectF();
 }
 
-void FootprintEditor::press(const QPointF &at, bool adding)
+void FootprintEditor::addGraphic(const QString &text, Graphic graphic)
+{
+    if (graphic.kind != GraphicKind::Text) {
+        graphic.width = m_nextGraphic.width;
+        graphic.dashed = m_nextGraphic.dashed;
+    }
+    Footprint changed = m_footprint;
+    changed.graphics.append(graphic);
+    FootprintChoice chosen;
+    chosen.graphics = {int(changed.graphics.size()) - 1};
+    change(text, changed, chosen);
+}
+
+void FootprintEditor::drawClick(const Point &cursor)
+{
+    const Point at = drawPoint(cursor);
+    const QString step = tr("Draw");
+    switch (m_mode) {
+    case Mode::Line:
+        if (!m_drawPoints.isEmpty() && at != m_drawPoints.last())
+            addGraphic(step, lineBetween(m_drawPoints.last(), at));
+        // Each line goes on from the end of the last.
+        m_drawPoints = {at};
+        break;
+    case Mode::Rect:
+        if (m_drawPoints.isEmpty()) {
+            m_drawPoints = {at};
+        } else if (at.x != m_drawPoints.first().x && at.y != m_drawPoints.first().y) {
+            addGraphic(step, rectBetween(m_drawPoints.first(), at));
+            m_drawPoints.clear();
+        }
+        break;
+    case Mode::Circle:
+        if (m_drawPoints.isEmpty()) {
+            m_drawPoints = {at};
+        } else if (at != m_drawPoints.first()) {
+            addGraphic(step, circleThrough(m_drawPoints.first(), at));
+            m_drawPoints.clear();
+        }
+        break;
+    case Mode::Arc:
+        if (m_drawPoints.isEmpty()) {
+            m_drawPoints = {at};
+        } else if (at == m_drawPoints.first()) {
+            // The centre again: nothing.
+        } else if (m_drawPoints.size() == 1) {
+            m_drawPoints.append(at);
+        } else {
+            addGraphic(step, arcThrough(m_drawPoints.first(), m_drawPoints.at(1), at));
+            m_drawPoints.clear();
+        }
+        break;
+    case Mode::Polygon:
+        if (m_drawPoints.size() >= 3 && at == m_drawPoints.first())
+            finishDrawing();
+        else if (m_drawPoints.isEmpty() || at != m_drawPoints.last())
+            m_drawPoints.append(at);
+        break;
+    case Mode::Text:
+        editText(at, -1);
+        break;
+    case Mode::Select:
+    case Mode::Pad:
+    case Mode::Row:
+    case Mode::Origin:
+        break;
+    }
+    emit changed();
+}
+
+void FootprintEditor::finishDrawing()
+{
+    if (m_mode == Mode::Polygon && m_drawPoints.size() >= 3)
+        addGraphic(tr("Draw"), polygonOf(m_drawPoints));
+    m_drawPoints.clear();
+    emit changed();
+}
+
+void FootprintEditor::press(const QPointF &at, bool adding, bool free)
 {
     m_numberEdit->close(true);
     m_pressAt = at;
+    m_free = free;
     m_cursor = snapped(at);
     m_cursorKnown = true;
     switch (m_mode) {
@@ -572,15 +899,16 @@ void FootprintEditor::press(const QPointF &at, bool adding)
         Pad pad = m_nextPad;
         pad.at = m_cursor;
         pad.number = nextPadNumber(m_footprint);
-        const int index = int(m_footprint.pads.size());
-        change(tr("Place pad"), withPadsAdded(m_footprint, {pad}), {index});
+        FootprintChoice placed;
+        placed.pads = {int(m_footprint.pads.size())};
+        change(tr("Place pad"), withPadsAdded(m_footprint, {pad}), placed);
         return;
     }
     case Mode::Row: {
         const int first = int(m_footprint.pads.size());
-        QSet<int> placed;
+        FootprintChoice placed;
         for (int k = 0; k < m_rowPads.size(); ++k)
-            placed.insert(first + k);
+            placed.pads.insert(first + k);
         const Footprint changed = withPadsAdded(m_footprint, padsMovedBy(m_rowPads, m_cursor));
         m_mode = Mode::Select;
         updateModeButtons();
@@ -597,13 +925,59 @@ void FootprintEditor::press(const QPointF &at, bool adding)
         m_cursor = m_cursor - origin;
         return;
     }
+    case Mode::Line:
+    case Mode::Rect:
+    case Mode::Circle:
+    case Mode::Arc:
+    case Mode::Polygon:
+    case Mode::Text:
+        drawClick(m_cursor);
+        return;
     case Mode::Select:
         break;
     }
 
-    const int hit = padAtPoint(m_footprint, at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
-    m_pressPad = -1;
-    if (hit < 0) {
+    const double reach = m_canvas->pixelsToMm(CanvasView::HIT_PIXELS);
+    m_pressAlone.reset();
+    m_dragGraphic = -1;
+    m_dragCorner = -1;
+    // A corner of a drawing is dragged alone.
+    const double cornerReach = m_canvas->pixelsToMm(CanvasView::END_PIXELS);
+    for (int i = int(m_footprint.graphics.size()) - 1; i >= 0 && !adding; --i) {
+        const int corner = cornerAt(m_footprint.graphics.at(i), at, cornerReach);
+        if (corner < 0)
+            continue;
+        FootprintChoice alone;
+        alone.graphics = {i};
+        setChosen(alone);
+        m_dragging = true;
+        m_dragGraphic = i;
+        m_dragCorner = corner;
+        m_dragAnchor = graphicCorners(m_footprint.graphics.at(i)).at(corner);
+        m_dragDelta = Point{};
+        return;
+    }
+    // What is under the press: the drawings over the pads, then the pads,
+    // then the places of the texts, which stand on the origin at first.
+    FootprintChoice hit;
+    Point anchor;
+    const int graphic = graphicAt(m_footprint.graphics, at, reach);
+    const int pad = padAtPoint(m_footprint, at, reach);
+    if (graphic >= 0) {
+        hit.graphics = {graphic};
+        const Graphic &g = m_footprint.graphics.at(graphic);
+        anchor = g.kind == GraphicKind::Polygon && !g.points.isEmpty() ? g.points.first() : g.a;
+    } else if (pad >= 0) {
+        hit.pads = {pad};
+        anchor = m_footprint.pads.at(pad).at;
+    } else if (placeholderRect(m_footprint.refAt, ComponentText::Designator).contains(at)) {
+        hit.designator = true;
+        anchor = m_footprint.refAt;
+    } else if (placeholderRect(m_footprint.valueAt, ComponentText::Value).contains(at)) {
+        hit.value = true;
+        anchor = m_footprint.valueAt;
+    }
+    if (hit.isEmpty()) {
         m_framing = true;
         m_frameAdding = adding;
         m_frameFrom = at;
@@ -613,27 +987,37 @@ void FootprintEditor::press(const QPointF &at, bool adding)
         emit changed();
         return;
     }
+    const bool already = m_chosen.pads.contains(hit.pads) && m_chosen.graphics.contains(hit.graphics)
+                         && (!hit.designator || m_chosen.designator)
+                         && (!hit.value || m_chosen.value);
     if (adding) {
-        QSet<int> chosen = m_chosen;
-        if (chosen.contains(hit))
-            chosen.remove(hit);
-        else
-            chosen.insert(hit);
+        FootprintChoice chosen = m_chosen;
+        if (already) {
+            chosen.pads.subtract(hit.pads);
+            chosen.graphics.subtract(hit.graphics);
+            chosen.designator = chosen.designator && !hit.designator;
+            chosen.value = chosen.value && !hit.value;
+        } else {
+            chosen.pads.unite(hit.pads);
+            chosen.graphics.unite(hit.graphics);
+            chosen.designator = chosen.designator || hit.designator;
+            chosen.value = chosen.value || hit.value;
+        }
         setChosen(chosen);
         return;
     }
-    if (m_chosen.contains(hit))
-        m_pressPad = hit;
+    if (already)
+        m_pressAlone = hit;
     else
-        setChosen({hit});
+        setChosen(hit);
     m_dragging = true;
-    m_dragAnchor = m_footprint.pads.at(hit).at;
+    m_dragAnchor = anchor;
     m_dragDelta = Point{};
 }
 
-void FootprintEditor::move(const QPointF &at)
+void FootprintEditor::move(const QPointF &at, bool free)
 {
-    hover(at);
+    hover(at, free);
     if (m_framing) {
         m_frameTo = at;
         emit changed();
@@ -656,43 +1040,74 @@ void FootprintEditor::release(const QPointF &at)
     if (m_framing) {
         m_framing = false;
         m_frameTo = at;
-        QSet<int> chosen = m_frameAdding ? m_chosen : QSet<int>();
-        chosen.unite(padsInside(m_footprint, QRectF(m_frameFrom, m_frameTo).normalized()));
+        const QRectF rect = QRectF(m_frameFrom, m_frameTo).normalized();
+        FootprintChoice chosen = m_frameAdding ? m_chosen : FootprintChoice();
+        chosen.pads.unite(padsInside(m_footprint, rect));
+        chosen.graphics.unite(graphicsInside(m_footprint.graphics, rect));
+        chosen.designator = chosen.designator
+                            || rect.contains(placeholderRect(m_footprint.refAt,
+                                                             ComponentText::Designator));
+        chosen.value = chosen.value
+                       || rect.contains(placeholderRect(m_footprint.valueAt, ComponentText::Value));
         setChosen(chosen);
         emit changed();
         return;
     }
     if (!m_dragging)
         return;
+    const Footprint moved = shownFootprint();
+    const bool dragged = m_dragDelta != Point{};
     m_dragging = false;
-    const Point delta = m_dragDelta;
     m_dragDelta = Point{};
-    if (delta != Point{}) {
-        change(SheetEditor::actionName(SheetEditor::Action::Move),
-               withPadsMoved(m_footprint, m_chosen, delta), m_chosen);
-    } else if (m_pressPad >= 0) {
+    m_dragGraphic = -1;
+    m_dragCorner = -1;
+    if (dragged) {
+        change(SheetEditor::actionName(SheetEditor::Action::Move), moved, m_chosen);
+    } else if (m_pressAlone) {
         // A click on one of several chosen chooses it alone.
-        setChosen({m_pressPad});
+        setChosen(*m_pressAlone);
     }
-    m_pressPad = -1;
+    m_pressAlone.reset();
     emit changed();
 }
 
 void FootprintEditor::doubleClick(const QPointF &at)
 {
-    // The second of two quick clicks places again.
-    if (m_mode != Mode::Select) {
-        press(at, false);
+    switch (m_mode) {
+    case Mode::Line:
+    case Mode::Polygon:
+        // The first click of the two put its point down already.
+        finishDrawing();
+        return;
+    case Mode::Select:
+        break;
+    case Mode::Pad:
+    case Mode::Row:
+    case Mode::Origin:
+    case Mode::Rect:
+    case Mode::Circle:
+    case Mode::Arc:
+    case Mode::Text:
+        // The second of two quick clicks is a click of its own.
+        press(at, false, m_free);
         return;
     }
-    const int hit = padAtPoint(m_footprint, at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
-    if (hit >= 0)
-        editNumber(hit);
+    const double reach = m_canvas->pixelsToMm(CanvasView::HIT_PIXELS);
+    const int graphic = graphicAt(m_footprint.graphics, at, reach);
+    if (graphic >= 0 && m_footprint.graphics.at(graphic).kind == GraphicKind::Text) {
+        editText(m_footprint.graphics.at(graphic).a, graphic);
+        return;
+    }
+    const int pad = padAtPoint(m_footprint, at, reach);
+    if (pad >= 0)
+        editNumber(pad);
 }
 
 void FootprintEditor::editNumber(int pad)
 {
-    setChosen({pad});
+    FootprintChoice alone;
+    alone.pads = {pad};
+    setChosen(alone);
     m_dragging = false;
     // The edit is tied to this pad as the footprint stands now: a step made
     // meanwhile closes it first (press() does), so the index holds.
@@ -702,18 +1117,50 @@ void FootprintEditor::editNumber(int pad)
             return;
         Pad changed = m_footprint.pads.at(pad);
         changed.number = text.trimmed();
-        change(padPropertiesStep(), withPadsReplaced(m_footprint, {pad}, {changed}), {pad});
+        FootprintChoice chosen;
+        chosen.pads = {pad};
+        change(padPropertiesStep(), withPadsReplaced(m_footprint, {pad}, {changed}), chosen);
     });
     m_numberEdit->open(m_footprint.pads.at(pad).number, padRect(m_footprint.pads.at(pad)));
 }
 
-void FootprintEditor::hover(const QPointF &at)
+void FootprintEditor::editText(const Point &at, int graphic)
+{
+    m_dragging = false;
+    disconnect(m_numberEdit, &InPlaceEdit::accepted, this, nullptr);
+    connect(m_numberEdit, &InPlaceEdit::accepted, this, [this, at, graphic](const QString &typed) {
+        const QString text = typed.trimmed();
+        // An empty text is none: a text given none keeps its own.
+        if (text.isEmpty())
+            return;
+        if (graphic < 0) {
+            addGraphic(tr("Draw"), textAt(at, text));
+            return;
+        }
+        if (graphic >= m_footprint.graphics.size())
+            return;
+        Footprint changed = m_footprint;
+        changed.graphics[graphic].text = text;
+        FootprintChoice chosen;
+        chosen.graphics = {graphic};
+        change(drawingPropertiesStep(), changed, chosen);
+    });
+    const QString text = graphic >= 0 ? m_footprint.graphics.at(graphic).text : QString();
+    const QRectF rect = graphic >= 0
+                            ? graphicRect(m_footprint.graphics.at(graphic))
+                            : QRectF(toMm(at) - QPointF(NEW_TEXT_WIDTH_MM / 2, nmToMm(DEFAULT_TEXT_HEIGHT)),
+                                     QSizeF(NEW_TEXT_WIDTH_MM, 2 * nmToMm(DEFAULT_TEXT_HEIGHT)));
+    m_numberEdit->open(text, rect);
+}
+
+void FootprintEditor::hover(const QPointF &at, bool free)
 {
     const Point cursor = snapped(at);
-    if (m_cursorKnown && cursor == m_cursor)
+    if (m_cursorKnown && cursor == m_cursor && free == m_free)
         return;
     m_cursor = cursor;
     m_cursorKnown = true;
+    m_free = free;
     if (m_mode != Mode::Select)
         emit changed();
 }
@@ -731,24 +1178,36 @@ void FootprintEditor::rotate()
     }
     if (m_chosen.isEmpty() || m_dragging)
         return;
-    const Point center = snapped(padsBounds(m_footprint, m_chosen).center());
-    change(SheetEditor::actionName(SheetEditor::Action::Rotate),
-           withPadsRotated(m_footprint, m_chosen, center), m_chosen);
+    const Point center = snapped(choiceBounds(m_footprint, m_chosen).center());
+    Footprint changed = withPadsRotated(m_footprint, m_chosen.pads, center);
+    changed.graphics = withGraphicsRotated(changed.graphics, m_chosen.graphics, center);
+    const auto turned = [&center](const Point &point) {
+        const Point offset = point - center;
+        return center + Point{-offset.y, offset.x};
+    };
+    if (m_chosen.designator)
+        changed.refAt = turned(changed.refAt);
+    if (m_chosen.value)
+        changed.valueAt = turned(changed.valueAt);
+    change(SheetEditor::actionName(SheetEditor::Action::Rotate), changed, m_chosen);
 }
 
 void FootprintEditor::deleteChosen()
 {
-    if (m_chosen.isEmpty() || m_dragging)
+    if ((m_chosen.pads.isEmpty() && m_chosen.graphics.isEmpty()) || m_dragging)
         return;
-    change(SheetEditor::actionName(SheetEditor::Action::Delete),
-           withoutPads(m_footprint, m_chosen), {});
+    Footprint changed = withoutPads(m_footprint, m_chosen.pads);
+    changed.graphics = withoutGraphics(changed.graphics, m_chosen.graphics);
+    change(SheetEditor::actionName(SheetEditor::Action::Delete), changed, {});
 }
 
 void FootprintEditor::chooseAll()
 {
-    QSet<int> all;
+    FootprintChoice all;
     for (int i = 0; i < m_footprint.pads.size(); ++i)
-        all.insert(i);
+        all.pads.insert(i);
+    for (int i = 0; i < m_footprint.graphics.size(); ++i)
+        all.graphics.insert(i);
     setMode(Mode::Select);
     setChosen(all);
 }
@@ -759,6 +1218,11 @@ void FootprintEditor::escape()
         m_dragging = false;
         m_framing = false;
         m_dragDelta = Point{};
+        m_dragGraphic = -1;
+        emit changed();
+    } else if (!m_drawPoints.isEmpty()) {
+        // A line ends where it got to; a polygon not closed is dropped.
+        m_drawPoints.clear();
         emit changed();
     } else if (m_mode != Mode::Select) {
         setMode(Mode::Select);
@@ -936,242 +1400,6 @@ bool FootprintEditor::confirmClose()
         tr("The footprint has changes that are not saved. Save them") + QLatin1Char('?'),
         QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
     return answer == QMessageBox::Discard || (answer == QMessageBox::Save && save());
-}
-
-// PadPanel
-
-PadPanel::PadPanel(FootprintEditor *editor, QWidget *parent)
-    : QWidget(parent)
-    , m_editor(editor)
-{
-    m_heading = new QLabel(this);
-    QFont bold = m_heading->font();
-    bold.setBold(true);
-    m_heading->setFont(bold);
-    const auto lineEdit = [this](const char *name) {
-        QLineEdit *edit = new QLineEdit(this);
-        edit->setObjectName(QLatin1String(name));
-        edit->installEventFilter(this);
-        return edit;
-    };
-    m_number = lineEdit("padNumber");
-    m_shape = new QComboBox(this);
-    m_shape->setObjectName(QStringLiteral("padShape"));
-    // In the order of PadShape.
-    m_shape->addItems({tr("Round"), tr("Rectangle"), tr("Oval")});
-    m_width = lineEdit("padWidth");
-    m_height = lineEdit("padHeight");
-    m_hole = lineEdit("padHole");
-    m_layers = new QComboBox(this);
-    m_layers->setObjectName(QStringLiteral("padLayers"));
-    // In the order of PadLayers.
-    m_layers->addItems({tr("Both sides"), tr("Side of the part"), tr("Other side")});
-    m_x = lineEdit("padX");
-    m_y = lineEdit("padY");
-
-    QFormLayout *form = new QFormLayout;
-    const QString unit = QStringLiteral(", ") + mmUnit() + QLatin1Char(':');
-    form->addRow(tr("Number") + QLatin1Char(':'), m_number);
-    form->addRow(tr("Shape") + QLatin1Char(':'), m_shape);
-    form->addRow(tr("Width") + unit, m_width);
-    form->addRow(tr("Height") + unit, m_height);
-    form->addRow(tr("Hole") + unit, m_hole);
-    form->addRow(tr("Copper") + QLatin1Char(':'), m_layers);
-    form->addRow(QStringLiteral("X") + unit, m_x);
-    form->addRow(QStringLiteral("Y") + unit, m_y);
-    QVBoxLayout *layout = new QVBoxLayout(this);
-    layout->addWidget(m_heading);
-    layout->addLayout(form);
-    layout->addStretch();
-
-    connect(m_number, &QLineEdit::editingFinished, this, &PadPanel::commitNumber);
-    for (QLineEdit *edit : {m_width, m_height, m_hole, m_x, m_y})
-        connect(edit, &QLineEdit::editingFinished, this, [this, edit] { commitMm(edit); });
-    connect(m_shape, &QComboBox::activated, this, &PadPanel::commitShape);
-    connect(m_layers, &QComboBox::activated, this, &PadPanel::commitLayers);
-    refresh(true);
-}
-
-QString PadPanel::padTitle()
-{
-    return tr("Pad");
-}
-
-bool PadPanel::eventFilter(QObject *watched, QEvent *event)
-{
-    const bool escape = (event->type() == QEvent::ShortcutOverride
-                         || event->type() == QEvent::KeyPress)
-                        && static_cast<QKeyEvent *>(event)->key() == Qt::Key_Escape;
-    if (!escape || qobject_cast<QLineEdit *>(watched) == nullptr)
-        return QWidget::eventFilter(watched, event);
-    // Esc is the field's, not the window's, which would drop the choice.
-    event->accept();
-    if (event->type() == QEvent::KeyPress) {
-        refresh(true);
-        static_cast<QWidget *>(watched)->clearFocus();
-    }
-    return true;
-}
-
-bool PadPanel::isTyping(const QWidget *field, bool force) const
-{
-    return !force && field->hasFocus();
-}
-
-void PadPanel::refresh(bool force)
-{
-    const QSet<int> &chosen = m_editor->chosen();
-    if (chosen != m_shown)
-        force = true;
-    m_shown = chosen;
-    QList<Pad> pads;
-    QList<int> indices(chosen.cbegin(), chosen.cend());
-    std::sort(indices.begin(), indices.end());
-    for (const int i : indices)
-        pads.append(m_editor->footprint().pads.at(i));
-    const bool none = pads.isEmpty();
-    if (none)
-        pads.append(m_editor->nextPad());
-
-    if (none)
-        m_heading->setText(tr("New pads"));
-    else if (pads.size() == 1)
-        m_heading->setText(padTitle() + QLatin1Char(' ') + pads.first().number);
-    else
-        m_heading->setText(tr("Pads chosen") + QStringLiteral(": ") + QString::number(pads.size()));
-
-    const QString different = PropertiesPanel::differentMark();
-    const auto showText = [&](QLineEdit *edit, auto value, auto text) {
-        const bool same = std::all_of(pads.cbegin(), pads.cend(), [&](const Pad &pad) {
-            return value(pad) == value(pads.first());
-        });
-        edit->setPlaceholderText(same ? QString() : different);
-        if (!isTyping(edit, force))
-            edit->setText(same ? text(value(pads.first())) : QString());
-    };
-    const auto showChoice = [&](QComboBox *box, auto value) {
-        const bool same = std::all_of(pads.cbegin(), pads.cend(), [&](const Pad &pad) {
-            return value(pad) == value(pads.first());
-        });
-        box->setCurrentIndex(same ? int(value(pads.first())) : -1);
-    };
-    const auto mm = [](Coord nm) { return formatMmShort(nm); };
-    m_number->setEnabled(pads.size() == 1 && !none);
-    showText(m_number, [](const Pad &pad) { return pad.number; },
-             [](const QString &number) { return number; });
-    if (none && !isTyping(m_number, force))
-        m_number->clear();
-    showChoice(m_shape, [](const Pad &pad) { return pad.shape; });
-    showText(m_width, [](const Pad &pad) { return pad.sizeX; }, mm);
-    showText(m_height, [](const Pad &pad) { return pad.sizeY; }, mm);
-    // A round pad has one size.
-    m_height->setEnabled(std::none_of(pads.cbegin(), pads.cend(), [](const Pad &pad) {
-        return pad.shape == PadShape::Circle;
-    }));
-    showText(m_hole, [](const Pad &pad) { return pad.hole; }, mm);
-    showChoice(m_layers, [](const Pad &pad) { return pad.layers; });
-    m_x->setEnabled(!none);
-    m_y->setEnabled(!none);
-    showText(m_x, [](const Pad &pad) { return pad.at.x; }, mm);
-    showText(m_y, [](const Pad &pad) { return pad.at.y; }, mm);
-    if (none && !isTyping(m_x, force))
-        m_x->clear();
-    if (none && !isTyping(m_y, force))
-        m_y->clear();
-}
-
-template <typename Apply>
-void PadPanel::commit(Apply apply)
-{
-    QList<int> indices(m_shown.cbegin(), m_shown.cend());
-    std::sort(indices.begin(), indices.end());
-    const Footprint &footprint = m_editor->footprint();
-    QList<Pad> changed;
-    if (indices.isEmpty())
-        changed.append(m_editor->nextPad());
-    for (const int i : indices)
-        changed.append(footprint.pads.at(i));
-    for (Pad &pad : changed) {
-        if (!apply(pad)) {
-            refresh(true);
-            return;
-        }
-        // A round pad has one size, and one with no hole sits on one side.
-        if (pad.shape == PadShape::Circle)
-            pad.sizeY = pad.sizeX;
-        if (pad.hole == 0 && pad.layers == PadLayers::Both)
-            pad.layers = PadLayers::Front;
-        const QString problem = padProblem(pad);
-        if (!problem.isEmpty()) {
-            m_editor->showStatus(capitalized(problem));
-            refresh(true);
-            return;
-        }
-    }
-    // The next pads placed are like those set.
-    m_editor->setNextPad(changed.first());
-    if (!indices.isEmpty())
-        m_editor->change(FootprintEditor::padPropertiesStep(),
-                         withPadsReplaced(footprint, indices, changed), m_shown);
-    refresh(true);
-}
-
-void PadPanel::commitNumber()
-{
-    if (m_shown.size() != 1)
-        return;
-    const QString number = m_number->text().trimmed();
-    commit([&number](Pad &pad) {
-        pad.number = number;
-        return true;
-    });
-}
-
-void PadPanel::commitShape(int index)
-{
-    if (index < 0)
-        return;
-    commit([index](Pad &pad) {
-        pad.shape = PadShape(index);
-        return true;
-    });
-}
-
-void PadPanel::commitLayers(int index)
-{
-    if (index < 0)
-        return;
-    commit([index](Pad &pad) {
-        pad.layers = PadLayers(index);
-        return true;
-    });
-}
-
-void PadPanel::commitMm(QLineEdit *edit)
-{
-    // An empty field of pads that differ sets nothing.
-    if (edit->text().trimmed().isEmpty()) {
-        refresh(true);
-        return;
-    }
-    Coord nm = 0;
-    if (!parseMm(edit->text(), nm)) {
-        refresh(true);
-        return;
-    }
-    commit([this, edit, nm](Pad &pad) {
-        if (edit == m_width)
-            pad.sizeX = nm;
-        else if (edit == m_height)
-            pad.sizeY = nm;
-        else if (edit == m_hole)
-            pad.hole = nm;
-        else if (edit == m_x)
-            pad.at.x = nm;
-        else if (edit == m_y)
-            pad.at.y = nm;
-        return true;
-    });
 }
 
 } // namespace ppcb

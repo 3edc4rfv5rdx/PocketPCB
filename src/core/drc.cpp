@@ -1,5 +1,6 @@
 #include "drc.h"
 
+#include "footprintedit.h"
 #include "paint.h"
 #include "ratsnest.h"
 #include "trackedit.h"
@@ -148,18 +149,16 @@ private:
             }
             for (const Pad &pad : footprint->pads) {
                 const CopperSides sides = padCopperSides(pad.layers, placement.side);
-                const Coord narrow = std::min(pad.sizeX, pad.sizeY);
-                const Point half = pad.sizeX > pad.sizeY ? Point{(pad.sizeX - narrow) / 2, 0}
-                                                         : Point{0, (pad.sizeY - narrow) / 2};
+                const PadStroke stroke = padStroke(pad);
                 Shape shape;
                 shape.item = DrcItem{DrcItem::Kind::Pad, placement.id, padName(placement, pad),
                                      placement.padNets.value(pad.number)};
                 shape.placement = placement.id;
                 shape.top = top && copperOn(sides, BoardSide::Top);
                 shape.bottom = bottom && copperOn(sides, BoardSide::Bottom);
-                shape.from = toMm(placedPadPoint(placement, pad.at - half));
-                shape.to = toMm(placedPadPoint(placement, pad.at + half));
-                shape.radius = nmToMm(narrow) / 2;
+                shape.from = toMm(placedPadPoint(placement, stroke.from));
+                shape.to = toMm(placedPadPoint(placement, stroke.to));
+                shape.radius = nmToMm(stroke.radius);
                 m_shapes.append(shape);
                 if (pad.hole > 0)
                     m_padHoles.append({placement, pad});
