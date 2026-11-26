@@ -41,6 +41,7 @@ class SheetEditor;
 class SheetTabs;
 class LibraryViewItem;
 class FootprintEditor;
+class LibraryEditor;
 
 class MainWindow : public QMainWindow
 {
@@ -131,11 +132,15 @@ public:
     LibraryViewItem *libraryItem() const { return m_libraryItem; }
 
     LibraryPanel *libraryPanel() const { return m_libraryPanel; }
-    // Opens the footprint chosen in the library panel in a footprint
-    // editor of its own, or a new footprint when 'newOne' or none is
-    // chosen; an editor already open on it comes to the front instead. A
-    // footprint saved there reloads the library.
+    // Shows the library editor and in it the footprint chosen in the
+    // library panel, while the panel is in sight; a tab already open on it
+    // is shown instead. With 'newOne' a new footprint is opened; with no
+    // choice in sight the window comes as it was, empty at first. Returns
+    // the editor shown, null for none. Something saved there reloads the
+    // library.
     FootprintEditor *openFootprintEditor(bool newOne);
+    // The library editor window; null while it is closed.
+    LibraryEditor *libraryEditor() const;
 
     // The message last put into the status bar, beside the saved mark.
     QString statusText() const;
@@ -148,6 +153,7 @@ public:
 
     // Names of commands the library editors have as well.
     static QString saveTitle();
+    static QString saveAsTitle();
     static QString undoTitle();
     static QString redoTitle();
     static QString selectTitle();
@@ -343,8 +349,7 @@ private:
     QString m_libraryPath;
     // Owned by the canvas scene.
     LibraryViewItem *m_libraryItem = nullptr;
-    // The footprint editors open; closed ones are gone from it.
-    QList<QPointer<FootprintEditor>> m_footprintEditors;
+    QPointer<LibraryEditor> m_libraryEditor;
     QTimer *m_autosaveTimer = nullptr;
 
     // How the pages of the open project were last looked at, and the key of

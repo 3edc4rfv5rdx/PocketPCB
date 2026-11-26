@@ -54,6 +54,9 @@ public:
 
     // Null for what is not there; the pointers must stay valid while shown.
     void setContent(const Symbol *symbol, const Footprint *footprint);
+    // The footprint alone, over the whole of it, when there is no symbol
+    // to show above it; false at first, the footprint below the middle.
+    void setFootprintAlone(bool alone);
 
     // Dragging the drawing drags the part shown.
     PartDragGesture drag;
@@ -67,6 +70,7 @@ protected:
 private:
     const Symbol *m_symbol = nullptr;
     const Footprint *m_footprint = nullptr;
+    bool m_footprintAlone = false;
 };
 
 // The parts of the library to choose from: a search field, the parts of the

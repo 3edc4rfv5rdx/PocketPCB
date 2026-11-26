@@ -3,7 +3,7 @@
 #include "footprintedit.h"
 
 #include <QHash>
-#include <QMainWindow>
+#include <QWidget>
 #include <QSet>
 #include <QUndoStack>
 
@@ -20,12 +20,13 @@ class CanvasView;
 class InPlaceEdit;
 class PadPanel;
 
-// A window of its own editing one footprint of the library, with its own
-// Undo: pads placed one by one or in a row, chosen, dragged on the grid,
-// turned, deleted and given their properties in the panel beside, and the
-// origin moved. It saves into the user's library, where a footprint of the
-// built-in one's name replaces it (see mergeLibraries()).
-class FootprintEditor : public QMainWindow
+// A tab of the library editor window editing one footprint of the library,
+// with its own strip of tools and its own Undo: pads placed one by one or in
+// a row, chosen, dragged on the grid, turned, deleted and given their
+// properties in the panel beside, and the origin moved. It saves into the
+// user's library, where a footprint of the built-in one's name replaces it
+// (see mergeLibraries()). Its keys work while the keyboard is in it.
+class FootprintEditor : public QWidget
 {
     Q_OBJECT
 
@@ -63,6 +64,17 @@ public:
     QUndoStack *undoStack() { return &m_undoStack; }
     // True when there is nothing unsaved.
     bool isSaved() const { return m_undoStack.isClean(); }
+    // The name on its tab: the footprint's, or "New footprint", with a star
+    // while something is not saved.
+    QString tabTitle() const;
+    // What its tab says when the mouse rests on it: the name, and whether
+    // it is still the built-in footprint.
+    QString tabTip() const;
+    // The last message it put into the status bar.
+    QString status() const { return m_status; }
+    // Asks what to do with unsaved changes before it closes: save them, drop
+    // them or stay. True when it may close; always true without changes.
+    bool confirmClose();
 
     Mode mode() const { return m_mode; }
     void setMode(Mode mode);
@@ -83,6 +95,9 @@ public:
     // first when it has none. False, with the reason in the status bar,
     // when it is not written.
     bool save();
+    // The same under a name asked for: from then on the footprint of that
+    // name is edited; the one it was opened as stays as it was.
+    bool saveUnderNewName();
     // The same under 'name', asking nothing; for a name already taken
     // only with 'replace'.
     bool saveAs(const QString &name, bool replace);
@@ -129,16 +144,20 @@ signals:
     void changed();
     // The footprint was written into the user's library as 'name'.
     void saved(const QString &name);
-
-protected:
-    void closeEvent(QCloseEvent *event) override;
+    // What its tab shows changed: its name or whether all is saved.
+    void titleChanged();
+    // A message for the status bar of the window.
+    void statusChanged(const QString &text);
 
 private:
     friend class FootprintStep;
     // Undo and Redo put 'footprint' back; what was chosen may be gone.
     void applyStep(const Footprint &footprint);
-    void createToolBar();
-    void updateTitle();
+    // The strip of tools over the canvas.
+    QWidget *createToolBar();
+    // A name typed for the footprint, asked with 'title'; empty when none
+    // is or the user keeps it from replacing another.
+    QString askName(const QString &title);
     void updateModeButtons();
     void editNumber(int pad);
     Point snapped(const QPointF &at) const;
@@ -151,8 +170,7 @@ private:
     PadPanel *m_panel = nullptr;
     InPlaceEdit *m_numberEdit = nullptr;
     QComboBox *m_gridBox = nullptr;
-    QLabel *m_positionLabel = nullptr;
-    QLabel *m_statusText = nullptr;
+    QString m_status;
     QHash<int, QAction *> m_modeActions;
 
     Mode m_mode = Mode::Select;

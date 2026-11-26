@@ -443,4 +443,17 @@ void styleToolBar(QToolBar *bar)
                  pressed.name(), QString::number(MENU_ARROW_WIDTH)));
 }
 
+QString panelButtonStyle(const QString &scope)
+{
+    const QString button = scope.isEmpty() ? QStringLiteral("QPushButton")
+                                           : scope + QStringLiteral(" QPushButton");
+    return QStringLiteral("%1 { background-color: #d3dde8; color: #1e2a36;"
+                          " border: 1px solid #8fa3b8; border-radius: 3px; padding: 4px 10px; }"
+                          "%1:hover { background-color: #c3d2e1; }"
+                          "%1:pressed { background-color: #aebfd1; }"
+                          "%1:disabled { background-color: #e6e9ed; color: #9aa3ad;"
+                          " border-color: #c4ccd5; }")
+        .arg(button);
+}
+
 } // namespace ppcb

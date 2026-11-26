@@ -63,6 +63,10 @@ constexpr int TOOL_ICON_SIZE = 24;
 // Dresses 'bar' as a strip of tools over a canvas: pictures alone, of
 // TOOL_ICON_SIZE, the buttons lit under the mouse and framed while pressed.
 void styleToolBar(QToolBar *bar);
+// The style sheet that gives the buttons inside widgets of the class
+// 'scope' ("QDockWidget"), or all buttons when it is empty, the one grey
+// blue of the panels, to stand out from the lists round them.
+QString panelButtonStyle(const QString &scope);
 // A bold question mark of 'color' for a question box, 'size' pixels high,
 // sharp on a screen of 'ratio' pixels to one.
 QPixmap questionPixmap(const QColor &color, int size, qreal ratio);

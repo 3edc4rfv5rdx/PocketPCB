@@ -20,7 +20,6 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDir>
-#include <QDockWidget>
 #include <QDoubleSpinBox>
 #include <QFileInfo>
 #include <QFormLayout>
@@ -38,6 +37,7 @@
 #include <QRadioButton>
 #include <QRegularExpression>
 #include <QSpinBox>
+#include <QSplitter>
 #include <QStatusBar>
 #include <QTimer>
 #include <QToolBar>
@@ -51,9 +51,6 @@ namespace ppcb {
 
 namespace {
 
-// The size of the window at first, in pixels.
-const int EDITOR_WIDTH = 900;
-const int EDITOR_HEIGHT = 650;
 // The grid a footprint is drawn on at first.
 const Coord FOOTPRINT_GRID_STEP = 1270000;
 // The pad placed first: round, 1.8 mm across, a hole of 1 mm, through.
@@ -226,14 +223,12 @@ private:
 
 FootprintEditor::FootprintEditor(const QString &name, const Footprint &footprint,
                                  bool inUserLibrary, QWidget *parent)
-    : QMainWindow(parent)
+    : QWidget(parent)
     , m_name(name)
     , m_inUserLibrary(inUserLibrary)
     , m_footprint(footprint)
     , m_nextPad(firstPad())
 {
-    setAttribute(Qt::WA_DeleteOnClose);
-    setWindowFlag(Qt::Window);
     // The pads go on as the footprint's last one, if it has one.
     if (!m_footprint.pads.isEmpty())
         setNextPad(m_footprint.pads.last());
@@ -245,32 +240,26 @@ FootprintEditor::FootprintEditor(const QString &name, const Footprint &footprint
     m_canvas->setZoomCenterAndWarp(AppSettings::zoomCenterAndWarp());
     m_canvas->setGridStep(FOOTPRINT_GRID_STEP);
     m_canvas->scene()->addItem(new FootprintItem(this, m_canvas->scene()->sceneRect()));
-    setCentralWidget(m_canvas);
     m_numberEdit = new InPlaceEdit(m_canvas, this);
-
     m_panel = new PadPanel(this, this);
-    QDockWidget *dock = new QDockWidget(PadPanel::padTitle(), this);
-    dock->setObjectName(QStringLiteral("padDock"));
-    dock->setFeatures(QDockWidget::NoDockWidgetFeatures);
-    dock->setWidget(m_panel);
-    addDockWidget(Qt::RightDockWidgetArea, dock);
 
-    m_statusText = new QLabel(this);
-    statusBar()->addWidget(m_statusText, 1);
-    m_positionLabel = new QLabel(this);
-    statusBar()->addPermanentWidget(m_positionLabel);
-    connect(m_canvas, &CanvasView::cursorMoved, this, [this](Coord x, Coord y) {
-        m_positionLabel->setText(formatPosition(x, y));
-    });
-    m_positionLabel->setText(formatPosition(0, 0));
+    // The strip over the canvas, the panel beside it.
+    QSplitter *splitter = new QSplitter(Qt::Horizontal, this);
+    splitter->addWidget(m_canvas);
+    splitter->addWidget(m_panel);
+    splitter->setStretchFactor(0, 1);
+    splitter->setStretchFactor(1, 0);
+    splitter->setChildrenCollapsible(false);
+    QVBoxLayout *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    layout->addWidget(createToolBar());
+    layout->addWidget(splitter, 1);
 
-    createToolBar();
-    connect(&m_undoStack, &QUndoStack::cleanChanged, this, &FootprintEditor::updateTitle);
+    connect(&m_undoStack, &QUndoStack::cleanChanged, this, &FootprintEditor::titleChanged);
     connect(this, &FootprintEditor::changed, m_canvas->scene(), [this] { m_canvas->scene()->update(); });
     connect(this, &FootprintEditor::changed, m_panel, [this] { m_panel->refresh(); });
-    updateTitle();
-    resize(EDITOR_WIDTH, EDITOR_HEIGHT);
-    // Once the window is shown and the canvas knows its size.
+    // Once the tab is shown and the canvas knows its size.
     QTimer::singleShot(0, this, [this] { m_canvas->fitRect(footprintBounds(m_footprint)); });
 }
 
@@ -294,14 +283,12 @@ bool FootprintEditor::isInUserLibrary(const QString &name)
     return QFileInfo::exists(footprintPath(AppSettings::userLibraryFolder(), name));
 }
 
-void FootprintEditor::createToolBar()
+QWidget *FootprintEditor::createToolBar()
 {
     QToolBar *bar = new QToolBar(this);
     bar->setObjectName(QStringLiteral("footprintBar"));
     bar->setMovable(false);
-    bar->toggleViewAction()->setVisible(false);
     styleToolBar(bar);
-    addToolBar(Qt::TopToolBarArea, bar);
     const QColor color = bar->palette().color(QPalette::WindowText);
 
     // An action of the window with its picture and its key in its tip; on
@@ -319,6 +306,8 @@ void FootprintEditor::createToolBar()
                    + QLatin1Char(')');
         }
         result->setToolTip(tip);
+        // The keys of the tab shown only: the others are hidden.
+        result->setShortcutContext(Qt::WidgetWithChildrenShortcut);
         connect(result, &QAction::triggered, this, slot);
         addAction(result);
         if (icon) {
@@ -338,18 +327,32 @@ void FootprintEditor::createToolBar()
         bar->addWidget(spacer);
     };
 
-    action(MainWindow::saveTitle(), "actionSaveFootprint", QKeySequence::Save, ToolIcon::Save,
-           [this] { save(); });
+    // Save, its arrow offering to save under a new name.
+    QAction *saveAction = action(MainWindow::saveTitle(), "actionSaveFootprint", QKeySequence::Save,
+                                 std::nullopt, [this] { save(); });
+    saveAction->setIcon(toolIcon(ToolIcon::Save, color));
+    QAction *saveAs = action(MainWindow::saveAsTitle() + QStringLiteral("…"), "actionSaveFootprintAs",
+                             QKeySequence::SaveAs, std::nullopt, [this] { saveUnderNewName(); });
+    QMenu *saveMenu = new QMenu(this);
+    saveMenu->addAction(saveAs);
+    QToolButton *saveButton = new QToolButton(bar);
+    saveButton->setObjectName(QStringLiteral("saveFootprintButton"));
+    saveButton->setDefaultAction(saveAction);
+    saveButton->setMenu(saveMenu);
+    saveButton->setPopupMode(QToolButton::MenuButtonPopup);
+    bar->addWidget(saveButton);
     gap();
     QAction *undo = m_undoStack.createUndoAction(this, MainWindow::undoTitle());
     undo->setObjectName(QStringLiteral("actionUndoFootprint"));
     undo->setShortcut(QKeySequence::Undo);
+    undo->setShortcutContext(Qt::WidgetWithChildrenShortcut);
     undo->setIcon(toolIcon(ToolIcon::Undo, color));
     addAction(undo);
     bar->addAction(undo);
     QAction *redo = m_undoStack.createRedoAction(this, MainWindow::redoTitle());
     redo->setObjectName(QStringLiteral("actionRedoFootprint"));
     redo->setShortcut(QKeySequence::Redo);
+    redo->setShortcutContext(Qt::WidgetWithChildrenShortcut);
     redo->setIcon(toolIcon(ToolIcon::Redo, color));
     addAction(redo);
     bar->addAction(redo);
@@ -440,15 +443,22 @@ void FootprintEditor::createToolBar()
     action(MainWindow::selectAllTitle(), "actionChooseAllPads", QKeySequence::SelectAll,
            std::nullopt, [this] { chooseAll(); });
     updateModeButtons();
+    return bar;
 }
 
-void FootprintEditor::updateTitle()
+QString FootprintEditor::tabTitle() const
 {
-    QString title = m_name.isEmpty() ? newFootprintTitle() : m_name;
+    const QString title = m_name.isEmpty() ? newFootprintTitle() : m_name;
+    return m_undoStack.isClean() ? title : title + QLatin1Char('*');
+}
+
+QString FootprintEditor::tabTip() const
+{
+    QString tip = editorTitle() + QStringLiteral(": ")
+                  + (m_name.isEmpty() ? newFootprintTitle() : m_name);
     if (!m_name.isEmpty() && !m_inUserLibrary)
-        title += QStringLiteral(" (") + tr("built-in") + QLatin1Char(')');
-    setWindowTitle(title + QStringLiteral("[*] — ") + editorTitle());
-    setWindowModified(!m_undoStack.isClean());
+        tip += QStringLiteral(" (") + tr("built-in") + QLatin1Char(')');
+    return tip;
 }
 
 void FootprintEditor::updateModeButtons()
@@ -459,7 +469,8 @@ void FootprintEditor::updateModeButtons()
 
 void FootprintEditor::showStatus(const QString &text)
 {
-    m_statusText->setText(text);
+    m_status = text;
+    emit statusChanged(text);
 }
 
 Point FootprintEditor::snapped(const QPointF &at) const
@@ -845,25 +856,42 @@ bool FootprintEditor::save()
 {
     if (!m_name.isEmpty())
         return saveAs(m_name, true);
+    const QString name = askName(MainWindow::saveTitle().remove(QLatin1Char('&')));
+    return !name.isEmpty() && saveAs(name, true);
+}
+
+bool FootprintEditor::saveUnderNewName()
+{
+    const QString name = askName(MainWindow::saveAsTitle().remove(QLatin1Char('&')));
+    return !name.isEmpty() && saveAs(name, true);
+}
+
+QString FootprintEditor::askName(const QString &title)
+{
     bool ok = false;
-    const QString name = QInputDialog::getText(this, editorTitle(), tr("Footprint name") + QLatin1Char(':'),
-                                               QLineEdit::Normal, QString(), &ok)
-                             .trimmed();
+    const QString name =
+        QInputDialog::getText(this, title, tr("Footprint name") + QLatin1Char(':'),
+                              QLineEdit::Normal, m_name, &ok)
+            .trimmed();
     if (!ok || name.isEmpty())
-        return false;
+        return QString();
     if (!nameRule().match(name).hasMatch()) {
-        showStatus(tr("A name may hold Latin letters, digits and these signs") + QStringLiteral(": . _ + -"));
-        return false;
+        showStatus(tr("A name may hold Latin letters, digits and these signs")
+                   + QStringLiteral(": . _ + -"));
+        return QString();
     }
-    const bool taken = QFileInfo::exists(footprintPath(AppSettings::userLibraryFolder(), name))
-                       || QFileInfo::exists(footprintPath(AppSettings::builtInLibraryFolder(), name));
+    // Its own name it keeps without asking.
+    const bool taken = name != m_name
+                       && (QFileInfo::exists(footprintPath(AppSettings::userLibraryFolder(), name))
+                           || QFileInfo::exists(
+                               footprintPath(AppSettings::builtInLibraryFolder(), name)));
     if (taken
-        && QMessageBox::question(this, editorTitle(),
+        && QMessageBox::question(this, title,
                                  tr("The library has a footprint %1 already. Replace it").arg(name)
                                      + QLatin1Char('?'))
                != QMessageBox::Yes)
-        return false;
-    return saveAs(name, true);
+        return QString();
+    return name;
 }
 
 bool FootprintEditor::saveAs(const QString &name, bool replace)
@@ -893,25 +921,21 @@ bool FootprintEditor::saveAs(const QString &name, bool replace)
     m_name = name;
     m_inUserLibrary = true;
     m_undoStack.setClean();
-    updateTitle();
+    emit titleChanged();
     showStatus(writtenMessage(path));
     emit saved(name);
     return true;
 }
 
-void FootprintEditor::closeEvent(QCloseEvent *event)
+bool FootprintEditor::confirmClose()
 {
-    if (!m_undoStack.isClean()) {
-        const QMessageBox::StandardButton answer = QMessageBox::question(
-            this, editorTitle(),
-            tr("The footprint has changes that are not saved. Save them") + QLatin1Char('?'),
-            QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-        if (answer == QMessageBox::Cancel || (answer == QMessageBox::Save && !save())) {
-            event->ignore();
-            return;
-        }
-    }
-    QMainWindow::closeEvent(event);
+    if (m_undoStack.isClean())
+        return true;
+    const QMessageBox::StandardButton answer = QMessageBox::question(
+        this, editorTitle(),
+        tr("The footprint has changes that are not saved. Save them") + QLatin1Char('?'),
+        QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+    return answer == QMessageBox::Discard || (answer == QMessageBox::Save && save());
 }
 
 // PadPanel

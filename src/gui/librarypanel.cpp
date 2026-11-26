@@ -237,6 +237,12 @@ void PartPreview::setContent(const Symbol *symbol, const Footprint *footprint)
     update();
 }
 
+void PartPreview::setFootprintAlone(bool alone)
+{
+    m_footprintAlone = alone;
+    update();
+}
+
 void PartDragGesture::press(const QMouseEvent *event)
 {
     m_pressed = event->button() == Qt::LeftButton;
@@ -310,7 +316,8 @@ void PartPreview::paintEvent(QPaintEvent *event)
     }
     if (m_footprint != nullptr) {
         const Footprint &footprint = *m_footprint;
-        paintFitted(painter, bottom, footprintBounds(footprint),
+        paintFitted(painter, m_footprintAlone && m_symbol == nullptr ? whole : bottom,
+                    footprintBounds(footprint),
                     [&footprint](QPainter &p) { paintFootprint(p, footprint); });
     }
 }

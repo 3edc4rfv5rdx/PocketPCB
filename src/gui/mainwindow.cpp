@@ -10,6 +10,7 @@
 #include "ercpanel.h"
 #include "document.h"
 #include "footprinteditor.h"
+#include "libraryeditor.h"
 #include "format.h"
 #include "gerberexport.h"
 #include "grid.h"
@@ -71,6 +72,7 @@
 #include <QShowEvent>
 #include <QStatusBar>
 #include <QStyle>
+#include <QTabWidget>
 #include <QTimer>
 #include <QToolButton>
 #include <QUndoStack>
@@ -134,15 +136,6 @@ const char SAVED_COLOR[] = "#5f9462";
 const char UNROUTED_STYLE[] = "QLabel { color: black; margin-right: 12px; }";
 const char VERSION_BAND_STYLE[] =
     "QLabel { background-color: #f0b44a; color: #2b1d05; font-weight: bold; padding: 5px 10px; }";
-// The buttons of the panels in one grey blue, to stand out from the lists
-// round them.
-const char PANEL_BUTTON_STYLE[] =
-    "QDockWidget QPushButton { background-color: #d3dde8; color: #1e2a36;"
-    " border: 1px solid #8fa3b8; border-radius: 3px; padding: 4px 10px; }"
-    "QDockWidget QPushButton:hover { background-color: #c3d2e1; }"
-    "QDockWidget QPushButton:pressed { background-color: #aebfd1; }"
-    "QDockWidget QPushButton:disabled { background-color: #e6e9ed; color: #9aa3ad;"
-    " border-color: #c4ccd5; }";
 const char NOT_SAVED_COLOR[] = "#c25450";
 const char NEW_COLOR[] = "#8c8c8c";
 
@@ -302,7 +295,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_versionsDock->setWidget(m_versionsPanel);
     splitDockWidget(m_bomDock, m_versionsDock, Qt::Vertical);
     m_versionsDock->hide();
-    setStyleSheet(QLatin1String(PANEL_BUTTON_STYLE));
+    setStyleSheet(panelButtonStyle(QStringLiteral("QDockWidget")));
     connect(m_versionsPanel, &VersionsPanel::restoreRequested, this, &MainWindow::restoreVersion);
     connect(m_versionsPanel, &VersionsPanel::openRequested, this, &MainWindow::openVersionCopy);
     connect(m_bomPanel, &BomPanel::componentsChosen, this, &MainWindow::showComponents);
@@ -388,12 +381,10 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    // The footprint editors first: each may keep the window open.
-    for (const QPointer<FootprintEditor> &editor : std::as_const(m_footprintEditors)) {
-        if (!editor.isNull() && !editor->close()) {
-            event->ignore();
-            return;
-        }
+    // The library editor first: it may keep the window open.
+    if (!m_libraryEditor.isNull() && !m_libraryEditor->close()) {
+        event->ignore();
+        return;
     }
     if (!confirmLeavingProject()) {
         event->ignore();
@@ -455,7 +446,7 @@ void MainWindow::createMenus()
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &MainWindow::saveProject);
 
-    QAction *saveAsAction = fileMenu->addAction(tr("Save &as") + QStringLiteral("…"));
+    QAction *saveAsAction = fileMenu->addAction(saveAsTitle() + QStringLiteral("…"));
     saveAsAction->setObjectName(QStringLiteral("actionSaveProjectAs"));
     saveAsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
     connect(saveAsAction, &QAction::triggered, this, &MainWindow::chooseProjectToSaveAs);
@@ -2069,7 +2060,7 @@ void MainWindow::createToolBar()
     // editor: a click opens the footprint chosen in the library, the arrow
     // offers a new one.
     stretch();
-    QAction *footprintTool = new QAction(FootprintEditor::editorTitle(), this);
+    QAction *footprintTool = new QAction(LibraryEditor::libraryEditorTitle(), this);
     footprintTool->setObjectName(QStringLiteral("actionFootprintEditor"));
     footprintTool->setIcon(toolIcon(ToolIcon::FootprintEditor, color));
     connect(footprintTool, &QAction::triggered, this, [this] { openFootprintEditor(false); });
@@ -2276,39 +2267,50 @@ void MainWindow::showActualSize()
     m_canvas->setView(m_canvas->viewCenter(), screenPixelsPerMm(screen));
 }
 
+LibraryEditor *MainWindow::libraryEditor() const
+{
+    return m_libraryEditor;
+}
+
 FootprintEditor *MainWindow::openFootprintEditor(bool newOne)
 {
-    const QString name = newOne ? QString() : m_libraryPanel->currentFootprint();
-    m_footprintEditors.removeAll(QPointer<FootprintEditor>());
-    if (!name.isEmpty()) {
-        for (const QPointer<FootprintEditor> &open : std::as_const(m_footprintEditors)) {
-            if (open->name() == name) {
-                open->raise();
-                open->activateWindow();
-                return open;
-            }
-        }
+    // Only a choice in sight is opened: with the panel hidden it is not.
+    const QString name =
+        newOne || !m_libraryDock->isVisible() ? QString() : m_libraryPanel->currentFootprint();
+    if (m_libraryEditor.isNull()) {
+        m_libraryEditor = new LibraryEditor(this);
+        connect(m_libraryEditor, &LibraryEditor::saved, this, &MainWindow::loadLibrary);
     }
-    Footprint footprint;
-    if (!name.isEmpty()) {
+    m_libraryEditor->setLibrary(&m_library.items);
+    m_libraryEditor->show();
+    m_libraryEditor->raise();
+    m_libraryEditor->activateWindow();
+    FootprintEditor *editor = nullptr;
+    if (newOne) {
+        editor = m_libraryEditor->openNewFootprint();
+    } else if (!name.isEmpty()) {
         const Library &library = m_libraryPanel->currentSource() == LibraryPanel::Source::Project
                                      ? m_document->design().library
                                      : m_library.items;
-        if (const Footprint *found = library.findFootprint(name))
-            footprint = *found;
+        const Footprint *found = library.findFootprint(name);
+        editor = m_libraryEditor->openFootprint(name, found != nullptr ? *found : Footprint(),
+                                                FootprintEditor::isInUserLibrary(name));
+    } else {
+        // The window as it was, empty at first: +, Open… and Copy are
+        // over its tabs.
+        editor = m_libraryEditor->currentFootprintEditor();
     }
-    FootprintEditor *editor =
-        new FootprintEditor(name, footprint, !name.isEmpty() && FootprintEditor::isInUserLibrary(name),
-                            this);
-    connect(editor, &FootprintEditor::saved, this, &MainWindow::loadLibrary);
-    m_footprintEditors.append(editor);
-    editor->show();
     return editor;
 }
 
 QString MainWindow::saveTitle()
 {
     return tr("&Save");
+}
+
+QString MainWindow::saveAsTitle()
+{
+    return tr("Save &as");
 }
 
 QString MainWindow::undoTitle()

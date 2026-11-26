@@ -4,6 +4,7 @@
 #include "designviewitem.h"
 #include "document.h"
 #include "footprinteditor.h"
+#include "libraryeditor.h"
 #include "format.h"
 #include "gerberexport.h"
 #include "projectversions.h"
@@ -36,6 +37,7 @@
 #include <QStandardPaths>
 #include <QStatusBar>
 #include <QTabBar>
+#include <QTabWidget>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QTemporaryDir>
@@ -745,7 +747,30 @@ private slots:
         QVERIFY(QFileInfo::exists(path));
         QVERIFY(window.library().items.footprints.contains(name));
         QVERIFY(FootprintEditor::isInUserLibrary(name));
-        editor->close();
+        QCOMPARE(editor->tabTitle(), name);
+
+        // One window, a tab for each footprint; a new one in a tab of its
+        // own beside it.
+        LibraryEditor *libraryWindow = window.libraryEditor();
+        QVERIFY(libraryWindow != nullptr);
+        FootprintEditor *second = window.openFootprintEditor(true);
+        QCOMPARE(window.libraryEditor(), libraryWindow);
+        QCOMPARE(libraryWindow->tabs()->count(), 2);
+        QCOMPARE(libraryWindow->currentFootprintEditor(), second);
+        QVERIFY(libraryWindow->closeTab(1));
+        QCOMPARE(libraryWindow->tabs()->count(), 1);
+        // A copy has the pads and no name yet.
+        FootprintEditor *copy = libraryWindow->openCopy();
+        QVERIFY(copy != nullptr);
+        QVERIFY(copy->name().isEmpty());
+        QCOMPARE(copy->footprint(), editor->footprint());
+        QVERIFY(!copy->isSaved());
+        QCOMPARE(copy->tabTitle(), FootprintEditor::newFootprintTitle() + QLatin1Char('*'));
+        QCOMPARE(libraryWindow->tabs()->count(), 2);
+        // Dropped without asking.
+        copy->undoStack()->setClean();
+        QVERIFY(libraryWindow->closeTab(1));
+        libraryWindow->close();
         QFile::remove(path);
     }
 

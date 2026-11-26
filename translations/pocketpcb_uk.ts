@@ -2137,6 +2137,21 @@
     </message>
 </context>
 <context>
+    <name>ppcb::LibraryEditor</name>
+    <message>
+        <source>Library editor</source>
+        <translation>Редактор бібліотеки</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Відкрити</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копія</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::FootprintEditor</name>
     <message>
         <source>Footprint editor</source>
