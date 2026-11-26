@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: The demo project's resistor footprints have the bodies of the library's
 - N: TO-220 footprints lying flat, with a pad for the screw of the tab, offered by every part in TO-220
 - F: Sheet background is in the Settings menu, not View
 - F: A circle in the footprint editor is chosen by a click inside it, where nothing else is
