@@ -16,5 +16,6 @@
     {"kind": "rect", "from": [-1.27, -1.27], "to": [1.27, 21.59]}
   ],
   "refAt": [0, -2.27],
-  "valueAt": [0, 22.59]
+  "valueAt": [0, 22.59],
+  "body": {"shape": "box", "height": 2.5, "color": "#272727"}
 }

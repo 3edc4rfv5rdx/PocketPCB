@@ -10,5 +10,6 @@
     {"kind": "rect", "from": [-5.5, -1.3], "to": [5.5, 1.3]}
   ],
   "refAt": [0, -3],
-  "valueAt": [0, 3]
+  "valueAt": [0, 3],
+  "body": {"shape": "lying", "height": 2.6, "color": "#cfecfd"}
 }

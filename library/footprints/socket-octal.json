@@ -16,5 +16,6 @@
     {"kind": "line", "from": [0, -14], "to": [0, -12.5]}
   ],
   "refAt": [0, -15.5],
-  "valueAt": [0, 15.5]
+  "valueAt": [0, 15.5],
+  "body": {"shape": "upright", "height": 10, "color": "#272727"}
 }

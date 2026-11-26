@@ -9,5 +9,6 @@
     {"kind": "circle", "center": [0, 0], "radius": 4.3}
   ],
   "refAt": [0, -5.3],
-  "valueAt": [0, 5.3]
+  "valueAt": [0, 5.3],
+  "body": {"shape": "upright", "height": 7.7, "color": "#272727"}
 }

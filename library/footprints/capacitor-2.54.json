@@ -9,5 +9,6 @@
     {"kind": "rect", "from": [-2.4, -1.3], "to": [2.4, 1.3]}
   ],
   "refAt": [0, -2.3],
-  "valueAt": [0, 2.3]
+  "valueAt": [0, 2.3],
+  "body": {"shape": "box", "height": 5, "raised": 0.5, "color": "#e6732e"}
 }

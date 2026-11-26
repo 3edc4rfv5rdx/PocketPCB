@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The built-in footprints have bodies of their sizes and colours, all but the wire pads
 - F: The library editor window opens in the middle of the main window
 - F: The table of body colours opens under its button, the large swatch on its left
 - F: The table of body colours frames the one chosen in thick black and shows the colour under the mouse at large beside it

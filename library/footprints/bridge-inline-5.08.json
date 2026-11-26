@@ -12,5 +12,6 @@
     {"kind": "text", "at": [-7.62, -2.9], "text": "+", "height": 1.27}
   ],
   "refAt": [0, -4],
-  "valueAt": [0, 3.2]
+  "valueAt": [0, 3.2],
+  "body": {"shape": "box", "height": 10, "color": "#272727"}
 }

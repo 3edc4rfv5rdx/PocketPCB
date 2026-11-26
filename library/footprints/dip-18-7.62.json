@@ -26,5 +26,6 @@
     {"kind": "arc", "center": [0, -1.27], "radius": 0.8, "start": 0, "span": 180}
   ],
   "refAt": [0, -2.5],
-  "valueAt": [0, 22.82]
+  "valueAt": [0, 22.82],
+  "body": {"shape": "box", "size": [6.35, 23.66], "height": 3.3, "raised": 0.5, "color": "#272727"}
 }

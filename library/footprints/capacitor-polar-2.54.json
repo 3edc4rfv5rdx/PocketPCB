@@ -10,5 +10,6 @@
     {"kind": "text", "at": [-2.2, -1.9], "text": "+", "height": 1.0}
   ],
   "refAt": [0, -3.6],
-  "valueAt": [0, 3.6]
+  "valueAt": [0, 3.6],
+  "body": {"shape": "upright", "height": 11, "color": "#1a40b3"}
 }

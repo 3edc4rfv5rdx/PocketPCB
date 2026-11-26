@@ -11,5 +11,6 @@
     {"kind": "line", "from": [-2.364, 1.5], "to": [2.364, 1.5]}
   ],
   "refAt": [0, -3.8],
-  "valueAt": [0, 2.5]
+  "valueAt": [0, 2.5],
+  "body": {"shape": "upright", "size": [4.8, 4.8], "height": 4.8, "raised": 2.5, "color": "#272727"}
 }

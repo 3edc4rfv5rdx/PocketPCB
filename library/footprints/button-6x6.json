@@ -12,5 +12,6 @@
     {"kind": "circle", "center": [0, 0], "radius": 1.75}
   ],
   "refAt": [0, -4.0],
-  "valueAt": [0, 4.0]
+  "valueAt": [0, 4.0],
+  "body": {"shape": "box", "size": [6, 6], "height": 5, "color": "#272727"}
 }
