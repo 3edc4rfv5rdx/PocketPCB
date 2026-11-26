@@ -737,7 +737,9 @@ private slots:
         QCOMPARE(editor->footprint().pads.at(1).at, (Point{2540000, 0}));
 
         // A drag of a chosen pad moves it on the grid.
-        editor->setChosen(FootprintChoice{{1}});
+        FootprintChoice padTwo;
+        padTwo.pads = {1};
+        editor->setChosen(padTwo);
         editor->press(QPointF(2.54, 0), false);
         editor->move(QPointF(3.9, 1.2));
         editor->release(QPointF(3.9, 1.2));

@@ -448,7 +448,7 @@ private slots:
     // Links named JP1 or XN1, as before the prefix xx, are read as xx1.
     void oldLinkDesignatorsAreReadWithTheLinkPrefix()
     {
-        for (const QString old : {QStringLiteral("JP7"), QStringLiteral("XN7")}) {
+        for (const QString &old : {QStringLiteral("JP7"), QStringLiteral("XN7")}) {
             QJsonObject root = boardToJson(fullBoard());
             QJsonArray links = root.value(QStringLiteral("wireLinks")).toArray();
             QJsonObject first = links.at(0).toObject();

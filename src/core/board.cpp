@@ -286,7 +286,7 @@ QJsonObject linkToJson(const WireLink &link)
 // the designator style, switched to it.
 QString withLinkPrefix(const QString &designator)
 {
-    for (const QString old : {QStringLiteral("JP"), QStringLiteral("XN")}) {
+    for (const QString &old : {QStringLiteral("JP"), QStringLiteral("XN")}) {
         if (designator.startsWith(old) && designator.size() > old.size()
             && designator.at(old.size()).isDigit())
             return linkPrefix() + designator.mid(old.size());

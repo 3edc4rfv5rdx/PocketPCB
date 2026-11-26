@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- R: Two compiler warnings quieted: a loop copying strings and a choice not filled in whole
 - F: A short right click in the footprint editor calls off the pad, row or drawing being placed, as Esc
 - N: Footprint editor draws the silkscreen (lines, rectangles, circles, arcs, polygons, texts), drags the REF and VALUE places and frames pads nearer than the project clearance
 - N: Library editor window, a tab for each footprint (+, Open…, Copy): pads one by one or in rows, their properties, the origin, Save and Save as into the user library
