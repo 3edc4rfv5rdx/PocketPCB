@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+## v0.15.387 (2026-11-26)
 - F: Errors and warnings come in a box, a warning with Do not show again; all else stays in the status bar
 - F: Flipping a part onto the wrong side of a one-sided board is told in the status bar
 - F: F flips the parts on the board while they are dragged too, as R turns them
