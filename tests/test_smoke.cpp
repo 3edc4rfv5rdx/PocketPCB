@@ -5,6 +5,7 @@
 #include "designviewitem.h"
 #include "document.h"
 #include "footprinteditor.h"
+#include "symboledit.h"
 #include "symboleditor.h"
 #include "libraryeditor.h"
 #include "parteditor.h"
@@ -975,6 +976,16 @@ private slots:
         SymbolEditor *editor = window.openSymbolEditor(true);
         QVERIFY(editor != nullptr);
         QVERIFY(editor->name().isEmpty());
+        // The arrow of Pin offers the usual lengths: one chosen is placed
+        // next, then back to the length of the grid.
+        QToolButton *pinButton = editor->findChild<QToolButton *>(QStringLiteral("pinButton"));
+        QVERIFY(pinButton != nullptr && pinButton->menu() != nullptr);
+        QCOMPARE(pinButton->menu()->actions().size(), pinLengthChoices().size());
+        pinButton->menu()->actions().at(2)->trigger();
+        QCOMPARE(editor->nextPin().length, pinLengthChoices().at(2));
+        QCOMPARE(editor->mode(), ItemEditor::Mode::Place);
+        pinButton->menu()->actions().at(0)->trigger();
+        QCOMPARE(editor->nextPin().length, PIN_GRID);
         editor->setMode(ItemEditor::Mode::Place);
         // It starts on the pin grid; off it, on a finer grid of the canvas.
         QCOMPARE(editor->canvas()->gridStep(), PIN_GRID);

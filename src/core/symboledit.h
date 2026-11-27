@@ -18,6 +18,9 @@ namespace ppcb {
 
 // The smallest whole number from 1 up that no pin of 'symbol' has.
 QString nextPinNumber(const Symbol &symbol);
+// The lengths a pin is offered at, the shortest first: whole and half
+// steps of PIN_GRID.
+QList<Coord> pinLengthChoices();
 
 // The pin whose line passes within 'reach' millimetres of 'at', the one
 // drawn last of several; -1 when there is none.

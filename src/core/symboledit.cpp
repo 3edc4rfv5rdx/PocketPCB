@@ -21,6 +21,11 @@ QRectF pinRect(const Pin &pin)
 
 } // namespace
 
+QList<Coord> pinLengthChoices()
+{
+    return {PIN_GRID, PIN_GRID * 3 / 2, PIN_GRID * 2, PIN_GRID * 3, PIN_GRID * 4};
+}
+
 QString nextPinNumber(const Symbol &symbol)
 {
     QSet<int> taken;

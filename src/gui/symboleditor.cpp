@@ -147,8 +147,25 @@ QList<Pin> SymbolEditor::floatingPins() const
 void SymbolEditor::addPlacingTools(QToolBar *bar)
 {
     QAction *pin = addTool(bar, PinPanel::pinTitle(), "actionPinTool", QKeySequence(Qt::Key_P),
-                           ToolIcon::Pin, [this] { setMode(Mode::Place); });
+                           std::nullopt, [this] { setMode(Mode::Place); });
+    pin->setIcon(toolIcon(ToolIcon::Pin, bar->palette().color(QPalette::WindowText)));
     m_modeActions.insert(int(Mode::Place), pin);
+    // The arrow offers the usual lengths, the next pin's marked: the one
+    // chosen is placed.
+    QMenu *lengths = new QMenu(this);
+    for (const Coord length : pinLengthChoices()) {
+        QAction *choice = lengths->addAction(formatMmShortUnit(length));
+        choice->setCheckable(true);
+        connect(choice, &QAction::triggered, this, [this, length] {
+            Pin next = m_nextPin;
+            next.length = length;
+            setNextPin(next);
+            setMode(Mode::Place);
+        });
+        connect(lengths, &QMenu::aboutToShow, choice,
+                [this, choice, length] { choice->setChecked(m_nextPin.length == length); });
+    }
+    addMenuButton(bar, pin, lengths, "pinButton");
     // Ready-made pieces drawn to the standards, and a chip of any size.
     // Its menu chooses what: the action itself only shows the mode.
     QAction *readyMade = addTool(bar, tr("Ready-made"), "actionReadyMade", QKeySequence(),
