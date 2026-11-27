@@ -2,19 +2,19 @@
   "type": "pocketpcb-symbol",
   "format": 1,
   "graphics": [
-    {"kind": "line", "from": [-1.27, -2.032], "to": [-1.27, 2.032]},
-    {"kind": "line", "from": [1.27, -2.032], "to": [1.27, 2.032]},
-    {"kind": "polygon", "points": [[-1.27, -2.032], [-1.27, 0], [1.27, -1.016]]},
-    {"kind": "polygon", "points": [[1.27, 0], [1.27, 2.032], [-1.27, 1.016]]},
-    {"kind": "line", "from": [1.27, 2.032], "to": [2.54, 2.794]}
+    {"kind": "line", "from": [-2, -4], "to": [-2, 4]},
+    {"kind": "line", "from": [2, -4], "to": [2, 4]},
+    {"kind": "polygon", "points": [[-2, -4], [-2, 0], [2, -2]]},
+    {"kind": "polygon", "points": [[2, 0], [2, 4], [-2, 2]]},
+    {"kind": "line", "from": [2, 4], "to": [5.08, 7]}
   ],
   "pins": [
-    {"number": "T1", "name": "T1", "at": [-5.08, 0], "side": "left", "length": 3.81},
-    {"number": "T2", "name": "T2", "at": [5.08, 0], "side": "right", "length": 3.81},
-    {"number": "G", "name": "G", "at": [2.54, 5.08], "side": "down", "length": 2.286}
+    {"number": "T1", "name": "T1", "at": [-5.08, 0], "side": "left", "length": 3.08},
+    {"number": "T2", "name": "T2", "at": [5.08, 0], "side": "right", "length": 3.08},
+    {"number": "G", "name": "G", "at": [5.08, 10.16], "side": "down", "length": 3.16}
   ],
-  "refAt": [0, -3.302],
-  "valueAt": [-2.54, 3.302],
+  "refAt": [0, -6.35],
+  "valueAt": [-2.54, 6.35],
   "showPinNumbers": false,
   "showPinNames": false
 }

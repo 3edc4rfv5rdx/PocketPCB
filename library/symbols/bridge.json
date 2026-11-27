@@ -2,23 +2,23 @@
   "type": "pocketpcb-symbol",
   "format": 1,
   "graphics": [
-    {"kind": "polygon", "points": [[-3.81, 0], [0, -3.81], [3.81, 0], [0, 3.81]]},
-    {"kind": "polygon", "points": [[-1.27, 1.016], [1.27, 1.016], [0, -1.016]]},
-    {"kind": "line", "from": [-1.27, -1.016], "to": [1.27, -1.016]},
-    {"kind": "line", "from": [0, -2.54], "to": [0, 2.54]},
-    {"kind": "text", "at": [1.27, -5.08], "text": "+", "height": 1.27, "align": "left"},
-    {"kind": "text", "at": [1.27, 5.08], "text": "-", "height": 1.27, "align": "left"},
-    {"kind": "text", "at": [-5.08, -1.27], "text": "~", "height": 1.27},
-    {"kind": "text", "at": [5.08, -1.27], "text": "~", "height": 1.27}
+    {"kind": "polygon", "points": [[-6.35, 0], [0, -6.35], [6.35, 0], [0, 6.35]]},
+    {"kind": "polygon", "points": [[-2, 2], [2, 2], [0, -2]]},
+    {"kind": "line", "from": [-2, -2], "to": [2, -2]},
+    {"kind": "line", "from": [0, -3.5], "to": [0, 3.5]},
+    {"kind": "text", "at": [1.27, -8.89], "text": "+", "height": 1.8, "align": "left"},
+    {"kind": "text", "at": [1.27, 8.89], "text": "-", "height": 1.8, "align": "left"},
+    {"kind": "text", "at": [-8.89, -1.27], "text": "~", "height": 1.8},
+    {"kind": "text", "at": [8.89, -1.27], "text": "~", "height": 1.8}
   ],
   "pins": [
-    {"number": "1", "name": "+", "at": [0, -7.62], "side": "up", "length": 3.81},
-    {"number": "2", "name": "~", "at": [-7.62, 0], "side": "left", "length": 3.81},
-    {"number": "3", "name": "~", "at": [7.62, 0], "side": "right", "length": 3.81},
-    {"number": "4", "name": "-", "at": [0, 7.62], "side": "down", "length": 3.81}
+    {"number": "1", "name": "+", "at": [0, -10.16], "side": "up", "length": 3.81},
+    {"number": "2", "name": "~", "at": [-10.16, 0], "side": "left", "length": 3.81},
+    {"number": "3", "name": "~", "at": [10.16, 0], "side": "right", "length": 3.81},
+    {"number": "4", "name": "-", "at": [0, 10.16], "side": "down", "length": 3.81}
   ],
-  "refAt": [-3.81, -3.81],
-  "valueAt": [3.81, 3.81],
+  "refAt": [-6.35, -6.35],
+  "valueAt": [6.35, 6.35],
   "showPinNumbers": false,
   "showPinNames": false
 }

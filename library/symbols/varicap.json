@@ -2,17 +2,17 @@
   "type": "pocketpcb-symbol",
   "format": 1,
   "graphics": [
-    {"kind": "polygon", "points": [[-1.27, -1.524], [-1.27, 1.524], [1.27, 0]]},
-    {"kind": "line", "from": [1.27, -1.524], "to": [1.27, 1.524]},
-    {"kind": "line", "from": [-1.27, 0], "to": [1.27, 0]},
-    {"kind": "line", "from": [1.905, -1.524], "to": [1.905, 1.524]}
+    {"kind": "polygon", "points": [[-2, -2], [-2, 2], [2, 0]]},
+    {"kind": "line", "from": [2, -2], "to": [2, 2]},
+    {"kind": "line", "from": [-2, 0], "to": [2, 0]},
+    {"kind": "line", "from": [3, -2], "to": [3, 2]}
   ],
   "pins": [
-    {"number": "A", "name": "A", "at": [-5.08, 0], "side": "left", "length": 3.81},
-    {"number": "K", "name": "K", "at": [5.08, 0], "side": "right", "length": 3.175}
+    {"number": "A", "name": "A", "at": [-5.08, 0], "side": "left", "length": 3.08},
+    {"number": "K", "name": "K", "at": [5.08, 0], "side": "right", "length": 2.08}
   ],
-  "refAt": [0, -2.54],
-  "valueAt": [0, 2.54],
+  "refAt": [0, -5.08],
+  "valueAt": [0, 5.08],
   "showPinNumbers": false,
   "showPinNames": false
 }
