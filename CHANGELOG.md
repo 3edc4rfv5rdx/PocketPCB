@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Four-digit 0.56 inch seven-segment displays, common cathode and common anode, in the library
 - N: Arduino Nano module in the library, with its footprint and symbol
 - F: Empty DIP chip packages in their own library group, apart from ready-made chips
 - N: Microcontrollers ATtiny13/25/45/85, PIC12F629/675 and ATmega8/168/328 in DIP in the library

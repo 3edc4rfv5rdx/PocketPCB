@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "seven-segment-4",
+  "footprints": ["seven-segment-4-0.56"],
+  "prefix": "DS",
+  "prefixGost": "HG",
+  "value": "5641AS",
+  "connector": false,
+  "group": "indicators",
+  "name": {"en": "Four-digit seven-segment display, common cathode", "uk": "Чотирирозрядний семисегментний індикатор, спільний катод", "ru": "Четырёхразрядный семисегментный индикатор, общий катод"}
+}
