@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Negative adjustable regulator LM337 and adjustable shunt regulator TL431 in the library
 - N: Dual op amps LM358, TL072, NE5532, audio amplifier LM386, optocouplers 4N35 and MOC3021, transistor arrays ULN2003 and ULN2803 in the library
 - F: The built-in chips are drawn after GOST 2.743, pins 5.08 mm apart; the op amp as a box with its mark and the circle of inversion
 - N: Inductors, chokes and transformers of 2 and 3 turns in the library, and the ready-made inductor of 2, 3 or 4

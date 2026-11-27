@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "tl431",
+  "footprints": ["to92-ref-a-k"],
+  "prefix": "U",
+  "prefixGost": "DA",
+  "value": "TL431",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Adjustable shunt regulator TL431", "uk": "Регульований стабілітрон TL431", "ru": "Регулируемый стабилитрон TL431"}
+}

@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "regulator-adj",
+  "footprints": ["to220-adj-in-out", "to220-lying-adj-in-out"],
+  "prefix": "U",
+  "prefixGost": "DA",
+  "value": "LM337",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Adjustable regulator LM337, negative", "uk": "Регульований стабілізатор LM337, від'ємний", "ru": "Регулируемый стабилизатор LM337, отрицательный"}
+}
