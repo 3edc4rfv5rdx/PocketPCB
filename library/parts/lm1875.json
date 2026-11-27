@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "power-amp",
+  "footprints": ["pentawatt-v"],
+  "prefix": "U",
+  "prefixGost": "DA",
+  "value": "LM1875",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Power amplifier LM1875", "uk": "Підсилювач потужності LM1875", "ru": "Усилитель мощности LM1875"}
+}

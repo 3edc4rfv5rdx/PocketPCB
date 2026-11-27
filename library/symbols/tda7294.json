@@ -1,0 +1,30 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "rect", "from": [-10.16, -10.16], "to": [10.16, 25.4]},
+    {"kind": "polygon", "points": [[-1.27, -8.89], [-1.27, -6.35], [1.27, -7.62]]},
+    {"kind": "circle", "center": [-10.66, -5.08], "radius": 0.5}
+  ],
+  "pins": [
+    {"number": "2", "name": "-IN", "at": [-15.24, -5.08], "side": "left", "length": 4.08},
+    {"number": "3", "name": "+IN", "at": [-15.24, 0], "side": "left", "length": 5.08},
+    {"number": "4", "name": "SVR", "at": [-15.24, 5.08], "side": "left", "length": 5.08},
+    {"number": "10", "name": "MUTE", "at": [-15.24, 10.16], "side": "left", "length": 5.08},
+    {"number": "9", "name": "STBY", "at": [-15.24, 15.24], "side": "left", "length": 5.08},
+    {"number": "14", "name": "OUT", "at": [15.24, 0], "side": "right", "length": 5.08},
+    {"number": "6", "name": "BOOT", "at": [15.24, 5.08], "side": "right", "length": 5.08},
+    {"number": "5", "name": "NC", "at": [15.24, 10.16], "side": "right", "length": 5.08},
+    {"number": "11", "name": "NC", "at": [15.24, 15.24], "side": "right", "length": 5.08},
+    {"number": "12", "name": "NC", "at": [15.24, 20.32], "side": "right", "length": 5.08},
+    {"number": "7", "name": "+VS", "at": [-5.08, -15.24], "side": "up", "length": 5.08},
+    {"number": "13", "name": "+VS", "at": [5.08, -15.24], "side": "up", "length": 5.08},
+    {"number": "8", "name": "-VS", "at": [-5.08, 30.48], "side": "down", "length": 5.08},
+    {"number": "15", "name": "-VS", "at": [0, 30.48], "side": "down", "length": 5.08},
+    {"number": "1", "name": "SGND", "at": [5.08, 30.48], "side": "down", "length": 5.08}
+  ],
+  "refAt": [12.7, -12.7],
+  "valueAt": [12.7, 27.94],
+  "showPinNumbers": true,
+  "showPinNames": true
+}

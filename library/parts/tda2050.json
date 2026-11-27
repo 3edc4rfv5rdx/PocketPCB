@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "power-amp",
+  "footprints": ["pentawatt-v"],
+  "prefix": "U",
+  "prefixGost": "DA",
+  "value": "TDA2050",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Power amplifier TDA2050", "uk": "Підсилювач потужності TDA2050", "ru": "Усилитель мощности TDA2050"}
+}
