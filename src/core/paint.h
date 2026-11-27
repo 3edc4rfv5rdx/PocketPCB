@@ -70,6 +70,8 @@ inline QColor boardOutline() { return QColor(200, 162, 200); }
 // The silkscreen of a locked part on the board, and a locked hole, on the
 // screen only.
 inline QColor lockedPart() { return QColor(230, 200, 0); }
+// What was kept from moving because it is locked, for a moment.
+inline QColor lockRefused() { return QColor(230, 30, 30); }
 // The label of a wire pad that is not on the silkscreen, on the screen.
 inline QColor padLabel() { return QColor(255, 170, 90); }
 // The lines of the pads still to be joined (ratsnest()), on the screen only.

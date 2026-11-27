@@ -43,6 +43,7 @@ SheetEditor::SheetEditor(Document *document, CanvasView *canvas, QObject *parent
     , m_textEdit(canvas)
 {
     connect(&m_textEdit, &InPlaceEdit::accepted, this, &SheetEditor::textEdited);
+    connect(&m_lockFlash, &LockFlash::changed, this, &SheetEditor::changed);
     connect(m_document, &Document::designChanged, this, &SheetEditor::refreshPreview);
     // The nets are stale, and so is the index of the one lit.
     connect(m_document, &Document::designChanged, this, [this] {
@@ -707,9 +708,14 @@ void SheetEditor::move(const QPointF &at, bool detached)
             if (!hasText() && !hasSegment() && m_endLine.isNull() && !m_joint
                 && hasLockable(*sheet, m_selection) && movableIds(*sheet, m_selection).isEmpty()) {
                 m_pressed = false;
+                flashLocked(*sheet);
                 emit message(partLockedMessage());
                 return;
             }
+            // The locked ones chosen stay behind, unless only a text, a
+            // piece of wire or a joint is dragged.
+            if (!hasText() && !hasSegment() && m_endLine.isNull() && !m_joint)
+                flashLocked(*sheet);
             m_dragging = true;
             m_dragStart = *sheet;
             m_dragBase = *sheet;
@@ -907,8 +913,14 @@ void SheetEditor::mirrorSelection()
                              m_wireRouting));
 }
 
+void SheetEditor::flashLocked(const Sheet &sheet)
+{
+    m_lockFlash.flash(QSet<ObjectId>(m_selection).subtract(movableIds(sheet, m_selection)));
+}
+
 bool SheetEditor::refuseLocked(const Sheet &sheet)
 {
+    flashLocked(sheet);
     if (!hasLockable(sheet, m_selection) || !movableIds(sheet, m_selection).isEmpty())
         return false;
     emit message(partLockedMessage());

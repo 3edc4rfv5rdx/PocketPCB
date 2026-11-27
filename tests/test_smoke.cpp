@@ -1368,6 +1368,14 @@ private slots:
         editor->rotateSelection();
         editor->deleteSelection();
         QVERIFY(sheet() == before);
+
+        // A locked part chosen is not turned, and shows red for a moment.
+        editor->setComponentsLocked({r1}, true);
+        editor->setSelection({r1});
+        const int rotation = sheet().components.at(0).rotation;
+        editor->rotateSelection();
+        QCOMPARE(sheet().components.at(0).rotation, rotation);
+        QVERIFY(editor->lockFlashed().contains(r1));
     }
 
     void sheetIsEditedWithTheMouseAndKeys()
@@ -1968,6 +1976,8 @@ private slots:
         editor->release(QPointF(30, 3));
         QCOMPARE(placements().at(1).at, (Point{22 * NM_PER_MM, 3 * NM_PER_MM}));
         QVERIFY(!window.statusText().isEmpty());
+        // It is shown red for a moment.
+        QVERIFY(editor->lockFlash().ids().contains(placements().at(1).id));
         // Undo unlocks it and chooses it again.
         window.document()->undoStack()->undo();
         QVERIFY(!placements().at(1).locked);
@@ -2074,6 +2084,7 @@ private slots:
         editor->move(QPointF(7, 3));
         editor->release(QPointF(7, 3));
         QCOMPARE(outline(), square);
+        QVERIFY(editor->lockFlash().outline());
         lock->trigger();
         QVERIFY(!window.document()->design().board.outlineLocked);
         editor->press(QPointF(5, 0));

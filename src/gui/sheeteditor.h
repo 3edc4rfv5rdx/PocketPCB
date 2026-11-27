@@ -3,6 +3,7 @@
 #include "document.h"
 #include "erc.h"
 #include "inplaceedit.h"
+#include "lockflash.h"
 #include "netlist.h"
 #include "paint.h"
 #include "sheetedit.h"
@@ -84,6 +85,9 @@ public:
     void setSheet(int sheet);
 
     const QSet<ObjectId> &selection() const { return m_selection; }
+    // The locked objects shown red for a moment after they were kept from
+    // moving.
+    const QSet<ObjectId> &lockFlashed() const { return m_lockFlash.ids(); }
     // The segment of a wire chosen alone, in millimetres; a null line when
     // none is, or while it is dragged.
     QLineF chosenSegment() const;
@@ -359,8 +363,12 @@ private:
     // Makes 'edited' the sheet as one step of the history named 'action'.
     void apply(const QString &action, const Sheet &edited);
     // Says in the status bar that what is chosen is locked when all of it
-    // that may be is, and nothing else would move; true then.
+    // that may be is, and nothing else would move; true then. The locked
+    // ones chosen are shown red for a moment either way (flashLocked()).
     bool refuseLocked(const Sheet &sheet);
+    // The locked objects chosen, which a move, a turn or a delete leaves,
+    // shown red for a moment.
+    void flashLocked(const Sheet &sheet);
     // The same for a change of the components or power symbols 'ids', named
     // after them as they were.
     void applyToComponents(Action action, const QSet<ObjectId> &ids, const Sheet &edited);
@@ -373,6 +381,7 @@ private:
     Document *m_document;
     CanvasView *m_canvas;
     WireRouting m_wireRouting = WireRouting::Hand;
+    LockFlash m_lockFlash;
     int m_sheet = -1;
     QSet<ObjectId> m_selection;
     // The segment chosen by a click on a wire or a bus: its line, its

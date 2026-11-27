@@ -7,6 +7,7 @@
 #include "drc.h"
 #include "document.h"
 #include "inplaceedit.h"
+#include "lockflash.h"
 #include "trackedit.h"
 
 #include <QLineF>
@@ -159,6 +160,9 @@ public:
     QRectF outlineBounds() const;
     // The outline may not be changed or moved (Board::outlineLocked).
     bool isOutlineLocked() const { return m_document->design().board.outlineLocked; }
+    // The locked parts and holes, and the outline, shown red for a moment
+    // after they were kept from moving (see LockFlash).
+    const LockFlash &lockFlash() const { return m_lockFlash; }
 
     // The outline is chosen whole: by a double click on a side or by
     // chooseAll(); a drag on any of its sides or corners then moves it all,
@@ -372,8 +376,12 @@ private:
     // holes chosen or of their pads; refused in the status bar when it is
     // not a size, or is 0 for a hole.
     void holeValueTyped(Typed typed, const QString &text);
-    // Says in the status bar that the outline is locked; true when it is.
+    // Says in the status bar that the outline is locked; true when it is,
+    // and then the outline is shown red for a moment.
     bool refuseLocked();
+    // The locked parts and holes chosen, which a move, a turn, a flip or a
+    // delete leaves, shown red for a moment.
+    void flashLocked();
     // Says in the status bar that the holes chosen are locked, when holes
     // are chosen and all of them are; true then.
     bool refuseHolesLocked();
@@ -447,6 +455,7 @@ private:
     bool m_dragWhole = false;
     // A drag of the locked outline was refused once since the press.
     bool m_lockTold = false;
+    LockFlash m_lockFlash;
     bool m_outlineChosen = false;
     std::optional<QList<OutlineCorner>> m_preview;
 

@@ -41,6 +41,7 @@ BoardEditor::BoardEditor(Document *document, CanvasView *canvas, QObject *parent
     , m_valueEdit(canvas)
 {
     connect(&m_valueEdit, &InPlaceEdit::accepted, this, &BoardEditor::valueTyped);
+    connect(&m_lockFlash, &LockFlash::changed, this, &BoardEditor::changed);
     connect(m_document, &Document::designChanged, this, &BoardEditor::sideFollowed);
     connect(m_document, &Document::designChanged, this, &BoardEditor::laidChanged);
     m_hoverTimer.setSingleShot(true);
@@ -605,6 +606,7 @@ void BoardEditor::rotateChosen()
         return;
     }
     const Board &board = m_document->design().board;
+    flashLocked();
     if (arePlacementsLocked(board, ids)) {
         emit message(partLockedMessage());
         return;
@@ -634,6 +636,7 @@ void BoardEditor::flipChosen()
         // point following it; the move and the flip are one step.
         if (m_dragPlacements && !m_dragWhole) {
             if (arePlacementsLocked(m_dragBase, ids)) {
+                flashLocked();
                 emit message(partLockedMessage());
                 return;
             }
@@ -651,6 +654,7 @@ void BoardEditor::flipChosen()
     }
     const Design &design = m_document->design();
     const Board &board = design.board;
+    flashLocked();
     if (arePlacementsLocked(board, ids)) {
         emit message(partLockedMessage());
         return;
@@ -678,6 +682,7 @@ void BoardEditor::deleteChosen()
     if (!m_active || m_dragging)
         return;
     // The locked ones stay, chosen.
+    flashLocked();
     const Design &design = m_document->design();
     const Board &board = design.board;
     QSet<ObjectId> holes;
@@ -1187,6 +1192,7 @@ void BoardEditor::move(const QPointF &at)
                 !holes.isEmpty() && !areHolesLocked(m_document->design().board, holes);
             if (!m_dragText && m_dragTrack.isNull() && !outlineGoes && !placementsGo && !holesGo) {
                 if (!m_lockTold) {
+                    flashLocked();
                     if (!placements.isEmpty())
                         emit message(partLockedMessage());
                     else if (!refuseHolesLocked())
@@ -1195,6 +1201,9 @@ void BoardEditor::move(const QPointF &at)
                 m_lockTold = true;
                 return;
             }
+            // The locked ones chosen stay behind.
+            if (!m_dragText && m_dragTrack.isNull())
+                flashLocked();
             m_dragging = true;
         } else if (isOutlineLocked()) {
             if (!m_lockTold)
@@ -1791,14 +1800,31 @@ bool BoardEditor::refuseHolesLocked()
 {
     if (!chosenHolesLocked())
         return false;
+    flashLocked();
     emit message(tr("The hole is locked"));
     return true;
+}
+
+void BoardEditor::flashLocked()
+{
+    const Board &board = m_document->design().board;
+    QSet<ObjectId> locked;
+    for (const Placement &placement : board.placements) {
+        if (placement.locked && m_chosen.contains(placement.id))
+            locked.insert(placement.id);
+    }
+    for (const MountingHole &hole : board.holes) {
+        if (hole.locked && m_chosen.contains(hole.id))
+            locked.insert(hole.id);
+    }
+    m_lockFlash.flash(locked);
 }
 
 bool BoardEditor::refuseLocked()
 {
     if (!isOutlineLocked())
         return false;
+    m_lockFlash.flash({}, true);
     emit message(tr("The board outline is locked"));
     return true;
 }

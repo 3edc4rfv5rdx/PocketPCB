@@ -23,6 +23,7 @@ add_library(pocketpcb_gui STATIC
     libraryeditor.h libraryeditor.cpp
     librarypanel.h librarypanel.cpp
     libraryviewitem.h libraryviewitem.cpp
+    lockflash.h lockflash.cpp
     mainwindow.h mainwindow.cpp
     netspanel.h netspanel.cpp
     parteditor.h parteditor.cpp

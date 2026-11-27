@@ -16,6 +16,9 @@ namespace ppcb {
 
 namespace {
 
+// The fill over what is shown red for being locked.
+const int LOCK_FLASH_ALPHA = 90;
+
 // How opaque the track being laid is.
 const int TRACK_PREVIEW_ALPHA = 200;
 // The band round a track or a via chosen: how opaque, and how far beyond
@@ -417,6 +420,28 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
         painter.drawRect(linkTextRect(*owner));
     for (const QLineF &guide : editor->textGuides())
         painter.drawLine(guide);
+    // What was kept from moving because it is locked, red for a moment.
+    const LockFlash &flash = editor->lockFlash();
+    if (!flash.ids().isEmpty() || flash.outline()) {
+        QColor red = paintcolor::lockRefused();
+        painter.setPen(QPen(red, 2 * pixel));
+        red.setAlpha(LOCK_FLASH_ALPHA);
+        painter.setBrush(red);
+        for (const Placement &placement : board.placements) {
+            if (flash.ids().contains(placement.id))
+                painter.drawRect(placementRect(placement, design.library));
+        }
+        for (const MountingHole &hole : board.holes) {
+            if (flash.ids().contains(hole.id)) {
+                const double radius = nmToMm(holeOuterDiameter(hole)) / 2;
+                painter.drawEllipse(toMm(hole.at), radius, radius);
+            }
+        }
+        if (flash.outline()) {
+            painter.setBrush(Qt::NoBrush);
+            painter.drawPath(outlinePath(board.outline));
+        }
+    }
     if (m_drcMarksShown)
         paintDrcMarks(painter, editor->problems());
     const QRectF frame = editor->chooserFrame();
@@ -496,6 +521,17 @@ void DesignViewItem::paintSelection(QPainter &painter, const Sheet &sheet) const
     const Design &design = m_document->design();
     const QList<SheetObjectShape> shapes =
         sheetObjectShapes(sheet, design.library, powerShown(design.project, design.schematic));
+    // What was kept from moving because it is locked, red for a moment.
+    QColor red = paintcolor::lockRefused();
+    const QPen redPen(red, 0);
+    red.setAlpha(LOCK_FLASH_ALPHA);
+    for (const SheetObjectShape &shape : shapes) {
+        if (editor->lockFlashed().contains(shape.id) && shape.polyline.isEmpty()) {
+            painter.setPen(redPen);
+            painter.setBrush(red);
+            painter.drawRect(shape.rect);
+        }
+    }
     for (const SheetObjectShape &shape : shapes) {
         if (!editor->selection().contains(shape.id))
             continue;
