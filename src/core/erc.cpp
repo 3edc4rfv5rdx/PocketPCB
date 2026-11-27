@@ -1,6 +1,7 @@
 #include "erc.h"
 
 #include "joins.h"
+#include "sheetedit.h"
 #include "wiring.h"
 
 #include <QHash>
@@ -55,8 +56,74 @@ bool hasNameGiver(const Net &net, const QSet<ObjectId> &givers)
     return false;
 }
 
+// The designators more than one component has, but for the units of one
+// part of several, each once.
+QSet<QString> repeatedDesignators(const Schematic &schematic, const Library &library)
+{
+    struct Holders
+    {
+        // Components of parts of one unit, and parts of several.
+        int single = 0;
+        QSet<QString> parts;
+        QSet<QPair<QString, int>> units;
+        bool unitTwice = false;
+    };
+    QHash<QString, Holders> holders;
+    for (const Sheet &sheet : schematic.sheets) {
+        for (const Component &component : sheet.components) {
+            if (component.designator.isEmpty())
+                continue;
+            Holders &h = holders[component.designator];
+            const Part *part = library.findPart(component.part);
+            if (part == nullptr || part->unitCount() < 2) {
+                ++h.single;
+                continue;
+            }
+            h.parts.insert(component.part);
+            const QPair<QString, int> unit{component.part, component.unit};
+            h.unitTwice = h.unitTwice || h.units.contains(unit);
+            h.units.insert(unit);
+        }
+    }
+    QSet<QString> repeated;
+    for (auto it = holders.cbegin(); it != holders.cend(); ++it) {
+        if (it->single + it->parts.size() > 1 || it->unitTwice)
+            repeated.insert(it.key());
+    }
+    return repeated;
+}
+
+// The units of parts of several that no component is, marked at the
+// leaders of their groups.
+void checkUnits(const Schematic &schematic, const Library &library, DesignatorStyle style,
+                QList<ErcProblem> &problems)
+{
+    const QHash<ObjectId, ObjectId> leaders = unitLeaders(schematic, library);
+    QHash<ObjectId, QSet<int>> unitsOf;
+    for (const Sheet &sheet : schematic.sheets) {
+        for (const Component &component : sheet.components) {
+            const auto it = leaders.constFind(component.id);
+            if (it != leaders.constEnd())
+                unitsOf[*it].insert(component.unit);
+        }
+    }
+    for (int s = 0; s < schematic.sheets.size(); ++s) {
+        for (const Component &component : schematic.sheets.at(s).components) {
+            if (!unitsOf.contains(component.id))
+                continue;
+            const Part *part = library.findPart(component.part);
+            for (int unit = 0; unit < part->unitCount(); ++unit) {
+                if (!unitsOf.value(component.id).contains(unit)) {
+                    problems.append(problem(ErcKind::MissingUnit, s, component.at, component.id,
+                                            component.designator + unitSuffix(unit, style)));
+                }
+            }
+        }
+    }
+}
+
 void checkComponents(const Sheet &sheet, int index, const Library &library,
-                     const QHash<QString, int> &designatorCount, const QSet<QString> &links,
+                     const QSet<QString> &repeated, const QSet<QString> &links,
                      QList<ErcProblem> &problems)
 {
     for (const Component &component : sheet.components) {
@@ -67,7 +134,7 @@ void checkComponents(const Sheet &sheet, int index, const Library &library,
         }
     }
     for (const Component &component : sheet.components) {
-        if (designatorCount.value(component.designator) > 1) {
+        if (repeated.contains(component.designator)) {
             problems.append(problem(ErcKind::DuplicateDesignator, index, component.at,
                                     component.id, component.designator));
         }
@@ -358,13 +425,7 @@ QList<ErcProblem> checkSchematic(const Schematic &schematic, const Library &libr
                                  const QStringList &links)
 {
     const QSet<QString> linkSet(links.cbegin(), links.cend());
-    QHash<QString, int> designatorCount;
-    for (const Sheet &sheet : schematic.sheets) {
-        for (const Component &component : sheet.components) {
-            if (!component.designator.isEmpty())
-                ++designatorCount[component.designator];
-        }
-    }
+    const QSet<QString> repeated = repeatedDesignators(schematic, library);
     QHash<QString, int> netOfPin;
     for (int n = 0; n < all.size(); ++n) {
         for (const NetPin &pin : all.at(n).pins)
@@ -375,13 +436,14 @@ QList<ErcProblem> checkSchematic(const Schematic &schematic, const Library &libr
     QList<ErcProblem> problems;
     for (int s = 0; s < schematic.sheets.size(); ++s) {
         const Sheet &sheet = schematic.sheets.at(s);
-        checkComponents(sheet, s, library, designatorCount, linkSet, problems);
+        checkComponents(sheet, s, library, repeated, linkSet, problems);
         checkPins(sheet, s, library, all, netOfPin, givers, problems);
         checkLabelsAndWires(sheet, s, library, problems);
         checkOverlaps(sheet, s, problems);
         checkLoops(sheet, s, problems);
         checkShorts(sheet, s, library, netOfPin, problems);
     }
+    checkUnits(schematic, library, project.designatorStyle, problems);
     checkNames(schematic, all, problems);
     checkTableNames(project, all, problems);
 

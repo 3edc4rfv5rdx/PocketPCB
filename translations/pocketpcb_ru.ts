@@ -614,6 +614,10 @@
         <translation>Обозначение %1 есть и у перемычки на плате</translation>
     </message>
     <message>
+        <source>Unit %1 is not placed</source>
+        <translation>Секция %1 не поставлена</translation>
+    </message>
+    <message>
         <source>Designator %1 repeats</source>
         <translation>Обозначение %1 повторяется</translation>
     </message>

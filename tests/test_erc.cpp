@@ -34,6 +34,10 @@ Library twoPinLibrary()
     Part plain = part;
     plain.noValue = true;
     library.parts.insert(QStringLiteral("plain"), plain);
+    // Two units, both drawn with the same symbol.
+    Part dual = part;
+    dual.units = {QStringLiteral("two")};
+    library.parts.insert(QStringLiteral("dual"), dual);
     return library;
 }
 
@@ -85,7 +89,7 @@ QStringList describe(const QList<ErcProblem> &problems)
 {
     static const QStringList kinds = {
         QStringLiteral("EmptyValue"),       QStringLiteral("DuplicateDesignator"),
-        QStringLiteral("LinkDesignator"),
+        QStringLiteral("LinkDesignator"),   QStringLiteral("MissingUnit"),
         QStringLiteral("UnconnectedPin"),   QStringLiteral("MisplacedNoConnect"),
         QStringLiteral("LooseLabel"),       QStringLiteral("LooseWireEnd"),
         QStringLiteral("OverlappingWires"), QStringLiteral("WireLoop"),
@@ -153,6 +157,48 @@ private slots:
         QVERIFY(problems.at(0).object == first.components.at(0).id);
         QCOMPARE(problems.at(2).sheet, 1);
         QVERIFY(problems.at(2).object == second.components.at(1).id);
+    }
+
+    // The units of a part of several share their designator; a unit twice,
+    // or another part, repeats it, and a unit not placed is missing.
+    void unitsOfAPartOfSeveral()
+    {
+        const auto unit = [](const QString &designator, int number, const Point &at) {
+            Component component = part(designator, at);
+            component.part = QStringLiteral("dual");
+            component.unit = number;
+            return component;
+        };
+        Sheet sheet;
+        sheet.components = {unit(QStringLiteral("U1"), 0, mm(0, 0)),
+                            unit(QStringLiteral("U1"), 1, mm(0, 20)),
+                            unit(QStringLiteral("U2"), 1, mm(0, 40)),
+                            unit(QStringLiteral("U3"), 0, mm(0, 60)),
+                            unit(QStringLiteral("U3"), 0, mm(0, 80)),
+                            unit(QStringLiteral("U3"), 1, mm(0, 100)),
+                            part(QStringLiteral("U4"), mm(0, 120)),
+                            unit(QStringLiteral("U4"), 0, mm(0, 140)),
+                            unit(QStringLiteral("U4"), 1, mm(0, 160))};
+        Schematic schematic;
+        schematic.sheets = {sheet};
+        QStringList found;
+        for (const QString &line : describe(check(schematic))) {
+            if (!line.startsWith(QStringLiteral("UnconnectedPin")))
+                found.append(line);
+        }
+        QCOMPARE(found, QStringList({QStringLiteral("DuplicateDesignator U3"),
+                                     QStringLiteral("DuplicateDesignator U3"),
+                                     QStringLiteral("DuplicateDesignator U3"),
+                                     QStringLiteral("DuplicateDesignator U4"),
+                                     QStringLiteral("DuplicateDesignator U4"),
+                                     QStringLiteral("DuplicateDesignator U4"),
+                                     QStringLiteral("MissingUnit U2A")}));
+        Project gost;
+        gost.designatorStyle = DesignatorStyle::Gost;
+        bool missing = false;
+        for (const QString &line : describe(check(schematic, gost)))
+            missing = missing || line == QStringLiteral("MissingUnit U2.1");
+        QVERIFY(missing);
     }
 
     void pinsJoinedToNothingAndPiecesOfWire()

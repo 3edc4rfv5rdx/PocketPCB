@@ -87,7 +87,12 @@ QList<BomRow> bomRows(const Schematic &schematic, const Library &library)
                 row.comment = key.comment;
                 rows.append(row);
             }
-            rows[index].designators.append(component.designator);
+            // The units of a part of several are one part of it.
+            const Part *part = library.findPart(component.part);
+            const bool unitOfOneListed = part != nullptr && part->unitCount() > 1
+                                         && rows.at(index).designators.contains(component.designator);
+            if (!unitOfOneListed)
+                rows[index].designators.append(component.designator);
             rows[index].ids.insert(component.id);
         }
     }

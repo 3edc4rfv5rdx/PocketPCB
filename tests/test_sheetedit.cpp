@@ -792,6 +792,57 @@ private slots:
                               QStringLiteral("D9"), QStringLiteral("D10")}));
     }
 
+    // The units of a part of several keep one designator when the style
+    // changes, also when theirs is taken and they get a new number, and
+    // when pasted.
+    void unitsKeepOneDesignator()
+    {
+        Library library;
+        Part dual;
+        dual.symbol = QStringLiteral("a");
+        dual.units = {QStringLiteral("b")};
+        dual.prefix = QStringLiteral("U");
+        dual.prefixGost = QStringLiteral("DA");
+        library.parts.insert(QStringLiteral("dual"), dual);
+        Part chip = dual;
+        chip.units.clear();
+        chip.prefix = QStringLiteral("DA");
+        library.parts.insert(QStringLiteral("chip"), chip);
+        const auto component = [](quint64 value, const char *part, const char *designator,
+                                  int unit) {
+            Component result;
+            result.id = id(value);
+            result.part = QLatin1String(part);
+            result.designator = QLatin1String(designator);
+            result.unit = unit;
+            return result;
+        };
+        Schematic schematic;
+        Sheet sheet;
+        // U1 would be DA1, a chip's: both its units get DA3, after DA2 that
+        // U2 became.
+        sheet.components = {component(1, "chip", "DA1", 0), component(2, "dual", "U1", 0),
+                            component(3, "dual", "U1", 1), component(4, "dual", "U2", 1),
+                            component(5, "dual", "U2", 0)};
+        schematic.sheets = {sheet};
+        const Schematic gost = withDesignatorStyle(schematic, library, DesignatorStyle::International,
+                                                   DesignatorStyle::Gost);
+        QStringList designators;
+        for (const Component &c : gost.sheets.first().components)
+            designators.append(c.designator);
+        QCOMPARE(designators, QStringList({QStringLiteral("DA1"), QStringLiteral("DA3"),
+                                           QStringLiteral("DA3"), QStringLiteral("DA2"),
+                                           QStringLiteral("DA2")}));
+
+        Sheet piece;
+        piece.components = {component(6, "dual", "U1", 0), component(7, "dual", "U1", 1),
+                            component(8, "dual", "U2", 0)};
+        const Sheet pasted = numberedOn(piece, schematic, library, DesignatorStyle::International);
+        QCOMPARE(pasted.components.at(0).designator, QStringLiteral("U3"));
+        QCOMPARE(pasted.components.at(1).designator, QStringLiteral("U3"));
+        QCOMPARE(pasted.components.at(2).designator, QStringLiteral("U4"));
+    }
+
     void designatorsAreNumberedOn()
     {
         Schematic schematic;

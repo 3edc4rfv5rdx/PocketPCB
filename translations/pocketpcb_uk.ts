@@ -614,6 +614,10 @@
         <translation>Позначення %1 має й перемичка на платі</translation>
     </message>
     <message>
+        <source>Unit %1 is not placed</source>
+        <translation>Секцію %1 не поставлено</translation>
+    </message>
+    <message>
         <source>Designator %1 repeats</source>
         <translation>Позначення %1 повторюється</translation>
     </message>

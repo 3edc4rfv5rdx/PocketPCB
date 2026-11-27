@@ -564,6 +564,76 @@ Sheet mirroredObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point
     return transformed(sheet, ids, transform);
 }
 
+namespace {
+
+// The key of the group of units 'component' is in; empty for a component
+// of a part of one unit, or of a part 'library' lacks.
+QString unitGroupKey(const Component &component, const Library &library)
+{
+    const Part *part = library.findPart(component.part);
+    if (part == nullptr || part->unitCount() < 2)
+        return QString();
+    return component.part + QLatin1Char('\n') + component.designator;
+}
+
+} // namespace
+
+QHash<ObjectId, ObjectId> unitLeaders(const Schematic &schematic, const Library &library,
+                                      const QSet<ObjectId> &preferred)
+{
+    struct Group
+    {
+        QList<ObjectId> members;
+        ObjectId leader;
+        int leaderUnit = 0;
+        bool leaderPreferred = false;
+    };
+    QHash<QString, Group> groups;
+    for (const Sheet &sheet : schematic.sheets) {
+        for (const Component &component : sheet.components) {
+            const QString key = unitGroupKey(component, library);
+            if (key.isEmpty())
+                continue;
+            Group &group = groups[key];
+            const bool isPreferred = preferred.contains(component.id);
+            const bool better = group.members.isEmpty()
+                                || (isPreferred && !group.leaderPreferred)
+                                || (isPreferred == group.leaderPreferred && !group.leaderPreferred
+                                    && component.unit < group.leaderUnit);
+            if (better) {
+                group.leader = component.id;
+                group.leaderUnit = component.unit;
+                group.leaderPreferred = isPreferred;
+            }
+            group.members.append(component.id);
+        }
+    }
+    QHash<ObjectId, ObjectId> leaders;
+    for (const Group &group : std::as_const(groups)) {
+        for (const ObjectId &id : group.members)
+            leaders.insert(id, group.leader);
+    }
+    return leaders;
+}
+
+QSet<ObjectId> withUnitSiblings(const Schematic &schematic, const Library &library,
+                                const QSet<ObjectId> &ids)
+{
+    const QHash<ObjectId, ObjectId> leaders = unitLeaders(schematic, library);
+    QSet<ObjectId> wantedLeaders;
+    for (const ObjectId &id : ids) {
+        const auto it = leaders.constFind(id);
+        if (it != leaders.constEnd())
+            wantedLeaders.insert(*it);
+    }
+    QSet<ObjectId> result = ids;
+    for (auto it = leaders.cbegin(); it != leaders.cend(); ++it) {
+        if (wantedLeaders.contains(it.value()))
+            result.insert(it.key());
+    }
+    return result;
+}
+
 ComponentShown componentShown(const Project &project, const Schematic &schematic)
 {
     ComponentShown shown;
@@ -588,6 +658,8 @@ Schematic withDesignatorStyle(const Schematic &schematic, const Library &library
         QString old;
         QString prefix;
         QString rest;
+        // The units of a part of several are renamed together.
+        QString group;
     };
     Schematic result = schematic;
     QSet<QString> taken;
@@ -603,7 +675,8 @@ Schematic withDesignatorStyle(const Schematic &schematic, const Library &library
                 && designator.startsWith(oldPrefix)
                 && designator.size() > oldPrefix.size() && designator.at(oldPrefix.size()).isDigit()) {
                 renamed.append({s, i, designator, designatorPrefix(*part, to),
-                                designator.mid(oldPrefix.size())});
+                                designator.mid(oldPrefix.size()),
+                                unitGroupKey(components.at(i), library)});
             } else if (!designator.isEmpty()) {
                 taken.insert(designator);
             }
@@ -614,9 +687,17 @@ Schematic withDesignatorStyle(const Schematic &schematic, const Library &library
     });
     // Those whose new designator is taken wait for a free number, without
     // one meanwhile.
+    // The first unit of a group renamed decides for the others.
+    QHash<QString, QString> groupNames;
     QList<Renamed> repeated;
     for (const Renamed &r : renamed) {
         QString &designator = result.sheets[r.sheet].components[r.index].designator;
+        if (!r.group.isEmpty() && groupNames.contains(r.group)) {
+            designator = groupNames.value(r.group);
+            if (designator.isEmpty())
+                repeated.append(r);
+            continue;
+        }
         designator = r.prefix + r.rest;
         if (taken.contains(designator)) {
             designator.clear();
@@ -624,9 +705,20 @@ Schematic withDesignatorStyle(const Schematic &schematic, const Library &library
         } else {
             taken.insert(designator);
         }
+        if (!r.group.isEmpty())
+            groupNames.insert(r.group, designator);
     }
-    for (const Renamed &r : repeated)
-        result.sheets[r.sheet].components[r.index].designator = nextDesignator(result, r.prefix);
+    QHash<QString, QString> groupNumbers;
+    for (const Renamed &r : repeated) {
+        QString &designator = result.sheets[r.sheet].components[r.index].designator;
+        if (!r.group.isEmpty() && groupNumbers.contains(r.group)) {
+            designator = groupNumbers.value(r.group);
+            continue;
+        }
+        designator = nextDesignator(result, r.prefix);
+        if (!r.group.isEmpty())
+            groupNumbers.insert(r.group, designator);
+    }
     return result;
 }
 
@@ -1005,12 +1097,21 @@ Sheet numberedOn(const Sheet &piece, const Schematic &schematic, const Library &
     // them do not get one designator.
     Schematic taken = schematic;
     taken.sheets.append(Sheet());
+    // The units of a part of several in the piece keep sharing a designator.
+    QHash<QString, QString> groupNames;
     for (Component &component : result.components) {
         const Part *part = library.findPart(component.part);
         if (part == nullptr)
             continue;
+        const QString group = unitGroupKey(component, library);
+        if (!group.isEmpty() && groupNames.contains(group)) {
+            component.designator = groupNames.value(group);
+            continue;
+        }
         component.designator = nextDesignator(taken, designatorPrefix(*part, style), alsoTaken);
         taken.sheets.last().components.append(component);
+        if (!group.isEmpty())
+            groupNames.insert(group, component.designator);
     }
     return result;
 }

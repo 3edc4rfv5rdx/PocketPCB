@@ -122,6 +122,58 @@ private slots:
         QCOMPARE(r1->at.y % design.project.boardGridStep, Coord(0));
     }
 
+    // Two units of one part: one placement, its pads on the nets of the
+    // pins of both, kept on the unit it is tied to.
+    void unitsOfOnePartAreOnePlacement()
+    {
+        Design design = twoResistors();
+        Library &library = design.library;
+        // Unit A has pin 1 alone, unit B pin 2 alone, each at its origin.
+        Symbol a;
+        Pin pin;
+        pin.number = QStringLiteral("1");
+        pin.side = PinSide::Left;
+        a.pins = {pin};
+        Symbol b = a;
+        b.pins[0].number = QStringLiteral("2");
+        library.symbols.insert(QStringLiteral("unit-a"), a);
+        library.symbols.insert(QStringLiteral("unit-b"), b);
+        Part dual;
+        dual.symbol = QStringLiteral("unit-a");
+        dual.units = {QStringLiteral("unit-b")};
+        dual.footprints = {QStringLiteral("fp")};
+        library.parts.insert(QStringLiteral("dual"), dual);
+        // R1 stands at (0, 0): unit A on its pin 2, unit B on its pin 1.
+        Component unitA = part(QStringLiteral("U1"), mm(5, 0));
+        unitA.part = QStringLiteral("dual");
+        Component unitB = unitA;
+        unitB.id = newObjectId();
+        unitB.unit = 1;
+        unitB.at = mm(-5, 0);
+        design.schematic.sheets[0].components.append({unitB, unitA});
+
+        BoardUpdate update = boardUpdatedFromSchematic(design);
+        QCOMPARE(update.board.placements.size(), 3);
+        const Placement *u1 = placementOf(update.board, QStringLiteral("U1"));
+        const Placement *r1 = placementOf(update.board, QStringLiteral("R1"));
+        QVERIFY(u1 != nullptr && r1 != nullptr);
+        QCOMPARE(u1->component, unitA.id);
+        QVERIFY(!u1->padNets.value(QStringLiteral("1")).isEmpty());
+        QCOMPARE(u1->padNets.value(QStringLiteral("1")), r1->padNets.value(QStringLiteral("2")));
+        QVERIFY(!u1->padNets.value(QStringLiteral("2")).isEmpty());
+        QCOMPARE(u1->padNets.value(QStringLiteral("2")), r1->padNets.value(QStringLiteral("1")));
+
+        // A placement tied to unit B stays tied to it.
+        design.board = update.board;
+        for (Placement &placement : design.board.placements) {
+            if (placement.designator == QStringLiteral("U1"))
+                placement.component = unitB.id;
+        }
+        update = boardUpdatedFromSchematic(design);
+        QVERIFY(update.changes.isEmpty());
+        QCOMPARE(placementOf(update.board, QStringLiteral("U1"))->component, unitB.id);
+    }
+
     void nothingChangesTheSecondTime()
     {
         Design design = twoResistors();

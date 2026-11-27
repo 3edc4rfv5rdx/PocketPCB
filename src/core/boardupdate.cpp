@@ -4,6 +4,7 @@
 #include "grid.h"
 #include "netlist.h"
 #include "paint.h"
+#include "sheetedit.h"
 #include "trackedit.h"
 
 #include <QHash>
@@ -96,13 +97,21 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
         withNetsNamedByPins(design.project, nets(design.schematic, library, design.project));
     // Two nets with pins under one name would be one net on the board: the
     // update waits until a label or a power symbol is named otherwise.
+    // The units of a part of several are one placement, tied to the unit
+    // it is tied to already, else to their leader; the pins of all of them
+    // are its pads.
+    QSet<ObjectId> placed;
+    for (const Placement &placement : design.board.placements)
+        placed.insert(placement.component);
+    const QHash<ObjectId, ObjectId> leaders = unitLeaders(design.schematic, library, placed);
     QHash<QString, QString> pinNets;
     QHash<QString, int> netsOfName;
     for (const Net &net : nets(design.schematic, library, project)) {
         if (!net.pins.isEmpty())
             ++netsOfName[net.name];
         for (const NetPin &pin : net.pins)
-            pinNets.insert(pinKey(pin.component, pin.number), net.name);
+            pinNets.insert(pinKey(leaders.value(pin.component, pin.component), pin.number),
+                           net.name);
     }
     QStringList sharedNames;
     for (auto it = netsOfName.cbegin(); it != netsOfName.cend(); ++it) {
@@ -128,6 +137,8 @@ BoardUpdate boardUpdatedFromSchematic(const Design &design)
     for (const Sheet &sheet : design.schematic.sheets) {
         for (const Component &component : sheet.components) {
             if (component.offBoard || component.footprint.isEmpty())
+                continue;
+            if (leaders.value(component.id, component.id) != component.id)
                 continue;
             if (library.findFootprint(component.footprint) == nullptr) {
                 leftAlone.insert(component.id);

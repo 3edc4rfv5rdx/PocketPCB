@@ -10,6 +10,8 @@ namespace ppcb {
 // Updating the board from the schematic, one way only: every component of
 // the schematic that is on the board and has a footprint the library holds
 // gets a placement, tied to it by its id; the placements of the others go.
+// The units of a part of several (unitLeaders()) get one placement, tied to
+// their leader, with the pads of the pins of all of them.
 // A placement kept keeps where it is; its designator, value, footprint and
 // the nets of its pads follow the component, named as withNetsNamedByPins()
 // names them. A component on the board whose

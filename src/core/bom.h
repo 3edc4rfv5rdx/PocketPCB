@@ -19,7 +19,8 @@ struct BomRow
     // The group of the part (bomGroup() of Part::group); empty for a part without one or
     // missing from the library.
     QString group;
-    // The designators, in the order designatorLess() gives.
+    // The designators, in the order designatorLess() gives; the units of a
+    // part of several sharing one are it once.
     QStringList designators;
     QString part;
     QString value;

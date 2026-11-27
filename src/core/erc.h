@@ -18,10 +18,15 @@ enum class ErcKind {
     // A component whose part has a value (not Part::noValue) with none given.
     EmptyValue,
     // A designator two or more components have; one problem for each of them.
+    // The units of a part of several share theirs: only two of one unit, or
+    // a component of another part, repeat it.
     DuplicateDesignator,
     // A designator a component has and a wire link of the board has too;
     // one problem for each such component.
     LinkDesignator,
+    // A unit of a part of several that no component of its designator is:
+    // marked at the group's leader (unitLeaders()), about the unit ("DA1.3").
+    MissingUnit,
     // A pin of a component joined to no other pin, with no name on its net
     // and no no-connect mark.
     UnconnectedPin,

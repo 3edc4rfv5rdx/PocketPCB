@@ -57,6 +57,31 @@ private slots:
         QCOMPARE(rows.at(2).powerMw, 2000);
     }
 
+    // The units of a part of several are one part: their designator once,
+    // all their components in the row.
+    void unitsOfOnePartAreListedOnce()
+    {
+        Library library;
+        Part dual;
+        dual.symbol = QStringLiteral("a");
+        dual.units = {QStringLiteral("b")};
+        library.parts.insert(QStringLiteral("dual"), dual);
+        Schematic schematic;
+        Sheet sheet;
+        sheet.components = {component(1, QStringLiteral("U1"), QStringLiteral("LM358"), 0,
+                                      QStringLiteral("dual")),
+                            component(2, QStringLiteral("U1"), QStringLiteral("LM358"), 0,
+                                      QStringLiteral("dual")),
+                            component(3, QStringLiteral("U2"), QStringLiteral("LM358"), 0,
+                                      QStringLiteral("dual"))};
+        sheet.components[1].unit = 1;
+        schematic.sheets = {sheet};
+        const QList<BomRow> rows = bomRows(schematic, library);
+        QCOMPARE(rows.size(), 1);
+        QCOMPARE(rows.at(0).designators, QStringList({QStringLiteral("U1"), QStringLiteral("U2")}));
+        QCOMPARE(rows.at(0).ids, QSet<ObjectId>({ObjectId{1}, ObjectId{2}, ObjectId{3}}));
+    }
+
     // The rows of a group stay together, the groups in the order of their
     // first designators, rows without a group last.
     void rowsGoByGroups()

@@ -2,6 +2,7 @@
 
 #include "paint.h"
 
+#include <QHash>
 #include <QSet>
 
 namespace ppcb {
@@ -184,6 +185,19 @@ Sheet withObjectsAdded(const Sheet &sheet, const Sheet &piece);
 Sheet numberedOn(const Sheet &piece, const Schematic &schematic, const Library &library,
                  DesignatorStyle style, const QStringList &alsoTaken = {});
 
+// Units of parts of several (Part::units). The units of one part that share
+// a designator are one part on the board and in the bill of materials.
+
+// The leader of every group of units of 'schematic', by the id of each of
+// its components: the first of 'preferred' in the group, else its lowest
+// unit, the first in the order of the sheets among equals. Components of
+// parts of one unit, or of parts 'library' lacks, are not in it.
+QHash<ObjectId, ObjectId> unitLeaders(const Schematic &schematic, const Library &library,
+                                      const QSet<ObjectId> &preferred = {});
+// 'ids' with the other units of the groups of those of them that are units.
+QSet<ObjectId> withUnitSiblings(const Schematic &schematic, const Library &library,
+                                const QSet<ObjectId> &ids);
+
 // Placing parts.
 
 // How the components of 'schematic' are shown in the designator style of
@@ -211,8 +225,8 @@ QString nextDesignator(const Schematic &schematic, const QString &prefix,
 // part has no footprints.
 Component newComponent(const Library &library, const QString &partName,
                        const QString &footprint, int unit = 0);
-// 'project' with the part, the symbols of its units and all its footprints taken from
-// 'source' where 'project' lacks them. What 'project' has stays as it is:
+// 'project' with the part, the symbols of its units and all its footprints
+// taken from 'source' where 'project' lacks them. What 'project' has stays as it is:
 // the project does not change because the library did.
 Library withPartFrom(const Library &project, const Library &source, const QString &partName);
 // The same for the symbol 'symbolName' of a power symbol.
