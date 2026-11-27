@@ -1,5 +1,7 @@
 #include "contacts.h"
 
+#include "document.h"
+#include "paint.h"
 #include "wiring.h"
 
 #include <QtTest>
@@ -174,6 +176,62 @@ private slots:
         const PlacedContacts placed = withContactsPlaced(amp.design, source(), {amp.otherJack});
         QCOMPARE(placed.placed.size(), 1);
         QVERIFY(placedContact(placed.design, placed, mm(-20, -5)) != nullptr);
+    }
+
+    // A wire pad on the board is labelled with the off-board pins of its
+    // net, or the net's name when it has none; other parts are not.
+    void wirePadsAreLabelledWhereTheirWireGoes()
+    {
+        Amplifier amp = amplifier();
+        const QList<Net> all = nets(amp.design.schematic, amp.design.library);
+        QString jackNet;
+        for (const Net &net : all) {
+            const bool jack = std::any_of(net.pins.cbegin(), net.pins.cend(), [](const NetPin &p) {
+                return p.designator == QStringLiteral("XS1") && p.number == QStringLiteral("1");
+            });
+            if (jack)
+                jackNet = net.name;
+        }
+        QVERIFY(!jackNet.isEmpty());
+        Placement pad;
+        pad.id = newObjectId();
+        pad.footprint = QLatin1String(WIRE_PAD_PART);
+        pad.padNets.insert(QStringLiteral("1"), jackNet);
+        QCOMPARE(wirePadLabel(pad, all, amp.design.schematic), QStringLiteral("XS1.1"));
+        // A net with no off-board pin is told by its name.
+        Placement other = pad;
+        other.padNets.insert(QStringLiteral("1"), QStringLiteral("GND"));
+        QCOMPARE(wirePadLabel(other, all, amp.design.schematic), QStringLiteral("GND"));
+        Placement resistor = pad;
+        resistor.footprint = QStringLiteral("small");
+        QVERIFY(!isWirePad(resistor));
+        QVERIFY(isWirePad(pad));
+
+        // The document makes the labels; they are not part of what is
+        // saved or compared.
+        amp.design.board.placements = {pad, resistor};
+        Document document;
+        document.startNew();
+        document.change(QStringLiteral("Board"), amp.design);
+        const QList<Placement> &placements = document.design().board.placements;
+        QCOMPARE(placements.at(0).padLabel, QStringLiteral("XS1.1"));
+        QVERIFY(placements.at(1).padLabel.isEmpty());
+        // A label alone is no change: no step is made for it.
+        const int steps = document.undoStack()->count();
+        Design unlabelled = document.design();
+        unlabelled.board.placements[0].padLabel.clear();
+        QVERIFY(unlabelled == document.design());
+        document.change(QStringLiteral("Nothing"), unlabelled);
+        QCOMPARE(document.undoStack()->count(), steps);
+
+        // On the screen always, in place of the value; on the silkscreen
+        // only while the value is shown.
+        const Placement &labelled = placements.at(0);
+        QCOMPARE(placementTextShown(labelled, ComponentText::Value), QStringLiteral("XS1.1"));
+        QVERIFY(placementTextOnSilkscreen(labelled, ComponentText::Value).isEmpty());
+        Placement onSilk = labelled;
+        onSilk.showValue = true;
+        QCOMPARE(placementTextOnSilkscreen(onSilk, ComponentText::Value), QStringLiteral("XS1.1"));
     }
 
     void withoutTheWirePadNothingIsPlaced()

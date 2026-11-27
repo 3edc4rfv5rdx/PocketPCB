@@ -104,4 +104,52 @@ PlacedContacts withContactsPlaced(const Design &design, const Library &source,
     return result;
 }
 
+bool isWirePad(const Placement &placement)
+{
+    return placement.footprint.startsWith(QLatin1String(WIRE_PAD_PART));
+}
+
+QString wirePadLabel(const Placement &placement, const QList<Net> &nets,
+                     const Schematic &schematic)
+{
+    QSet<ObjectId> offBoard;
+    for (const Sheet &sheet : schematic.sheets) {
+        for (const Component &component : sheet.components) {
+            if (component.offBoard)
+                offBoard.insert(component.id);
+        }
+    }
+    QStringList parts;
+    // padNets is kept in the order of the pad numbers.
+    for (const QString &netName : placement.padNets) {
+        const auto net = std::find_if(nets.cbegin(), nets.cend(),
+                                      [&netName](const Net &each) { return each.name == netName; });
+        QList<NetPin> far;
+        if (net != nets.cend()) {
+            for (const NetPin &pin : net->pins) {
+                if (offBoard.contains(pin.component))
+                    far.append(pin);
+            }
+        }
+        const QString text = far.isEmpty() ? netName : pinsText(far);
+        if (!text.isEmpty() && !parts.contains(text))
+            parts.append(text);
+    }
+    return parts.join(QStringLiteral(", "));
+}
+
+Board withWirePadLabels(const Design &design)
+{
+    Board board = design.board;
+    const bool any = std::any_of(board.placements.cbegin(), board.placements.cend(),
+                                 [](const Placement &p) { return isWirePad(p); });
+    // The nets are made only for a board that has wire pads.
+    const QList<Net> all = any ? nets(design.schematic, design.library, design.project)
+                               : QList<Net>();
+    for (Placement &placement : board.placements)
+        placement.padLabel =
+            isWirePad(placement) ? wirePadLabel(placement, all, design.schematic) : QString();
+    return board;
+}
+
 } // namespace ppcb

@@ -1,5 +1,6 @@
 #include "document.h"
 
+#include "contacts.h"
 #include "wiring.h"
 
 #include <QDir>
@@ -414,6 +415,7 @@ void Document::install(const Design &design)
     m_design = design;
     m_design.project.schematicFile = schematicFile;
     m_design.project.boardFile = boardFile;
+    m_design.board = withWirePadLabels(m_design);
     emit designChanged();
     noteModified();
 }
@@ -426,6 +428,7 @@ void Document::reset(const Design &design, const QString &projectPath)
     m_outputProjectPath.clear();
     m_outputTag.clear();
     m_design = design;
+    m_design.board = withWirePadLabels(m_design);
     m_saved = design;
     m_projectPath = projectPath;
     m_autosaved = Design();

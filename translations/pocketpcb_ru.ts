@@ -2058,6 +2058,10 @@
         <source>Vias</source>
         <translation>Переходных</translation>
     </message>
+    <message>
+        <source>Label on silkscreen</source>
+        <translation>Подпись на шелкографию</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::RectangleBoardDialog</name>

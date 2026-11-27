@@ -1046,7 +1046,7 @@ void paintPlacementSilkscreen(QPainter &painter, const Library &library,
     }
 
     for (const ComponentText text : {ComponentText::Designator, ComponentText::Value}) {
-        const QString shown = placementTextShown(placement, text);
+        const QString shown = placementTextOnSilkscreen(placement, text);
         if (!shown.isEmpty())
             paintPlacementText(painter, placement, placementTextPoint(placement, text), shown,
                                color);
@@ -1595,9 +1595,31 @@ QRectF placementRect(const Placement &placement, const Library &library)
 
 QString placementTextShown(const Placement &placement, ComponentText text)
 {
+    if (text == ComponentText::Value && !placement.padLabel.isEmpty())
+        return placement.padLabel;
+    return placementTextOnSilkscreen(placement, text);
+}
+
+QString placementTextOnSilkscreen(const Placement &placement, ComponentText text)
+{
     if (text == ComponentText::Designator)
         return placement.showRef ? placement.designator : QString();
-    return placement.showValue ? placement.value : QString();
+    if (!placement.showValue)
+        return QString();
+    return placement.padLabel.isEmpty() ? placement.value : placement.padLabel;
+}
+
+void paintPadLabelsOffSilkscreen(QPainter &painter, const Board &board,
+                                 const BoardLayerSet &shown)
+{
+    for (const Placement &placement : board.placements) {
+        if (placement.padLabel.isEmpty() || placement.showValue
+            || !shown.contains(silkscreenLayer(placement.side)))
+            continue;
+        paintPlacementText(painter, placement,
+                           placementTextPoint(placement, ComponentText::Value),
+                           placement.padLabel, paintcolor::padLabel());
+    }
 }
 
 Point placementTextPoint(const Placement &placement, ComponentText text)
@@ -1629,7 +1651,7 @@ QLineF leaderLine(const Placement &placement, ComponentText text)
 {
     const bool wanted =
         text == ComponentText::Designator ? placement.refLine : placement.valueLine;
-    if (!wanted || placementTextShown(placement, text).isEmpty())
+    if (!wanted || placementTextOnSilkscreen(placement, text).isEmpty())
         return QLineF();
     const QRectF label = placementTextRect(placement, text);
     const QPointF part = toMm(placement.at);

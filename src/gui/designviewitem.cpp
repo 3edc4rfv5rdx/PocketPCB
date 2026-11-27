@@ -218,6 +218,8 @@ void DesignViewItem::paintBoardPage(QPainter &painter) const
     const bool tracksShown = editor == nullptr || editor->tracksShown();
     const Board shown = tracksShown ? board : withoutAnyTracks(board);
     paintBoard(painter, shown, design.library, m_boardLayers, true, bright);
+    // Where the wires of wire pads go, also while not on the silkscreen.
+    paintPadLabelsOffSilkscreen(painter, shown, m_boardLayers);
     // The pads still to be joined, as the board stands now; the nets of the
     // parts chosen, and the net the mouse stays on, are lit: their pads,
     // vias, tracks and lines.

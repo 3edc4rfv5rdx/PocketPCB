@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Wire pads on the board are labelled with where their wire goes, on the silkscreen when asked
 - I: The user guide and its translations are kept in the help folder
 ## v0.16.412 (2026-11-27)
 - N: The user guide in Russian and Ukrainian, opened by F1 in the language of the interface

@@ -1069,8 +1069,18 @@ void MainWindow::showBoardMenu(const QPoint &globalPos)
         add("actionFlip");
         addLock();
         const bool shown = m_boardEditor->chosenValuesShown();
-        QAction *value = menu.addAction(BoardEditor::actionName(
-            shown ? BoardEditor::Action::HideValue : BoardEditor::Action::ShowValue));
+        // A wire pad has no value: its label stands there, on the
+        // silkscreen or not.
+        QAction *value = nullptr;
+        if (m_boardEditor->chosenAreWirePads()) {
+            value = menu.addAction(
+                BoardEditor::actionName(BoardEditor::Action::LabelOnSilkscreen));
+            value->setCheckable(true);
+            value->setChecked(shown);
+        } else {
+            value = menu.addAction(BoardEditor::actionName(
+                shown ? BoardEditor::Action::HideValue : BoardEditor::Action::ShowValue));
+        }
         connect(value, &QAction::triggered, m_boardEditor,
                 [this, shown] { m_boardEditor->setChosenValuesShown(!shown); });
         // The components of the parts chosen, on their sheet.

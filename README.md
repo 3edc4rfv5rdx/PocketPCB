@@ -17,7 +17,7 @@ Early development. What works now (the user guide, Help > User guide or [`help/h
 - Part editor: symbol, footprints, prefixes, group, names; every pin checked for a pad.
 - Schematic: sheets, parts, wires, buses, labels, power symbols, no-connect marks, lock; wire pads placed for off-board parts.
 - Panels: Library, Properties, Nets, ERC, DRC, BOM, Versions.
-- Board: outline, parts on either side, holes, tracks, vias, wire links, ratsnest, lock.
+- Board: outline, parts on either side, holes, tracks, vias, wire links, ratsnest, lock; wire pads labelled with where their wire goes.
 - Update board from schematic (F8).
 - Autorouter, also for one-sided boards with wire links.
 - Printing: schematic to printer or PDF, board 1:1 for toner transfer.

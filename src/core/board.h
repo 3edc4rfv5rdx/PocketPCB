@@ -98,6 +98,14 @@ struct Placement
     // Net of every connected pad, by pad number. A pad that is not here
     // belongs to no net.
     QMap<QString, QString> padNets;
+
+    // What the label of a wire pad says, where its wire goes (see
+    // wirePadLabel()): made from the schematic by the Document each time
+    // the design changes, never saved and left out of comparisons; empty
+    // for any other part. It stands at 'valueAt', in place of the value a
+    // wire pad has none of: always on the screen, on the silkscreen while
+    // 'showValue'.
+    QString padLabel;
 };
 
 // One straight piece of a track, with round ends. An empty net: not

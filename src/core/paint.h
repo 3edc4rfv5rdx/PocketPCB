@@ -70,6 +70,8 @@ inline QColor boardOutline() { return QColor(200, 162, 200); }
 // The silkscreen of a locked part on the board, and a locked hole, on the
 // screen only.
 inline QColor lockedPart() { return QColor(230, 200, 0); }
+// The label of a wire pad that is not on the silkscreen, on the screen.
+inline QColor padLabel() { return QColor(255, 170, 90); }
 // The lines of the pads still to be joined (ratsnest()), on the screen only.
 inline QColor ratsnest() { return QColor(150, 240, 150); }
 // The mark of the origin, which coordinates on the board count from.
@@ -248,9 +250,19 @@ QColor boardLayerColor(BoardLayer layer);
 // footprint turned and flipped with it, or the mark of a missing one when
 // 'library' lacks the footprint.
 QRectF placementRect(const Placement &placement, const Library &library);
-// The designator or the value a placement shows on the silkscreen; empty
-// when it shows none.
+// The designator or the value a placement shows on the screen, where it
+// is chosen and dragged; empty when it shows none. A wire pad shows its
+// label (Placement::padLabel) in place of the value, on the silkscreen or
+// not.
 QString placementTextShown(const Placement &placement, ComponentText text);
+// The same as it goes onto the silkscreen: a wire pad's label only while
+// 'showValue'.
+QString placementTextOnSilkscreen(const Placement &placement, ComponentText text);
+// The labels of the wire pads of 'board' that are not on the silkscreen,
+// in a colour of their own, as the screen shows them over the board; only
+// those on a side whose silkscreen is in 'shown'.
+void paintPadLabelsOffSilkscreen(QPainter &painter, const Board &board,
+                                 const BoardLayerSet &shown);
 // Where that text stands on the board: the placement's point and the
 // text's offset.
 Point placementTextPoint(const Placement &placement, ComponentText text);

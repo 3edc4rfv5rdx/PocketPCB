@@ -1,5 +1,6 @@
 #pragma once
 
+#include "netlist.h"
 #include "project.h"
 
 #include <QSet>
@@ -29,5 +30,18 @@ struct PlacedContacts
 // others. Nothing is placed when 'source' and the project lack the part.
 PlacedContacts withContactsPlaced(const Design &design, const Library &source,
                                   const QSet<ObjectId> &only = {});
+
+// True when 'placement' is a wire pad: its footprint is WIRE_PAD_PART or
+// one of its kin ("wire-pads-2").
+bool isWirePad(const Placement &placement);
+// Where the wire of the wire pad 'placement' goes, by the nets of its
+// pads in their order: the pins of off-board components on them
+// ("BA1.1, SA1.2"), or the name of a net that has none; each once. Empty
+// for a pad on no net.
+QString wirePadLabel(const Placement &placement, const QList<Net> &nets,
+                     const Schematic &schematic);
+// 'design''s board with Placement::padLabel made for every wire pad, and
+// cleared for the other parts.
+Board withWirePadLabels(const Design &design);
 
 } // namespace ppcb

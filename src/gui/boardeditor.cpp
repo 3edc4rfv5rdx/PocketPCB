@@ -2,6 +2,7 @@
 
 #include "autoroute.h"
 #include "canvasview.h"
+#include "contacts.h"
 #include "format.h"
 #include "outline.h"
 #include "paint.h"
@@ -98,6 +99,8 @@ QString BoardEditor::actionName(Action action)
         return tr("Show value");
     case Action::HideValue:
         return tr("Hide value");
+    case Action::LabelOnSilkscreen:
+        return tr("Label on silkscreen");
     case Action::LineToPart:
         return tr("Line to part");
     case Action::PlaceHole:
@@ -1687,6 +1690,16 @@ void BoardEditor::valueTyped(const QString &text)
     }
 }
 
+bool BoardEditor::chosenAreWirePads() const
+{
+    const QSet<ObjectId> ids = chosenPlacements();
+    const QList<Placement> &placements = m_document->design().board.placements;
+    return !ids.isEmpty()
+           && std::all_of(placements.cbegin(), placements.cend(), [&ids](const Placement &p) {
+                  return !ids.contains(p.id) || isWirePad(p);
+              });
+}
+
 bool BoardEditor::chosenValuesShown() const
 {
     const QSet<ObjectId> ids = chosenPlacements();
@@ -1705,8 +1718,11 @@ void BoardEditor::setChosenValuesShown(bool shown)
         if (ids.contains(placement.id))
             placement.showValue = shown;
     }
+    const Action action = chosenAreWirePads() ? Action::LabelOnSilkscreen
+                          : shown             ? Action::ShowValue
+                                              : Action::HideValue;
     if (board != m_document->design().board)
-        applyBoard(shown ? Action::ShowValue : Action::HideValue, board, ids);
+        applyBoard(action, board, ids);
 }
 
 bool BoardEditor::chosenLined() const
