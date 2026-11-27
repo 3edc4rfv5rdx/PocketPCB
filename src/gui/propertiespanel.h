@@ -66,6 +66,7 @@ private:
     void commitOffBoard();
     void commitLocked();
     void commitPower(int index);
+    void commitUnit(int index);
     void commitComment();
     // Red when the designator typed is another component's.
     void markDesignator();
@@ -83,6 +84,8 @@ private:
     QCheckBox *m_offBoard = nullptr;
     QCheckBox *m_locked = nullptr;
     QComboBox *m_power = nullptr;
+    // The unit of one component of a part of several.
+    QComboBox *m_unit = nullptr;
     QLineEdit *m_comment = nullptr;
     // The value, the comment differs between the components shown.
     bool m_valuesDiffer = false;

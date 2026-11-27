@@ -491,10 +491,10 @@ private slots:
 
         Schematic schematic;
         schematic.sheets = {sheet, Sheet()};
-        QVERIFY(isDesignatorTaken(schematic, QStringLiteral("R1"), id(20)));
+        QVERIFY(isDesignatorTaken(schematic, Library(), QStringLiteral("R1"), id(20)));
         // A component does not take its own designator.
-        QVERIFY(!isDesignatorTaken(schematic, QStringLiteral("R1"), id(1)));
-        QVERIFY(!isDesignatorTaken(schematic, QStringLiteral("R3"), id(20)));
+        QVERIFY(!isDesignatorTaken(schematic, Library(), QStringLiteral("R1"), id(1)));
+        QVERIFY(!isDesignatorTaken(schematic, Library(), QStringLiteral("R3"), id(20)));
     }
 
     void dragsLandAnObjectsOwnPointOnTheGrid()

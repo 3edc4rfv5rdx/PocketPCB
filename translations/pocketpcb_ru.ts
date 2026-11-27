@@ -1293,6 +1293,10 @@
         <source>Wire pads placed</source>
         <translation>Поставлено площадок под провод</translation>
     </message>
+    <message>
+        <source>Change unit</source>
+        <translation>Изменить секцию</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetTabs</name>
@@ -1636,6 +1640,10 @@
     <message>
         <source>Another component has this designator</source>
         <translation>Это обозначение уже есть у другого компонента</translation>
+    </message>
+    <message>
+        <source>Unit</source>
+        <translation>Секция</translation>
     </message>
 </context>
 <context>

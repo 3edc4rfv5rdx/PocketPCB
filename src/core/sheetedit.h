@@ -117,9 +117,12 @@ Sheet withComponentComment(const Sheet &sheet, const QSet<ObjectId> &ids, const 
 // have one (Part::powerMw) take it.
 Sheet withComponentPower(const Sheet &sheet, const QSet<ObjectId> &ids, int powerMw,
                          const Library &library);
-// True when a component of the schematic other than 'except' has 'designator'.
-bool isDesignatorTaken(const Schematic &schematic, const QString &designator,
-                       const ObjectId &except);
+// 'sheet' with the components 'ids' made unit 'unit' of their parts.
+Sheet withComponentUnit(const Sheet &sheet, const QSet<ObjectId> &ids, int unit);
+// True when a component of the schematic other than 'except' and the
+// other units of its part (withUnitSiblings()) has 'designator'.
+bool isDesignatorTaken(const Schematic &schematic, const Library &library,
+                       const QString &designator, const ObjectId &except);
 
 // Locking (Component::locked, PowerSymbol::locked): the components and the
 // power symbols may be locked; the transforms below leave those as they are.

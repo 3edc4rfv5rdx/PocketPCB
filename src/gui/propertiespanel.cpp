@@ -47,9 +47,12 @@ PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidge
     m_power->setObjectName(QStringLiteral("propertiesPower"));
     m_comment = new QLineEdit(this);
     m_comment->setObjectName(QStringLiteral("propertiesComment"));
+    m_unit = new QComboBox(this);
+    m_unit->setObjectName(QStringLiteral("propertiesUnit"));
 
     QFormLayout *form = new QFormLayout;
     form->addRow(tr("Designator"), m_designator);
+    form->addRow(tr("Unit"), m_unit);
     form->addRow(valueTitle(), m_value);
     form->addRow(footprintTitle(), m_footprint);
     form->addRow(tr("Off board"), m_offBoard);
@@ -72,6 +75,7 @@ PropertiesPanel::PropertiesPanel(Document *document, SheetEditor *editor, QWidge
     connect(m_offBoard, &QCheckBox::clicked, this, &PropertiesPanel::commitOffBoard);
     connect(m_locked, &QCheckBox::clicked, this, &PropertiesPanel::commitLocked);
     connect(m_power, &QComboBox::activated, this, &PropertiesPanel::commitPower);
+    connect(m_unit, &QComboBox::activated, this, &PropertiesPanel::commitUnit);
     connect(m_comment, &QLineEdit::editingFinished, this, &PropertiesPanel::commitComment);
     connect(m_editor, &SheetEditor::changed, this, [this] { refresh(); });
     connect(m_document, &Document::designChanged, this, [this] { refresh(); });
@@ -186,6 +190,20 @@ void PropertiesPanel::refresh(bool force)
     if (!isTyping(m_designator, force)) {
         m_designator->setText(chosen.size() == 1 ? chosen.first().designator : QString());
         markDesignator();
+    }
+
+    // The unit: of one component of a part of several.
+    const Design &design = m_document->design();
+    const Part *unitPart =
+        chosen.size() == 1 ? design.library.findPart(chosen.first().part) : nullptr;
+    m_unit->clear();
+    m_unit->setEnabled(unitPart != nullptr && unitPart->unitCount() > 1);
+    if (m_unit->isEnabled()) {
+        for (int unit = 0; unit < unitPart->unitCount(); ++unit)
+            m_unit->addItem(chosen.first().designator
+                                + unitSuffix(unit, design.project.designatorStyle),
+                            unit);
+        m_unit->setCurrentIndex(m_unit->findData(chosen.first().unit));
     }
 
     // The value: the one they all have, or none.
@@ -327,12 +345,20 @@ void PropertiesPanel::commitPower(int index)
     refresh(true);
 }
 
+void PropertiesPanel::commitUnit(int index)
+{
+    if (m_ids.size() != 1 || index < 0)
+        return;
+    m_editor->setComponentUnit(*m_ids.constBegin(), m_unit->itemData(index).toInt());
+    refresh(true);
+}
+
 void PropertiesPanel::markDesignator()
 {
     const bool taken =
         m_ids.size() == 1
-        && isDesignatorTaken(m_document->design().schematic, m_designator->text().trimmed(),
-                             *m_ids.constBegin());
+        && isDesignatorTaken(m_document->design().schematic, m_document->design().library,
+                             m_designator->text().trimmed(), *m_ids.constBegin());
     m_designator->setStyleSheet(taken ? QLatin1String(TAKEN_STYLE) : QString());
     m_designator->setToolTip(taken ? tr("Another component has this designator") : QString());
 }

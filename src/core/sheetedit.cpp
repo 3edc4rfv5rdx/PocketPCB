@@ -444,12 +444,18 @@ Sheet withComponentPower(const Sheet &sheet, const QSet<ObjectId> &ids, int powe
     });
 }
 
-bool isDesignatorTaken(const Schematic &schematic, const QString &designator,
-                       const ObjectId &except)
+Sheet withComponentUnit(const Sheet &sheet, const QSet<ObjectId> &ids, int unit)
 {
+    return withComponentsChanged(sheet, ids, [unit](Component &c) { c.unit = unit; });
+}
+
+bool isDesignatorTaken(const Schematic &schematic, const Library &library,
+                       const QString &designator, const ObjectId &except)
+{
+    const QSet<ObjectId> own = withUnitSiblings(schematic, library, {except});
     for (const Sheet &sheet : schematic.sheets) {
         for (const Component &component : sheet.components) {
-            if (component.id != except && component.designator == designator)
+            if (!own.contains(component.id) && component.designator == designator)
                 return true;
         }
     }

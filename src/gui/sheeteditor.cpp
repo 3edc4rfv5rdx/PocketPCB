@@ -588,8 +588,9 @@ QList<Component> SheetEditor::chosenComponents() const
 
 void SheetEditor::setComponentValue(const QSet<ObjectId> &ids, const QString &value)
 {
-    if (const Sheet *sheet = currentSheet())
-        applyToComponents(Action::Value, ids, withComponentValue(*sheet, ids, value));
+    applyToUnits(Action::Value, ids, [&value](const Sheet &sheet, const QSet<ObjectId> &all) {
+        return withComponentValue(sheet, all, value);
+    });
 }
 
 void SheetEditor::setLabelText(const QSet<ObjectId> &ids, const QString &text)
@@ -616,15 +617,18 @@ void SheetEditor::setPowerName(const QSet<ObjectId> &ids, const QString &name)
 
 void SheetEditor::setComponentDesignator(const ObjectId &id, const QString &designator)
 {
-    if (const Sheet *sheet = currentSheet())
-        applyToComponents(Action::Designator, {id},
-                          withComponentDesignator(*sheet, {id}, designator));
+    applyToUnits(Action::Designator, {id},
+                 [&designator](const Sheet &sheet, const QSet<ObjectId> &all) {
+                     return withComponentDesignator(sheet, all, designator);
+                 });
 }
 
 void SheetEditor::setComponentFootprint(const QSet<ObjectId> &ids, const QString &footprint)
 {
-    if (const Sheet *sheet = currentSheet())
-        applyToComponents(Action::Footprint, ids, withComponentFootprint(*sheet, ids, footprint));
+    applyToUnits(Action::Footprint, ids,
+                 [&footprint](const Sheet &sheet, const QSet<ObjectId> &all) {
+                     return withComponentFootprint(sheet, all, footprint);
+                 });
 }
 
 void SheetEditor::setComponentsLocked(const QSet<ObjectId> &ids, bool locked)
@@ -636,22 +640,32 @@ void SheetEditor::setComponentsLocked(const QSet<ObjectId> &ids, bool locked)
 
 void SheetEditor::setComponentOffBoard(const QSet<ObjectId> &ids, bool offBoard)
 {
-    if (const Sheet *sheet = currentSheet())
-        applyToComponents(offBoard ? Action::OffBoard : Action::OnBoard, ids,
-                          withComponentOffBoard(*sheet, ids, offBoard));
+    applyToUnits(offBoard ? Action::OffBoard : Action::OnBoard, ids,
+                 [offBoard](const Sheet &sheet, const QSet<ObjectId> &all) {
+                     return withComponentOffBoard(sheet, all, offBoard);
+                 });
 }
 
 void SheetEditor::setComponentComment(const QSet<ObjectId> &ids, const QString &comment)
 {
-    if (const Sheet *sheet = currentSheet())
-        applyToComponents(Action::Comment, ids, withComponentComment(*sheet, ids, comment));
+    applyToUnits(Action::Comment, ids, [&comment](const Sheet &sheet, const QSet<ObjectId> &all) {
+        return withComponentComment(sheet, all, comment);
+    });
 }
 
 void SheetEditor::setComponentPower(const QSet<ObjectId> &ids, int powerMw)
 {
+    const Library &library = m_document->design().library;
+    applyToUnits(Action::Power, ids,
+                 [powerMw, &library](const Sheet &sheet, const QSet<ObjectId> &all) {
+                     return withComponentPower(sheet, all, powerMw, library);
+                 });
+}
+
+void SheetEditor::setComponentUnit(const ObjectId &id, int unit)
+{
     if (const Sheet *sheet = currentSheet())
-        applyToComponents(Action::Power, ids,
-                          withComponentPower(*sheet, ids, powerMw, m_document->design().library));
+        applyToComponents(Action::Unit, {id}, withComponentUnit(*sheet, {id}, unit));
 }
 
 void SheetEditor::placeContacts(const Library &source, const QSet<ObjectId> &only)
@@ -686,6 +700,31 @@ void SheetEditor::applyToComponents(Action action, const QSet<ObjectId> &ids,
     const QString name = stepName(actionName(action), *sheet, ids);
     Design design = m_document->design();
     design.schematic.sheets[m_sheet] = edited;
+    m_document->change(name, design, m_sheet, ids);
+    emit changed();
+}
+
+void SheetEditor::applyToUnits(
+    Action action, const QSet<ObjectId> &ids,
+    const std::function<Sheet(const Sheet &, const QSet<ObjectId> &)> &edit)
+{
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr)
+        return;
+    // Named by the designators they had before.
+    const QString name = stepName(actionName(action), *sheet, ids);
+    Design design = m_document->design();
+    const QSet<ObjectId> all = withUnitSiblings(design.schematic, design.library, ids);
+    bool edited = false;
+    for (Sheet &each : design.schematic.sheets) {
+        const Sheet changed = edit(each, all);
+        if (!(changed == each)) {
+            each = changed;
+            edited = true;
+        }
+    }
+    if (!edited)
+        return;
     m_document->change(name, design, m_sheet, ids);
     emit changed();
 }
@@ -1128,6 +1167,7 @@ void SheetEditor::startFloating(const Sheet &piece, const Library &source, Actio
     m_floatSource = source;
     m_floatAction = action;
     m_floatAgain = again;
+    m_unitDesignator.clear();
     m_floatAt = Point{m_canvas->cursorX(), m_canvas->cursorY()};
     updateFloating();
 }
@@ -1283,9 +1323,11 @@ void SheetEditor::updateFloating()
         m_placeLibrary = withSymbolFrom(m_placeLibrary, m_floatSource, power.symbol);
     // Numbered as it would be if placed now: the project's own parts say
     // the prefixes.
-    const Sheet numbered = numberedOn(m_floating, design.schematic, m_placeLibrary,
-                                      design.project.designatorStyle,
-                                      linkDesignators(design.board));
+    Sheet numbered = numberedOn(m_floating, design.schematic, m_placeLibrary,
+                                design.project.designatorStyle, linkDesignators(design.board));
+    // The next unit of a part of several goes with the units placed.
+    if (!m_unitDesignator.isEmpty() && numbered.components.size() == 1)
+        numbered.components[0].designator = m_unitDesignator;
     m_placed = movedObjects(numbered, objectIds(numbered), m_floatAt);
     m_preview = withObjectsAdded(*sheet, m_placed);
     emit changed();
@@ -1303,14 +1345,39 @@ void SheetEditor::placeFloating()
     design.schematic.sheets[m_sheet] = m_preview;
     const QSet<ObjectId> placed = objectIds(m_placed);
     const QString name = stepName(actionName(m_floatAction), m_placed, placed);
-    if (!m_floatAgain) {
+    // A part of several placed from the library goes on with its next unit
+    // under the same designator, whether or not it is placed again.
+    int nextUnit = -1;
+    if (m_floatAction == Action::Place && m_placed.components.size() == 1
+        && placed.size() == 1) {
+        const Component &unit = m_placed.components.first();
+        const Part *part = m_placeLibrary.findPart(unit.part);
+        if (part != nullptr && unit.unit + 1 < part->unitCount())
+            nextUnit = unit.unit + 1;
+    }
+    const QString unitDesignator =
+        nextUnit >= 0 ? m_placed.components.first().designator : QString();
+    if (!m_floatAgain && nextUnit < 0) {
         m_placing = false;
         m_selection = placed;
     }
     m_document->change(name, design, m_sheet, placed);
     if (m_placing) {
-        // The next one: new objects, numbered on, turned the same way.
+        // The next one: new objects, numbered on, turned the same way; the
+        // first unit again after the last.
         m_floating = withNewIds(m_floating);
+        if (m_floating.components.size() == 1) {
+            Component &next = m_floating.components[0];
+            const int unit = nextUnit >= 0 ? nextUnit : 0;
+            if (next.unit != unit) {
+                const Component fresh =
+                    newComponent(m_placeLibrary, next.part, next.footprint, unit);
+                next.unit = unit;
+                next.refAt = fresh.refAt;
+                next.valueAt = fresh.valueAt;
+            }
+        }
+        m_unitDesignator = unitDesignator;
         updateFloating();
     } else {
         emit changed();
@@ -1595,6 +1662,8 @@ QString SheetEditor::actionName(Action action)
         return tr("Separate wires");
     case Action::PlaceContacts:
         return tr("Place wire pads");
+    case Action::Unit:
+        return tr("Change unit");
     }
     return QString();
 }

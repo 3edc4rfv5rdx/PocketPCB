@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- R: Units of a part are placed one after another, edited together and switched in the Properties panel
 - R: Units of one part share one footprint and one bill of materials entry, keep one designator, and ERC warns of a unit not placed
 - R: Parts may have several units, each a component with its own symbol and the unit after its designator
 - F: Menu item Edit symbol of chosen part renamed Edit symbol from library, like Edit part from library

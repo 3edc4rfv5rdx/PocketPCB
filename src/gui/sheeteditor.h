@@ -16,6 +16,7 @@
 #include <QSet>
 #include <QTimer>
 
+#include <functional>
 #include <optional>
 
 namespace ppcb {
@@ -73,6 +74,7 @@ public:
         Lock,
         Unlock,
         PlaceContacts,
+        Unit,
     };
     static QString actionName(Action action);
 
@@ -256,6 +258,8 @@ public:
     void setComponentOffBoard(const QSet<ObjectId> &ids, bool offBoard);
     void setComponentsLocked(const QSet<ObjectId> &ids, bool locked);
     void setComponentPower(const QSet<ObjectId> &ids, int powerMw);
+    // Component 'id' made unit 'unit' of its part, where it stands.
+    void setComponentUnit(const ObjectId &id, int unit);
     // Wire pads put on the nets the off-board components among 'only', all
     // when it is empty, take to the board (withContactsPlaced()), the part
     // taken from 'source' when the project lacks it; one step, the contacts
@@ -372,6 +376,11 @@ private:
     // The same for a change of the components or power symbols 'ids', named
     // after them as they were.
     void applyToComponents(Action action, const QSet<ObjectId> &ids, const Sheet &edited);
+    // 'edit' (a with...() of a sheet and ids) done to the components 'ids'
+    // and to the other units of their parts (withUnitSiblings()), on every
+    // sheet, as one step named after 'ids' as they were.
+    void applyToUnits(Action action, const QSet<ObjectId> &ids,
+                      const std::function<Sheet(const Sheet &, const QSet<ObjectId> &)> &edit);
     // "Move R1, C2 (Sheet 1)": the step's name in the Edit menu, for the
     // objects 'ids' of 'objects', on the sheet edited.
     QString stepName(const QString &action, const Sheet &objects,
@@ -440,6 +449,9 @@ private:
     Point m_floatAt;
     Action m_floatAction = Action::Place;
     bool m_floatAgain = false;
+    // The designator of the unit placed last of a part of several, while
+    // its next unit follows the cursor; empty otherwise.
+    QString m_unitDesignator;
     // The project's library with the parts placed, and what a click puts
     // down: the floating objects where the cursor is, numbered on.
     Library m_placeLibrary;
