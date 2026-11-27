@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: The user guide in Russian and Ukrainian, opened by F1 in the language of the interface
 - F: A measurement in the library editor shows on a dark plate, the length large, and Measure tells of Shift
 - N: A right click in the library editor opens a menu of copy, cut, paste, duplicate, turn, delete and choose all
 - F: Export library stands apart below the other buttons of an empty library editor window

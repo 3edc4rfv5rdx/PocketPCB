@@ -438,13 +438,17 @@ QString AppSettings::builtInLibraryFolder()
     return QStringLiteral(PPCB_SOURCE_LIBRARY_DIR);
 }
 
-QString AppSettings::helpFile()
+QString AppSettings::helpFile(const QString &language)
 {
     const QString installed = QDir(QCoreApplication::applicationDirPath())
                                   .filePath(QLatin1String(INSTALLED_HELP_FILE));
-    if (QFileInfo(installed).isFile())
-        return QDir::cleanPath(installed);
-    return QStringLiteral(PPCB_SOURCE_HELP_FILE);
+    const QString english = QFileInfo(installed).isFile() ? QDir::cleanPath(installed)
+                                                          : QStringLiteral(PPCB_SOURCE_HELP_FILE);
+    // help.html gives help_ru.html beside it.
+    const QFileInfo info(english);
+    const QString translated = info.dir().filePath(info.completeBaseName() + QLatin1Char('_')
+                                                   + language + QLatin1Char('.') + info.suffix());
+    return !language.isEmpty() && QFileInfo(translated).isFile() ? translated : english;
 }
 
 QString AppSettings::lastProjectFolder()

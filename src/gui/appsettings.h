@@ -110,9 +110,10 @@ public:
     // (<program folder>/../share/pocketpcb/library), else the one in the
     // source tree the program was built from.
     static QString builtInLibraryFolder();
-    // The user guide, help.html: beside the program in an AppImage, as the
-    // built-in library is, else the one in the source tree.
-    static QString helpFile();
+    // The user guide in 'language' (help_ru.html), or in English (help.html)
+    // when it has none: beside the program in an AppImage, as the built-in
+    // library is, else the one in the source tree.
+    static QString helpFile(const QString &language);
 
     // Folder the last library file was opened from; empty before the first one.
     static QString lastLibraryFolder();

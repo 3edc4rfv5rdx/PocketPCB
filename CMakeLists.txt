@@ -38,7 +38,7 @@ enable_testing()
 # desktop entry and the icon.
 include(GNUInstallDirs)
 install(DIRECTORY library/ DESTINATION ${CMAKE_INSTALL_DATADIR}/pocketpcb/library)
-install(FILES help.html DESTINATION ${CMAKE_INSTALL_DATADIR}/pocketpcb)
+install(FILES help.html help_ru.html help_uk.html DESTINATION ${CMAKE_INSTALL_DATADIR}/pocketpcb)
 install(FILES res/pocketpcb.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 install(FILES res/pocketpcb.svg DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
 

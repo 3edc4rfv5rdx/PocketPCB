@@ -2432,7 +2432,7 @@ QString MainWindow::aboutTitle()
 
 void MainWindow::showUserGuide()
 {
-    const QString path = AppSettings::helpFile();
+    const QString path = AppSettings::helpFile(currentLanguage());
     if (!QFileInfo(path).isFile() || !QDesktopServices::openUrl(QUrl::fromLocalFile(path)))
         alert(Alert::error(tr("Cannot open the user guide") + QLatin1Char(' ')
                            + QDir::toNativeSeparators(path)));

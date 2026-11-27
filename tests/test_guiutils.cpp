@@ -41,6 +41,16 @@ private slots:
         QCOMPARE(AppSettings::userLibraryArchiveFolder(), QStringLiteral(".PocketPCB/library"));
     }
 
+    // The user guide in the language of the interface where there is one,
+    // else the English one.
+    void helpFileFollowsTheLanguage()
+    {
+        QVERIFY(AppSettings::helpFile(QStringLiteral("ru")).endsWith(QStringLiteral("/help_ru.html")));
+        QVERIFY(AppSettings::helpFile(QStringLiteral("uk")).endsWith(QStringLiteral("/help_uk.html")));
+        for (const QString &language : {QStringLiteral("en"), QStringLiteral("de"), QString()})
+            QVERIFY(AppSettings::helpFile(language).endsWith(QStringLiteral("/help.html")));
+    }
+
     void formatFixed()
     {
         QCOMPARE(formatMmFixed(0), QStringLiteral("0.000"));
