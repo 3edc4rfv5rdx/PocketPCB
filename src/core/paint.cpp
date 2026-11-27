@@ -107,6 +107,9 @@ const double POWER_SLANT_HALF = POWER_STROKE_HALF;
 const double POWER_LONG_HALF = 1.5;
 const double POWER_STROKE_GAP = 0.6;
 const double POWER_TEXT_HEIGHT = 1.0;
+// The height of the body those sizes are for: a body of another height
+// has its marks in proportion.
+const double POWER_BODY_HEIGHT = 2.032;
 const int MILLIWATTS_PER_WATT = 1000;
 
 // What stands in for a symbol or footprint the project library lacks.
@@ -648,12 +651,17 @@ static void paintPowerMark(QPainter &painter, const Symbol &symbol, int powerMw)
     if (body == symbol.graphics.cend())
         return;
     const QRectF rect = QRectF(toMm(body->a), toMm(body->b)).normalized();
+    const double scale = std::min(rect.width(), rect.height()) / POWER_BODY_HEIGHT;
+    if (scale <= 0)
+        return;
     painter.save();
     painter.translate(rect.center());
     // Along the body is along its longer side.
     if (rect.height() > rect.width())
         painter.rotate(QUARTER_TURN);
-    painter.setPen(linePen(paintcolor::symbol(), SYMBOL_LINE_WIDTH));
+    painter.scale(scale, scale);
+    // The lines as thick as the symbol's, whatever the scale.
+    painter.setPen(linePen(paintcolor::symbol(), SYMBOL_LINE_WIDTH / scale));
     painter.setBrush(Qt::NoBrush);
     // 'count' strokes side by side along the body, each drawn by 'stroke'
     // about its own middle.

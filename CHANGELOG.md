@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The built-in resistors, potentiometers, fuses, thermistors, varistor and photoresistor are drawn to the ESKD size, 10×4 mm; the power mark follows the body
 - E: The smoke test of the Pin lengths menu builds
 - N: Ready-made zener and Schottky diodes, LED, photodiode and potentiometer in the symbol editor
 - F: The arrow of Pin in the symbol editor offers the usual pin lengths
