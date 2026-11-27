@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Menu item Edit symbol of chosen part renamed Edit symbol from library, like Edit part from library
 - R: Interface languages taken from the embedded translation files instead of a fixed list
 - N: Name of a power symbol in each language editable in the symbol editor
 - F: Own icon, a resistor, for the Ready-made button in the symbol editor

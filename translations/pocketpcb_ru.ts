@@ -1167,8 +1167,8 @@
         <translation>Не разведено</translation>
     </message>
     <message>
-        <source>Edit symbol of chosen part</source>
-        <translation>Изменить символ выбранной детали</translation>
+        <source>Edit symbol from library</source>
+        <translation>Изменить символ из библиотеки</translation>
     </message>
     <message>
         <source>Edit part from library</source>

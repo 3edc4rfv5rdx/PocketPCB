@@ -2096,7 +2096,7 @@ void MainWindow::createToolBar()
     LibraryEditor::addNewSymbolFromActions(
         footprintMenu->addMenu(SymbolEditor::newSymbolFromTitle()),
         [this] { return showLibraryEditor(); });
-    QAction *editSymbol = footprintMenu->addAction(tr("Edit symbol of chosen part"));
+    QAction *editSymbol = footprintMenu->addAction(tr("Edit symbol from library"));
     editSymbol->setObjectName(QStringLiteral("actionEditSymbol"));
     connect(editSymbol, &QAction::triggered, this, [this] { openSymbolEditor(false); });
     footprintMenu->addSeparator();
