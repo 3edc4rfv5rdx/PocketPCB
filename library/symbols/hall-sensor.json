@@ -2,7 +2,8 @@
   "type": "pocketpcb-symbol",
   "format": 1,
   "graphics": [
-    {"kind": "rect", "from": [-7.62, -5.08], "to": [7.62, 5.08]}
+    {"kind": "rect", "from": [-7.62, -5.08], "to": [7.62, 5.08]},
+    {"kind": "text", "at": [0, 0], "text": "H", "height": 2.5}
   ],
   "pins": [
     {"number": "VCC", "name": "VCC", "at": [-12.7, 0], "side": "left", "length": 5.08},
