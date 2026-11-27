@@ -2,7 +2,7 @@
   "type": "pocketpcb-part",
   "format": 1,
   "symbol": "conn-1x02",
-  "footprints": ["screw-terminal-1x02-5.08"],
+  "footprints": ["screw-terminal-1x02-5.08", "screw-terminal-1x02-3.81", "screw-terminal-1x02-7.62"],
   "prefix": "J",
   "prefixGost": "X",
   "value": "",

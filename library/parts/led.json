@@ -2,7 +2,7 @@
   "type": "pocketpcb-part",
   "format": 1,
   "symbol": "led",
-  "footprints": ["led-5mm", "led-3mm"],
+  "footprints": ["led-5mm", "led-3mm", "led-10mm"],
   "prefix": "LED",
   "prefixGost": "HL",
   "value": "",

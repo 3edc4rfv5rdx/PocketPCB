@@ -2,7 +2,7 @@
   "type": "pocketpcb-part",
   "format": 1,
   "symbol": "capacitor-polar",
-  "footprints": ["capacitor-polar-2.54", "capacitor-polar-5.08"],
+  "footprints": ["capacitor-polar-2.54", "capacitor-polar-5.08", "capacitor-polar-2.54-d6.3", "capacitor-polar-3.81-d8", "capacitor-polar-5.08-d12.5", "capacitor-polar-7.62-d16", "capacitor-polar-7.62-d18", "capacitor-polar-10.16-d22"],
   "prefix": "C",
   "prefixGost": "C",
   "value": "",

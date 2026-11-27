@@ -2,7 +2,7 @@
   "type": "pocketpcb-part",
   "format": 1,
   "symbol": "inductor-core",
-  "footprints": ["capacitor-5.08", "resistor-10.16", "resistor-vertical"],
+  "footprints": ["capacitor-5.08", "resistor-10.16", "resistor-7.62", "resistor-12.7", "resistor-15.24", "resistor-20.32", "resistor-vertical"],
   "prefix": "L",
   "prefixGost": "L",
   "value": "",

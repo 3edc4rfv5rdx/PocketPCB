@@ -2,7 +2,7 @@
   "type": "pocketpcb-part",
   "format": 1,
   "symbol": "capacitor",
-  "footprints": ["capacitor-2.54", "capacitor-5.08"],
+  "footprints": ["capacitor-2.54", "capacitor-5.08", "capacitor-7.62", "capacitor-10.16", "capacitor-15.24"],
   "prefix": "C",
   "prefixGost": "C",
   "value": "",

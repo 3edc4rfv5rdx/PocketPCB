@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Resistors, film and electrolytic capacitors, diodes, LEDs and screw terminals in more sizes in the library
 - N: Ready-made symbol pieces to the ESKD sizes and a chip builder, put into a symbol or starting a new one
 - F: Measure takes the corners, ends and centres of drawings, and with Shift any point off the grid
 - E: The footprint editor keeps what is chosen after a drag, a turn or a change in its panels
