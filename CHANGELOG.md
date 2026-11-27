@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The library switch of Open names your library User
 - F: The menu item that opens the part chosen in the Library panel is Edit part from library
 - F: Symbols come first, then footprints, then parts, in the buttons and menus of the library editor
 - N: Open in the library editor shows all, the built-in or your library, and deletes from yours

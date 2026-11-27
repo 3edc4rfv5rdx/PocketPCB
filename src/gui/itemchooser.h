@@ -49,7 +49,7 @@ public:
                           const QList<LibraryKind> &kinds, LibraryKind &kind,
                           QDialogButtonBox::StandardButton accept,
                           const QString &current = QString(), Options *options = nullptr);
-    // "All", "Built-in", "Mine".
+    // "All", "Built-in", "User".
     static QString sourceTitle(Source source);
     // "Footprints", "Symbols", "Parts".
     static QString kindTitle(LibraryKind kind);

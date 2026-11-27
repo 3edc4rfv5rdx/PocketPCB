@@ -74,7 +74,7 @@ QString ItemChooser::sourceTitle(Source source)
     case Source::BuiltIn:
         return tr("Built-in");
     case Source::User:
-        return tr("Mine");
+        return tr("User");
     }
     return QString();
 }

@@ -2237,8 +2237,8 @@
         <translation>Вбудована</translation>
     </message>
     <message>
-        <source>Mine</source>
-        <translation>Моя</translation>
+        <source>User</source>
+        <translation>Користувача</translation>
     </message>
     <message>
         <source>Library</source>
