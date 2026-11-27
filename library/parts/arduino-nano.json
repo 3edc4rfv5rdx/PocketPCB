@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "arduino-nano",
+  "footprints": ["arduino-nano"],
+  "prefix": "A",
+  "prefixGost": "A",
+  "value": "Arduino Nano",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Arduino Nano module", "uk": "Модуль Arduino Nano", "ru": "Модуль Arduino Nano"}
+}
