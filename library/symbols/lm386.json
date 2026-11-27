@@ -1,0 +1,23 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "rect", "from": [-7.62, -10.16], "to": [7.62, 10.16]},
+    {"kind": "polygon", "points": [[-1.27, -8.89], [-1.27, -6.35], [1.27, -7.62]]},
+    {"kind": "circle", "center": [-8.12, -5.08], "radius": 0.5}
+  ],
+  "pins": [
+    {"number": "2", "name": "-IN", "at": [-12.7, -5.08], "side": "left", "length": 4.08},
+    {"number": "3", "name": "+IN", "at": [-12.7, 0], "side": "left", "length": 5.08},
+    {"number": "7", "name": "BYP", "at": [-12.7, 5.08], "side": "left", "length": 5.08},
+    {"number": "5", "name": "OUT", "at": [12.7, 0], "side": "right", "length": 5.08},
+    {"number": "1", "name": "GAIN", "at": [-5.08, -15.24], "side": "up", "length": 5.08},
+    {"number": "8", "name": "GAIN", "at": [0, -15.24], "side": "up", "length": 5.08},
+    {"number": "6", "name": "VS", "at": [5.08, -15.24], "side": "up", "length": 5.08},
+    {"number": "4", "name": "GND", "at": [0, 15.24], "side": "down", "length": 5.08}
+  ],
+  "refAt": [10.16, -12.7],
+  "valueAt": [10.16, 12.7],
+  "showPinNumbers": true,
+  "showPinNames": true
+}

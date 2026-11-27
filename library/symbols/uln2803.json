@@ -1,0 +1,31 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "rect", "from": [-7.62, -5.08], "to": [7.62, 40.64]}
+  ],
+  "pins": [
+    {"number": "1", "name": "IN1", "at": [-12.7, 0], "side": "left", "length": 5.08},
+    {"number": "18", "name": "OUT1", "at": [12.7, 0], "side": "right", "length": 5.08},
+    {"number": "2", "name": "IN2", "at": [-12.7, 5.08], "side": "left", "length": 5.08},
+    {"number": "17", "name": "OUT2", "at": [12.7, 5.08], "side": "right", "length": 5.08},
+    {"number": "3", "name": "IN3", "at": [-12.7, 10.16], "side": "left", "length": 5.08},
+    {"number": "16", "name": "OUT3", "at": [12.7, 10.16], "side": "right", "length": 5.08},
+    {"number": "4", "name": "IN4", "at": [-12.7, 15.24], "side": "left", "length": 5.08},
+    {"number": "15", "name": "OUT4", "at": [12.7, 15.24], "side": "right", "length": 5.08},
+    {"number": "5", "name": "IN5", "at": [-12.7, 20.32], "side": "left", "length": 5.08},
+    {"number": "14", "name": "OUT5", "at": [12.7, 20.32], "side": "right", "length": 5.08},
+    {"number": "6", "name": "IN6", "at": [-12.7, 25.4], "side": "left", "length": 5.08},
+    {"number": "13", "name": "OUT6", "at": [12.7, 25.4], "side": "right", "length": 5.08},
+    {"number": "7", "name": "IN7", "at": [-12.7, 30.48], "side": "left", "length": 5.08},
+    {"number": "12", "name": "OUT7", "at": [12.7, 30.48], "side": "right", "length": 5.08},
+    {"number": "8", "name": "IN8", "at": [-12.7, 35.56], "side": "left", "length": 5.08},
+    {"number": "11", "name": "OUT8", "at": [12.7, 35.56], "side": "right", "length": 5.08},
+    {"number": "10", "name": "COM", "at": [0, -10.16], "side": "up", "length": 5.08},
+    {"number": "9", "name": "GND", "at": [0, 45.72], "side": "down", "length": 5.08}
+  ],
+  "refAt": [10.16, -7.62],
+  "valueAt": [10.16, 43.18],
+  "showPinNumbers": true,
+  "showPinNames": true
+}

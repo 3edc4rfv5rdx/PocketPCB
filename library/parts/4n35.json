@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "optocoupler-base",
+  "footprints": ["dip-6-7.62"],
+  "prefix": "U",
+  "prefixGost": "U",
+  "value": "4N35",
+  "connector": false,
+  "group": "optoelectronics",
+  "name": {"en": "Optocoupler 4N35, transistor with base", "uk": "Оптопара 4N35, транзистор з виводом бази", "ru": "Оптопара 4N35, транзистор с выводом базы"}
+}

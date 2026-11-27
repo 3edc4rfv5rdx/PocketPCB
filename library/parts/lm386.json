@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "lm386",
+  "footprints": ["dip-8-7.62"],
+  "prefix": "U",
+  "prefixGost": "DA",
+  "value": "LM386",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Audio amplifier LM386", "uk": "Підсилювач звуку LM386", "ru": "Усилитель звука LM386"}
+}

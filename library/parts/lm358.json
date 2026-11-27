@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "opamp-dual",
+  "footprints": ["dip-8-7.62"],
+  "prefix": "U",
+  "prefixGost": "DA",
+  "value": "LM358",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Dual op amp LM358", "uk": "Здвоєний ОП LM358", "ru": "Сдвоенный ОУ LM358"}
+}

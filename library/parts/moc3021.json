@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "optocoupler-triac",
+  "footprints": ["dip-6-7.62"],
+  "prefix": "U",
+  "prefixGost": "U",
+  "value": "MOC3021",
+  "connector": false,
+  "group": "optoelectronics",
+  "name": {"en": "Optocoupler MOC3021, triac", "uk": "Оптопара MOC3021, симісторна", "ru": "Оптопара MOC3021, симисторная"}
+}

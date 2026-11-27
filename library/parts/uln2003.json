@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "uln2003",
+  "footprints": ["dip-16-7.62"],
+  "prefix": "U",
+  "prefixGost": "DA",
+  "value": "ULN2003",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Transistor array ULN2003, 7 channels", "uk": "Транзисторна збірка ULN2003, 7 каналів", "ru": "Транзисторная сборка ULN2003, 7 каналов"}
+}

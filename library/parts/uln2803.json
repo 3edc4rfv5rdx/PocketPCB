@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "uln2803",
+  "footprints": ["dip-18-7.62"],
+  "prefix": "U",
+  "prefixGost": "DA",
+  "value": "ULN2803",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Transistor array ULN2803, 8 channels", "uk": "Транзисторна збірка ULN2803, 8 каналів", "ru": "Транзисторная сборка ULN2803, 8 каналов"}
+}

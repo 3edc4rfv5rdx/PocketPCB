@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "opamp-dual",
+  "footprints": ["dip-8-7.62"],
+  "prefix": "U",
+  "prefixGost": "DA",
+  "value": "TL072",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Dual op amp TL072, JFET input", "uk": "Здвоєний ОП TL072, польові входи", "ru": "Сдвоенный ОУ TL072, полевые входы"}
+}

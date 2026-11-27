@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "opamp-dual",
+  "footprints": ["dip-8-7.62"],
+  "prefix": "U",
+  "prefixGost": "DA",
+  "value": "NE5532",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Dual op amp NE5532, low noise", "uk": "Здвоєний ОП NE5532, малошумний", "ru": "Сдвоенный ОУ NE5532, малошумящий"}
+}

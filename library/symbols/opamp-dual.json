@@ -1,0 +1,26 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "rect", "from": [-5.08, -12.7], "to": [5.08, -2.54]},
+    {"kind": "polygon", "points": [[-1.27, -11.43], [-1.27, -8.89], [1.27, -10.16]]},
+    {"kind": "circle", "center": [-5.58, -10.16], "radius": 0.5},
+    {"kind": "rect", "from": [-5.08, 2.54], "to": [5.08, 12.7]},
+    {"kind": "polygon", "points": [[-1.27, 3.81], [-1.27, 6.35], [1.27, 5.08]]},
+    {"kind": "circle", "center": [-5.58, 5.08], "radius": 0.5}
+  ],
+  "pins": [
+    {"number": "2", "name": "-A", "at": [-10.16, -10.16], "side": "left", "length": 4.08},
+    {"number": "3", "name": "+A", "at": [-10.16, -5.08], "side": "left", "length": 5.08},
+    {"number": "1", "name": "OUTA", "at": [10.16, -7.62], "side": "right", "length": 5.08},
+    {"number": "6", "name": "-B", "at": [-10.16, 5.08], "side": "left", "length": 4.08},
+    {"number": "5", "name": "+B", "at": [-10.16, 10.16], "side": "left", "length": 5.08},
+    {"number": "7", "name": "OUTB", "at": [10.16, 7.62], "side": "right", "length": 5.08},
+    {"number": "8", "name": "V+", "at": [0, -17.78], "side": "up", "length": 5.08},
+    {"number": "4", "name": "V-", "at": [0, 17.78], "side": "down", "length": 5.08}
+  ],
+  "refAt": [7.62, -15.24],
+  "valueAt": [7.62, 15.24],
+  "showPinNumbers": true,
+  "showPinNames": false
+}
