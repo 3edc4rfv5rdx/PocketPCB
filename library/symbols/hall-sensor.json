@@ -2,15 +2,15 @@
   "type": "pocketpcb-symbol",
   "format": 1,
   "graphics": [
-    {"kind": "rect", "from": [-5.08, -2.54], "to": [5.08, 2.54]}
+    {"kind": "rect", "from": [-7.62, -5.08], "to": [7.62, 5.08]}
   ],
   "pins": [
-    {"number": "VCC", "name": "VCC", "at": [-7.62, 0], "side": "left", "length": 2.54},
-    {"number": "OUT", "name": "OUT", "at": [7.62, 0], "side": "right", "length": 2.54},
-    {"number": "GND", "name": "GND", "at": [0, 5.08], "side": "down", "length": 2.54}
+    {"number": "VCC", "name": "VCC", "at": [-12.7, 0], "side": "left", "length": 5.08},
+    {"number": "OUT", "name": "OUT", "at": [12.7, 0], "side": "right", "length": 5.08},
+    {"number": "GND", "name": "GND", "at": [0, 10.16], "side": "down", "length": 5.08}
   ],
-  "refAt": [0, -3.81],
-  "valueAt": [5.08, 3.81],
+  "refAt": [0, -7.62],
+  "valueAt": [10.16, 7.62],
   "showPinNumbers": false,
   "showPinNames": true
 }

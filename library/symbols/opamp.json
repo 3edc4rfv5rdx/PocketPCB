@@ -2,22 +2,22 @@
   "type": "pocketpcb-symbol",
   "format": 1,
   "graphics": [
-    {"kind": "polygon", "points": [[-5.08, -5.08], [-5.08, 5.08], [5.08, 0]]},
-    {"kind": "text", "at": [-3.81, -2.54], "text": "-", "height": 1.27},
-    {"kind": "text", "at": [-3.81, 2.54], "text": "+", "height": 1.27}
+    {"kind": "rect", "from": [-5.08, -7.62], "to": [5.08, 7.62]},
+    {"kind": "polygon", "points": [[-1.27, -6.35], [-1.27, -3.81], [1.27, -5.08]]},
+    {"kind": "circle", "center": [-5.58, -2.54], "radius": 0.5}
   ],
   "pins": [
-    {"number": "2", "name": "-", "at": [-7.62, -2.54], "side": "left", "length": 2.54},
-    {"number": "3", "name": "+", "at": [-7.62, 2.54], "side": "left", "length": 2.54},
-    {"number": "6", "name": "OUT", "at": [7.62, 0], "side": "right", "length": 2.54},
-    {"number": "7", "name": "V+", "at": [0, -7.62], "side": "up", "length": 5.08},
-    {"number": "4", "name": "V-", "at": [0, 7.62], "side": "down", "length": 5.08},
-    {"number": "1", "name": "NULL", "at": [-2.54, 7.62], "side": "down", "length": 3.81},
-    {"number": "5", "name": "NULL", "at": [2.54, 7.62], "side": "down", "length": 6.35},
-    {"number": "8", "name": "NC", "at": [2.54, -7.62], "side": "up", "length": 6.35}
+    {"number": "2", "name": "-", "at": [-10.16, -2.54], "side": "left", "length": 4.08},
+    {"number": "3", "name": "+", "at": [-10.16, 2.54], "side": "left", "length": 5.08},
+    {"number": "6", "name": "OUT", "at": [10.16, 0], "side": "right", "length": 5.08},
+    {"number": "7", "name": "V+", "at": [0, -12.7], "side": "up", "length": 5.08},
+    {"number": "4", "name": "V-", "at": [0, 12.7], "side": "down", "length": 5.08},
+    {"number": "1", "name": "NULL", "at": [-2.54, 12.7], "side": "down", "length": 5.08},
+    {"number": "5", "name": "NULL", "at": [2.54, 12.7], "side": "down", "length": 5.08},
+    {"number": "8", "name": "NC", "at": [2.54, -12.7], "side": "up", "length": 5.08}
   ],
-  "refAt": [6.35, -3.81],
-  "valueAt": [6.35, 3.81],
+  "refAt": [7.62, -10.16],
+  "valueAt": [7.62, 10.16],
   "showPinNumbers": true,
   "showPinNames": false
 }
