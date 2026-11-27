@@ -904,10 +904,17 @@ private slots:
         editor->escape();
         QCOMPARE(editor->footprint().pads.size(), 1);
         QCOMPARE(editor->footprint().graphics.size(), 1);
+        // The menu of a right click takes the pad under it, not chosen yet,
+        // and keeps a choice holding it.
+        editor->setChosen({});
+        editor->chooseForMenu(QPointF(0, 0));
+        QCOMPARE(editor->chosen().terminals, QSet<int>({0}));
         ItemChoice both;
         both.terminals = {0};
         both.graphics = {0};
         editor->setChosen(both);
+        editor->chooseForMenu(QPointF(0, 0));
+        QCOMPARE(editor->chosen(), both);
         editor->copyChosen();
         QCOMPARE(ItemEditor::clipboard().pads.size(), 1);
         QCOMPARE(ItemEditor::clipboard().graphics.size(), 1);

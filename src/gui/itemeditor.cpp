@@ -242,10 +242,13 @@ void ItemEditor::build(ItemPanel *terminalPanel, ItemPanel *itemPanel, Coord gri
 
     connect(this, &ItemEditor::changed, m_canvas->scene(), [this] { m_canvas->scene()->update(); });
     connect(this, &ItemEditor::changed, this, &ItemEditor::showPanel);
-    // A short right click calls off what is being placed or drawn, as Esc.
-    connect(m_canvas, &CanvasView::contextMenuRequested, this, [this] {
+    // A short right click calls off what is being placed or drawn, as Esc;
+    // else it opens the menu of what is chosen.
+    connect(m_canvas, &CanvasView::contextMenuRequested, this, [this](const QPoint &globalPos) {
         if (m_mode != Mode::Select || m_dragging || m_framing)
             escape();
+        else
+            showMenu(globalPos);
     });
     showPanel();
     // Once the tab is shown and the canvas knows its size.
@@ -278,6 +281,38 @@ void ItemEditor::paste()
         return;
     if (!startPasting(sharedClip()))
         showStatus(tr("Nothing to paste here"));
+}
+
+void ItemEditor::showMenu(const QPoint &globalPos)
+{
+    QPointF at;
+    if (!m_canvas->sceneAtGlobal(globalPos, at))
+        return;
+    chooseForMenu(at);
+    const bool some = !m_chosen.terminals.isEmpty() || !m_chosen.graphics.isEmpty();
+    const ItemClip &clip = sharedClip();
+    const bool pasteable = !clip.graphics.isEmpty() || !clip.pads.isEmpty() || !clip.pins.isEmpty();
+    QMenu menu(this);
+    // The actions of the tab, with their keys.
+    const auto add = [this, &menu](const char *name, bool enabled) {
+        if (QAction *action = findChild<QAction *>(QLatin1String(name))) {
+            action->setEnabled(enabled);
+            menu.addAction(action);
+        }
+    };
+    add("actionCopyItem", some);
+    add("actionCutItem", some);
+    add("actionPasteItem", pasteable);
+    add("actionDuplicateItem", some);
+    menu.addSeparator();
+    add("actionRotateItem", some);
+    add("actionDeleteItem", some);
+    menu.addSeparator();
+    add("actionChooseAllItem", true);
+    menu.exec(globalPos);
+    // The keys work whatever is chosen: the actions tell themselves.
+    for (QAction *action : menu.actions())
+        action->setEnabled(true);
 }
 
 void ItemEditor::duplicateChosen()
@@ -819,6 +854,48 @@ void ItemEditorOf<Item>::finishDrawing()
 }
 
 template <class Item>
+ItemChoice ItemEditorOf<Item>::hitAt(const QPointF &at, double reach, Point &anchor) const
+{
+    // The drawings over the terminals, then the terminals, then the places
+    // of the texts, which stand on the origin at first, then a circle round
+    // it.
+    ItemChoice hit;
+    const int graphic = graphicAt(m_item.graphics, at, reach);
+    const int terminal = terminalAt(at, reach);
+    if (graphic >= 0) {
+        hit.graphics = {graphic};
+        const Graphic &g = m_item.graphics.at(graphic);
+        anchor = g.kind == GraphicKind::Polygon && !g.points.isEmpty() ? g.points.first() : g.a;
+    } else if (terminal >= 0) {
+        hit.terminals = {terminal};
+        anchor = terminalPoint(terminal);
+    } else if (placeholderRect(m_item.refAt, ComponentText::Designator).contains(at)) {
+        hit.designator = true;
+        anchor = m_item.refAt;
+    } else if (placeholderRect(m_item.valueAt, ComponentText::Value).contains(at)) {
+        hit.value = true;
+        anchor = m_item.valueAt;
+    } else if (const int around = circleAround(m_item.graphics, at); around >= 0) {
+        // Inside a circle with nothing else there: the circle.
+        hit.graphics = {around};
+        anchor = m_item.graphics.at(around).a;
+    }
+    return hit;
+}
+
+template <class Item>
+void ItemEditorOf<Item>::chooseForMenu(const QPointF &at)
+{
+    Point anchor;
+    const ItemChoice hit = hitAt(at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS), anchor);
+    // A text place is moved, not copied: only terminals and drawings count.
+    if (hit.terminals.isEmpty() && hit.graphics.isEmpty())
+        return;
+    if (!m_chosen.terminals.contains(hit.terminals) || !m_chosen.graphics.contains(hit.graphics))
+        setChosen(hit);
+}
+
+template <class Item>
 void ItemEditorOf<Item>::press(const QPointF &at, bool adding, bool free)
 {
     m_textEdit->close(true);
@@ -890,31 +967,8 @@ void ItemEditorOf<Item>::press(const QPointF &at, bool adding, bool free)
             return;
         }
     }
-    // What is under the press: the drawings over the terminals, then the
-    // terminals, then the places of the texts, which stand on the origin at
-    // first, then a circle round it.
-    ItemChoice hit;
     Point anchor;
-    const int graphic = graphicAt(m_item.graphics, at, reach);
-    const int terminal = terminalAt(at, reach);
-    if (graphic >= 0) {
-        hit.graphics = {graphic};
-        const Graphic &g = m_item.graphics.at(graphic);
-        anchor = g.kind == GraphicKind::Polygon && !g.points.isEmpty() ? g.points.first() : g.a;
-    } else if (terminal >= 0) {
-        hit.terminals = {terminal};
-        anchor = terminalPoint(terminal);
-    } else if (placeholderRect(m_item.refAt, ComponentText::Designator).contains(at)) {
-        hit.designator = true;
-        anchor = m_item.refAt;
-    } else if (placeholderRect(m_item.valueAt, ComponentText::Value).contains(at)) {
-        hit.value = true;
-        anchor = m_item.valueAt;
-    } else if (const int around = circleAround(m_item.graphics, at); around >= 0) {
-        // Inside a circle with nothing else there: the circle.
-        hit.graphics = {around};
-        anchor = m_item.graphics.at(around).a;
-    }
+    const ItemChoice hit = hitAt(at, reach, anchor);
     if (hit.isEmpty()) {
         m_framing = true;
         m_frameAdding = adding;

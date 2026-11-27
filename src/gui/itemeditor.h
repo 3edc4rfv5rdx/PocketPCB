@@ -166,6 +166,13 @@ public:
     void paste();
     // Ctrl+D: what is chosen copied and pasted.
     void duplicateChosen();
+    // The menu of a short right click in the Select mode: copy, cut,
+    // paste, duplicate, rotate, delete and choose all, what cannot be done
+    // greyed. A terminal or a drawing under the click that is not chosen
+    // is chosen first.
+    void showMenu(const QPoint &globalPos);
+    // What showMenu() chooses first.
+    virtual void chooseForMenu(const QPointF &at) = 0;
     // The clipboard of the editors.
     static const ItemClip &clipboard();
     void chooseAll();
@@ -304,6 +311,7 @@ public:
     void deleteChosen() override;
     void copyChosen() override;
     void cutChosen() override;
+    void chooseForMenu(const QPointF &at) override;
     void originAtMiddle() override;
     void paintEditor(QPainter &painter) const override;
 
@@ -372,6 +380,11 @@ private:
     void finishDrawing();
     // The terminals and drawings chosen gone, as a step named 'text'.
     void removeChosen(const QString &text);
+    // What a click at 'at' takes, within 'reach' (millimetres): a drawing
+    // over a terminal, a terminal, the place of the designator or of the
+    // value, a circle round the point; 'anchor' set to the point it is
+    // dragged by. Empty for nothing.
+    ItemChoice hitAt(const QPointF &at, double reach, Point &anchor) const;
     // A text typed at 'at': a new one, or the text of drawing 'graphic'.
     void editText(const Point &at, int graphic);
     // The terminal whose end (terminalEnd()) is within 'reach' of 'at', and
