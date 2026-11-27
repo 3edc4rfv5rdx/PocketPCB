@@ -1,6 +1,7 @@
 #pragma once
 
 #include "library.h"
+#include "libraryfile.h"
 
 #include <QMainWindow>
 
@@ -16,14 +17,15 @@ namespace ppcb {
 class FootprintEditor;
 class ItemEditor;
 class LibraryTab;
+class PartEditor;
 class SymbolEditor;
 
 // The one window of the library editors: each item of the library open in
-// it — a footprint or a symbol — is a tab of its own, with its own strip of
-// tools and its own Undo. Over the tabs, on the right: + for a new
-// footprint or symbol, Open… for one of the library, Copy for a copy of the
-// one shown. With no tab, which hides those, the window shows the first two
-// in its middle. It closes with its last tab.
+// it — a footprint, a symbol or a part — is a tab of its own, with its own
+// strip of tools and its own Undo. Over the tabs, on the right: + for a new
+// footprint, symbol or part, Open… for one of the library, Copy for a copy
+// of the one shown. With no tab, which hides those, the window shows the
+// first two in its middle. It closes with its last tab.
 class LibraryEditor : public QMainWindow
 {
     Q_OBJECT
@@ -39,22 +41,24 @@ public:
     // always in a new tab.
     FootprintEditor *openFootprint(const QString &name, const Footprint &footprint,
                                    bool inUserLibrary);
-    // The same for a symbol.
+    // The same for a symbol, and for a part.
     SymbolEditor *openSymbol(const QString &name, const Symbol &symbol, bool inUserLibrary);
+    PartEditor *openPart(const QString &name, const Part &part, bool inUserLibrary);
     QTabWidget *tabs() const { return m_tabs; }
     // The editor of the tab shown; null when there is none.
     ItemEditor *currentEditor() const;
     // The same when it edits a footprint.
     FootprintEditor *currentFootprintEditor() const;
-    // The library Open… offers; it must outlive the window, or be set
-    // again before it goes.
-    void setLibrary(const Library *library) { m_library = library; }
+    // The library Open… offers and the part tabs read; it must outlive the
+    // window, or be set again before it goes. Set again when it changed.
+    void setLibrary(const Library *library);
     // The least copper between pads, of the open project's rules, for every
     // footprint tab (FootprintEditor::setClearance()).
     void setClearance(Coord clearance);
-    // A new footprint, or symbol, in a new tab.
+    // A new footprint, symbol or part in a new tab.
     FootprintEditor *openNewFootprint();
     SymbolEditor *openNewSymbol();
+    PartEditor *openNewPart();
     // A new symbol in a new tab, begun as 'symbol' (a ready-made one), not
     // saved yet.
     SymbolEditor *openSymbolFrom(const Symbol &symbol);
@@ -65,11 +69,10 @@ public:
                                         const std::function<LibraryEditor *()> &window);
     // A copy of the item shown in a new tab, with no name yet; null when no
     // tab is shown.
-    ItemEditor *openCopy();
-    // Asks which footprint or symbol of the library to open, from a list
-    // with a search field and a switch between the two, and opens it; null
-    // when none is chosen.
-    ItemEditor *askOpen();
+    LibraryTab *openCopy();
+    // Asks which footprint, symbol or part of the library to open
+    // (ItemChooser), and opens it; null when none is chosen.
+    LibraryTab *askOpen();
     // Closes tab 'index' once its changes are saved or dropped; false when
     // the user stays.
     bool closeTab(int index);
@@ -91,8 +94,8 @@ private:
 
     const Library *m_library = nullptr;
     Coord m_clearance = 0;
-    // What Open… lists: symbols rather than footprints.
-    bool m_openSymbols = false;
+    // What Open… lists.
+    LibraryKind m_openKind = LibraryKind::Footprint;
     QStackedWidget *m_pages = nullptr;
     QTabWidget *m_tabs = nullptr;
     QWidget *m_start = nullptr;

@@ -27,6 +27,7 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
     <ul>
       <li><a href="#footprinteditor">Footprint editor</a></li>
       <li><a href="#symboleditor">Symbol editor</a></li>
+      <li><a href="#parteditor">Part editor</a></li>
     </ul>
   </li>
   <li><a href="#schematic">Schematic</a>
@@ -139,8 +140,8 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
 <ul>
   <li>The <b>Library editor</b> button on the strip opens the footprint chosen under the library list in a tab
     of the library editor window; with the Library panel closed it shows the window as it was; an empty one offers <b>New footprint</b>,
-    <b>New symbol</b> and <b>Open…</b> in its middle. Its arrow starts a new footprint or symbol. Each tab has its own strip and its own Undo.</li>
-  <li>Over the tabs: <b>+</b> starts a new footprint or symbol, <b>Open…</b> picks a footprint or, switched over, a symbol of the library from a list with a
+    <b>New symbol</b>, <b>New part</b> and <b>Open…</b> in its middle. Its arrow starts a new footprint, symbol or part. Each tab has its own strip and its own Undo.</li>
+  <li>Over the tabs: <b>+</b> starts a new footprint, symbol or part, <b>Open…</b> picks a footprint or, switched over, a symbol or a part of the library from a list with a
     search field and a drawing of the one chosen, <b>Copy</b> opens a copy of the one shown, to be saved under a name of its own.</li>
   <li><b>Pad</b> (<kbd>P</kbd>): each click places a pad on the grid, numbered on, like the last one; the arrow
     offers the usual sizes. <b>Row of pads</b> sets up one column, two columns numbered across or a DIP
@@ -196,6 +197,20 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
     them.</li>
   <li><b>Symbol</b>, under the panel: show pin numbers, show pin names, and <b>Power net</b> — a net name makes it a
     power symbol (GND, +5V), which needs its one pin at the origin; its name may be hidden.</li>
+</ul>
+
+<h3 id="parteditor">Part editor</h3>
+<ul>
+  <li>The arrow of the <b>Library editor</b> button: <b>New part</b>, or <b>Edit chosen part</b> for the part chosen
+    in the Library panel. A part ties a symbol to its footprints; it is a form, its symbol and the footprint chosen
+    in its list drawn beside it.</li>
+  <li><b>Symbol</b> picks the symbol from the library; under <b>Footprints</b>, <b>Add…</b> picks one more,
+    <b>Remove</b> takes the chosen one out, the arrows move it. The first, in bold, is the one a new part gets.</li>
+  <li>Designator prefixes, international and GOST, are both needed to save; the value a new part starts with, its
+    group in the library and the bill of materials, its rated power, <b>Connector</b> for parts that carry nets off
+    the board, <b>Needs no value</b>, and its name in each language.</li>
+  <li>The line under the form says whether every pin of the symbol has a pad of its number in every footprint, and
+    names what is missing. Each change is a step of Undo; Save, Save as and Rename work as in the other tabs.</li>
 </ul>
 
 <h2 id="schematic">Schematic</h2>

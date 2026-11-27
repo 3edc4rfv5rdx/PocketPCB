@@ -1156,6 +1156,10 @@
         <translation>Змінити символ вибраної деталі</translation>
     </message>
     <message>
+        <source>Edit chosen part</source>
+        <translation>Змінити вибрану деталь</translation>
+    </message>
+    <message>
         <source>Choose a part in the library panel first</source>
         <translation>Спершу виберіть деталь на панелі бібліотеки</translation>
     </message>
@@ -2166,6 +2170,9 @@
         <source>Copy</source>
         <translation>Копія</translation>
     </message>
+</context>
+<context>
+    <name>ppcb::ItemChooser</name>
     <message>
         <source>Footprints</source>
         <translation>Посадкові місця</translation>
@@ -2173,6 +2180,148 @@
     <message>
         <source>Symbols</source>
         <translation>Символи</translation>
+    </message>
+    <message>
+        <source>Parts</source>
+        <translation>Деталі</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::PartEdit</name>
+    <message>
+        <source>the library has no symbol %1</source>
+        <translation>у бібліотеці немає символу %1</translation>
+    </message>
+    <message>
+        <source>the library has no footprint %1</source>
+        <translation>у бібліотеці немає посадкового місця %1</translation>
+    </message>
+    <message>
+        <source>%1 has no pad for pins %2</source>
+        <translation>у %1 немає площадок для виводів %2</translation>
+    </message>
+    <message>
+        <source>a part needs a symbol</source>
+        <translation>деталі потрібен символ</translation>
+    </message>
+    <message>
+        <source>a part needs both designator prefixes</source>
+        <translation>деталі потрібні обидва префікси позначення</translation>
+    </message>
+</context>
+<context>
+    <name>ppcb::PartEditor</name>
+    <message>
+        <source>Add</source>
+        <translation>Додати</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Прибрати</translation>
+    </message>
+    <message>
+        <source>Up</source>
+        <translation>Вище</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation>Нижче</translation>
+    </message>
+    <message>
+        <source>The first is the default</source>
+        <translation>Перше — типове</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Немає</translation>
+    </message>
+    <message>
+        <source>Connector</source>
+        <translation>З’єднувач</translation>
+    </message>
+    <message>
+        <source>It carries nets off the board</source>
+        <translation>Виводить кола за плату</translation>
+    </message>
+    <message>
+        <source>Needs no value</source>
+        <translation>Без номіналу</translation>
+    </message>
+    <message>
+        <source>Symbol</source>
+        <translation>Символ</translation>
+    </message>
+    <message>
+        <source>Designator prefix</source>
+        <translation>Префікс позначення</translation>
+    </message>
+    <message>
+        <source>Designator prefix, GOST</source>
+        <translation>Префікс позначення, ГОСТ</translation>
+    </message>
+    <message>
+        <source>Value</source>
+        <translation>Значення</translation>
+    </message>
+    <message>
+        <source>Group</source>
+        <translation>Група</translation>
+    </message>
+    <message>
+        <source>Rated power</source>
+        <translation>Номінальна потужність</translation>
+    </message>
+    <message>
+        <source>Name, %1</source>
+        <translation>Назва, %1</translation>
+    </message>
+    <message>
+        <source>New part</source>
+        <translation>Нова деталь</translation>
+    </message>
+    <message>
+        <source>Part editor</source>
+        <translation>Редактор деталей</translation>
+    </message>
+    <message>
+        <source>Part properties</source>
+        <translation>Властивості деталі</translation>
+    </message>
+    <message>
+        <source>Add footprint</source>
+        <translation>Додати посадкове місце</translation>
+    </message>
+    <message>
+        <source>The part has no footprints and is never on the board</source>
+        <translation>Деталь не має посадкових місць і на плату не потрапляє</translation>
+    </message>
+    <message>
+        <source>Every pin has a pad in every footprint</source>
+        <translation>Кожен вивід має площадку в кожному посадковому місці</translation>
+    </message>
+    <message>
+        <source>Choose</source>
+        <translation>Вибрати</translation>
+    </message>
+    <message>
+        <source>The default footprint</source>
+        <translation>Типове посадкове місце</translation>
+    </message>
+    <message>
+        <source>Part name</source>
+        <translation>Назва деталі</translation>
+    </message>
+    <message>
+        <source>The library has a part %1 already. Replace it</source>
+        <translation>У бібліотеці вже є деталь %1. Замінити її</translation>
+    </message>
+    <message>
+        <source>The part has changes that are not saved. Save them</source>
+        <translation>У деталі є незбережені зміни. Зберегти їх</translation>
+    </message>
+    <message>
+        <source>Part %1 renamed to %2</source>
+        <translation>Деталь %1 перейменовано на %2</translation>
     </message>
 </context>
 <context>

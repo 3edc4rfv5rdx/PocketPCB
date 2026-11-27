@@ -61,6 +61,9 @@ extern const char LINK_GROUP[];
 // The place of the part group 'key' in the library panel: the program's
 // groups in their order, then the groups it does not know, no group last.
 int partGroupRank(const QString &key);
+// The keys of the program's groups a part may be put under, in the order
+// of the library panel; LINK_GROUP, which no part has, left out.
+QStringList partGroupKeys();
 
 bool operator==(const Part &a, const Part &b);
 inline bool operator!=(const Part &a, const Part &b) { return !(a == b); }

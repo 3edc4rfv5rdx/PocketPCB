@@ -106,6 +106,9 @@ protected:
     // 'bar'.
     void addFileTools(QToolBar *bar);
 
+    // What is typed in a field and not taken yet is taken into the item,
+    // before it is written (saveAs()) or closed.
+    virtual void takeTyping() {}
     // What the file of the item is, in the user's library folder.
     virtual const char *libraryFolder() const = 0;
     virtual LibraryItem libraryItem() const = 0;

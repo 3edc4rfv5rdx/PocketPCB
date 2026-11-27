@@ -91,6 +91,16 @@ int partGroupRank(const QString &key)
     return known;
 }
 
+QStringList partGroupKeys()
+{
+    QStringList keys;
+    for (const auto &group : PART_GROUPS) {
+        if (qstrcmp(group.key, LINK_GROUP) != 0)
+            keys.append(QLatin1String(group.key));
+    }
+    return keys;
+}
+
 QList<int> standardPowersMw()
 {
     return {50, 125, 250, 500, 1000, 2000, 5000, 10000, 20000, 25000, 50000, 100000};

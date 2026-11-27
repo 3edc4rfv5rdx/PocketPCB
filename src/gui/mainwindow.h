@@ -42,6 +42,7 @@ class SheetEditor;
 class SheetTabs;
 class LibraryViewItem;
 class FootprintEditor;
+class PartEditor;
 class LibraryEditor;
 class SymbolEditor;
 
@@ -145,6 +146,9 @@ public:
     // the library panel; with 'newOne' a new symbol. Null when none is
     // opened.
     SymbolEditor *openSymbolEditor(bool newOne);
+    // The same for the part chosen in the library panel; with 'newOne' a
+    // new part.
+    PartEditor *openPartEditor(bool newOne);
     // The library editor window; null while it is closed.
     LibraryEditor *libraryEditor() const;
 

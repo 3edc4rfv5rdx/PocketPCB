@@ -7,6 +7,7 @@
 #include "footprinteditor.h"
 #include "symboleditor.h"
 #include "libraryeditor.h"
+#include "parteditor.h"
 #include "format.h"
 #include "gerberexport.h"
 #include "projectversions.h"
@@ -981,7 +982,7 @@ private slots:
 
         // A copy of a symbol is a symbol.
         LibraryEditor *libraryWindow = window.libraryEditor();
-        ItemEditor *copy = libraryWindow->openCopy();
+        LibraryTab *copy = libraryWindow->openCopy();
         QVERIFY(qobject_cast<SymbolEditor *>(copy) != nullptr);
         copy->undoStack()->setClean();
 
@@ -999,6 +1000,64 @@ private slots:
         QCOMPARE(fresh->symbol().pins.at(2).at, (Point{-5080000, 10160000}));
         QCOMPARE(fresh->chosen().terminals, QSet<int>({2, 3}));
         fresh->undoStack()->setClean();
+        libraryWindow->close();
+        QFile::remove(path);
+    }
+
+    // A part is set up in its form, checked for a pad under every pin,
+    // stepped back by Undo and saved into the user's library.
+    void aPartIsSetUpAndSaved()
+    {
+        MainWindow window;
+        const QString name = QStringLiteral("test-editor-part");
+        const QString path =
+            QDir(AppSettings::userLibraryFolder()).filePath(QStringLiteral("parts/") + name
+                                                            + QStringLiteral(".json"));
+        // Left by an earlier run.
+        QFile::remove(path);
+        PartEditor *editor = window.openPartEditor(true);
+        QVERIFY(editor != nullptr);
+        QVERIFY(editor->name().isEmpty());
+        // Without a symbol or prefixes it is not written.
+        QVERIFY(!editor->saveAs(name, true));
+
+        Part part = editor->part();
+        part.symbol = QStringLiteral("diode");
+        part.footprints = {QStringLiteral("diode-7.62"), QStringLiteral("resistor-10.16")};
+        editor->change(part);
+        // The resistor's pads are numbered 1 and 2, the diode's pins A and K.
+        QVERIFY(editor->checkText().contains(QStringLiteral("resistor-10.16")));
+        QVERIFY(!editor->checkText().contains(QStringLiteral("diode-7.62")));
+        editor->chooseFootprint(1);
+        editor->removeChosenFootprint();
+        QCOMPARE(editor->part().footprints, QStringList({QStringLiteral("diode-7.62")}));
+        QCOMPARE(editor->chosenFootprint(), 0);
+
+        // The fields are taken when typed, and before a save.
+        QLineEdit *prefix = editor->findChild<QLineEdit *>(QStringLiteral("partPrefix"));
+        QVERIFY(prefix != nullptr);
+        prefix->setText(QStringLiteral(" D "));
+        emit prefix->editingFinished();
+        QCOMPARE(editor->part().prefix, QStringLiteral("D"));
+        editor->undoStack()->undo();
+        QVERIFY(editor->part().prefix.isEmpty());
+        QCOMPARE(prefix->text(), QString());
+        prefix->setText(QStringLiteral("D"));
+        QLineEdit *prefixGost = editor->findChild<QLineEdit *>(QStringLiteral("partPrefixGost"));
+        prefixGost->setText(QStringLiteral("VD"));
+
+        QVERIFY(editor->saveAs(name, true));
+        QCOMPARE(editor->part().prefixGost, QStringLiteral("VD"));
+        QVERIFY(editor->isSaved());
+        QVERIFY(QFileInfo::exists(path));
+        QVERIFY(window.library().items.parts.contains(name));
+        QVERIFY(PartEditor::isInUserLibrary(name));
+
+        // A copy of a part is a part.
+        LibraryEditor *libraryWindow = window.libraryEditor();
+        LibraryTab *copy = libraryWindow->openCopy();
+        QVERIFY(qobject_cast<PartEditor *>(copy) != nullptr);
+        copy->undoStack()->setClean();
         libraryWindow->close();
         QFile::remove(path);
     }

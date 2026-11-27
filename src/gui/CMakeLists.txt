@@ -15,6 +15,7 @@ add_library(pocketpcb_gui STATIC
     format.h format.cpp
     gerberexport.h gerberexport.cpp
     inplaceedit.h inplaceedit.cpp
+    itemchooser.h itemchooser.cpp
     itemeditor.h itemeditor.cpp
     librarytab.h librarytab.cpp
     itempanels.h itempanels.cpp
@@ -24,6 +25,7 @@ add_library(pocketpcb_gui STATIC
     libraryviewitem.h libraryviewitem.cpp
     mainwindow.h mainwindow.cpp
     netspanel.h netspanel.cpp
+    parteditor.h parteditor.cpp
     projectpropertiesdialog.h projectpropertiesdialog.cpp
     propertiespanel.h propertiespanel.cpp
     rectangleboarddialog.h rectangleboarddialog.cpp

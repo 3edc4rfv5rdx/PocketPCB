@@ -26,6 +26,7 @@ add_library(pocketpcb_core STATIC
     outline.h outline.cpp
     paint.h paint.cpp
     part.h part.cpp
+    partedit.h partedit.cpp
     point.h
     project.h project.cpp
     ratsnest.h ratsnest.cpp

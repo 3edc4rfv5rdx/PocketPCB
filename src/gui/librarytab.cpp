@@ -198,6 +198,7 @@ QString LibraryTab::askName(const QString &title)
 
 bool LibraryTab::saveAs(const QString &name, bool replace)
 {
+    takeTyping();
     const QString path = itemPath(AppSettings::userLibraryFolder(), libraryFolder(), name);
     if (!replace && QFileInfo::exists(path))
         return false;
@@ -280,6 +281,7 @@ bool LibraryTab::renameTo(const QString &name)
 
 bool LibraryTab::confirmClose()
 {
+    takeTyping();
     if (m_undoStack.isClean())
         return true;
     const QMessageBox::StandardButton answer =

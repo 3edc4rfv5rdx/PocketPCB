@@ -13,6 +13,7 @@
 #include "footprinteditor.h"
 #include "symboleditor.h"
 #include "libraryeditor.h"
+#include "parteditor.h"
 #include "format.h"
 #include "gerberexport.h"
 #include "grid.h"
@@ -2057,6 +2058,13 @@ void MainWindow::createToolBar()
     QAction *editSymbol = footprintMenu->addAction(tr("Edit symbol of chosen part"));
     editSymbol->setObjectName(QStringLiteral("actionEditSymbol"));
     connect(editSymbol, &QAction::triggered, this, [this] { openSymbolEditor(false); });
+    footprintMenu->addSeparator();
+    QAction *newPart = footprintMenu->addAction(PartEditor::newPartTitle());
+    newPart->setObjectName(QStringLiteral("actionNewPart"));
+    connect(newPart, &QAction::triggered, this, [this] { openPartEditor(true); });
+    QAction *editPart = footprintMenu->addAction(tr("Edit chosen part"));
+    editPart->setObjectName(QStringLiteral("actionEditPart"));
+    connect(editPart, &QAction::triggered, this, [this] { openPartEditor(false); });
     QToolButton *footprintButton = new QToolButton(bar);
     footprintButton->setObjectName(QStringLiteral("footprintEditorButton"));
     footprintButton->setDefaultAction(footprintTool);
@@ -2325,6 +2333,24 @@ SymbolEditor *MainWindow::openSymbolEditor(bool newOne)
         return nullptr;
     }
     return showLibraryEditor()->openSymbol(name, *symbol, SymbolEditor::isInUserLibrary(name));
+}
+
+PartEditor *MainWindow::openPartEditor(bool newOne)
+{
+    if (newOne)
+        return showLibraryEditor()->openNewPart();
+    const QString name = m_libraryDock->isVisible() && !m_libraryPanel->currentIsPower()
+                             ? m_libraryPanel->currentPart()
+                             : QString();
+    const Library &library = m_libraryPanel->currentSource() == LibraryPanel::Source::Project
+                                 ? m_document->design().library
+                                 : m_library.items;
+    const Part *part = library.findPart(name);
+    if (part == nullptr) {
+        showStatus(tr("Choose a part in the library panel first"));
+        return nullptr;
+    }
+    return showLibraryEditor()->openPart(name, *part, PartEditor::isInUserLibrary(name));
 }
 
 QString MainWindow::saveTitle()
@@ -2622,6 +2648,9 @@ void MainWindow::loadLibrary()
     const Library builtIn = LibraryFolder::read(AppSettings::builtInLibraryFolder(), problems);
     const Library user = LibraryFolder::read(AppSettings::userLibraryFolder(), problems);
     m_library = mergeLibraries(builtIn, user);
+    // Its part tabs read the library: told it changed.
+    if (!m_libraryEditor.isNull())
+        m_libraryEditor->setLibrary(&m_library.items);
     updateLibraryPanel();
     updatePowerIcon();
     if (!problems.isEmpty())
