@@ -4,6 +4,7 @@
 #include "part.h"
 
 #include <QCoreApplication>
+#include <QDir>
 #include <QLibraryInfo>
 #include <QLocale>
 #include <QTranslator>
@@ -18,6 +19,11 @@ static void initTranslationResources()
 namespace ppcb {
 
 namespace {
+
+// The embedded translations: TRANSLATION_FOLDER/pocketpcb_<code>.qm.
+const char TRANSLATION_FOLDER[] = ":/i18n";
+const char TRANSLATION_PREFIX[] = "pocketpcb_";
+const char TRANSLATION_SUFFIX[] = ".qm";
 
 // "ru-RU", "ru_RU", " RU " -> "ru"
 QString languagePart(const QString &name)
@@ -34,18 +40,39 @@ QString languagePart(const QString &name)
 
 QStringList supportedLanguages()
 {
-    return {QLatin1String(CODE_LANGUAGE), QStringLiteral("uk"), QStringLiteral("ru")};
+    // The language of the code, then one for every embedded translation
+    // (":/i18n/pocketpcb_uk.qm"), in the order of their codes.
+    static const QStringList languages = [] {
+        initTranslationResources();
+        QStringList result = {QLatin1String(CODE_LANGUAGE)};
+        const QString prefix = QLatin1String(TRANSLATION_PREFIX);
+        const QString suffix = QLatin1String(TRANSLATION_SUFFIX);
+        const QStringList files =
+            QDir(QLatin1String(TRANSLATION_FOLDER))
+                .entryList({prefix + QLatin1Char('*') + suffix}, QDir::Files, QDir::Name);
+        for (const QString &file : files) {
+            const QString code = file.mid(prefix.size(), file.size() - prefix.size() - suffix.size());
+            if (!code.isEmpty() && !result.contains(code))
+                result.append(code);
+        }
+        return result;
+    }();
+    return languages;
 }
 
 QString languageName(const QString &code)
 {
-    if (code == QLatin1String("en"))
-        return QStringLiteral("English");
-    if (code == QLatin1String("uk"))
-        return QStringLiteral("Українська");
-    if (code == QLatin1String("ru"))
-        return QStringLiteral("Русский");
-    return code;
+    const QLocale locale(code);
+    if (locale.language() == QLocale::C)
+        return code;
+    // Qt names the English of the code by its country ("American English").
+    if (code == QLatin1String(CODE_LANGUAGE))
+        return QLocale::languageToString(locale.language());
+    const QString name = locale.nativeLanguageName();
+    if (name.isEmpty())
+        return code;
+    // "українська" -> "Українська", as a list of languages shows it.
+    return locale.toUpper(name.left(1)) + name.mid(1);
 }
 
 QString chooseLanguage(const QString &preferred, const QStringList &systemLanguages)
@@ -67,7 +94,9 @@ QString chooseLanguage(const QString &preferred, const QStringList &systemLangua
 bool loadTranslation(QTranslator &translator, const QString &language)
 {
     initTranslationResources();
-    return translator.load(QStringLiteral(":/i18n/pocketpcb_%1.qm").arg(language));
+    return translator.load(QLatin1String(TRANSLATION_FOLDER) + QLatin1Char('/')
+                           + QLatin1String(TRANSLATION_PREFIX) + language
+                           + QLatin1String(TRANSLATION_SUFFIX));
 }
 
 QString currentLanguage()

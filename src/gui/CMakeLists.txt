@@ -62,10 +62,10 @@ file(GLOB PPCB_TRANSLATED_SOURCES CONFIGURE_DEPENDS
     ${PROJECT_SOURCE_DIR}/src/core/*.h ${PROJECT_SOURCE_DIR}/src/core/*.cpp
     ${PROJECT_SOURCE_DIR}/src/gui/*.h ${PROJECT_SOURCE_DIR}/src/gui/*.cpp
 )
+# Every translations/pocketpcb_<code>.ts is a language of the interface.
+file(GLOB PPCB_TS_FILES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/translations/pocketpcb_*.ts)
 qt_add_translations(pocketpcb_gui
     SOURCES ${PPCB_TRANSLATED_SOURCES}
-    TS_FILES
-        ${PROJECT_SOURCE_DIR}/translations/pocketpcb_uk.ts
-        ${PROJECT_SOURCE_DIR}/translations/pocketpcb_ru.ts
+    TS_FILES ${PPCB_TS_FILES}
     RESOURCE_PREFIX "/i18n"
 )

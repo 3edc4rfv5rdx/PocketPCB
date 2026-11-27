@@ -8,11 +8,13 @@ class QTranslator;
 namespace ppcb {
 
 // Language codes of the interface. The first one is the language of the
-// strings in the code: it is the fallback and needs no translation file.
+// strings in the code: it is the fallback and needs no translation file;
+// the others are those of the embedded translations, in the order of
+// their codes.
 QStringList supportedLanguages();
 
 // The name of the language 'code' in that language itself ("Українська"),
-// as a list of languages shows it; 'code' itself for one not supported.
+// as a list of languages shows it; 'code' itself for one Qt does not know.
 QString languageName(const QString &code);
 
 // Picks the interface language. 'preferred' is the user's setting (empty:
