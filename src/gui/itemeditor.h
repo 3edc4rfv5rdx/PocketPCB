@@ -1,16 +1,12 @@
 #pragma once
 
-#include "alerts.h"
 #include "graphic.h"
-#include "library.h"
-#include "libraryfile.h"
+#include "librarytab.h"
 #include "toolicons.h"
 
 #include <QHash>
 #include <QLineF>
 #include <QSet>
-#include <QUndoStack>
-#include <QWidget>
 
 #include <functional>
 #include <optional>
@@ -58,19 +54,17 @@ public:
     virtual void refresh(bool force = false) = 0;
 };
 
-// A tab of the library editor window editing one item of the library — a
-// footprint or a symbol — with its own strip of tools and its own Undo: its
-// terminals placed, drawings drawn, both chosen, dragged on the grid,
-// turned, deleted and given their properties in the panels beside, the
-// places of the designator and the value dragged, the origin moved and
-// distances measured. It saves into the user's library, where an item of
-// the built-in one's name replaces it (see mergeLibraries()). Its keys
-// work while the keyboard is in it.
+// A tab of the library editor window (see LibraryTab) editing a footprint
+// or a symbol on a canvas, with its own strip of tools: its terminals
+// placed, drawings drawn, both chosen, dragged on the grid, turned, deleted
+// and given their properties in the panels beside, the places of the
+// designator and the value dragged, the origin moved and distances
+// measured.
 //
 // This class holds what does not depend on the kind of item;
 // ItemEditorOf<Item> the rest, FootprintEditor and SymbolEditor their
 // terminals.
-class ItemEditor : public QWidget
+class ItemEditor : public LibraryTab
 {
     Q_OBJECT
 
@@ -108,28 +102,8 @@ public:
 
     // The step that sets the properties of drawings in the panel.
     static QString drawingPropertiesStep();
-    // "Footprint editor", "Symbol editor".
-    virtual QString editorTitle() const = 0;
-    // "New footprint", "New symbol".
-    virtual QString newItemTitle() const = 0;
-
-    QString name() const { return m_name; }
     CanvasView *canvas() const { return m_canvas; }
-    QUndoStack *undoStack() { return &m_undoStack; }
-    // True when there is nothing unsaved.
-    bool isSaved() const { return m_undoStack.isClean(); }
-    // The name on its tab: the item's, or newItemTitle(), with a star
-    // while something is not saved.
-    QString tabTitle() const;
-    // What its tab says when the mouse rests on it: the kind, the name, and
-    // whether it is still the built-in item.
-    QString tabTip() const;
-    // The last message it put into the status bar.
-    QString status() const { return m_status; }
-    // Asks what to do with unsaved changes before it closes: save them, drop
-    // them or stay. True when it may close; always true without changes.
-    bool confirmClose();
-
+    void takeFocus() override;
     Mode mode() const { return m_mode; }
     void setMode(Mode mode);
     const ItemChoice &chosen() const { return m_chosen; }
@@ -143,25 +117,6 @@ public:
     // One step of Undo named 'text': the drawings become 'changed', the
     // choice staying.
     virtual void changeGraphics(const QString &text, const QList<Graphic> &changed) = 0;
-
-    // Writes the item into the user's library, asking for its name first
-    // when it has none. False, with the reason told, when it is not written.
-    bool save();
-    // The same under a name asked for: from then on the item of that name
-    // is edited; the one it was opened as stays as it was.
-    bool saveUnderNewName();
-    // The same under 'name', asking nothing; for a name already taken
-    // only with 'replace'.
-    bool saveAs(const QString &name, bool replace);
-    // An item of the user's library under a new name asked for: saved so,
-    // its old file gone and the parts of the user's library listing it
-    // given the new name. Built-in parts cannot follow: when some list it,
-    // the user is asked first. False when it is not renamed.
-    bool renameItem();
-    // The same to 'name', asking nothing.
-    bool renameTo(const QString &name);
-    // Only one of the user's library can be renamed.
-    bool canRename() const { return m_inUserLibrary && !m_name.isEmpty(); }
 
     // The left mouse button and the mouse, in scene millimetres; with
     // 'adding' (Ctrl) what is clicked is added to the chosen or taken away,
@@ -195,10 +150,6 @@ public:
     void escape();
     // The origin put in the middle of the item, on the grid.
     virtual void originAtMiddle() = 0;
-    // Puts 'text' into the status bar of the window.
-    void showStatus(const QString &text);
-    // An error or a warning in a box as well (Alerts::show()).
-    void alert(const Alert &alert);
     // Draws the item and what the editor shows over it, in scene
     // millimetres.
     virtual void paintEditor(QPainter &painter) const = 0;
@@ -207,12 +158,6 @@ signals:
     // The item, the choice, the mode or what follows the cursor changed:
     // the drawing and the panels are stale.
     void changed();
-    // The item was written into the user's library as 'name'.
-    void saved(const QString &name);
-    // What its tab shows changed: its name or whether all is saved.
-    void titleChanged();
-    // A message for the status bar of the window.
-    void statusChanged(const QString &text);
 
 protected:
     // 'name' is the item's name in the library; empty for a new one, which
@@ -229,13 +174,6 @@ protected:
     void build(ItemPanel *terminalPanel, ItemPanel *itemPanel, Coord gridStep);
     // The buttons that place terminals, put on the strip after Select.
     virtual void addPlacingTools(QToolBar *bar) = 0;
-    // An action of the tab with its key in its tip; on the strip when it
-    // has a picture.
-    QAction *addTool(QToolBar *bar, const QString &text, const char *name, const QKeySequence &key,
-                     std::optional<ToolIcon> icon, const std::function<void()> &slot);
-    // A button of the strip with the action 'main' and 'menu' under its
-    // arrow.
-    void addMenuButton(QToolBar *bar, QAction *main, QMenu *menu, const char *name);
     void updateModeButtons();
 
     virtual int terminalCount() const = 0;
@@ -245,27 +183,6 @@ protected:
     virtual QRectF shownBounds() const = 0;
     // With some chosen, a word on them in the status bar.
     virtual void describeChoice() {}
-
-    // What the file of the item is, in the user's library folder.
-    virtual const char *libraryFolder() const = 0;
-    virtual LibraryItem libraryItem() const = 0;
-    // Why the item cannot be written; empty when it can.
-    virtual QString saveProblem() const = 0;
-    // The parts of 'library' that list the item 'name', and one of them
-    // listing 'to' in its place.
-    virtual QStringList partsUsing(const Library &library, const QString &name) const = 0;
-    virtual Part partRenamed(const Part &part, const QString &from, const QString &to) const = 0;
-    // The words of the kind: the label the name is asked with, the
-    // question before a name taken is replaced, before built-in parts are
-    // left with the old name, before unsaved changes are lost, and what
-    // is said once it is renamed.
-    virtual QString nameLabel() const = 0;
-    virtual QString takenQuestion(const QString &name) const = 0;
-    virtual QString strandedQuestion(const QString &name, const QStringList &parts) const = 0;
-    virtual QString unsavedQuestion() const = 0;
-    virtual QString renamedMessage(const QString &from, const QString &to) const = 0;
-    // True when the user's library has an item 'name' in 'folder'.
-    static bool userLibraryHas(const char *folder, const QString &name);
 
     Point snapped(const QPointF &at) const;
     // 'at' on the grid of the terminals, terminalGrid(), or of the canvas.
@@ -279,9 +196,6 @@ protected:
     // at any zoom.
     void paintHandle(QPainter &painter, const Point &at) const;
 
-    QString m_name;
-    bool m_inUserLibrary = false;
-    QUndoStack m_undoStack;
     CanvasView *m_canvas = nullptr;
     // A text typed on the canvas: a terminal's number, a drawn text.
     InPlaceEdit *m_textEdit = nullptr;
@@ -322,21 +236,16 @@ protected:
 
 private:
     QWidget *createToolBar();
-    // A name typed for the item, asked with 'title'; empty when none is or
-    // the user keeps it from replacing another.
-    QString askName(const QString &title);
     // A point the Measure mode takes at 'at': a terminal's point there, else
     // a corner, centre or arc end of a drawing near, else the grid point,
     // or with Shift ('m_free') 'at' itself.
     virtual Point measurePoint(const QPointF &at) const = 0;
 
-    QString m_status;
     QStackedWidget *m_panels = nullptr;
     ItemPanel *m_terminalPanel = nullptr;
     GraphicPanel *m_graphicPanel = nullptr;
     ItemPanel *m_itemPanel = nullptr;
     QComboBox *m_gridBox = nullptr;
-    QAction *m_renameAction = nullptr;
 };
 
 // The part of an item editor that works on the item itself: a Footprint or

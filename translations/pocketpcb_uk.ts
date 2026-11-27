@@ -2508,6 +2508,9 @@
         <source>Move origin</source>
         <translation>Перенести початок</translation>
     </message>
+</context>
+<context>
+    <name>ppcb::LibraryTab</name>
     <message>
         <source>A name may hold Latin letters, digits and these signs</source>
         <translation>У назві допустимі латинські літери, цифри та знаки</translation>

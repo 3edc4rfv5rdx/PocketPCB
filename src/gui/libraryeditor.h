@@ -15,6 +15,7 @@ namespace ppcb {
 
 class FootprintEditor;
 class ItemEditor;
+class LibraryTab;
 class SymbolEditor;
 
 // The one window of the library editors: each item of the library open in
@@ -82,7 +83,7 @@ protected:
 
 private:
     // 'editor' in a new tab, shown, its signals heard.
-    void addEditorTab(ItemEditor *editor);
+    void addEditorTab(LibraryTab *editor);
     void tabShown(int index);
     // The tabs, or the buttons of an empty window when there are none.
     void showTabsOrStart();

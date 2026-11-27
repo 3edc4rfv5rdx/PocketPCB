@@ -139,18 +139,21 @@ QString LibraryEditor::libraryEditorTitle()
     return tr("Library editor");
 }
 
-void LibraryEditor::addEditorTab(ItemEditor *editor)
+void LibraryEditor::addEditorTab(LibraryTab *editor)
 {
-    connect(editor, &ItemEditor::titleChanged, this, [this, editor] { updateTab(editor); });
-    connect(editor, &ItemEditor::saved, this, &LibraryEditor::saved);
-    connect(editor, &ItemEditor::statusChanged, this, [this, editor](const QString &text) {
+    connect(editor, &LibraryTab::titleChanged, this, [this, editor] { updateTab(editor); });
+    connect(editor, &LibraryTab::saved, this, &LibraryEditor::saved);
+    connect(editor, &LibraryTab::statusChanged, this, [this, editor](const QString &text) {
         if (m_tabs->currentWidget() == editor)
             m_status->setText(text);
     });
-    connect(editor->canvas(), &CanvasView::cursorMoved, this, [this, editor](Coord x, Coord y) {
-        if (m_tabs->currentWidget() == editor)
-            m_position->setText(formatPosition(x, y));
-    });
+    if (const ItemEditor *drawing = qobject_cast<ItemEditor *>(editor)) {
+        connect(drawing->canvas(), &CanvasView::cursorMoved, this,
+                [this, editor](Coord x, Coord y) {
+                    if (m_tabs->currentWidget() == editor)
+                        m_position->setText(formatPosition(x, y));
+                });
+    }
     m_tabs->setCurrentIndex(m_tabs->addTab(editor, editor->tabTitle()));
     updateTab(editor);
     showTabsOrStart();
@@ -345,7 +348,7 @@ FootprintEditor *LibraryEditor::currentFootprintEditor() const
 
 bool LibraryEditor::closeTab(int index)
 {
-    ItemEditor *editor = qobject_cast<ItemEditor *>(m_tabs->widget(index));
+    LibraryTab *editor = qobject_cast<LibraryTab *>(m_tabs->widget(index));
     if (editor != nullptr && !editor->confirmClose())
         return false;
     QWidget *tab = m_tabs->widget(index);
@@ -359,7 +362,7 @@ bool LibraryEditor::closeTab(int index)
 void LibraryEditor::closeEvent(QCloseEvent *event)
 {
     for (int i = 0; i < m_tabs->count(); ++i) {
-        ItemEditor *editor = qobject_cast<ItemEditor *>(m_tabs->widget(i));
+        LibraryTab *editor = qobject_cast<LibraryTab *>(m_tabs->widget(i));
         if (editor == nullptr)
             continue;
         m_tabs->setCurrentIndex(i);
@@ -378,17 +381,17 @@ void LibraryEditor::showTabsOrStart()
 
 void LibraryEditor::tabShown(int index)
 {
-    ItemEditor *editor = qobject_cast<ItemEditor *>(m_tabs->widget(index));
+    LibraryTab *editor = qobject_cast<LibraryTab *>(m_tabs->widget(index));
     m_status->setText(editor != nullptr ? editor->status() : QString());
     // The keys of a tab work while the keyboard is in it.
     if (editor != nullptr)
-        editor->canvas()->setFocus();
+        editor->takeFocus();
 }
 
 void LibraryEditor::updateTab(QWidget *tab)
 {
     const int index = m_tabs->indexOf(tab);
-    ItemEditor *editor = qobject_cast<ItemEditor *>(tab);
+    LibraryTab *editor = qobject_cast<LibraryTab *>(tab);
     if (index < 0 || editor == nullptr)
         return;
     m_tabs->setTabText(index, editor->tabTitle());

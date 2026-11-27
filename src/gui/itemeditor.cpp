@@ -15,23 +15,15 @@
 
 #include <QAction>
 #include <QComboBox>
-#include <QDir>
-#include <QFile>
-#include <QFileInfo>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
-#include <QInputDialog>
-#include <QLineEdit>
 #include <QMenu>
-#include <QMessageBox>
 #include <QPainter>
-#include <QRegularExpression>
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QTimer>
 #include <QToolBar>
-#include <QToolButton>
 #include <QUndoCommand>
 #include <QVBoxLayout>
 
@@ -62,20 +54,6 @@ const double ORIGIN_ARM_PIXELS = 14.0;
 const double ORIGIN_RING_PIXELS = 5.0;
 // The cross of the origin about to be placed, its half length in mm.
 const double ORIGIN_CROSS_MM = 2.0;
-
-// What an item's name may hold: it is the name of its file.
-const QRegularExpression &nameRule()
-{
-    static const QRegularExpression rule(QStringLiteral("^[A-Za-z0-9][A-Za-z0-9._+-]*$"));
-    return rule;
-}
-
-// The file of the item 'name' of the kind kept in 'subfolder'.
-QString itemPath(const QString &libraryFolder, const char *subfolder, const QString &name)
-{
-    return QDir(QDir(libraryFolder).filePath(QLatin1String(subfolder)))
-        .filePath(name + QLatin1String(LIBRARY_FILE_EXT));
-}
 
 // The drawings of 'graphics' given the line of 'line'.
 QList<Graphic> withLineOf(QList<Graphic> graphics, const Graphic &line)
@@ -208,18 +186,11 @@ bool operator==(const ItemChoice &a, const ItemChoice &b)
 // ItemEditor
 
 ItemEditor::ItemEditor(const QString &name, bool inUserLibrary, QWidget *parent)
-    : QWidget(parent)
-    , m_name(name)
-    , m_inUserLibrary(inUserLibrary)
+    : LibraryTab(name, inUserLibrary, parent)
 {
 }
 
-ItemEditor::~ItemEditor()
-{
-    // The stack going last says it is clean no more, or again: nobody is to
-    // hear it, the tab is gone.
-    m_undoStack.disconnect();
-}
+ItemEditor::~ItemEditor() = default;
 
 void ItemEditor::build(ItemPanel *terminalPanel, ItemPanel *itemPanel, Coord gridStep)
 {
@@ -258,7 +229,6 @@ void ItemEditor::build(ItemPanel *terminalPanel, ItemPanel *itemPanel, Coord gri
     layout->addWidget(createToolBar());
     layout->addWidget(splitter, 1);
 
-    connect(&m_undoStack, &QUndoStack::cleanChanged, this, &ItemEditor::titleChanged);
     connect(this, &ItemEditor::changed, m_canvas->scene(), [this] { m_canvas->scene()->update(); });
     connect(this, &ItemEditor::changed, this, &ItemEditor::showPanel);
     // A short right click calls off what is being placed or drawn, as Esc.
@@ -276,43 +246,9 @@ QString ItemEditor::drawingPropertiesStep()
     return tr("Drawing properties");
 }
 
-bool ItemEditor::userLibraryHas(const char *folder, const QString &name)
+void ItemEditor::takeFocus()
 {
-    return QFileInfo::exists(itemPath(AppSettings::userLibraryFolder(), folder, name));
-}
-
-QAction *ItemEditor::addTool(QToolBar *bar, const QString &text, const char *name,
-                             const QKeySequence &key, std::optional<ToolIcon> icon,
-                             const std::function<void()> &slot)
-{
-    QAction *result = new QAction(text, this);
-    result->setObjectName(QLatin1String(name));
-    QString tip = text;
-    tip.remove(QLatin1Char('&'));
-    if (!key.isEmpty()) {
-        result->setShortcut(key);
-        tip += QStringLiteral(" (") + key.toString(QKeySequence::NativeText) + QLatin1Char(')');
-    }
-    result->setToolTip(tip);
-    // The keys of the tab shown only: the others are hidden.
-    result->setShortcutContext(Qt::WidgetWithChildrenShortcut);
-    connect(result, &QAction::triggered, this, slot);
-    addAction(result);
-    if (icon) {
-        result->setIcon(toolIcon(*icon, bar->palette().color(QPalette::WindowText)));
-        bar->addAction(result);
-    }
-    return result;
-}
-
-void ItemEditor::addMenuButton(QToolBar *bar, QAction *main, QMenu *menu, const char *name)
-{
-    QToolButton *button = new QToolButton(bar);
-    button->setObjectName(QLatin1String(name));
-    button->setDefaultAction(main);
-    button->setMenu(menu);
-    button->setPopupMode(QToolButton::MenuButtonPopup);
-    bar->addWidget(button);
+    m_canvas->setFocus();
 }
 
 QWidget *ItemEditor::createToolBar()
@@ -333,38 +269,7 @@ QWidget *ItemEditor::createToolBar()
         bar->addWidget(spacer);
     };
 
-    // Save, its arrow offering to save under a new name.
-    QAction *saveAction = addTool(bar, MainWindow::saveTitle(), "actionSaveItem",
-                                  QKeySequence::Save, std::nullopt, [this] { save(); });
-    saveAction->setIcon(toolIcon(ToolIcon::Save, color));
-    QAction *saveAs = addTool(bar, MainWindow::saveAsTitle() + QStringLiteral("…"),
-                              "actionSaveItemAs", QKeySequence::SaveAs, std::nullopt,
-                              [this] { saveUnderNewName(); });
-    m_renameAction =
-        addTool(bar, SheetEditor::actionName(SheetEditor::Action::Rename) + QStringLiteral("…"),
-                "actionRenameItem", QKeySequence(), std::nullopt, [this] { renameItem(); });
-    m_renameAction->setEnabled(canRename());
-    connect(this, &ItemEditor::titleChanged, m_renameAction,
-            [this] { m_renameAction->setEnabled(canRename()); });
-    QMenu *saveMenu = new QMenu(this);
-    saveMenu->addAction(saveAs);
-    saveMenu->addAction(m_renameAction);
-    addMenuButton(bar, saveAction, saveMenu, "saveItemButton");
-    gap();
-    QAction *undo = m_undoStack.createUndoAction(this, MainWindow::undoTitle());
-    undo->setObjectName(QStringLiteral("actionUndoItem"));
-    undo->setShortcut(QKeySequence::Undo);
-    undo->setShortcutContext(Qt::WidgetWithChildrenShortcut);
-    undo->setIcon(toolIcon(ToolIcon::Undo, color));
-    addAction(undo);
-    bar->addAction(undo);
-    QAction *redo = m_undoStack.createRedoAction(this, MainWindow::redoTitle());
-    redo->setObjectName(QStringLiteral("actionRedoItem"));
-    redo->setShortcut(QKeySequence::Redo);
-    redo->setShortcutContext(Qt::WidgetWithChildrenShortcut);
-    redo->setIcon(toolIcon(ToolIcon::Redo, color));
-    addAction(redo);
-    bar->addAction(redo);
+    addFileTools(bar);
     gap();
     addTool(bar, MainWindow::zoomInTitle(), "actionZoomInItem", QKeySequence::ZoomIn,
             ToolIcon::ZoomIn, [this] {
@@ -449,20 +354,6 @@ QWidget *ItemEditor::createToolBar()
     return bar;
 }
 
-QString ItemEditor::tabTitle() const
-{
-    const QString title = m_name.isEmpty() ? newItemTitle() : m_name;
-    return m_undoStack.isClean() ? title : title + QLatin1Char('*');
-}
-
-QString ItemEditor::tabTip() const
-{
-    QString tip = editorTitle() + QStringLiteral(": ") + (m_name.isEmpty() ? newItemTitle() : m_name);
-    if (!m_name.isEmpty() && !m_inUserLibrary)
-        tip += QStringLiteral(" (") + tr("from the built-in library") + QLatin1Char(')');
-    return tip;
-}
-
 void ItemEditor::updateModeButtons()
 {
     for (auto it = m_modeActions.constBegin(); it != m_modeActions.constEnd(); ++it)
@@ -483,17 +374,6 @@ void ItemEditor::paintHandle(QPainter &painter, const Point &at) const
 {
     const double handle = m_canvas->pixelsToMm(HANDLE_PIXELS);
     painter.drawRect(QRectF(toMm(at) - QPointF(handle, handle), QSizeF(2 * handle, 2 * handle)));
-}
-
-void ItemEditor::showStatus(const QString &text)
-{
-    m_status = text;
-    emit statusChanged(text);
-}
-
-void ItemEditor::alert(const Alert &alert)
-{
-    Alerts::show(this, alert, [this](const QString &text) { showStatus(text); });
 }
 
 Point ItemEditor::snapped(const QPointF &at) const
@@ -698,139 +578,6 @@ void ItemEditor::escape()
         setChosen({});
     }
     updateModeButtons();
-}
-
-bool ItemEditor::save()
-{
-    if (!m_name.isEmpty())
-        return saveAs(m_name, true);
-    const QString name = askName(MainWindow::saveTitle().remove(QLatin1Char('&')));
-    return !name.isEmpty() && saveAs(name, true);
-}
-
-bool ItemEditor::saveUnderNewName()
-{
-    const QString name = askName(MainWindow::saveAsTitle().remove(QLatin1Char('&')));
-    return !name.isEmpty() && saveAs(name, true);
-}
-
-QString ItemEditor::askName(const QString &title)
-{
-    bool ok = false;
-    const QString name = QInputDialog::getText(this, title, nameLabel() + QLatin1Char(':'),
-                                               QLineEdit::Normal, m_name, &ok)
-                             .trimmed();
-    if (!ok || name.isEmpty())
-        return QString();
-    if (!nameRule().match(name).hasMatch()) {
-        alert(Alert::warning(tr("A name may hold Latin letters, digits and these signs")
-                                 + QStringLiteral(": . _ + -"),
-                             QStringLiteral("footprintName")));
-        return QString();
-    }
-    // Its own name it keeps without asking.
-    const char *folder = libraryFolder();
-    const bool taken =
-        name != m_name
-        && (QFileInfo::exists(itemPath(AppSettings::userLibraryFolder(), folder, name))
-            || QFileInfo::exists(itemPath(AppSettings::builtInLibraryFolder(), folder, name)));
-    if (taken
-        && QMessageBox::question(this, title, takenQuestion(name) + QLatin1Char('?'))
-               != QMessageBox::Yes)
-        return QString();
-    return name;
-}
-
-bool ItemEditor::saveAs(const QString &name, bool replace)
-{
-    const QString path = itemPath(AppSettings::userLibraryFolder(), libraryFolder(), name);
-    if (!replace && QFileInfo::exists(path))
-        return false;
-    const QString problem = saveProblem();
-    if (!problem.isEmpty()) {
-        alert(Alert::error(capitalized(problem)));
-        return false;
-    }
-    QString error;
-    if (!AppSettings::makeUserLibraryFolders(error)) {
-        alert(Alert::error(error));
-        return false;
-    }
-    if (!LibraryFile::write(path, libraryItem(), error)) {
-        alert(Alert::error(error));
-        return false;
-    }
-    m_name = name;
-    m_inUserLibrary = true;
-    m_undoStack.setClean();
-    emit titleChanged();
-    showStatus(writtenMessage(path));
-    emit saved(name);
-    return true;
-}
-
-bool ItemEditor::renameItem()
-{
-    if (!canRename())
-        return false;
-    const QString title = SheetEditor::actionName(SheetEditor::Action::Rename);
-    const QString name = askName(title);
-    if (name.isEmpty() || name == m_name)
-        return false;
-    // Built-in parts listing it, not replaced by parts of the user's own,
-    // keep the old name.
-    QStringList problems;
-    const Library builtIn = LibraryFolder::read(AppSettings::builtInLibraryFolder(), problems);
-    const Library user = LibraryFolder::read(AppSettings::userLibraryFolder(), problems);
-    QStringList stranded;
-    for (const QString &part : partsUsing(builtIn, m_name)) {
-        if (!user.parts.contains(part))
-            stranded.append(part);
-    }
-    if (!stranded.isEmpty()
-        && QMessageBox::question(this, title,
-                                 strandedQuestion(m_name, stranded) + QLatin1Char('?'))
-               != QMessageBox::Yes)
-        return false;
-    return renameTo(name);
-}
-
-bool ItemEditor::renameTo(const QString &name)
-{
-    if (!canRename() || name.isEmpty() || name == m_name)
-        return false;
-    const QString old = m_name;
-    const QString userFolder = AppSettings::userLibraryFolder();
-    QStringList problems;
-    const Library user = LibraryFolder::read(userFolder, problems);
-    if (!saveAs(name, true))
-        return false;
-    // The user's parts follow it.
-    for (const QString &partName : partsUsing(user, old)) {
-        LibraryItem item;
-        item.kind = LibraryKind::Part;
-        item.part = partRenamed(user.parts.value(partName), old, name);
-        QString error;
-        if (!LibraryFile::write(itemPath(userFolder, LIBRARY_PARTS_FOLDER, partName), item, error)) {
-            alert(Alert::error(error));
-            emit saved(name);
-            return false;
-        }
-    }
-    QFile::remove(itemPath(userFolder, libraryFolder(), old));
-    showStatus(renamedMessage(old, name));
-    emit saved(name);
-    return true;
-}
-
-bool ItemEditor::confirmClose()
-{
-    if (m_undoStack.isClean())
-        return true;
-    const QMessageBox::StandardButton answer =
-        QMessageBox::question(this, editorTitle(), unsavedQuestion() + QLatin1Char('?'),
-                              QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-    return answer == QMessageBox::Discard || (answer == QMessageBox::Save && save());
 }
 
 // ItemEditorOf

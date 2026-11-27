@@ -16,6 +16,7 @@ add_library(pocketpcb_gui STATIC
     gerberexport.h gerberexport.cpp
     inplaceedit.h inplaceedit.cpp
     itemeditor.h itemeditor.cpp
+    librarytab.h librarytab.cpp
     itempanels.h itempanels.cpp
     language.h language.cpp
     libraryeditor.h libraryeditor.cpp
