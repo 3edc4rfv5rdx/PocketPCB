@@ -28,6 +28,10 @@ QRectF padsBounds(const Footprint &footprint, const QSet<int> &pads);
 
 // 'footprint' with 'pads' added after its own.
 Footprint withPadsAdded(const Footprint &footprint, const QList<Pad> &pads);
+// The same with 'pads' moved by 'at' first, as pasted: a number 'footprint'
+// has already given the next free one, the same for pads that shared it;
+// a pad without a number keeps none.
+Footprint withPadsPasted(const Footprint &footprint, const QList<Pad> &pads, const Point &at);
 // With the pads 'pads' moved by 'delta'.
 Footprint withPadsMoved(const Footprint &footprint, const QSet<int> &pads, const Point &delta);
 // With the pads 'pads' turned a quarter clockwise on screen about 'center':

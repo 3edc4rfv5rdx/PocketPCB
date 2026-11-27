@@ -888,6 +888,71 @@ private slots:
         QFile::remove(path);
     }
 
+    // Drawings and pads are copied and pasted, into another tab too: a
+    // pad's number taken is numbered on, and a symbol takes the drawings.
+    void itemsAreCopiedAndPasted()
+    {
+        MainWindow window;
+        FootprintEditor *editor = window.openFootprintEditor(true);
+        QVERIFY(editor != nullptr);
+        editor->setMode(FootprintEditor::Mode::Place);
+        editor->press(QPointF(0, 0), false);
+        editor->release(QPointF(0, 0));
+        editor->setMode(FootprintEditor::Mode::Rect);
+        editor->press(QPointF(-2.54, -2.54), false);
+        editor->press(QPointF(2.54, 2.54), false);
+        editor->escape();
+        QCOMPARE(editor->footprint().pads.size(), 1);
+        QCOMPARE(editor->footprint().graphics.size(), 1);
+        ItemChoice both;
+        both.terminals = {0};
+        both.graphics = {0};
+        editor->setChosen(both);
+        editor->copyChosen();
+        QCOMPARE(ItemEditor::clipboard().pads.size(), 1);
+        QCOMPARE(ItemEditor::clipboard().graphics.size(), 1);
+
+        // It follows the cursor by the middle it was taken by; a click
+        // puts it in, chosen.
+        editor->paste();
+        QCOMPARE(editor->mode(), FootprintEditor::Mode::Row);
+        editor->press(QPointF(10.16, 0), false);
+        editor->release(QPointF(10.16, 0));
+        QCOMPARE(editor->mode(), FootprintEditor::Mode::Select);
+        QCOMPARE(editor->footprint().pads.size(), 2);
+        QCOMPARE(editor->footprint().pads.at(1).number, QStringLiteral("2"));
+        QCOMPARE(editor->footprint().pads.at(1).at, (Point{10160000, 0}));
+        QCOMPARE(editor->footprint().graphics.size(), 2);
+        QCOMPARE(editor->chosen().terminals, QSet<int>({1}));
+        QCOMPARE(editor->chosen().graphics, QSet<int>({1}));
+        editor->undoStack()->undo();
+        QCOMPARE(editor->footprint().pads.size(), 1);
+
+        // Cut: copied and gone in one step.
+        editor->setChosen(both);
+        editor->cutChosen();
+        QVERIFY(editor->footprint().pads.isEmpty());
+        QVERIFY(editor->footprint().graphics.isEmpty());
+        editor->undoStack()->undo();
+        QCOMPARE(editor->footprint().pads.size(), 1);
+
+        // A symbol takes the drawing, not the pad.
+        SymbolEditor *symbol = window.openSymbolEditor(true);
+        QVERIFY(symbol != nullptr);
+        symbol->paste();
+        QCOMPARE(symbol->mode(), SymbolEditor::Mode::Row);
+        symbol->press(QPointF(0, 0), false);
+        symbol->release(QPointF(0, 0));
+        QCOMPARE(symbol->symbol().graphics.size(), 1);
+        QVERIFY(symbol->symbol().pins.isEmpty());
+        // Its own texts stay where a new symbol has them.
+        QCOMPARE(symbol->symbol().refAt, (Point{0, -2540000}));
+
+        editor->undoStack()->setClean();
+        symbol->undoStack()->setClean();
+        window.libraryEditor()->close();
+    }
+
     // Pins land on the pin grid whatever the grid of the drawings, turn
     // with their side, are dragged by whole steps of it, and the symbol is
     // saved into the user's library.

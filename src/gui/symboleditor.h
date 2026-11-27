@@ -95,6 +95,9 @@ protected:
     void paintShown(QPainter &painter, const Symbol &shown) const override;
     void paintChosenTerminals(QPainter &painter, const Symbol &shown) const override;
     void paintFloating(QPainter &painter, const QList<Graphic> &graphics) const override;
+    void clipTerminals(ItemClip &clip, const QSet<int> &terminals,
+                       const Point &delta) const override;
+    bool startPasting(const ItemClip &clip) override;
 
 private:
     // The piece being placed moved to where the cursor puts it.
@@ -102,6 +105,9 @@ private:
 
     Pin m_nextPin;
     Symbol m_placing;
+    // The piece placed is pasted: it leaves the symbol's own texts and
+    // switches as they are.
+    bool m_placingPasted = false;
     // The chip asked for last.
     int m_chipLeft = 4;
     int m_chipRight = 4;

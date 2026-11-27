@@ -2,7 +2,9 @@
 
 #include "format.h"
 #include "inplaceedit.h"
+#include "itempanels.h"
 #include "paint.h"
+#include "sheeteditor.h"
 
 #include "format.h"
 #include "graphicedit.h"
@@ -169,7 +171,30 @@ void SymbolEditor::addPlacingTools(QToolBar *bar)
 void SymbolEditor::placePiece(const Symbol &piece)
 {
     m_placing = piece;
+    m_placingPasted = false;
     setMode(Mode::Row);
+}
+
+void SymbolEditor::clipTerminals(ItemClip &clip, const QSet<int> &terminals,
+                                 const Point &delta) const
+{
+    for (const int i : inOrder(terminals)) {
+        Pin pin = m_item.pins.at(i);
+        pin.at = pin.at + delta;
+        clip.pins.append(pin);
+    }
+}
+
+bool SymbolEditor::startPasting(const ItemClip &clip)
+{
+    if (clip.pins.isEmpty() && clip.graphics.isEmpty())
+        return false;
+    Symbol piece;
+    piece.pins = clip.pins;
+    piece.graphics = clip.graphics;
+    placePiece(piece);
+    m_placingPasted = true;
+    return true;
 }
 
 void SymbolEditor::askChip()
@@ -319,7 +344,13 @@ Symbol SymbolEditor::withTerminalEnd(const Symbol &item, int terminal, const Poi
 void SymbolEditor::placeAt(const QPointF &at)
 {
     if (m_mode == Mode::Row) {
-        const Symbol changed = withPiece(m_item, m_placing, terminalSnapped(at));
+        Symbol changed = withPiece(m_item, m_placing, terminalSnapped(at));
+        if (m_placingPasted) {
+            changed.refAt = m_item.refAt;
+            changed.valueAt = m_item.valueAt;
+            changed.showPinNumbers = m_item.showPinNumbers;
+            changed.showPinNames = m_item.showPinNames;
+        }
         ItemChoice placed;
         for (int i = int(m_item.pins.size()); i < changed.pins.size(); ++i)
             placed.terminals.insert(i);
@@ -327,7 +358,9 @@ void SymbolEditor::placeAt(const QPointF &at)
             placed.graphics.insert(i);
         m_mode = Mode::Select;
         updateModeButtons();
-        change(tr("Place ready-made"), changed, placed);
+        change(m_placingPasted ? SheetEditor::actionName(SheetEditor::Action::Paste)
+                               : tr("Place ready-made"),
+               changed, placed);
         return;
     }
     if (m_mode != Mode::Place)

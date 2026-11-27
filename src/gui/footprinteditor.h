@@ -91,6 +91,9 @@ protected:
     void paintShown(QPainter &painter, const Footprint &shown) const override;
     void paintChosenTerminals(QPainter &painter, const Footprint &shown) const override;
     void paintFloating(QPainter &painter, const QList<Graphic> &graphics) const override;
+    void clipTerminals(ItemClip &clip, const QSet<int> &terminals,
+                       const Point &delta) const override;
+    bool startPasting(const ItemClip &clip) override;
 
 private:
     // The gaps found again, and the first told in the status bar.
@@ -99,7 +102,11 @@ private:
     Coord m_clearance = 0;
     QList<PadGap> m_gaps;
     Pad m_nextPad;
+    // What the Row mode places at the cursor: a row of pads asked for, or
+    // pads and drawings pasted (numbered on when placed).
     QList<Pad> m_rowPads;
+    QList<Graphic> m_rowGraphics;
+    bool m_rowPasted = false;
     PadRow m_row;
 };
 

@@ -2,9 +2,11 @@
 
 #include "canvasview.h"
 #include "format.h"
+#include "graphicedit.h"
 #include "inplaceedit.h"
 #include "itempanels.h"
 #include "paint.h"
+#include "sheeteditor.h"
 
 #include <QAction>
 #include <QButtonGroup>
@@ -247,13 +249,21 @@ void FootprintEditor::placeAt(const QPointF &at)
         return;
     }
     const int first = int(m_item.pads.size());
+    const int firstGraphic = int(m_item.graphics.size());
     ItemChoice placed;
     for (int k = 0; k < m_rowPads.size(); ++k)
         placed.terminals.insert(first + k);
-    const Footprint changed = withPadsAdded(m_item, padsMovedBy(m_rowPads, m_cursor));
+    for (int k = 0; k < m_rowGraphics.size(); ++k)
+        placed.graphics.insert(firstGraphic + k);
+    Footprint changed = m_rowPasted ? withPadsPasted(m_item, m_rowPads, m_cursor)
+                                    : withPadsAdded(m_item, padsMovedBy(m_rowPads, m_cursor));
+    for (const Graphic &graphic : std::as_const(m_rowGraphics))
+        changed.graphics.append(graphicMoved(graphic, m_cursor));
     m_mode = Mode::Select;
     updateModeButtons();
-    change(tr("Place row of pads"), changed, placed);
+    change(m_rowPasted ? SheetEditor::actionName(SheetEditor::Action::Paste)
+                       : tr("Place row of pads"),
+           changed, placed);
 }
 
 void FootprintEditor::rotatePlacing()
@@ -263,7 +273,29 @@ void FootprintEditor::rotatePlacing()
         return;
     }
     m_rowPads = padsRotated(m_rowPads, Point{});
+    QSet<int> drawings;
+    for (int i = 0; i < m_rowGraphics.size(); ++i)
+        drawings.insert(i);
+    m_rowGraphics = withGraphicsRotated(m_rowGraphics, drawings, Point{});
     emit changed();
+}
+
+void FootprintEditor::clipTerminals(ItemClip &clip, const QSet<int> &terminals,
+                                    const Point &delta) const
+{
+    for (const int i : inOrder(terminals))
+        clip.pads.append(padsMovedBy({m_item.pads.at(i)}, delta).first());
+}
+
+bool FootprintEditor::startPasting(const ItemClip &clip)
+{
+    if (clip.pads.isEmpty() && clip.graphics.isEmpty())
+        return false;
+    m_rowPads = clip.pads;
+    m_rowGraphics = clip.graphics;
+    m_rowPasted = true;
+    setMode(Mode::Row);
+    return true;
 }
 
 void FootprintEditor::editTerminal(int pad)
@@ -321,6 +353,13 @@ void FootprintEditor::paintFloating(QPainter &painter, const QList<Graphic> &gra
 {
     paintFootprintPads(painter, floatingPads());
     paintFootprintGraphics(painter, graphics);
+    // Drawings pasted, where a click puts them.
+    if (m_mode == Mode::Row && m_cursorKnown) {
+        QList<Graphic> pasted;
+        for (const Graphic &graphic : m_rowGraphics)
+            pasted.append(graphicMoved(graphic, m_cursor));
+        paintFootprintGraphics(painter, pasted);
+    }
 }
 
 void FootprintEditor::askRow()
@@ -390,6 +429,8 @@ void FootprintEditor::askRow()
     m_row.firstNumber = first->value();
     m_row.firstSquare = square->isChecked();
     m_rowPads = padRow(m_row, m_nextPad);
+    m_rowGraphics.clear();
+    m_rowPasted = false;
     if (m_rowPads.isEmpty()) {
         updateModeButtons();
         return;

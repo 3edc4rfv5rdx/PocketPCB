@@ -12,7 +12,7 @@ Early development. What works now (the user guide, Help > User guide or [`help.h
 - Versions: numbered zips in `versions/`, a Versions panel, restore, a read-only copy.
 - Project properties: title block, designator style, copper sides, net classes, rules.
 - Library: built-in, your own and the project's copy; Update parts from library; delete from your own.
-- Library editor: footprints in tabs, pads, rows and DIP, silkscreen, REF and VALUE places, pad clearance, body for 3D, origin, Save as.
+- Library editor: footprints in tabs, pads, rows and DIP, silkscreen, REF and VALUE places, pad clearance, body for 3D, origin, Save as, copy and paste between tabs.
 - Symbol editor: pins on the 2.54 mm grid, drawings, pin numbers and names, power symbols, ready-made ESKD pieces and chips.
 - Part editor: symbol, footprints, prefixes, group, names; every pin checked for a pad.
 - Schematic: sheets, parts, wires, buses, labels, power symbols, no-connect marks, lock; wire pads placed for off-board parts.

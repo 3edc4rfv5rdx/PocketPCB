@@ -177,6 +177,17 @@ private:
 
 } // namespace
 
+namespace {
+
+// The clipboard of all the item editors.
+ItemClip &sharedClip()
+{
+    static ItemClip clip;
+    return clip;
+}
+
+} // namespace
+
 bool operator==(const ItemChoice &a, const ItemChoice &b)
 {
     return a.terminals == b.terminals && a.graphics == b.graphics
@@ -249,6 +260,32 @@ QString ItemEditor::drawingPropertiesStep()
 void ItemEditor::takeFocus()
 {
     m_canvas->setFocus();
+}
+
+const ItemClip &ItemEditor::clipboard()
+{
+    return sharedClip();
+}
+
+void ItemEditor::setClipboard(const ItemClip &clip)
+{
+    sharedClip() = clip;
+}
+
+void ItemEditor::paste()
+{
+    if (m_dragging)
+        return;
+    if (!startPasting(sharedClip()))
+        showStatus(tr("Nothing to paste here"));
+}
+
+void ItemEditor::duplicateChosen()
+{
+    if (m_chosen.terminals.isEmpty() && m_chosen.graphics.isEmpty())
+        return;
+    copyChosen();
+    paste();
 }
 
 QWidget *ItemEditor::createToolBar()
@@ -350,6 +387,14 @@ QWidget *ItemEditor::createToolBar()
             QKeySequence::Delete, std::nullopt, [this] { deleteChosen(); });
     addTool(bar, MainWindow::selectAllTitle(), "actionChooseAllItem", QKeySequence::SelectAll,
             std::nullopt, [this] { chooseAll(); });
+    addTool(bar, SheetEditor::actionName(SheetEditor::Action::Copy), "actionCopyItem",
+            QKeySequence::Copy, std::nullopt, [this] { copyChosen(); });
+    addTool(bar, SheetEditor::actionName(SheetEditor::Action::Cut), "actionCutItem",
+            QKeySequence::Cut, std::nullopt, [this] { cutChosen(); });
+    addTool(bar, SheetEditor::actionName(SheetEditor::Action::Paste), "actionPasteItem",
+            QKeySequence::Paste, std::nullopt, [this] { paste(); });
+    addTool(bar, SheetEditor::actionName(SheetEditor::Action::Duplicate), "actionDuplicateItem",
+            QKeySequence(Qt::CTRL | Qt::Key_D), std::nullopt, [this] { duplicateChosen(); });
     updateModeButtons();
     return bar;
 }
@@ -1083,11 +1128,41 @@ void ItemEditorOf<Item>::rotate()
 template <class Item>
 void ItemEditorOf<Item>::deleteChosen()
 {
+    removeChosen(SheetEditor::actionName(SheetEditor::Action::Delete));
+}
+
+template <class Item>
+void ItemEditorOf<Item>::removeChosen(const QString &text)
+{
     if ((m_chosen.terminals.isEmpty() && m_chosen.graphics.isEmpty()) || m_dragging)
         return;
     Item changed = withoutTerminals(m_item, m_chosen.terminals);
     changed.graphics = withoutGraphics(changed.graphics, m_chosen.graphics);
-    change(SheetEditor::actionName(SheetEditor::Action::Delete), changed, {});
+    change(text, changed, {});
+}
+
+template <class Item>
+void ItemEditorOf<Item>::copyChosen()
+{
+    if ((m_chosen.terminals.isEmpty() && m_chosen.graphics.isEmpty()) || m_dragging)
+        return;
+    // Taken by a point of the terminals' grid, so that they stay on it.
+    const Point anchor = terminalSnapped(choiceBounds().center());
+    const Point delta = Point{} - anchor;
+    ItemClip clip;
+    for (const int i : inOrder(m_chosen.graphics))
+        clip.graphics.append(graphicMoved(m_item.graphics.at(i), delta));
+    clipTerminals(clip, m_chosen.terminals, delta);
+    setClipboard(clip);
+}
+
+template <class Item>
+void ItemEditorOf<Item>::cutChosen()
+{
+    if ((m_chosen.terminals.isEmpty() && m_chosen.graphics.isEmpty()) || m_dragging)
+        return;
+    copyChosen();
+    removeChosen(SheetEditor::actionName(SheetEditor::Action::Cut));
 }
 
 template <class Item>

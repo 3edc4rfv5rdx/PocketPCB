@@ -5,6 +5,9 @@
 #include "paint.h"
 #include "trackedit.h"
 
+#include <QHash>
+#include <QSet>
+
 #include <algorithm>
 
 namespace ppcb {
@@ -69,6 +72,36 @@ Footprint withPadsAdded(const Footprint &footprint, const QList<Pad> &pads)
 {
     Footprint result = footprint;
     result.pads.append(pads);
+    return result;
+}
+
+Footprint withPadsPasted(const Footprint &footprint, const QList<Pad> &pads, const Point &at)
+{
+    QSet<QString> taken;
+    for (const Pad &pad : footprint.pads)
+        taken.insert(pad.number);
+    // Numbers in use after the paste: none given anew may be one of them.
+    QSet<QString> used = taken;
+    for (const Pad &pad : pads)
+        used.insert(pad.number);
+    Footprint result = footprint;
+    // The number each one taken is given, so that pads sharing it share
+    // the new one.
+    QHash<QString, QString> renumbered;
+    int next = 1;
+    for (Pad pad : pads) {
+        pad.at = pad.at + at;
+        if (!pad.number.isEmpty() && taken.contains(pad.number)) {
+            if (!renumbered.contains(pad.number)) {
+                while (used.contains(QString::number(next)))
+                    ++next;
+                renumbered.insert(pad.number, QString::number(next));
+                used.insert(QString::number(next));
+            }
+            pad.number = renumbered.value(pad.number);
+        }
+        result.pads.append(pad);
+    }
     return result;
 }
 

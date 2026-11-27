@@ -2728,6 +2728,10 @@
         <source>Move origin</source>
         <translation>Перенести начало</translation>
     </message>
+    <message>
+        <source>Nothing to paste here</source>
+        <translation>Здесь нечего вставить</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::LibraryTab</name>

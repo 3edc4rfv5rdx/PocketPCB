@@ -47,6 +47,23 @@ class TestFootprintEdit : public QObject
     Q_OBJECT
 
 private slots:
+    // Pasted pads are moved; a number taken gets one free after the paste,
+    // the same for pads sharing it; one free stays, one empty stays empty.
+    void pastedPadsAreNumberedOn()
+    {
+        Footprint footprint;
+        footprint.pads = {pad(QStringLiteral("1"), mm(0, 0)), pad(QStringLiteral("2"), mm(1, 0))};
+        const QList<Pad> pasted = {pad(QStringLiteral("1"), mm(0, 0)),
+                                   pad(QStringLiteral("1"), mm(1, 0)),
+                                   pad(QStringLiteral("3"), mm(2, 0)), pad(QString(), mm(3, 0))};
+        const Footprint result = withPadsPasted(footprint, pasted, mm(10, 5));
+        QCOMPARE(numbers(result.pads),
+                 QStringList({QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("4"),
+                              QStringLiteral("4"), QStringLiteral("3"), QString()}));
+        QCOMPARE(result.pads.at(2).at, mm(10, 5));
+        QCOMPARE(result.pads.at(5).at, mm(13, 5));
+    }
+
     void theNextNumberFillsAGap()
     {
         Footprint footprint;

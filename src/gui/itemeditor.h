@@ -42,6 +42,17 @@ struct ItemChoice
 };
 
 bool operator==(const ItemChoice &a, const ItemChoice &b);
+
+// What the item editors copy, one for all their tabs: drawings, pads and
+// pins, placed about the point they were taken by, which comes under the
+// cursor when they are pasted. Drawings go into either kind of item, pads
+// only into a footprint, pins only into a symbol.
+struct ItemClip
+{
+    QList<Graphic> graphics;
+    QList<Pad> pads;
+    QList<Pin> pins;
+};
 inline bool operator!=(const ItemChoice &a, const ItemChoice &b) { return !(a == b); }
 
 // A panel beside the canvas of an item editor; shown again whenever the
@@ -144,6 +155,19 @@ public:
     virtual void rotate() = 0;
     // Del: the terminals and drawings chosen go.
     virtual void deleteChosen() = 0;
+    // Ctrl+C: what is chosen goes into the clipboard of the editors, about
+    // the grid point of the terminals nearest its middle.
+    virtual void copyChosen() = 0;
+    // Ctrl+X: copied, then gone, as one step.
+    virtual void cutChosen() = 0;
+    // Ctrl+V: what the clipboard holds that the item takes follows the
+    // cursor, R turning it; a click puts it in, numbered on, as one step.
+    // Told in the status bar when there is nothing to paste.
+    void paste();
+    // Ctrl+D: what is chosen copied and pasted.
+    void duplicateChosen();
+    // The clipboard of the editors.
+    static const ItemClip &clipboard();
     void chooseAll();
     // Esc: a drag or a frame is called off, a line or a polygon being
     // drawn ends, else the mode ends, else nothing stays chosen.
@@ -174,6 +198,10 @@ protected:
     void build(ItemPanel *terminalPanel, ItemPanel *itemPanel, Coord gridStep);
     // The buttons that place terminals, put on the strip after Select.
     virtual void addPlacingTools(QToolBar *bar) = 0;
+    // Starts placing what of 'clip' the item takes (Mode::Row); false when
+    // it takes none of it.
+    virtual bool startPasting(const ItemClip &clip) = 0;
+    static void setClipboard(const ItemClip &clip);
     void updateModeButtons();
 
     virtual int terminalCount() const = 0;
@@ -274,6 +302,8 @@ public:
     void doubleClick(const QPointF &at) override;
     void rotate() override;
     void deleteChosen() override;
+    void copyChosen() override;
+    void cutChosen() override;
     void originAtMiddle() override;
     void paintEditor(QPainter &painter) const override;
 
@@ -322,6 +352,9 @@ protected:
     // What follows the cursor, half seen already: the terminals about to be
     // placed and 'graphics', the drawing being drawn.
     virtual void paintFloating(QPainter &painter, const QList<Graphic> &graphics) const = 0;
+    // The terminals among 'terminals' put into 'clip', moved by 'delta'.
+    virtual void clipTerminals(ItemClip &clip, const QSet<int> &terminals,
+                               const Point &delta) const = 0;
 
     Item m_item;
 
@@ -337,6 +370,8 @@ private:
     // The line or the polygon being drawn ends; a polygon of three corners
     // or more is added.
     void finishDrawing();
+    // The terminals and drawings chosen gone, as a step named 'text'.
+    void removeChosen(const QString &text);
     // A text typed at 'at': a new one, or the text of drawing 'graphic'.
     void editText(const Point &at, int graphic);
     // The terminal whose end (terminalEnd()) is within 'reach' of 'at', and

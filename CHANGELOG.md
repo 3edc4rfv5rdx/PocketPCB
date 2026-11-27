@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Copy, cut, paste and duplicate pads, pins and drawings in the library editor, from tab to tab
 - F: Delete in Open stands at the left of the row of buttons
 - F: The library switch of Open names your library User
 - F: The menu item that opens the part chosen in the Library panel is Edit part from library
