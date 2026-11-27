@@ -42,6 +42,7 @@ const struct
     {"transistors", QT_TRANSLATE_NOOP("ppcb::Part", "Transistors")},
     {"thyristors", QT_TRANSLATE_NOOP("ppcb::Part", "Thyristors")},
     {"chips", QT_TRANSLATE_NOOP("ppcb::Part", "Chips")},
+    {"chip-packages", QT_TRANSLATE_NOOP("ppcb::Part", "Chip packages")},
     {"crystals", QT_TRANSLATE_NOOP("ppcb::Part", "Crystals")},
     {"relays", QT_TRANSLATE_NOOP("ppcb::Part", "Relays")},
     {"switches", QT_TRANSLATE_NOOP("ppcb::Part", "Switches and buttons")},
@@ -57,6 +58,14 @@ const struct
     {"tubes", QT_TRANSLATE_NOOP("ppcb::Part", "Vacuum tubes")},
     // No part has it: the board's wire links in the bill of materials.
     {LINK_GROUP, QT_TRANSLATE_NOOP("ppcb::Part", "Wire links")},
+};
+// Library panel groups the bill of materials merges into another one.
+const struct
+{
+    const char *key;
+    const char *bomKey;
+} BOM_MERGED_GROUPS[] = {
+    {"chip-packages", "chips"},
 };
 const char OTHER_GROUP_NAME[] = QT_TRANSLATE_NOOP("ppcb::Part", "Other");
 
@@ -90,6 +99,15 @@ int partGroupRank(const QString &key)
             return i;
     }
     return known;
+}
+
+QString bomGroup(const QString &key)
+{
+    for (const auto &merged : BOM_MERGED_GROUPS) {
+        if (key == QLatin1String(merged.key))
+            return QLatin1String(merged.bomKey);
+    }
+    return key;
 }
 
 QStringList partGroupKeys()

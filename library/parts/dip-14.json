@@ -7,6 +7,6 @@
   "prefixGost": "DD",
   "value": "",
   "connector": false,
-  "group": "chips",
-  "name": {"en": "Chip DIP-14", "uk": "Мікросхема DIP-14", "ru": "Микросхема DIP-14"}
+  "group": "chip-packages",
+  "name": {"en": "DIP-14 package", "uk": "Корпус DIP-14", "ru": "Корпус DIP-14"}
 }

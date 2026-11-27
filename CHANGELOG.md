@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Empty DIP chip packages in their own library group, apart from ready-made chips
 - N: Microcontrollers ATtiny13/25/45/85, PIC12F629/675 and ATmega8/168/328 in DIP in the library
 - N: Negative adjustable regulator LM337 and adjustable shunt regulator TL431 in the library
 - N: Dual op amps LM358, TL072, NE5532, audio amplifier LM386, optocouplers 4N35 and MOC3021, transistor arrays ULN2003 and ULN2803 in the library

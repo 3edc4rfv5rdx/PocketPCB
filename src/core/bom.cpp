@@ -79,7 +79,7 @@ QList<BomRow> bomRows(const Schematic &schematic, const Library &library)
                 keys.append(key);
                 BomRow row;
                 if (const Part *part = library.findPart(key.part))
-                    row.group = part->group;
+                    row.group = bomGroup(part->group);
                 row.part = key.part;
                 row.value = key.value;
                 row.footprint = key.footprint;

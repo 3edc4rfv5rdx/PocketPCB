@@ -520,6 +520,10 @@
         <translation>Мікросхеми</translation>
     </message>
     <message>
+        <source>Chip packages</source>
+        <translation>Корпуси мікросхем</translation>
+    </message>
+    <message>
         <source>Crystals</source>
         <translation>Кварцові резонатори</translation>
     </message>

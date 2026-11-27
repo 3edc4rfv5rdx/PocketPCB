@@ -31,8 +31,9 @@ struct Part
     // Rated power a new component of the part starts with, in milliwatts;
     // 0 for a part that has none (only resistors have).
     int powerMw = 0;
-    // The group the bill of materials puts the part under, by key
-    // ("resistors"); partGroupName() gives its name. Empty for none.
+    // The group of the library panel the part is in, by key ("resistors");
+    // partGroupName() gives its name, bomGroup() the group the bill of
+    // materials puts it under. Empty for none.
     QString group;
     // Name shown in the library panel, by interface language code
     // ("en", "uk", "ru"); may be empty.
@@ -64,6 +65,10 @@ extern const char LINK_GROUP[];
 // The place of the part group 'key' in the library panel: the program's
 // groups in their order, then the groups it does not know, no group last.
 int partGroupRank(const QString &key);
+// The group the bill of materials puts a part of group 'key' under: the
+// same key, but "chips" for the empty chip packages, which only become
+// chips once placed.
+QString bomGroup(const QString &key);
 // The keys of the program's groups a part may be put under, in the order
 // of the library panel; LINK_GROUP, which no part has, left out.
 QStringList partGroupKeys();
