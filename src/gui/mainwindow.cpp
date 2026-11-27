@@ -2084,7 +2084,7 @@ void MainWindow::createToolBar()
     QAction *newPart = footprintMenu->addAction(PartEditor::newPartTitle());
     newPart->setObjectName(QStringLiteral("actionNewPart"));
     connect(newPart, &QAction::triggered, this, [this] { openPartEditor(true); });
-    QAction *editPart = footprintMenu->addAction(tr("Edit chosen part"));
+    QAction *editPart = footprintMenu->addAction(tr("Edit part from library"));
     editPart->setObjectName(QStringLiteral("actionEditPart"));
     connect(editPart, &QAction::triggered, this, [this] { openPartEditor(false); });
     QToolButton *footprintButton = new QToolButton(bar);

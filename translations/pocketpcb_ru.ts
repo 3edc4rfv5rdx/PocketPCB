@@ -1167,8 +1167,8 @@
         <translation>Изменить символ выбранной детали</translation>
     </message>
     <message>
-        <source>Edit chosen part</source>
-        <translation>Изменить выбранную деталь</translation>
+        <source>Edit part from library</source>
+        <translation>Изменить деталь из библиотеки</translation>
     </message>
     <message>
         <source>Choose a part in the library panel first</source>
