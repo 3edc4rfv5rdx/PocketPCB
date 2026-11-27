@@ -1,0 +1,13 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "nor-4001-a",
+  "units": ["nor-4001-b", "nor-4001-c", "nor-4001-d", "power-cmos-14"],
+  "footprints": ["dip-14-7.62"],
+  "prefix": "U",
+  "prefixGost": "DD",
+  "value": "К561ЛЕ5",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Quad 2-input NOR K561LE5 (CD4001)", "uk": "Чотири елементи 2АБО-НЕ К561ЛЕ5 (CD4001)", "ru": "Четыре элемента 2ИЛИ-НЕ К561ЛЕ5 (CD4001)"}
+}

@@ -1,0 +1,13 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "nand-7400-a",
+  "units": ["nand-7400-b", "nand-7400-c", "nand-7400-d", "power-ttl-14"],
+  "footprints": ["dip-14-7.62"],
+  "prefix": "U",
+  "prefixGost": "DD",
+  "value": "К155ЛА3",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Quad 2-input NAND K155LA3 (7400)", "uk": "Чотири елементи 2І-НЕ К155ЛА3 (7400)", "ru": "Четыре элемента 2И-НЕ К155ЛА3 (7400)"}
+}

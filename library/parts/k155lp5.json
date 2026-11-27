@@ -1,0 +1,13 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "xor-7486-a",
+  "units": ["xor-7486-b", "xor-7486-c", "xor-7486-d", "power-ttl-14"],
+  "footprints": ["dip-14-7.62"],
+  "prefix": "U",
+  "prefixGost": "DD",
+  "value": "К155ЛП5",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Quad XOR K155LP5 (7486)", "uk": "Чотири елементи виключне АБО К155ЛП5 (7486)", "ru": "Четыре элемента исключающее ИЛИ К155ЛП5 (7486)"}
+}

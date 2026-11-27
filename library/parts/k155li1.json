@@ -1,0 +1,13 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "and-7408-a",
+  "units": ["and-7408-b", "and-7408-c", "and-7408-d", "power-ttl-14"],
+  "footprints": ["dip-14-7.62"],
+  "prefix": "U",
+  "prefixGost": "DD",
+  "value": "К155ЛИ1",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Quad 2-input AND K155LI1 (7408)", "uk": "Чотири елементи 2І К155ЛИ1 (7408)", "ru": "Четыре элемента 2И К155ЛИ1 (7408)"}
+}

@@ -1,0 +1,13 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "not-7404-a",
+  "units": ["not-7404-b", "not-7404-c", "not-7404-d", "not-7404-e", "not-7404-f", "power-ttl-14"],
+  "footprints": ["dip-14-7.62"],
+  "prefix": "U",
+  "prefixGost": "DD",
+  "value": "К155ЛН1",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Hex inverter K155LN1 (7404)", "uk": "Шість інверторів К155ЛН1 (7404)", "ru": "Шесть инверторов К155ЛН1 (7404)"}
+}
