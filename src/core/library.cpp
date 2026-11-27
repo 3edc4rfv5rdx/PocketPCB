@@ -169,10 +169,10 @@ const Symbol *Library::findSymbol(const QString &name) const
     return it == symbols.constEnd() ? nullptr : &*it;
 }
 
-const Symbol *Library::findSymbolOfPart(const QString &partName) const
+const Symbol *Library::findSymbolOfPart(const QString &partName, int unit) const
 {
     const Part *part = findPart(partName);
-    return part == nullptr ? nullptr : findSymbol(part->symbol);
+    return part == nullptr ? nullptr : findSymbol(part->unitSymbol(unit));
 }
 
 namespace {

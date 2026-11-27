@@ -113,13 +113,13 @@ QList<SheetObjectShape> SheetEditor::shapes() const
     const Sheet *sheet = currentSheet();
     if (sheet == nullptr)
         return {};
-    return sheetObjectShapes(*sheet, m_document->design().library, shownPower());
+    return sheetObjectShapes(*sheet, m_document->design().library, shownComponents());
 }
 
-PowerShown SheetEditor::shownPower() const
+ComponentShown SheetEditor::shownComponents() const
 {
     const Design &design = m_document->design();
-    return powerShown(design.project, design.schematic);
+    return componentShown(design.project, design.schematic);
 }
 
 void SheetEditor::press(const QPointF &at, bool adding, bool net)
@@ -168,7 +168,7 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
     ObjectId hit = objectAt(found, at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
     // The name of a bus lies off its line, which alone finds the bus, or
     // near enough for the line to be found: a click on the name takes it.
-    const TextHit name = textAt(*currentSheet(), m_document->design().library, shownPower(), at);
+    const TextHit name = textAt(*currentSheet(), m_document->design().library, shownComponents(), at);
     const bool onName =
         !name.owner.isNull() && (hit.isNull() || hit == name.owner)
         && findById(currentSheet()->buses, name.owner) != nullptr;
@@ -207,7 +207,7 @@ void SheetEditor::press(const QPointF &at, bool adding, bool net)
         // it is chosen alone, and a drag moves it while its object stays.
         const TextHit text = isFoundByLine(found, hit) && !onName
                                  ? TextHit()
-                                 : textAt(*sheet, m_document->design().library, shownPower(),
+                                 : textAt(*sheet, m_document->design().library, shownComponents(),
                                           at);
         // A wire or a bus not chosen whole: the segment under the cursor is
         // chosen, and a drag moves it, or the line's end when taken near it.
@@ -297,7 +297,7 @@ QRectF SheetEditor::chosenText() const
 {
     if (!hasText() || m_dragging)
         return QRectF();
-    return textRect(*currentSheet(), m_document->design().library, shownPower(), m_chosenText);
+    return textRect(*currentSheet(), m_document->design().library, shownComponents(), m_chosenText);
 }
 
 QLineF SheetEditor::textGuide() const
@@ -384,7 +384,7 @@ ObjectId SheetEditor::chooseForMenu(const QPointF &at)
     m_textEdit.close(true);
     const Library &library = m_document->design().library;
     const ObjectId hit = objectAt(shapes(), at, m_canvas->pixelsToMm(CanvasView::HIT_PIXELS));
-    const TextHit text = textAt(*sheet, library, shownPower(), at);
+    const TextHit text = textAt(*sheet, library, shownComponents(), at);
     const bool chosen =
         (!hit.isNull() && m_selection.contains(hit))
         || (hasText() && text == m_chosenText)
@@ -405,7 +405,7 @@ ObjectId SheetEditor::chooseForMenu(const QPointF &at)
         return hit;
     for (const Component &component : sheet->components) {
         if (component.id == hit
-            && !componentTextShown(component, ComponentText::Value, library, shownPower())
+            && !componentTextShown(component, ComponentText::Value, library, shownComponents())
                     .isEmpty()) {
             return hit;
         }
@@ -496,7 +496,7 @@ void SheetEditor::editText(const ObjectId &id)
     for (const Component &component : sheet->components) {
         if (component.id == id) {
             text = component.value;
-            rect = componentTextRect(component, ComponentText::Value, library, shownPower());
+            rect = componentTextRect(component, ComponentText::Value, library, shownComponents());
         }
     }
     for (const PowerSymbol &power : sheet->powerSymbols) {
@@ -817,7 +817,7 @@ Point SheetEditor::selectionCenter(const Sheet &sheet) const
         }
     }
     const QList<SheetObjectShape> found =
-        sheetObjectShapes(sheet, m_document->design().library, shownPower());
+        sheetObjectShapes(sheet, m_document->design().library, shownComponents());
     return m_canvas->snapped(selectionBounds(found, m_selection).center());
 }
 

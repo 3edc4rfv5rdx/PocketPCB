@@ -154,14 +154,18 @@ public:
     MonochromeInk &operator=(const MonochromeInk &) = delete;
 };
 
-// How the rated power of a component is shown on a sheet: as GOST marks
-// inside its body, or as text after its value where it is not the power
-// most components have.
-struct PowerShown
+// How components are shown on a sheet, by the project's designator style:
+// in the GOST style a rated power is a mark inside the body and a unit of a
+// part of several is "DA1.1"; in the international one the power is text
+// after the value where it is not the power most components have, and the
+// unit "U1A".
+struct ComponentShown
 {
-    bool marks = true;
+    DesignatorStyle style = DesignatorStyle::Gost;
     // The power left without text (commonPowerMw()), in milliwatts.
     int commonMw = 0;
+
+    bool powerMarks() const { return style == DesignatorStyle::Gost; }
 };
 
 // Sheet 'index' of the schematic: the frame with the title block, then
@@ -170,7 +174,7 @@ struct PowerShown
 // from 'library'; one it lacks is drawn as a red square with a question mark.
 // Rated powers are shown as 'power' says.
 void paintSheet(QPainter &painter, const Schematic &schematic, const Library &library,
-                int index, const TitleBlock &titleBlock, const PowerShown &power);
+                int index, const TitleBlock &titleBlock, const ComponentShown &power);
 // A red ring around each of 'problems' on sheet 'index'.
 void paintErcMarks(QPainter &painter, const QList<ErcProblem> &problems, int index);
 // A ring around each of the board's 'problems': red for an error, orange
@@ -195,11 +199,11 @@ struct SheetObjectShape
 // The shapes of everything placed on 'sheet', in the order it is drawn: the
 // last is on top.
 QList<SheetObjectShape> sheetObjectShapes(const Sheet &sheet, const Library &library,
-                                          const PowerShown &power);
+                                          const ComponentShown &power);
 
 // What holds everything placed on 'sheet', texts and bus names included:
 // what a view fitted to the drawing shows. Null when nothing is placed.
-QRectF sheetDrawingBounds(const Sheet &sheet, const Library &library, const PowerShown &power);
+QRectF sheetDrawingBounds(const Sheet &sheet, const Library &library, const ComponentShown &power);
 
 // "Revision", the title block's field, as the title block and the dialogs
 // name it.
@@ -214,18 +218,19 @@ enum class ComponentText { Designator, Value };
 // Where the grey REF or VALUE mark of a symbol or a footprint of the
 // library stands at 'at', in millimetres.
 QRectF placeholderRect(const Point &at, ComponentText text);
-// What is drawn for the text: the designator, or the value; a grey "VALUE"
+// What is drawn for the text: the designator, with the unit of a part of
+// several after it (unitSuffix()), or the value; a grey "VALUE"
 // mark stands where the value is empty, to show where it goes and to be
 // taken there, unless the component's part in 'library' needs no value.
 // The rated power follows the value, or the mark, when 'power' shows it as
 // text and it is not the common one.
 QString componentTextShown(const Component &component, ComponentText text,
-                           const Library &library, const PowerShown &power);
+                           const Library &library, const ComponentShown &power);
 // Where the text stands on the sheet: the component's point and the text's offset.
 Point componentTextPoint(const Component &component, ComponentText text);
 // A rectangle surely holding the text as it is drawn, in millimetres.
 QRectF componentTextRect(const Component &component, ComponentText text,
-                         const Library &library, const PowerShown &power);
+                         const Library &library, const ComponentShown &power);
 
 // Where the name of a bus stands the 'index'th time it is shown: its first
 // point and that place's offset; its first point when there is no such place.

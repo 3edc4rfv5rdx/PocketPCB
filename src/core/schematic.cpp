@@ -24,6 +24,9 @@ const char KEY_NO_CONNECTS[] = "noConnects";
 const char KEY_GRAPHICS[] = "graphics";
 
 const char KEY_PART[] = "part";
+const char KEY_UNIT[] = "unit";
+// A unit beyond those of its part is read, and drawn as a missing symbol.
+const int MAX_UNIT_INDEX = 999;
 const char KEY_FOOTPRINT[] = "footprint";
 const char KEY_DESIGNATOR[] = "designator";
 const char KEY_VALUE[] = "value";
@@ -75,6 +78,8 @@ QJsonObject componentToJson(const Component &component)
     QJsonObject object;
     object.insert(QLatin1String(KEY_ID), idToJson(component.id));
     object.insert(QLatin1String(KEY_PART), component.part);
+    if (component.unit > 0)
+        object.insert(QLatin1String(KEY_UNIT), component.unit);
     object.insert(QLatin1String(KEY_FOOTPRINT), component.footprint);
     object.insert(QLatin1String(KEY_DESIGNATOR), component.designator);
     object.insert(QLatin1String(KEY_VALUE), component.value);
@@ -98,6 +103,9 @@ Component componentFromJson(const QJsonObject &object, const QString &where, Rea
     Component component;
     component.id = reader.uniqueId(object, KEY_ID, where, context.ids);
     component.part = reader.nonEmptyString(object, KEY_PART, where);
+    // Optional: the first unit when absent.
+    if (object.contains(QLatin1String(KEY_UNIT)))
+        component.unit = reader.integer(object, KEY_UNIT, where, 0, MAX_UNIT_INDEX);
     component.footprint = reader.string(object, KEY_FOOTPRINT, where);
     component.designator = reader.nonEmptyString(object, KEY_DESIGNATOR, where);
     component.value = reader.string(object, KEY_VALUE, where);
@@ -341,7 +349,7 @@ QString paperSizeName(PaperSize paper)
 bool operator==(const Component &a, const Component &b)
 {
     return a.id == b.id && a.part == b.part && a.footprint == b.footprint
-           && a.designator == b.designator && a.value == b.value && a.offBoard == b.offBoard && a.powerMw == b.powerMw && a.comment == b.comment && a.at == b.at && a.rotation == b.rotation
+           && a.unit == b.unit && a.designator == b.designator && a.value == b.value && a.offBoard == b.offBoard && a.powerMw == b.powerMw && a.comment == b.comment && a.at == b.at && a.rotation == b.rotation
            && a.mirrored == b.mirrored && a.refAt == b.refAt && a.valueAt == b.valueAt
            && a.locked == b.locked;
 }

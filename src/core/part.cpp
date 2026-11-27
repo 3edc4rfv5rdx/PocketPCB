@@ -14,6 +14,7 @@ namespace {
 
 const char KEY_SYMBOL[] = "symbol";
 const char KEY_FOOTPRINTS[] = "footprints";
+const char KEY_UNITS[] = "units";
 const char KEY_PREFIX[] = "prefix";
 const char KEY_PREFIX_GOST[] = "prefixGost";
 const char KEY_VALUE[] = "value";
@@ -73,7 +74,7 @@ const char OTHER_GROUP_NAME[] = QT_TRANSLATE_NOOP("ppcb::Part", "Other");
 
 bool operator==(const Part &a, const Part &b)
 {
-    return a.symbol == b.symbol && a.footprints == b.footprints && a.prefix == b.prefix
+    return a.symbol == b.symbol && a.units == b.units && a.footprints == b.footprints && a.prefix == b.prefix
            && a.prefixGost == b.prefixGost && a.value == b.value && a.connector == b.connector && a.noValue == b.noValue
            && a.powerMw == b.powerMw && a.group == b.group && a.name == b.name;
 }
@@ -158,10 +159,19 @@ QString Part::displayName(const QStringList &languages, const QString &fallback)
     return localizedName(name, languages, fallback);
 }
 
+QString Part::unitSymbol(int unit) const
+{
+    if (unit == 0)
+        return symbol;
+    return unit > 0 && unit <= units.size() ? units.at(unit - 1) : QString();
+}
+
 QJsonObject partToJson(const Part &part)
 {
     QJsonObject object;
     object.insert(QLatin1String(KEY_SYMBOL), part.symbol);
+    if (!part.units.isEmpty())
+        object.insert(QLatin1String(KEY_UNITS), QJsonArray::fromStringList(part.units));
     object.insert(QLatin1String(KEY_FOOTPRINTS), QJsonArray::fromStringList(part.footprints));
     object.insert(QLatin1String(KEY_PREFIX), part.prefix);
     object.insert(QLatin1String(KEY_PREFIX_GOST), part.prefixGost);
@@ -183,6 +193,9 @@ Part partFromJson(const QJsonObject &object, const QString &where, JsonReader &r
 {
     Part part;
     part.symbol = reader.nonEmptyString(object, KEY_SYMBOL, where);
+    // Optional: a part of one unit when absent.
+    if (object.contains(QLatin1String(KEY_UNITS)))
+        part.units = reader.nameList(object, KEY_UNITS, where);
     // Optional: a part without footprints when absent.
     if (object.contains(QLatin1String(KEY_FOOTPRINTS)))
         part.footprints = reader.nameList(object, KEY_FOOTPRINTS, where);

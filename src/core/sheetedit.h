@@ -59,7 +59,7 @@ inline bool operator==(const TextHit &a, const TextHit &b)
 // take the component. An empty value is found by its mark (see
 // componentTextShown()), when 'library' shows one; an empty designator not
 // at all. A value is found with the power 'power' shows after it.
-TextHit textAt(const Sheet &sheet, const Library &library, const PowerShown &power,
+TextHit textAt(const Sheet &sheet, const Library &library, const ComponentShown &power,
                const QPointF &point);
 // True when 'sheet' has the text 'hit'.
 bool hasText(const Sheet &sheet, const TextHit &hit);
@@ -69,7 +69,7 @@ Point textPoint(const Sheet &sheet, const TextHit &hit);
 Point textOwnerPoint(const Sheet &sheet, const TextHit &hit);
 // A rectangle surely holding the text, in millimetres; empty when 'sheet'
 // has no such text.
-QRectF textRect(const Sheet &sheet, const Library &library, const PowerShown &power,
+QRectF textRect(const Sheet &sheet, const Library &library, const ComponentShown &power,
                 const TextHit &hit);
 // 'sheet' with the text 'hit' moved by 'delta'; its object stays.
 Sheet withTextMoved(const Sheet &sheet, const TextHit &hit, const Point &delta);
@@ -186,9 +186,9 @@ Sheet numberedOn(const Sheet &piece, const Schematic &schematic, const Library &
 
 // Placing parts.
 
-// How the rated powers of 'schematic' are shown in the designator style of
-// 'project': GOST marks in GOST, text after the value elsewhere.
-PowerShown powerShown(const Project &project, const Schematic &schematic);
+// How the components of 'schematic' are shown in the designator style of
+// 'project' (ComponentShown).
+ComponentShown componentShown(const Project &project, const Schematic &schematic);
 // The designator prefix of 'part' in 'style': R, VD, DD...
 QString designatorPrefix(const Part &part, DesignatorStyle style);
 // 'schematic' with its designators switched from style 'from' to 'to': one
@@ -205,12 +205,13 @@ Schematic withDesignatorStyle(const Schematic &schematic, const Library &library
 // deleted R3 is filled.
 QString nextDesignator(const Schematic &schematic, const QString &prefix,
                        const QStringList &alsoTaken = {});
-// A component of the part 'partName' of 'library', not placed yet: a new id,
-// at the origin, with the symbol's text places, the part's value and
-// 'footprint'. It stays off the board when the part has no footprints.
+// A component of unit 'unit' of the part 'partName' of 'library', not
+// placed yet: a new id, at the origin, with the text places of the unit's
+// symbol, the part's value and 'footprint'. It stays off the board when the
+// part has no footprints.
 Component newComponent(const Library &library, const QString &partName,
-                       const QString &footprint);
-// 'project' with the part, its symbol and all its footprints taken from
+                       const QString &footprint, int unit = 0);
+// 'project' with the part, the symbols of its units and all its footprints taken from
 // 'source' where 'project' lacks them. What 'project' has stays as it is:
 // the project does not change because the library did.
 Library withPartFrom(const Library &project, const Library &source, const QString &partName);

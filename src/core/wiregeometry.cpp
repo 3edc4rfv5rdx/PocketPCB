@@ -155,7 +155,7 @@ QList<SheetPin> sheetPins(const Sheet &sheet, const Library &library)
 {
     QList<SheetPin> pins;
     for (const Component &component : sheet.components) {
-        const Symbol *symbol = library.findSymbolOfPart(component.part);
+        const Symbol *symbol = library.findSymbolOfPart(component.part, component.unit);
         if (symbol == nullptr)
             continue;
         for (const Pin &pin : symbol->pins) {

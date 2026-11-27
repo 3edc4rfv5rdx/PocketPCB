@@ -46,7 +46,7 @@ void paintPage(QPainter &painter, const Document &document, int index, const QPa
                          * QTransform::fromScale(dotsPerMm, dotsPerMm));
     const MonochromeInk ink;
     paintSheet(painter, design.schematic, design.library, index, document.titleBlockShown(),
-               powerShown(design.project, design.schematic));
+               componentShown(design.project, design.schematic));
     painter.restore();
 }
 

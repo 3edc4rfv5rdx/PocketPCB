@@ -12,8 +12,13 @@ namespace ppcb {
 // with. Pins and pads are matched by their numbers.
 struct Part
 {
-    // Library name of the symbol.
+    // Library name of the symbol; of the first unit of a part of several.
     QString symbol;
+    // A part of several units (the amplifiers of a dual op amp, its power
+    // pins apart): the symbols of the units after the first, each with the
+    // numbers of its own pins. Each unit is a component of its own on the
+    // sheet, all of one designator; the board has one footprint for them.
+    QStringList units;
     // Library names of the allowed footprints; the first is the default.
     // Empty for a part that is never on the board (a panel jack, a battery).
     QStringList footprints;
@@ -42,6 +47,10 @@ struct Part
     // The name in the first of 'languages' that has one; 'fallback' (the
     // library name of the part) when none has.
     QString displayName(const QStringList &languages, const QString &fallback) const;
+    // How many units it has: 1 for a part of one.
+    int unitCount() const { return 1 + int(units.size()); }
+    // The symbol of unit 'unit' (0 the first); empty out of range.
+    QString unitSymbol(int unit) const;
 };
 
 // Rated powers of resistors offered, in milliwatts, the least first.

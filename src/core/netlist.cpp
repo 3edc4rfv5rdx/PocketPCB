@@ -68,7 +68,7 @@ int netAt(const QList<Net> &nets, const Schematic &schematic, const Library &lib
     };
     // The power shown after a value would only widen the rectangle of a
     // component, which is on no net itself: without it is near enough.
-    const QList<SheetObjectShape> shapes = sheetObjectShapes(on, library, PowerShown());
+    const QList<SheetObjectShape> shapes = sheetObjectShapes(on, library, ComponentShown());
     const ObjectId hit = objectAt(shapes, point, tolerance);
     // A wire comes first, as objectAt() takes a line before a rectangle.
     const bool byLine =
@@ -157,7 +157,7 @@ QList<Net> nets(const Schematic &schematic, const Library &library, const Projec
         // The things with a point: pins, power symbols and labels.
         QList<QPair<Point, int>> points;
         for (const Component &component : sheet.components) {
-            const Symbol *symbol = library.findSymbolOfPart(component.part);
+            const Symbol *symbol = library.findSymbolOfPart(component.part, component.unit);
             if (symbol == nullptr)
                 continue;
             for (const Pin &pin : symbol->pins) {

@@ -14,6 +14,9 @@ struct Component
     ObjectId id;
     // Name of the part it was placed from.
     QString part;
+    // Which unit of a part of several it is (Part::units), 0 the first;
+    // the units of one part share its designator.
+    int unit = 0;
     // Name of the chosen footprint; empty when it has none.
     QString footprint;
     // Reference designator ("R1") and value ("10k").

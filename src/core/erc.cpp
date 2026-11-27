@@ -259,7 +259,7 @@ void checkShorts(const Sheet &sheet, int index, const Library &library,
                  const QHash<QString, int> &netOfPin, QList<ErcProblem> &problems)
 {
     for (const Component &component : sheet.components) {
-        const Symbol *symbol = library.findSymbolOfPart(component.part);
+        const Symbol *symbol = library.findSymbolOfPart(component.part, component.unit);
         if (symbol == nullptr || symbol->pins.size() != 2)
             continue;
         const int first = netOfPin.value(pinKey(component.id, symbol->pins.at(0).number), -1);

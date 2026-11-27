@@ -326,6 +326,16 @@ private slots:
         }
     }
 
+    // GOST counts the units, the international style letters them.
+    void unitSuffixes()
+    {
+        QCOMPARE(unitSuffix(0, DesignatorStyle::Gost), QStringLiteral(".1"));
+        QCOMPARE(unitSuffix(2, DesignatorStyle::Gost), QStringLiteral(".3"));
+        QCOMPARE(unitSuffix(0, DesignatorStyle::International), QStringLiteral("A"));
+        QCOMPARE(unitSuffix(25, DesignatorStyle::International), QStringLiteral("Z"));
+        QCOMPARE(unitSuffix(26, DesignatorStyle::International), QStringLiteral(".27"));
+    }
+
     void fileNameRules()
     {
         const QStringList wrong = {

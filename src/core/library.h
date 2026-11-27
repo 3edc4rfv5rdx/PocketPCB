@@ -38,8 +38,10 @@ struct Library
     const Part *findPart(const QString &name) const;
     const Footprint *findFootprint(const QString &name) const;
     const Symbol *findSymbol(const QString &name) const;
-    // The symbol of the part 'partName'; null when the library lacks either.
-    const Symbol *findSymbolOfPart(const QString &partName) const;
+    // The symbol of unit 'unit' of the part 'partName' (Part::units), the
+    // first by default; null when the library lacks either, or the part
+    // has no such unit.
+    const Symbol *findSymbolOfPart(const QString &partName, int unit = 0) const;
 };
 
 bool operator==(const Library &a, const Library &b);

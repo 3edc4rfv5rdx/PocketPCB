@@ -29,6 +29,7 @@ Schematic fullSchematic()
     Component component;
     component.id = id(0x11);
     component.part = QStringLiteral("resistor-part");
+    component.unit = 1;
     component.footprint = QStringLiteral("resistor-7.62");
     component.designator = QStringLiteral("R1");
     component.value = QStringLiteral("10k");
@@ -179,6 +180,7 @@ private slots:
 
         CHANGED(other.sheets[0].components[0].id = id(1));
         CHANGED(other.sheets[0].components[0].part.clear());
+        CHANGED(other.sheets[0].components[0].unit = 0);
         CHANGED(other.sheets[0].components[0].footprint.clear());
         CHANGED(other.sheets[0].components[0].designator = QStringLiteral("R2"));
         CHANGED(other.sheets[0].components[0].value.clear());

@@ -322,8 +322,8 @@ private:
     // What a step is named by: the chosen objects, or the segment's wire.
     QSet<ObjectId> chosenIds() const;
     QList<SheetObjectShape> shapes() const;
-    // How the project shows rated powers (powerShown()).
-    PowerShown shownPower() const;
+    // How the project shows rated powers (componentShown()).
+    ComponentShown shownComponents() const;
     // The drag takes the selection whole, not a wire's end, a segment or a
     // component's text alone: only then does it turn and mirror on the way.
     bool dragsWhole() const;

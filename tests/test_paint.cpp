@@ -150,7 +150,7 @@ Schematic emptySchematic()
 QImage render(const Schematic &schematic, const Library &library = Library())
 {
     return renderWith([&schematic, &library](QPainter &painter) {
-        paintSheet(painter, schematic, library, 0, TitleBlock(), PowerShown());
+        paintSheet(painter, schematic, library, 0, TitleBlock(), ComponentShown());
     });
 }
 
@@ -521,17 +521,17 @@ private slots:
     void drawingBoundsHoldWhatIsPlaced()
     {
         Sheet sheet;
-        QVERIFY(sheetDrawingBounds(sheet, Library(), PowerShown()).isNull());
+        QVERIFY(sheetDrawingBounds(sheet, Library(), ComponentShown()).isNull());
         Wire wire;
         wire.points = {Point{10000000, 20000000}, Point{30000000, 20000000}};
         sheet.wires.append(wire);
-        QRectF bounds = sheetDrawingBounds(sheet, Library(), PowerShown());
+        QRectF bounds = sheetDrawingBounds(sheet, Library(), ComponentShown());
         QCOMPARE(bounds, QRectF(10, 20, 20, 0));
         Bus bus;
         bus.name = QStringLiteral("D[0..7]");
         bus.points = {Point{10000000, 40000000}, Point{30000000, 40000000}};
         sheet.buses.append(bus);
-        bounds = sheetDrawingBounds(sheet, Library(), PowerShown());
+        bounds = sheetDrawingBounds(sheet, Library(), ComponentShown());
         QVERIFY(bounds.contains(busNameRect(bus, 0)));
         QVERIFY(bounds.bottom() >= 40);
         QVERIFY(bounds.width() < 40 && bounds.height() < 40);
@@ -609,7 +609,7 @@ private slots:
         // seen around 17, 0 of the paper, whose corner is the origin.
         const QImage corner = renderWith([&schematic](QPainter &painter) {
             painter.translate(-17, 0);
-            paintSheet(painter, schematic, Library(), 0, TitleBlock(), PowerShown());
+            paintSheet(painter, schematic, Library(), 0, TitleBlock(), ComponentShown());
         });
         QVERIFY(isColor(colorAt(corner, 3, 8), paintcolor::sheetFrame()));
         QVERIFY(isColor(colorAt(corner, 6, 5), paintcolor::sheetFrame()));
@@ -618,8 +618,8 @@ private slots:
 
         // A sheet that is not there draws nothing at all.
         const QImage nothing = renderWith([&schematic](QPainter &painter) {
-            paintSheet(painter, schematic, Library(), 1, TitleBlock(), PowerShown());
-            paintSheet(painter, schematic, Library(), -1, TitleBlock(), PowerShown());
+            paintSheet(painter, schematic, Library(), 1, TitleBlock(), ComponentShown());
+            paintSheet(painter, schematic, Library(), -1, TitleBlock(), ComponentShown());
         });
         QCOMPARE(nothing, newImage());
     }
@@ -644,7 +644,7 @@ private slots:
         const auto renderAround = [&schematic](double x, double y, const TitleBlock &block) {
             return renderWith([&](QPainter &painter) {
                 painter.translate(-x, -y);
-                paintSheet(painter, schematic, Library(), 0, block, PowerShown());
+                paintSheet(painter, schematic, Library(), 0, block, ComponentShown());
             });
         };
         // The corner of the A4 frame is at 292, 205. The block is 90 mm wide

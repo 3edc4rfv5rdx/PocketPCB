@@ -50,6 +50,11 @@ struct TitleBlock
 // Which of a part's two designator prefixes is used: R, D, Q, U or R, VD, VT, DD.
 enum class DesignatorStyle { International, Gost };
 
+// What follows the designator of unit 'unit' (0 the first) of a part of
+// several: ".1", ".2" in the GOST style, "A", "B" in the international
+// one, which goes on as ".27" past the letters.
+QString unitSuffix(int unit, DesignatorStyle style);
+
 // A kind of track: what the nets of the class are routed with.
 struct NetClass
 {

@@ -78,6 +78,26 @@ private slots:
         QVERIFY(standardPowersMw().contains(125));
     }
 
+    // The first unit is the part's symbol, the others its units; a part
+    // without them has one.
+    void unitsNameTheirSymbols()
+    {
+        Part part;
+        part.symbol = QStringLiteral("opamp-a");
+        QCOMPARE(part.unitCount(), 1);
+        QCOMPARE(part.unitSymbol(0), QStringLiteral("opamp-a"));
+        QVERIFY(part.unitSymbol(1).isEmpty());
+        part.units = QStringList({"opamp-b", "opamp-power"});
+        QCOMPARE(part.unitCount(), 3);
+        QCOMPARE(part.unitSymbol(1), QStringLiteral("opamp-b"));
+        QCOMPARE(part.unitSymbol(2), QStringLiteral("opamp-power"));
+        QVERIFY(part.unitSymbol(3).isEmpty());
+        QVERIFY(part.unitSymbol(-1).isEmpty());
+        // A part of one unit writes none.
+        part.units.clear();
+        QVERIFY(!partToJson(part).contains(QStringLiteral("units")));
+    }
+
     void displayNameFallsBack()
     {
         Part part;
@@ -95,6 +115,7 @@ private slots:
     {
         Part part;
         part.symbol = QStringLiteral("header-1x3");
+        part.units = QStringList({"opamp-b", "opamp-power"});
         part.footprints = QStringList({"header-1x3", "header-1x3-angled"});
         part.prefix = QStringLiteral("J");
         part.prefixGost = QStringLiteral("X");
@@ -128,6 +149,7 @@ private slots:
         QVERIFY(other == part);
 
         other = part; other.symbol += QLatin1Char('x');     QVERIFY(other != part);
+        other = part; other.units.append(QStringLiteral("b")); QVERIFY(other != part);
         other = part; other.footprints.removeLast();        QVERIFY(other != part);
         other = part; other.footprints.swapItemsAt(0, 1);   QVERIFY(other != part); // order matters
         other = part; other.prefix = QStringLiteral("VD");  QVERIFY(other != part);

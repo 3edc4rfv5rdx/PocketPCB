@@ -547,6 +547,14 @@ bool operator==(const NetByPins &a, const NetByPins &b)
     return a.name == b.name && a.pins == b.pins;
 }
 
+QString unitSuffix(int unit, DesignatorStyle style)
+{
+    const int letters = 26;
+    if (style == DesignatorStyle::International && unit >= 0 && unit < letters)
+        return QString(QChar(QLatin1Char('A').unicode() + unit));
+    return QLatin1Char('.') + QString::number(unit + 1);
+}
+
 bool operator==(const Project &a, const Project &b)
 {
     return a.schematicFile == b.schematicFile && a.boardFile == b.boardFile
@@ -728,8 +736,9 @@ QStringList missingLibraryItems(const Design &design)
             const Part *part = library.findPart(component.part);
             if (part == nullptr)
                 files.append(fileOf(LIBRARY_PARTS_FOLDER, component.part));
-            else if (library.findSymbolOfPart(component.part) == nullptr)
-                files.append(fileOf(LIBRARY_SYMBOLS_FOLDER, part->symbol));
+            else if (library.findSymbolOfPart(component.part, component.unit) == nullptr
+                     && !part->unitSymbol(component.unit).isEmpty())
+                files.append(fileOf(LIBRARY_SYMBOLS_FOLDER, part->unitSymbol(component.unit)));
             if (!component.footprint.isEmpty()
                 && library.findFootprint(component.footprint) == nullptr)
                 files.append(fileOf(LIBRARY_FOOTPRINTS_FOLDER, component.footprint));

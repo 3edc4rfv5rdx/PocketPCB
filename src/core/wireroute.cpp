@@ -31,7 +31,7 @@ Obstacles obstaclesOf(const Sheet &sheet, const Library &library, WireRouting ro
     for (const SheetPin &pin : sheetPins(sheet, library))
         obstacles.pins.append(qMakePair(pin.at, pin.bodyEnd));
     for (const Component &component : sheet.components) {
-        const Symbol *symbol = library.findSymbolOfPart(component.part);
+        const Symbol *symbol = library.findSymbolOfPart(component.part, component.unit);
         if (symbol == nullptr)
             continue;
         const QRectF body = symbolBodyBounds(*symbol);

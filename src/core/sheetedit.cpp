@@ -187,7 +187,7 @@ QRectF selectionBounds(const QList<SheetObjectShape> &shapes, const QSet<ObjectI
     return bounds;
 }
 
-TextHit textAt(const Sheet &sheet, const Library &library, const PowerShown &power,
+TextHit textAt(const Sheet &sheet, const Library &library, const ComponentShown &power,
                const QPointF &point)
 {
     for (auto it = sheet.components.crbegin(); it != sheet.components.crend(); ++it) {
@@ -268,7 +268,7 @@ Point textOwnerPoint(const Sheet &sheet, const TextHit &hit)
     return Point();
 }
 
-QRectF textRect(const Sheet &sheet, const Library &library, const PowerShown &power,
+QRectF textRect(const Sheet &sheet, const Library &library, const ComponentShown &power,
                 const TextHit &hit)
 {
     if (const Component *component = ownerOf(sheet.components, hit.owner))
@@ -564,12 +564,12 @@ Sheet mirroredObjects(const Sheet &sheet, const QSet<ObjectId> &ids, const Point
     return transformed(sheet, ids, transform);
 }
 
-PowerShown powerShown(const Project &project, const Schematic &schematic)
+ComponentShown componentShown(const Project &project, const Schematic &schematic)
 {
-    PowerShown power;
-    power.marks = project.designatorStyle == DesignatorStyle::Gost;
-    power.commonMw = commonPowerMw(schematic);
-    return power;
+    ComponentShown shown;
+    shown.style = project.designatorStyle;
+    shown.commonMw = commonPowerMw(schematic);
+    return shown;
 }
 
 QString designatorPrefix(const Part &part, DesignatorStyle style)
@@ -655,18 +655,20 @@ QString nextDesignator(const Schematic &schematic, const QString &prefix,
     return prefix + QString::number(number);
 }
 
-Component newComponent(const Library &library, const QString &partName, const QString &footprint)
+Component newComponent(const Library &library, const QString &partName, const QString &footprint,
+                       int unit)
 {
     Component component;
     component.id = newObjectId();
     component.part = partName;
+    component.unit = unit;
     component.footprint = footprint;
     if (const Part *part = library.findPart(partName)) {
         component.value = part->value;
         component.offBoard = part->footprints.isEmpty();
         component.powerMw = part->powerMw;
     }
-    if (const Symbol *symbol = library.findSymbolOfPart(partName)) {
+    if (const Symbol *symbol = library.findSymbolOfPart(partName, unit)) {
         component.refAt = symbol->refAt;
         component.valueAt = symbol->valueAt;
     }
@@ -683,8 +685,11 @@ Library withPartFrom(const Library &project, const Library &source, const QStrin
         result.parts.insert(partName, *part);
     // The part as the project has it names what else it needs.
     const Part &kept = result.parts.value(partName);
-    if (!result.symbols.contains(kept.symbol) && source.symbols.contains(kept.symbol))
-        result.symbols.insert(kept.symbol, source.symbols.value(kept.symbol));
+    for (int unit = 0; unit < kept.unitCount(); ++unit) {
+        const QString symbol = kept.unitSymbol(unit);
+        if (!result.symbols.contains(symbol) && source.symbols.contains(symbol))
+            result.symbols.insert(symbol, source.symbols.value(symbol));
+    }
     for (const QString &footprint : kept.footprints) {
         if (!result.footprints.contains(footprint) && source.footprints.contains(footprint))
             result.footprints.insert(footprint, source.footprints.value(footprint));
@@ -721,11 +726,16 @@ QList<PartDifference> partDifferences(const Design &design, const Library &sourc
         PartDifference difference;
         difference.part = name;
         difference.fields = kept == nullptr || *kept != *fresh;
-        const Symbol *oldSymbol = kept != nullptr ? project.findSymbol(kept->symbol) : nullptr;
-        const Symbol *newSymbol = source.findSymbol(fresh->symbol);
-        difference.pins = connections(oldSymbol) != connections(newSymbol);
-        difference.drawing = (oldSymbol == nullptr) != (newSymbol == nullptr)
-                             || (oldSymbol != nullptr && *oldSymbol != *newSymbol);
+        // Unit by unit, a unit one of them lacks counting as no symbol.
+        const int units = std::max(kept != nullptr ? kept->unitCount() : 1, fresh->unitCount());
+        for (int unit = 0; unit < units; ++unit) {
+            const Symbol *oldSymbol =
+                kept != nullptr ? project.findSymbol(kept->unitSymbol(unit)) : nullptr;
+            const Symbol *newSymbol = source.findSymbol(fresh->unitSymbol(unit));
+            difference.pins = difference.pins || connections(oldSymbol) != connections(newSymbol);
+            difference.drawing = difference.drawing || (oldSymbol == nullptr) != (newSymbol == nullptr)
+                                 || (oldSymbol != nullptr && *oldSymbol != *newSymbol);
+        }
         for (const QString &footprint : fresh->footprints) {
             const Footprint *oldFootprint = project.findFootprint(footprint);
             const Footprint *newFootprint = source.findFootprint(footprint);
@@ -747,8 +757,10 @@ Design withPartsUpdated(const Design &design, const Library &source, const QStri
         if (part == nullptr)
             continue;
         library.parts.insert(name, *part);
-        if (const Symbol *symbol = source.findSymbol(part->symbol))
-            library.symbols.insert(part->symbol, *symbol);
+        for (int unit = 0; unit < part->unitCount(); ++unit) {
+            if (const Symbol *symbol = source.findSymbol(part->unitSymbol(unit)))
+                library.symbols.insert(part->unitSymbol(unit), *symbol);
+        }
         for (const QString &footprint : part->footprints) {
             if (const Footprint *found = source.findFootprint(footprint))
                 library.footprints.insert(footprint, *found);
