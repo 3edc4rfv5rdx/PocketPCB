@@ -2062,6 +2062,10 @@
         <source>Label on silkscreen</source>
         <translation>Подпись на шелкографию</translation>
     </message>
+    <message>
+        <source>Show label</source>
+        <translation>Показывать подпись</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::RectangleBoardDialog</name>

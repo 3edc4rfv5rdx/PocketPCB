@@ -1073,10 +1073,18 @@ void MainWindow::showBoardMenu(const QPoint &globalPos)
         // silkscreen or not.
         QAction *value = nullptr;
         if (m_boardEditor->chosenAreWirePads()) {
+            const bool labelled = m_boardEditor->chosenLabelsShown();
+            QAction *label =
+                menu.addAction(BoardEditor::actionName(BoardEditor::Action::ShowLabel));
+            label->setCheckable(true);
+            label->setChecked(labelled);
+            connect(label, &QAction::triggered, m_boardEditor,
+                    [this, labelled] { m_boardEditor->setChosenLabelsShown(!labelled); });
             value = menu.addAction(
                 BoardEditor::actionName(BoardEditor::Action::LabelOnSilkscreen));
             value->setCheckable(true);
             value->setChecked(shown);
+            value->setEnabled(labelled);
         } else {
             value = menu.addAction(BoardEditor::actionName(
                 shown ? BoardEditor::Action::HideValue : BoardEditor::Action::ShowValue));

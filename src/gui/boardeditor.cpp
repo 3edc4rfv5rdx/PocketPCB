@@ -102,6 +102,8 @@ QString BoardEditor::actionName(Action action)
         return tr("Hide value");
     case Action::LabelOnSilkscreen:
         return tr("Label on silkscreen");
+    case Action::ShowLabel:
+        return tr("Show label");
     case Action::LineToPart:
         return tr("Line to part");
     case Action::PlaceHole:
@@ -1709,6 +1711,28 @@ bool BoardEditor::chosenAreWirePads() const
                           [&ids, &design](const Placement &p) {
                               return !ids.contains(p.id) || isWirePad(p, design);
                           });
+}
+
+bool BoardEditor::chosenLabelsShown() const
+{
+    const QSet<ObjectId> ids = chosenPlacements();
+    const QList<Placement> &placements = m_document->design().board.placements;
+    return !ids.isEmpty()
+           && std::all_of(placements.cbegin(), placements.cend(), [&ids](const Placement &p) {
+                  return !ids.contains(p.id) || p.showLabel;
+              });
+}
+
+void BoardEditor::setChosenLabelsShown(bool shown)
+{
+    const QSet<ObjectId> ids = chosenPlacements();
+    Board board = m_document->design().board;
+    for (Placement &placement : board.placements) {
+        if (ids.contains(placement.id))
+            placement.showLabel = shown;
+    }
+    if (board != m_document->design().board)
+        applyBoard(Action::ShowLabel, board, ids);
 }
 
 bool BoardEditor::chosenValuesShown() const

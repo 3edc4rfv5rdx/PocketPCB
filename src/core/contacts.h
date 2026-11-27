@@ -43,8 +43,8 @@ bool isWirePad(const Placement &placement, const Design &design);
 // for a pad on no net.
 QString wirePadLabel(const Placement &placement, const QList<Net> &nets,
                      const Schematic &schematic);
-// 'design''s board with Placement::padLabel made for every wire pad, and
-// cleared for the other parts.
+// 'design''s board with Placement::padLabel made for every wire pad that
+// shows its label, and cleared for the other parts.
 Board withWirePadLabels(const Design &design);
 
 } // namespace ppcb

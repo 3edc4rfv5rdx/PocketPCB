@@ -254,13 +254,16 @@ private slots:
         Placement pot = pad;
         pot.id = newObjectId();
         pot.component = potComponent.id;
+        Placement hidden = pad;
+        hidden.id = newObjectId();
+        hidden.showLabel = false;
         QVERIFY(isWirePad(pad, amp.design));
         QVERIFY(!isWirePad(resistor, amp.design));
         QVERIFY(!isWirePad(pot, amp.design));
 
-        // The document makes the labels; they are not part of what is
-        // saved or compared.
-        amp.design.board.placements = {pad, resistor, pot};
+        // The document makes the labels, for wire pads that show them; they
+        // are not part of what is saved or compared.
+        amp.design.board.placements = {pad, resistor, pot, hidden};
         Document document;
         document.startNew();
         document.change(QStringLiteral("Board"), amp.design);
@@ -268,6 +271,7 @@ private slots:
         QCOMPARE(placements.at(0).padLabel, QStringLiteral("XS1.1"));
         QVERIFY(placements.at(1).padLabel.isEmpty());
         QVERIFY(placements.at(2).padLabel.isEmpty());
+        QVERIFY(placements.at(3).padLabel.isEmpty());
         // A label alone is no change: no step is made for it.
         const int steps = document.undoStack()->count();
         Design unlabelled = document.design();

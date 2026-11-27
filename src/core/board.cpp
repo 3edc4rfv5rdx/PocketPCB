@@ -56,6 +56,7 @@ const char KEY_VALUE_AT[] = "valueAt";
 const char KEY_SHOW_REF[] = "showRef";
 const char KEY_SHOW_VALUE[] = "showValue";
 const char KEY_LOCKED[] = "locked";
+const char KEY_SHOW_LABEL[] = "showLabel";
 const char KEY_AUTOROUTED[] = "auto";
 const char KEY_REF_LINE[] = "refLine";
 const char KEY_VALUE_LINE[] = "valueLine";
@@ -169,6 +170,9 @@ QJsonObject placementToJson(const Placement &placement)
     object.insert(QLatin1String(KEY_REF_LINE), placement.refLine);
     object.insert(QLatin1String(KEY_VALUE_LINE), placement.valueLine);
     object.insert(QLatin1String(KEY_LOCKED), placement.locked);
+    // Written only when off: on for every part that has no label.
+    if (!placement.showLabel)
+        object.insert(QLatin1String(KEY_SHOW_LABEL), false);
     object.insert(QLatin1String(KEY_NETS), nets);
     return object;
 }
@@ -208,6 +212,8 @@ Placement placementFromJson(const QJsonObject &object, const QString &where, Rea
     placement.showValue = reader.boolean(object, KEY_SHOW_VALUE, where);
     if (object.contains(QLatin1String(KEY_LOCKED)))
         placement.locked = reader.boolean(object, KEY_LOCKED, where);
+    if (object.contains(QLatin1String(KEY_SHOW_LABEL)))
+        placement.showLabel = reader.boolean(object, KEY_SHOW_LABEL, where);
     // Optional: files written before them have no lines.
     if (object.contains(QLatin1String(KEY_REF_LINE)))
         placement.refLine = reader.boolean(object, KEY_REF_LINE, where);
@@ -449,7 +455,7 @@ bool operator==(const Placement &a, const Placement &b)
            && a.rotation == b.rotation && a.side == b.side && a.refAt == b.refAt
            && a.valueAt == b.valueAt && a.showRef == b.showRef && a.showValue == b.showValue
            && a.refLine == b.refLine && a.valueLine == b.valueLine && a.locked == b.locked
-           && a.padNets == b.padNets;
+           && a.showLabel == b.showLabel && a.padNets == b.padNets;
 }
 
 bool operator==(const Track &a, const Track &b)

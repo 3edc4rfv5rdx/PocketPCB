@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Show label in the menu of a wire pad takes its label away
 - F: Parts on wire pads for their own wires, as potentiometers, have no wire pad label
 - E: Place wire pads puts a pad on every pin of an off-board part, not one pad to a net
 - F: Locked parts, holes and the outline show red for a moment when a move, a turn or a delete leaves them

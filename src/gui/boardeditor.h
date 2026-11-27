@@ -69,6 +69,7 @@ public:
         ShowValue,
         HideValue,
         LabelOnSilkscreen,
+        ShowLabel,
         LineToPart,
         PlaceHole,
         MoveHoles,
@@ -173,6 +174,10 @@ public:
     // True when some parts are chosen and all of them are wire pads
     // (isWirePad()).
     bool chosenAreWirePads() const;
+    // True when all the parts chosen show their labels (Placement::showLabel).
+    bool chosenLabelsShown() const;
+    // The labels of the parts chosen shown or not, as one step.
+    void setChosenLabelsShown(bool shown);
     // The holes chosen, of those the board has.
     QSet<ObjectId> chosenHoles() const;
     // The tracks, the vias and the wire links chosen, of those the board has.

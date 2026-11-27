@@ -148,7 +148,7 @@ Board withWirePadLabels(const Design &design)
     Board board = design.board;
     QList<bool> labelled;
     for (const Placement &placement : board.placements)
-        labelled.append(isWirePad(placement, design));
+        labelled.append(placement.showLabel && isWirePad(placement, design));
     const bool any = labelled.contains(true);
     // The nets are made only for a board that has wire pads.
     const QList<Net> all = any ? nets(design.schematic, design.library, design.project)

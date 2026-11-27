@@ -94,6 +94,9 @@ struct Placement
     bool valueLine = false;
     // It may not be moved or turned until this is taken off.
     bool locked = false;
+    // A wire pad shows its label (padLabel); off, it has none, on the
+    // screen or the silkscreen.
+    bool showLabel = true;
 
     // Net of every connected pad, by pad number. A pad that is not here
     // belongs to no net.
@@ -102,9 +105,9 @@ struct Placement
     // What the label of a wire pad says, where its wire goes (see
     // wirePadLabel()): made from the schematic by the Document each time
     // the design changes, never saved and left out of comparisons; empty
-    // for any other part. It stands at 'valueAt', in place of the value a
-    // wire pad has none of: always on the screen, on the silkscreen while
-    // 'showValue'.
+    // for any other part and for one not 'showLabel'. It stands at
+    // 'valueAt', in place of the value a wire pad has none of: always on the
+    // screen, on the silkscreen while 'showValue'.
     QString padLabel;
 };
 
