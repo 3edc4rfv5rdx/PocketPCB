@@ -41,6 +41,8 @@ namespace {
 const double ADD_BUTTON_SCALE = 1.4;
 // The buttons of an empty window, at least this wide, in pixels.
 const int START_BUTTON_WIDTH = 220;
+// The gap above the export among them, in pixels.
+const int START_EXPORT_GAP = 32;
 // The size of the window at first, in pixels.
 const int EDITOR_WIDTH = 900;
 const int EDITOR_HEIGHT = 650;
@@ -99,6 +101,9 @@ LibraryEditor::LibraryEditor(QWidget *parent)
     // Symbols first, then footprints, then parts.
     for (QPushButton *button : {startSymbol, startFootprint, startPart, startOpen, startExport}) {
         button->setMinimumWidth(START_BUTTON_WIDTH);
+        // The export, which edits nothing, set apart below.
+        if (button == startExport)
+            startLayout->addSpacing(START_EXPORT_GAP);
         startLayout->addWidget(button, 0, Qt::AlignHCenter);
     }
     startLayout->addStretch();

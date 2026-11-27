@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Export library stands apart below the other buttons of an empty library editor window
 - N: Export library writes your library into a dated zip file, from File and the empty library editor window
 - N: Copy, cut, paste and duplicate pads, pins and drawings in the library editor, from tab to tab
 - F: Delete in Open stands at the left of the row of buttons
