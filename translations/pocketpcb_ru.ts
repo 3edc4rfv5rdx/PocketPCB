@@ -1182,6 +1182,10 @@
         <source>Choose a part in the library panel first</source>
         <translation>Сначала выберите деталь в панели библиотеки</translation>
     </message>
+    <message>
+        <source>Place missing units</source>
+        <translation>Поставить недостающие секции</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetEditor</name>

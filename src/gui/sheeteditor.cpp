@@ -1037,11 +1037,35 @@ void SheetEditor::removeSelection(Action action)
 void SheetEditor::startPlacing(const Library &source, const QString &part,
                                const QString &footprint)
 {
-    if (source.findPart(part) == nullptr)
+    const Part *found = source.findPart(part);
+    if (found == nullptr)
         return;
-    Sheet piece;
-    piece.components.append(newComponent(source, part, footprint));
-    startFloating(piece, source, Action::Place, true);
+    // All the units of a part of several, in a row.
+    QList<int> units;
+    for (int unit = 0; unit < found->unitCount(); ++unit)
+        units.append(unit);
+    startFloating(unitsInARow(source, newComponent(source, part, footprint), units), source,
+                  Action::Place, true);
+}
+
+void SheetEditor::placeMissingUnits(const ObjectId &id)
+{
+    const Design &design = m_document->design();
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr)
+        return;
+    const auto found = std::find_if(sheet->components.cbegin(), sheet->components.cend(),
+                                    [&id](const Component &c) { return c.id == id; });
+    if (found == sheet->components.cend())
+        return;
+    const QList<int> missing = missingUnits(design.schematic, design.library, id);
+    if (missing.isEmpty())
+        return;
+    const Component model = *found;
+    startFloating(unitsInARow(design.library, model, missing), design.library, Action::Place,
+                  false);
+    m_keptDesignator = model.designator;
+    updateFloating();
 }
 
 void SheetEditor::startPlacingPower(const Library &source, const QString &symbol)
@@ -1167,7 +1191,7 @@ void SheetEditor::startFloating(const Sheet &piece, const Library &source, Actio
     m_floatSource = source;
     m_floatAction = action;
     m_floatAgain = again;
-    m_unitDesignator.clear();
+    m_keptDesignator.clear();
     m_floatAt = Point{m_canvas->cursorX(), m_canvas->cursorY()};
     updateFloating();
 }
@@ -1325,9 +1349,11 @@ void SheetEditor::updateFloating()
     // the prefixes.
     Sheet numbered = numberedOn(m_floating, design.schematic, m_placeLibrary,
                                 design.project.designatorStyle, linkDesignators(design.board));
-    // The next unit of a part of several goes with the units placed.
-    if (!m_unitDesignator.isEmpty() && numbered.components.size() == 1)
-        numbered.components[0].designator = m_unitDesignator;
+    // The missing units of a part go with the units placed.
+    if (!m_keptDesignator.isEmpty()) {
+        for (Component &component : numbered.components)
+            component.designator = m_keptDesignator;
+    }
     m_placed = movedObjects(numbered, objectIds(numbered), m_floatAt);
     m_preview = withObjectsAdded(*sheet, m_placed);
     emit changed();
@@ -1345,39 +1371,14 @@ void SheetEditor::placeFloating()
     design.schematic.sheets[m_sheet] = m_preview;
     const QSet<ObjectId> placed = objectIds(m_placed);
     const QString name = stepName(actionName(m_floatAction), m_placed, placed);
-    // A part of several placed from the library goes on with its next unit
-    // under the same designator, whether or not it is placed again.
-    int nextUnit = -1;
-    if (m_floatAction == Action::Place && m_placed.components.size() == 1
-        && placed.size() == 1) {
-        const Component &unit = m_placed.components.first();
-        const Part *part = m_placeLibrary.findPart(unit.part);
-        if (part != nullptr && unit.unit + 1 < part->unitCount())
-            nextUnit = unit.unit + 1;
-    }
-    const QString unitDesignator =
-        nextUnit >= 0 ? m_placed.components.first().designator : QString();
-    if (!m_floatAgain && nextUnit < 0) {
+    if (!m_floatAgain) {
         m_placing = false;
         m_selection = placed;
     }
     m_document->change(name, design, m_sheet, placed);
     if (m_placing) {
-        // The next one: new objects, numbered on, turned the same way; the
-        // first unit again after the last.
+        // The next one: new objects, numbered on, turned the same way.
         m_floating = withNewIds(m_floating);
-        if (m_floating.components.size() == 1) {
-            Component &next = m_floating.components[0];
-            const int unit = nextUnit >= 0 ? nextUnit : 0;
-            if (next.unit != unit) {
-                const Component fresh =
-                    newComponent(m_placeLibrary, next.part, next.footprint, unit);
-                next.unit = unit;
-                next.refAt = fresh.refAt;
-                next.valueAt = fresh.valueAt;
-            }
-        }
-        m_unitDesignator = unitDesignator;
         updateFloating();
     } else {
         emit changed();

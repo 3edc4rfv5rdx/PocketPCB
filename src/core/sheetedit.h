@@ -197,6 +197,15 @@ Sheet numberedOn(const Sheet &piece, const Schematic &schematic, const Library &
 // parts of one unit, or of parts 'library' lacks, are not in it.
 QHash<ObjectId, ObjectId> unitLeaders(const Schematic &schematic, const Library &library,
                                       const QSet<ObjectId> &preferred = {});
+// The units of the part of component 'id' that no component of its group
+// is, in their order; empty for a component of a part of one unit.
+QList<int> missingUnits(const Schematic &schematic, const Library &library, const ObjectId &id);
+// The units 'units' of the part of 'model' as components with new ids, its
+// designator, value, footprint, rated power, comment and off-board flag,
+// standing in a row rightwards, the first at the origin, each with the text
+// places of its symbol, the origins on the pin grid and a pin step between
+// the drawings at least.
+Sheet unitsInARow(const Library &library, const Component &model, const QList<int> &units);
 // 'ids' with the other units of the groups of those of them that are units.
 QSet<ObjectId> withUnitSiblings(const Schematic &schematic, const Library &library,
                                 const QSet<ObjectId> &ids);

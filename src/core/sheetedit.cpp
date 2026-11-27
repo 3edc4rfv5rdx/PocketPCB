@@ -622,6 +622,57 @@ QHash<ObjectId, ObjectId> unitLeaders(const Schematic &schematic, const Library 
     return leaders;
 }
 
+QList<int> missingUnits(const Schematic &schematic, const Library &library, const ObjectId &id)
+{
+    const QHash<ObjectId, ObjectId> leaders = unitLeaders(schematic, library);
+    const auto leader = leaders.constFind(id);
+    if (leader == leaders.constEnd())
+        return {};
+    const Part *part = nullptr;
+    QSet<int> present;
+    for (const Sheet &sheet : schematic.sheets) {
+        for (const Component &component : sheet.components) {
+            if (leaders.value(component.id) != *leader)
+                continue;
+            present.insert(component.unit);
+            part = library.findPart(component.part);
+        }
+    }
+    QList<int> missing;
+    for (int unit = 0; part != nullptr && unit < part->unitCount(); ++unit) {
+        if (!present.contains(unit))
+            missing.append(unit);
+    }
+    return missing;
+}
+
+Sheet unitsInARow(const Library &library, const Component &model, const QList<int> &units)
+{
+    Sheet row;
+    Coord left = 0;
+    for (const int unit : units) {
+        Component component = newComponent(library, model.part, model.footprint, unit);
+        component.designator = model.designator;
+        component.value = model.value;
+        component.powerMw = model.powerMw;
+        component.comment = model.comment;
+        component.offBoard = model.offBoard;
+        const Symbol *symbol = library.findSymbolOfPart(model.part, unit);
+        const QRectF bounds = symbol != nullptr ? symbolBounds(*symbol) : QRectF();
+        // The first at the origin, each next with its left edge where the
+        // one before ends, rounded up onto the pin grid.
+        const Coord wanted = left - mmToNm(bounds.left());
+        const Coord rest = (wanted % PIN_GRID + PIN_GRID) % PIN_GRID;
+        const Coord x = row.components.isEmpty() ? 0
+                        : rest == 0              ? wanted
+                                                 : wanted + PIN_GRID - rest;
+        component.at = Point{x, 0};
+        left = x + mmToNm(bounds.right()) + PIN_GRID;
+        row.components.append(component);
+    }
+    return row;
+}
+
 QSet<ObjectId> withUnitSiblings(const Schematic &schematic, const Library &library,
                                 const QSet<ObjectId> &ids)
 {

@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: A part of several units is placed with all its units at once, and Place missing units puts back those deleted
 - N: Logic chips К155ЛА3, ЛН1, ЛЕ1, ЛИ1, ЛП5, К561ЛА7 and ЛЕ5 in the library, gate by gate with power apart
 - I: Library test checks the pins of every unit of a part
 - F: Dual op amps LM358, TL072 and NE5532 in units A, B and power

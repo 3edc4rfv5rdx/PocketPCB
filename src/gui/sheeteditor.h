@@ -113,7 +113,8 @@ public:
     const Library *previewLibrary() const { return m_placing ? &m_placeLibrary : nullptr; }
 
     // Placing: the part 'part' of 'source' with 'footprint' follows the
-    // cursor; every click places one more, numbered on, until cancel().
+    // cursor, all its units in a row (unitsInARow()) for a part of several;
+    // every click places one more, numbered on, until cancel().
     // R and X turn and mirror the one that follows. Does nothing when no
     // sheet is edited or 'source' lacks the part.
     void startPlacing(const Library &source, const QString &part, const QString &footprint);
@@ -260,6 +261,10 @@ public:
     void setComponentPower(const QSet<ObjectId> &ids, int powerMw);
     // Component 'id' made unit 'unit' of its part, where it stands.
     void setComponentUnit(const ObjectId &id, int unit);
+    // The units of the part of component 'id' that no component of its
+    // designator is follow the cursor in a row, with its designator, value
+    // and footprint; a click places them.
+    void placeMissingUnits(const ObjectId &id);
     // Wire pads put on the nets the off-board components among 'only', all
     // when it is empty, take to the board (withContactsPlaced()), the part
     // taken from 'source' when the project lacks it; one step, the contacts
@@ -449,9 +454,9 @@ private:
     Point m_floatAt;
     Action m_floatAction = Action::Place;
     bool m_floatAgain = false;
-    // The designator of the unit placed last of a part of several, while
-    // its next unit follows the cursor; empty otherwise.
-    QString m_unitDesignator;
+    // The designator the units placed keep, while the missing units of a
+    // part follow the cursor; empty: they are numbered on.
+    QString m_keptDesignator;
     // The project's library with the parts placed, and what a click puts
     // down: the floating objects where the cursor is, numbered on.
     Library m_placeLibrary;

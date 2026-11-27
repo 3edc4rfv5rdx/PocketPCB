@@ -1002,6 +1002,17 @@ void MainWindow::showSheetMenu(const QPoint &globalPos)
                     [this, offBoard] { m_sheetEditor->placeContacts(m_library.items, offBoard); });
             menu.addSeparator();
         }
+        // The units of a part of several that are not placed yet.
+        if (chosen.size() == 1
+            && !missingUnits(m_document->design().schematic, m_document->design().library,
+                             chosen.first().id)
+                    .isEmpty()) {
+            const ObjectId id = chosen.first().id;
+            QAction *units = menu.addAction(tr("Place missing units"));
+            connect(units, &QAction::triggered, m_sheetEditor,
+                    [this, id] { m_sheetEditor->placeMissingUnits(id); });
+            menu.addSeparator();
+        }
         add("actionRotate");
         add("actionMirror");
         add("actionDelete");

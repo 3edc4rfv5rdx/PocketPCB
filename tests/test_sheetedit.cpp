@@ -843,6 +843,46 @@ private slots:
         QCOMPARE(pasted.components.at(2).designator, QStringLiteral("U4"));
     }
 
+    // The units no component is, and a row of them with the model's fields.
+    void missingUnitsStandInARow()
+    {
+        Library library;
+        Symbol symbol;
+        Pin pin;
+        pin.number = QStringLiteral("1");
+        pin.at = Point{-PIN_GRID, 0};
+        symbol.pins = {pin};
+        library.symbols.insert(QStringLiteral("a"), symbol);
+        Part part;
+        part.symbol = QStringLiteral("a");
+        part.units = {QStringLiteral("a"), QStringLiteral("a")};
+        library.parts.insert(QStringLiteral("triple"), part);
+        Component first;
+        first.id = id(1);
+        first.part = QStringLiteral("triple");
+        first.designator = QStringLiteral("U1");
+        first.value = QStringLiteral("x");
+        first.unit = 1;
+        Schematic schematic;
+        schematic.sheets = {Sheet()};
+        schematic.sheets[0].components = {first};
+        QCOMPARE(missingUnits(schematic, library, id(1)), QList<int>({0, 2}));
+        QVERIFY(missingUnits(schematic, library, id(9)).isEmpty());
+
+        const Sheet row = unitsInARow(library, first, {0, 2});
+        QCOMPARE(row.components.size(), 2);
+        QCOMPARE(row.components.at(0).unit, 0);
+        QCOMPARE(row.components.at(1).unit, 2);
+        QCOMPARE(row.components.at(1).designator, QStringLiteral("U1"));
+        QCOMPARE(row.components.at(1).value, QStringLiteral("x"));
+        QVERIFY(row.components.at(0).id != first.id);
+        QCOMPARE(row.components.at(0).at, Point());
+        const Coord second = row.components.at(1).at.x;
+        QVERIFY(second > 0);
+        QCOMPARE(second % PIN_GRID, Coord(0));
+        QCOMPARE(row.components.at(1).at.y, Coord(0));
+    }
+
     void designatorsAreNumberedOn()
     {
         Schematic schematic;
