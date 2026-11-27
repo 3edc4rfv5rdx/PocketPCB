@@ -1702,11 +1702,13 @@ void BoardEditor::valueTyped(const QString &text)
 bool BoardEditor::chosenAreWirePads() const
 {
     const QSet<ObjectId> ids = chosenPlacements();
-    const QList<Placement> &placements = m_document->design().board.placements;
+    const Design &design = m_document->design();
+    const QList<Placement> &placements = design.board.placements;
     return !ids.isEmpty()
-           && std::all_of(placements.cbegin(), placements.cend(), [&ids](const Placement &p) {
-                  return !ids.contains(p.id) || isWirePad(p);
-              });
+           && std::all_of(placements.cbegin(), placements.cend(),
+                          [&ids, &design](const Placement &p) {
+                              return !ids.contains(p.id) || isWirePad(p, design);
+                          });
 }
 
 bool BoardEditor::chosenValuesShown() const

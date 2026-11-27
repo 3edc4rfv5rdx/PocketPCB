@@ -170,7 +170,8 @@ public:
     bool outlineChosen() const { return m_active && m_outlineChosen && !outline().isEmpty(); }
     // The placements chosen, of those the board has.
     QSet<ObjectId> chosenPlacements() const;
-    // True when some parts are chosen and all of them are wire pads.
+    // True when some parts are chosen and all of them are wire pads
+    // (isWirePad()).
     bool chosenAreWirePads() const;
     // The holes chosen, of those the board has.
     QSet<ObjectId> chosenHoles() const;

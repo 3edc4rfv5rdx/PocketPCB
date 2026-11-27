@@ -219,8 +219,28 @@ private slots:
                 jackNet = net.name;
         }
         QVERIFY(!jackNet.isEmpty());
+        // A wire pad of the schematic on the board, and a potentiometer on
+        // wire pads, whose wires are its own.
+        const Library wirePads = source();
+        amp.design.library.parts.insert(QLatin1String(WIRE_PAD_PART),
+                                        wirePads.parts.value(QLatin1String(WIRE_PAD_PART)));
+        amp.design.library.symbols.insert(QLatin1String(WIRE_PAD_PART),
+                                          wirePads.symbols.value(QLatin1String(WIRE_PAD_PART)));
+        amp.design.library.footprints.insert(QLatin1String(WIRE_PAD_PART), Footprint());
+        amp.design.library.parts.insert(
+            QStringLiteral("pot"),
+            partOf(QStringLiteral("two"), {QLatin1String(WIRE_PAD_PART)}, false));
+        Component padComponent =
+            component(QLatin1String(WIRE_PAD_PART), QStringLiteral("X9"), mm(50, 50), false);
+        padComponent.footprint = QLatin1String(WIRE_PAD_PART);
+        Component potComponent =
+            component(QStringLiteral("pot"), QStringLiteral("R9"), mm(60, 50), false);
+        potComponent.footprint = QLatin1String(WIRE_PAD_PART);
+        amp.design.schematic.sheets[0].components.append(padComponent);
+        amp.design.schematic.sheets[0].components.append(potComponent);
         Placement pad;
         pad.id = newObjectId();
+        pad.component = padComponent.id;
         pad.footprint = QLatin1String(WIRE_PAD_PART);
         pad.padNets.insert(QStringLiteral("1"), jackNet);
         QCOMPARE(wirePadLabel(pad, all, amp.design.schematic), QStringLiteral("XS1.1"));
@@ -229,19 +249,25 @@ private slots:
         other.padNets.insert(QStringLiteral("1"), QStringLiteral("GND"));
         QCOMPARE(wirePadLabel(other, all, amp.design.schematic), QStringLiteral("GND"));
         Placement resistor = pad;
+        resistor.id = newObjectId();
         resistor.footprint = QStringLiteral("small");
-        QVERIFY(!isWirePad(resistor));
-        QVERIFY(isWirePad(pad));
+        Placement pot = pad;
+        pot.id = newObjectId();
+        pot.component = potComponent.id;
+        QVERIFY(isWirePad(pad, amp.design));
+        QVERIFY(!isWirePad(resistor, amp.design));
+        QVERIFY(!isWirePad(pot, amp.design));
 
         // The document makes the labels; they are not part of what is
         // saved or compared.
-        amp.design.board.placements = {pad, resistor};
+        amp.design.board.placements = {pad, resistor, pot};
         Document document;
         document.startNew();
         document.change(QStringLiteral("Board"), amp.design);
         const QList<Placement> &placements = document.design().board.placements;
         QCOMPARE(placements.at(0).padLabel, QStringLiteral("XS1.1"));
         QVERIFY(placements.at(1).padLabel.isEmpty());
+        QVERIFY(placements.at(2).padLabel.isEmpty());
         // A label alone is no change: no step is made for it.
         const int steps = document.undoStack()->count();
         Design unlabelled = document.design();

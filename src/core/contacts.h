@@ -31,9 +31,12 @@ struct PlacedContacts
 PlacedContacts withContactsPlaced(const Design &design, const Library &source,
                                   const QSet<ObjectId> &only = {});
 
-// True when 'placement' is a wire pad: its footprint is WIRE_PAD_PART or
-// one of its kin ("wire-pads-2").
-bool isWirePad(const Placement &placement);
+// True when 'placement' of 'design' is a wire pad, a contact for the wire
+// of another part: its component is of a connector part, on WIRE_PAD_PART
+// or one of its kin ("wire-pads-2"). A part on such a footprint that is
+// no connector, a potentiometer on the panel, has the pads for its own
+// wires and is none.
+bool isWirePad(const Placement &placement, const Design &design);
 // Where the wire of the wire pad 'placement' goes, by the nets of its
 // pads in their order: the pins of off-board components on them
 // ("BA1.1, SA1.2"), or the name of a net that has none; each once. Empty

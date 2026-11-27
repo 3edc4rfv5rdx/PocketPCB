@@ -26,15 +26,19 @@ int rotationAlong(const Point &direction)
     return 0;
 }
 
-// A wire pad on the schematic, a contact of its own for another part's
-// wire: a connector part on a wire pad's footprint (isWirePad()). A part
-// on such a footprint that is no connector, a potentiometer on the panel,
-// has the pads for its own wires.
+// A wire pad's footprint and a connector part: a contact for another
+// part's wire (isWirePad()).
+bool isWirePadOf(const QString &footprint, const QString &partName, const Library &library)
+{
+    const Part *part = library.findPart(partName);
+    return part != nullptr && part->connector
+           && footprint.startsWith(QLatin1String(WIRE_PAD_PART));
+}
+
+// A wire pad on the schematic.
 bool isWirePadComponent(const Component &component, const Library &library)
 {
-    const Part *part = library.findPart(component.part);
-    return part != nullptr && part->connector
-           && component.footprint.startsWith(QLatin1String(WIRE_PAD_PART));
+    return isWirePadOf(component.footprint, component.part, library);
 }
 
 } // namespace
@@ -99,9 +103,15 @@ PlacedContacts withContactsPlaced(const Design &design, const Library &source,
     return result;
 }
 
-bool isWirePad(const Placement &placement)
+bool isWirePad(const Placement &placement, const Design &design)
 {
-    return placement.footprint.startsWith(QLatin1String(WIRE_PAD_PART));
+    for (const Sheet &sheet : design.schematic.sheets) {
+        for (const Component &component : sheet.components) {
+            if (component.id == placement.component)
+                return isWirePadOf(placement.footprint, component.part, design.library);
+        }
+    }
+    return false;
 }
 
 QString wirePadLabel(const Placement &placement, const QList<Net> &nets,
@@ -136,14 +146,18 @@ QString wirePadLabel(const Placement &placement, const QList<Net> &nets,
 Board withWirePadLabels(const Design &design)
 {
     Board board = design.board;
-    const bool any = std::any_of(board.placements.cbegin(), board.placements.cend(),
-                                 [](const Placement &p) { return isWirePad(p); });
+    QList<bool> labelled;
+    for (const Placement &placement : board.placements)
+        labelled.append(isWirePad(placement, design));
+    const bool any = labelled.contains(true);
     // The nets are made only for a board that has wire pads.
     const QList<Net> all = any ? nets(design.schematic, design.library, design.project)
                                : QList<Net>();
-    for (Placement &placement : board.placements)
+    for (int i = 0; i < board.placements.size(); ++i) {
+        Placement &placement = board.placements[i];
         placement.padLabel =
-            isWirePad(placement) ? wirePadLabel(placement, all, design.schematic) : QString();
+            labelled.at(i) ? wirePadLabel(placement, all, design.schematic) : QString();
+    }
     return board;
 }
 
