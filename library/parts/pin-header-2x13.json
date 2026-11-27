@@ -1,0 +1,13 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "conn-2x13",
+  "footprints": ["pin-header-2x13", "box-header-2x13"],
+  "prefix": "J",
+  "prefixGost": "X",
+  "value": "",
+  "connector": true,
+  "noValue": true,
+  "group": "connectors",
+  "name": {"en": "Pin header 2×13", "uk": "Штирьовий роз’єм 2×13", "ru": "Штыревой разъём 2×13"}
+}
