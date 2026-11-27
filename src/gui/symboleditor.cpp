@@ -301,6 +301,10 @@ Part SymbolEditor::partRenamed(const Part &part, const QString &from, const QStr
     Part result = part;
     if (result.symbol == from)
         result.symbol = to;
+    for (QString &unit : result.units) {
+        if (unit == from)
+            unit = to;
+    }
     return result;
 }
 

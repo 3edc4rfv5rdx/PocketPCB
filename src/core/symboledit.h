@@ -68,7 +68,7 @@ QString pinsProblem(const Symbol &symbol);
 // its origin.
 QString symbolProblem(const Symbol &symbol);
 
-// The parts of 'library' drawn with the symbol 'name', by name.
+// The parts of 'library' drawn with the symbol 'name', in any unit, by name.
 QStringList partsUsingSymbol(const Library &library, const QString &name);
 
 } // namespace ppcb

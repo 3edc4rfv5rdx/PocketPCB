@@ -223,6 +223,9 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
     in its list drawn beside it.</li>
   <li><b>Symbol</b> picks the symbol from the library; under <b>Footprints</b>, <b>Add…</b> picks one more,
     <b>Remove</b> takes the chosen one out, the arrows move it. The first, in bold, is the one a new part gets.</li>
+  <li><b>Other units</b> makes a part of several units, such as a dual op amp with its power pins apart: the symbol
+    is the first unit, <b>Add…</b> picks the symbol of each next one. The pins of all units together must match the
+    pads; a pin number in two units is a mistake.</li>
   <li>A designator prefix, international or GOST, is needed to save; one left empty takes the other. The value a new part starts with, its
     group in the library and the bill of materials, its rated power, <b>Connector</b> for parts that carry nets off
     the board, <b>Needs no value</b>, and its name, the language chosen beside the field: English is needed, the others may stay empty.</li>
@@ -247,6 +250,9 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
   <li>Drag a part from the Library panel onto the sheet, or double click it and click on the sheet as many times
     as you need; <kbd>Esc</kbd> or a right click ends. The part is copied into the project and numbered on.</li>
   <li><kbd>R</kbd> and <kbd>M</kbd> turn and mirror the part while it is still being placed.</li>
+  <li>A part of several units is placed unit by unit under one designator: DA1.1, DA1.2 with GOST designators,
+    U1A, U1B with international ones. They are one part on the board and in the BOM; ERC tells of a unit not
+    placed.</li>
   <li>A double click on a part on the sheet shows it in the Library panel.</li>
 </ul>
 
@@ -304,7 +310,8 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
     a grey VALUE mark (not on parts that need none, such as switches and connectors).</li>
   <li>A double click on a value edits it in place; the menu of a part does it too.</li>
   <li>The <b>Properties</b> panel edits the designator, value, footprint, off-board flag, lock, comment and,
-    for resistors, the rated power of the parts chosen, several at once; <b>Properties</b> in the menu of a part
+    for resistors, the rated power of the parts chosen, several at once, and the <b>Unit</b> of one part of
+    several; what is set goes to all units of a part. <b>Properties</b> in the menu of a part
     opens it with the keyboard in its first field. <kbd>Esc</kbd> in a field takes back
     what was typed.</li>
   <li>An off-board part (a jack, a speaker, a switch on the panel) reaches the board by a wire soldered to a wire

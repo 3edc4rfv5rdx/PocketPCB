@@ -260,7 +260,7 @@ QStringList partsUsingSymbol(const Library &library, const QString &name)
 {
     QStringList using_;
     for (auto it = library.parts.constBegin(); it != library.parts.constEnd(); ++it) {
-        if (it.value().symbol == name)
+        if (it.value().symbol == name || it.value().units.contains(name))
             using_.append(it.key());
     }
     return using_;

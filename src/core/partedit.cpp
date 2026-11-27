@@ -1,6 +1,7 @@
 #include "partedit.h"
 
 #include <QCoreApplication>
+#include <QSet>
 
 #include <algorithm>
 
@@ -41,10 +42,37 @@ QStringList padsWithoutPin(const Symbol &symbol, const Footprint &footprint)
 QStringList partMismatches(const Part &part, const Library &library)
 {
     QStringList problems;
-    const Symbol *symbol = library.findSymbol(part.symbol);
-    if (!part.symbol.isEmpty() && symbol == nullptr)
-        problems.append(
-            QCoreApplication::translate(CONTEXT, "the library has no symbol %1").arg(part.symbol));
+    // The pins of all its units, each number once: a number in two units
+    // is one pin twice.
+    Symbol all;
+    bool allFound = true;
+    QStringList twice;
+    // The numbers of the units before the one read.
+    QSet<QString> earlier;
+    for (int unit = 0; unit < part.unitCount(); ++unit) {
+        const QString name = part.unitSymbol(unit);
+        const Symbol *symbol = library.findSymbol(name);
+        if (symbol == nullptr) {
+            allFound = false;
+            if (!name.isEmpty())
+                problems.append(
+                    QCoreApplication::translate(CONTEXT, "the library has no symbol %1").arg(name));
+            continue;
+        }
+        QSet<QString> own;
+        for (const Pin &pin : symbol->pins) {
+            if (earlier.contains(pin.number) && !twice.contains(pin.number))
+                twice.append(pin.number);
+            if (!own.contains(pin.number) && !earlier.contains(pin.number))
+                all.pins.append(pin);
+            own.insert(pin.number);
+        }
+        earlier.unite(own);
+    }
+    if (!twice.isEmpty())
+        problems.append(QCoreApplication::translate(CONTEXT, "pins %1 are in two units")
+                            .arg(twice.join(QStringLiteral(", "))));
+    const Symbol *symbol = allFound ? &all : nullptr;
     for (const QString &name : part.footprints) {
         const Footprint *footprint = library.findFootprint(name);
         if (footprint == nullptr) {

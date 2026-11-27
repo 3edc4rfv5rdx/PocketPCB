@@ -8,9 +8,10 @@
 namespace ppcb {
 
 // What the part editor tells of a part, read against 'library': a symbol
-// or a footprint it names that the library lacks, and for each footprint
-// the pin numbers of the symbol it has no pad for and the numbers of its
-// pads no pin has. Empty when pins and pads match in every footprint.
+// or a footprint it names that the library lacks, pin numbers in two of its
+// units, and for each footprint the pin numbers of its units it has no pad
+// for and the numbers of its pads no pin has. Empty when pins and pads
+// match in every footprint.
 QStringList partMismatches(const Part &part, const Library &library);
 // The numbers of the pins of 'symbol' that 'footprint' has no pad for, in
 // the order of the pins.

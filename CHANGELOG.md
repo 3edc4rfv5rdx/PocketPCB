@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Parts of several units, such as a dual op amp, made in the part editor and placed unit by unit
 - R: Units of a part are placed one after another, edited together and switched in the Properties panel
 - R: Units of one part share one footprint and one bill of materials entry, keep one designator, and ERC warns of a unit not placed
 - R: Parts may have several units, each a component with its own symbol and the unit after its designator

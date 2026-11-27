@@ -82,6 +82,35 @@ private slots:
         QVERIFY(problems.first().contains(QStringLiteral("3")));
     }
 
+    // The pins of all units together match the pads; a number in two
+    // units is a mistake, a unit's symbol missing too.
+    void unitsMatchThePadsTogether()
+    {
+        Library library;
+        library.symbols.insert(QStringLiteral("a"),
+                               symbolWithPins({QStringLiteral("1"), QStringLiteral("2")}));
+        library.symbols.insert(QStringLiteral("b"),
+                               symbolWithPins({QStringLiteral("3"), QStringLiteral("3")}));
+        library.symbols.insert(QStringLiteral("b2"),
+                               symbolWithPins({QStringLiteral("2"), QStringLiteral("3")}));
+        library.footprints.insert(QStringLiteral("fp"),
+                                  footprintWithPads({QStringLiteral("1"), QStringLiteral("2"),
+                                                     QStringLiteral("3")}));
+        Part part = diode();
+        part.symbol = QStringLiteral("a");
+        part.units = {QStringLiteral("b")};
+        part.footprints = {QStringLiteral("fp")};
+        // A number twice in one unit is not in two units.
+        QVERIFY(partMismatches(part, library).isEmpty());
+        part.units = {QStringLiteral("b2")};
+        QCOMPARE(partMismatches(part, library).size(), 1);
+        QVERIFY(partMismatches(part, library).first().contains(QStringLiteral("2")));
+        part.units = {QStringLiteral("none")};
+        QStringList problems = partMismatches(part, library);
+        QCOMPARE(problems.size(), 1);
+        QVERIFY(problems.first().contains(QStringLiteral("none")));
+    }
+
     void matchingPartHasNoMismatches()
     {
         Library library;

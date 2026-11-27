@@ -15,7 +15,8 @@ class NameField;
 class PartPreview;
 
 // A tab of the library editor window editing one part of the library (see
-// LibraryTab) in a form: its symbol, its footprints with the default first,
+// LibraryTab) in a form: its symbol, the symbols of its other units, its
+// footprints with the default first,
 // its designator prefixes, the value it starts with, its group, its rated
 // power, whether it is a connector and needs no value, and its name in
 // every language. Beside the form its symbol and the footprint chosen in
@@ -58,6 +59,10 @@ public:
     // The buttons of the form: the symbol and a footprint asked for from
     // the library, the footprint chosen taken out or moved up or down.
     void askSymbol();
+    // The symbol of one more unit asked for and added after the others;
+    // the unit chosen in their list taken out.
+    void askUnit();
+    void removeChosenUnit();
     void askFootprint();
     void removeChosenFootprint();
     void moveChosenFootprint(int by);
@@ -91,6 +96,9 @@ private:
     bool m_symbolShown = false;
     bool m_footprintShown = false;
     QPushButton *m_symbol = nullptr;
+    // The units after the first (Part::units); the one chosen is drawn.
+    QListWidget *m_units = nullptr;
+    QPushButton *m_removeUnit = nullptr;
     QListWidget *m_footprints = nullptr;
     QPushButton *m_remove = nullptr;
     QPushButton *m_up = nullptr;

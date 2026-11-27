@@ -2315,6 +2315,10 @@
         <source>a part needs an English name</source>
         <translation>деталі потрібна англійська назва</translation>
     </message>
+    <message>
+        <source>pins %1 are in two units</source>
+        <translation>виводи %1 є у двох секціях</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::NameField</name>
@@ -2432,6 +2436,18 @@
     <message>
         <source>Part %1 renamed to %2</source>
         <translation>Деталь %1 перейменовано на %2</translation>
+    </message>
+    <message>
+        <source>A part of several units: the symbols of the units after the first</source>
+        <translation>Деталь з кількох секцій: символи секцій після першої</translation>
+    </message>
+    <message>
+        <source>Other units</source>
+        <translation>Інші секції</translation>
+    </message>
+    <message>
+        <source>Add unit</source>
+        <translation>Додати секцію</translation>
     </message>
 </context>
 <context>

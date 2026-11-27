@@ -5,6 +5,7 @@
 #include "librarypanel.h"
 #include "namefield.h"
 #include "partedit.h"
+#include "project.h"
 #include "toolicons.h"
 
 #include <QCheckBox>
@@ -89,6 +90,20 @@ PartEditor::PartEditor(const QString &name, const Part &part, bool inUserLibrary
     QWidget *form = new QWidget(this);
     m_symbol = formButton(form, QString(), "partSymbol");
     connect(m_symbol, &QPushButton::clicked, this, &PartEditor::askSymbol);
+    m_units = new QListWidget(form);
+    m_units->setObjectName(QStringLiteral("partUnits"));
+    m_units->setToolTip(tr("A part of several units: the symbols of the units after the first"));
+    const int unitRows = 4;
+    m_units->setMaximumHeight(m_units->fontMetrics().height() * (unitRows + 1));
+    connect(m_units, &QListWidget::currentRowChanged, this, [this] { showDrawings(); });
+    QPushButton *addUnit = formButton(form, tr("Add") + QStringLiteral("…"), "partAddUnit");
+    connect(addUnit, &QPushButton::clicked, this, &PartEditor::askUnit);
+    m_removeUnit = formButton(form, tr("Remove"), "partRemoveUnit");
+    connect(m_removeUnit, &QPushButton::clicked, this, &PartEditor::removeChosenUnit);
+    QHBoxLayout *unitButtons = new QHBoxLayout;
+    unitButtons->addWidget(addUnit);
+    unitButtons->addWidget(m_removeUnit);
+    unitButtons->addStretch();
     m_footprints = new QListWidget(form);
     m_footprints->setObjectName(QStringLiteral("partFootprints"));
     connect(m_footprints, &QListWidget::currentRowChanged, this, [this] { showDrawings(); });
@@ -131,6 +146,8 @@ PartEditor::PartEditor(const QString &name, const Part &part, bool inUserLibrary
 
     QFormLayout *fields = new QFormLayout(form);
     fields->addRow(tr("Symbol") + QLatin1Char(':'), m_symbol);
+    fields->addRow(tr("Other units") + QLatin1Char(':'), m_units);
+    fields->addRow(QString(), unitButtons);
     fields->addRow(ItemChooser::kindTitle(LibraryKind::Footprint) + QLatin1Char(':'), m_footprints);
     fields->addRow(QString(), listButtons);
     fields->addRow(QString(), defaultNote);
@@ -256,6 +273,33 @@ void PartEditor::askSymbol()
     change(changed);
 }
 
+void PartEditor::askUnit()
+{
+    if (m_library == nullptr)
+        return;
+    LibraryKind kind = LibraryKind::Symbol;
+    const QString name = ItemChooser::choose(this, tr("Add unit"), *m_library,
+                                             {LibraryKind::Symbol}, kind, QDialogButtonBox::Ok,
+                                             m_part.units.isEmpty() ? m_part.symbol
+                                                                    : m_part.units.last());
+    if (name.isEmpty())
+        return;
+    Part changed = m_part;
+    changed.units.append(name);
+    change(changed);
+    m_units->setCurrentRow(m_units->count() - 1);
+}
+
+void PartEditor::removeChosenUnit()
+{
+    const int index = m_units->currentRow();
+    if (index < 0 || index >= m_part.units.size())
+        return;
+    Part changed = m_part;
+    changed.units.removeAt(index);
+    change(changed);
+}
+
 void PartEditor::askFootprint()
 {
     if (m_library == nullptr)
@@ -323,6 +367,16 @@ void PartEditor::refresh()
     const QSignalBlocker blockNoValue(m_noValue);
     m_symbol->setText(m_part.symbol.isEmpty() ? tr("Choose") + QStringLiteral("…")
                                               : m_part.symbol);
+    {
+        const QSignalBlocker blockUnits(m_units);
+        const int unitRow = m_units->currentRow();
+        m_units->clear();
+        // "B: opamp-b": the unit's letter and its symbol.
+        for (int i = 0; i < m_part.units.size(); ++i)
+            m_units->addItem(unitSuffix(i + 1, DesignatorStyle::International)
+                             + QStringLiteral(": ") + m_part.units.at(i));
+        m_units->setCurrentRow(std::min(unitRow, m_units->count() - 1));
+    }
     const int row = m_footprints->currentRow();
     m_footprints->clear();
     m_footprints->addItems(m_part.footprints);
@@ -352,7 +406,11 @@ void PartEditor::showDrawings()
     m_remove->setEnabled(index >= 0);
     m_up->setEnabled(index > 0);
     m_down->setEnabled(index >= 0 && index + 1 < m_footprints->count());
-    const Symbol *symbol = m_library != nullptr ? m_library->findSymbol(m_part.symbol) : nullptr;
+    // The unit chosen in the list, else the first.
+    const int unit = m_units->currentRow() + 1;
+    m_removeUnit->setEnabled(unit > 0);
+    const Symbol *symbol =
+        m_library != nullptr ? m_library->findSymbol(m_part.unitSymbol(unit)) : nullptr;
     const Footprint *footprint = m_library != nullptr && index >= 0
                                      ? m_library->findFootprint(m_part.footprints.value(index))
                                      : nullptr;
