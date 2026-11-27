@@ -2,16 +2,17 @@
   "type": "pocketpcb-symbol",
   "format": 1,
   "graphics": [
-    {"kind": "line", "from": [-0.635, -2.032], "to": [-0.635, 2.032], "width": 0.3},
-    {"kind": "rect", "from": [0.381, -2.032], "to": [0.889, 2.032]},
-    {"kind": "text", "at": [-1.905, -1.524], "text": "+", "height": 1.27}
+    {"kind": "rect", "from": [-2.25, -4], "to": [-0.75, 4]},
+    {"kind": "rect", "from": [0.75, -4], "to": [2.25, 4]},
+    {"kind": "line", "from": [-4.25, -3], "to": [-2.75, -3]},
+    {"kind": "line", "from": [-3.5, -3.75], "to": [-3.5, -2.25]}
   ],
   "pins": [
-    {"number": "1", "at": [-5.08, 0], "side": "left", "length": 4.445},
-    {"number": "2", "at": [5.08, 0], "side": "right", "length": 4.191}
+    {"number": "1", "at": [-5.08, 0], "side": "left", "length": 2.83},
+    {"number": "2", "at": [5.08, 0], "side": "right", "length": 2.83}
   ],
-  "refAt": [0, -3.81],
-  "valueAt": [0, 3.81],
+  "refAt": [0, -6.35],
+  "valueAt": [0, 6.35],
   "showPinNumbers": false,
   "showPinNames": false
 }
