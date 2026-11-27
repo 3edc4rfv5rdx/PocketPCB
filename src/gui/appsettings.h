@@ -1,5 +1,6 @@
 #pragma once
 
+#include "alerts.h"
 #include "wiring.h"
 
 #include <QByteArray>
@@ -13,7 +14,8 @@ enum class GridStyle { Lines, Dots };
 enum class CursorStyle { Arrow, SmallCross, FullCross };
 
 // Program-wide settings (not project settings), kept in an INI file in the
-// user's configuration folder. Every key of that file is named only here.
+// home folder of the program, ~/.PocketPCB, with the user's library. Every
+// key of that file, and every path of the user's own, is named only here.
 class AppSettings
 {
 public:
@@ -21,7 +23,26 @@ public:
     // that reads settings or standard paths.
     static void initApplication();
 
+    // The folder of all the user's own the program keeps: the settings file
+    // and the user's library. ~/.PocketPCB; under the test folder of
+    // QStandardPaths in its test mode.
+    static QString homeFolder();
+    // The settings file in it.
     static QString filePath();
+    // What moveOldFolders() did.
+    enum class OldFolders { None, Moved, Failed };
+    // Moves the settings and the library from the folders an earlier
+    // version kept them in (~/.config/PocketPCB, ~/.local/share/PocketPCB)
+    // into homeFolder() when it is not there yet, and removes those and
+    // ~/.cache/PocketPCB. Call once, after initApplication(), before any
+    // setting is read; 'error' names what could not be moved.
+    static OldFolders moveOldFolders(QString &error);
+    // The same from the folders given, whatever the test mode; the old ones
+    // are removed only when named PocketPCB.
+    static OldFolders moveFolders(const QString &oldConfig, const QString &oldData,
+                                  const QString &oldCache, QString &error);
+    // What the user is told about it, in the interface language.
+    static Alert oldFoldersAlert(OldFolders result, const QString &error);
 
     // Interface language code ("en", "uk", "ru"); empty: follow the system.
     static QString language();
@@ -72,8 +93,8 @@ public:
     static void setKeepStepHistory(bool on);
 
     // The user's library: a folder with symbols/, footprints/ and parts/.
-    // By default "library" in the user's data folder; set in the file by
-    // hand for now, and the first read writes the default there.
+    // By default "library" in homeFolder(); set in the file by hand for
+    // now, and the first read writes the default there.
     static QString userLibraryFolder();
     // Makes the user's library folder and its three folders when missing.
     static bool makeUserLibraryFolders(QString &error);

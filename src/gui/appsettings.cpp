@@ -7,18 +7,27 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QVariant>
 
+#include <algorithm>
+
 namespace ppcb {
 
 namespace {
 
-// Names the settings and data folders: ~/.config/PocketPCB, ~/.local/share/PocketPCB.
+// The name of the program, and of the folders an earlier version kept the
+// user's things in: ~/.config/PocketPCB, ~/.local/share/PocketPCB and
+// ~/.cache/PocketPCB.
 const char APP_NAME[] = "PocketPCB";
-const char SETTINGS_FILE[] = "pocketpcb.ini";
+// Every path of the user's own is here: the folder in the home folder that
+// holds them all, the settings file in it, and its file in those old folders.
+const char HOME_FOLDER[] = ".PocketPCB";
+const char SETTINGS_FILE[] = "settings.ini";
+const char OLD_SETTINGS_FILE[] = "pocketpcb.ini";
 
 // Not in a group "general": an INI file writes it as [%General] and reads
 // it back as "General", so the key would be lost after a restart.
@@ -43,7 +52,7 @@ const char KEY_AUTOSAVE_MINUTES[] = "project/autosaveMinutes";
 
 const int DEFAULT_AUTOSAVE_MINUTES = 5;
 
-// Inside the user's data folder.
+// Inside the home folder of the program (AppSettings::homeFolder()).
 const char USER_LIBRARY_FOLDER[] = "library";
 // Beside the program (programFolder()).
 const char PROJECTS_FOLDER[] = "PocketPCB-Projects";
@@ -97,6 +106,53 @@ void writeValue(const char *key, const QVariant &value)
     settings.setValue(QLatin1String(key), value);
 }
 
+QString defaultLibraryFolder()
+{
+    return QDir(AppSettings::homeFolder()).filePath(QLatin1String(USER_LIBRARY_FOLDER));
+}
+
+// True when 'path' is 'folder' or inside it.
+bool isInside(const QString &path, const QString &folder)
+{
+    const QString cleanPath = QDir::cleanPath(path);
+    const QString cleanFolder = QDir::cleanPath(folder);
+    return cleanPath == cleanFolder || cleanPath.startsWith(cleanFolder + QLatin1Char('/'));
+}
+
+// Copies the folder 'from' with all it holds to 'to', which must not be
+// there yet.
+bool copyFolder(const QString &from, const QString &to)
+{
+    const QDir source(from);
+    if (!QDir().mkpath(to))
+        return false;
+    const QFileInfoList entries =
+        source.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden);
+    for (const QFileInfo &entry : entries) {
+        const QString target = QDir(to).filePath(entry.fileName());
+        const bool copied = entry.isDir() ? copyFolder(entry.filePath(), target)
+                                          : QFile::copy(entry.filePath(), target);
+        if (!copied)
+            return false;
+    }
+    return true;
+}
+
+// Moves the file or folder 'from' to 'to': renamed, or across disks copied
+// and the original removed.
+bool moveEntry(const QString &from, const QString &to)
+{
+    if (QDir().rename(from, to))
+        return true;
+    if (QFileInfo(from).isDir()) {
+        if (!copyFolder(from, to))
+            return false;
+        QDir(from).removeRecursively();
+        return true;
+    }
+    return QFile::copy(from, to) && QFile::remove(from);
+}
+
 } // namespace
 
 void AppSettings::initApplication()
@@ -107,10 +163,92 @@ void AppSettings::initApplication()
     QCoreApplication::setApplicationVersion(QLatin1String(appVersion()));
 }
 
+QString AppSettings::homeFolder()
+{
+    // Tests keep off the user's own.
+    const QString home = QStandardPaths::isTestModeEnabled()
+                             ? QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
+                             : QDir::homePath();
+    return QDir(home).filePath(QLatin1String(HOME_FOLDER));
+}
+
 QString AppSettings::filePath()
 {
-    const QString folder = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
-    return QDir(folder).filePath(QLatin1String(SETTINGS_FILE));
+    return QDir(homeFolder()).filePath(QLatin1String(SETTINGS_FILE));
+}
+
+AppSettings::OldFolders AppSettings::moveOldFolders(QString &error)
+{
+    if (QStandardPaths::isTestModeEnabled())
+        return OldFolders::None;
+    return moveFolders(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation),
+                       QStandardPaths::writableLocation(QStandardPaths::AppDataLocation),
+                       QStandardPaths::writableLocation(QStandardPaths::CacheLocation), error);
+}
+
+AppSettings::OldFolders AppSettings::moveFolders(const QString &oldConfig, const QString &oldData,
+                                                 const QString &oldCache, QString &error)
+{
+    const QString home = homeFolder();
+    if (QFileInfo::exists(home))
+        return OldFolders::None;
+    const QString oldSettings = QDir(oldConfig).filePath(QLatin1String(OLD_SETTINGS_FILE));
+    const QString oldLibrary = QDir(oldData).filePath(QLatin1String(USER_LIBRARY_FOLDER));
+    const QList<QString> oldFolders = {oldConfig, oldData, oldCache};
+    if (std::none_of(oldFolders.cbegin(), oldFolders.cend(),
+                     [](const QString &folder) { return QFileInfo::exists(folder); }))
+        return OldFolders::None;
+    if (!QDir().mkpath(home)) {
+        error = home;
+        return OldFolders::Failed;
+    }
+    // The library first: when it cannot be moved, nothing is, and the next
+    // start tries again.
+    if (QFileInfo(oldLibrary).isDir() && !moveEntry(oldLibrary, defaultLibraryFolder())) {
+        QDir().rmdir(home);
+        error = oldLibrary;
+        return OldFolders::Failed;
+    }
+    if (QFileInfo::exists(oldSettings)) {
+        if (!moveEntry(oldSettings, filePath())) {
+            error = oldSettings;
+            return OldFolders::Failed;
+        }
+        // The library the settings name, when it was the old default.
+        QSettings settings(filePath(), QSettings::IniFormat);
+        const QString library = settings.value(QLatin1String(KEY_USER_LIBRARY_FOLDER)).toString();
+        if (!library.isEmpty() && isInside(library, oldLibrary))
+            settings.setValue(QLatin1String(KEY_USER_LIBRARY_FOLDER), defaultLibraryFolder());
+    }
+    // The old folders go, but one the settings still keep the library in.
+    const QString library = userLibraryFolder();
+    for (const QString &folder : oldFolders) {
+        if (QFileInfo(folder).fileName() == QLatin1String(APP_NAME) && !isInside(library, folder))
+            QDir(folder).removeRecursively();
+    }
+    return OldFolders::Moved;
+}
+
+Alert AppSettings::oldFoldersAlert(OldFolders result, const QString &error)
+{
+    switch (result) {
+    case OldFolders::None:
+        break;
+    case OldFolders::Moved:
+        return Alert::warning(
+            QCoreApplication::translate("ppcb::AppSettings",
+                                        "Your settings and library were moved to %1, the old "
+                                        "folders removed")
+                .arg(QDir::toNativeSeparators(homeFolder())),
+            QStringLiteral("oldFoldersMoved"));
+    case OldFolders::Failed:
+        return Alert::error(QCoreApplication::translate("ppcb::AppSettings",
+                                                        "Your settings and library could not be "
+                                                        "moved to %1")
+                                .arg(QDir::toNativeSeparators(homeFolder()))
+                            + QStringLiteral(": ") + QDir::toNativeSeparators(error));
+    }
+    return Alert::info(QString());
 }
 
 QString AppSettings::language()
@@ -257,8 +395,7 @@ void AppSettings::setLastLibraryFolder(const QString &folder)
 
 QString AppSettings::userLibraryFolder()
 {
-    const QString dataFolder = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    const QString byDefault = QDir(dataFolder).filePath(QLatin1String(USER_LIBRARY_FOLDER));
+    const QString byDefault = defaultLibraryFolder();
     const QString folder = readValueOrWriteDefault(KEY_USER_LIBRARY_FOLDER, byDefault).toString();
     return folder.isEmpty() ? byDefault : folder;
 }

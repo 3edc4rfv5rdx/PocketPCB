@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Settings and your library live in one folder, ~/.PocketPCB; the old folders are moved there and removed
 - F: The part editor takes the names in one field, the language chosen beside it
 - F: A part needs its English name to be saved; the other languages may stay empty
 - F: The part editor offers again a name it could not save under

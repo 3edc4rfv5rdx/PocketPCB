@@ -173,6 +173,9 @@ public:
     static QString fitDrawingTitle();
     // "2.54 mm": a grid step in the status bar and in a step's name.
     static QString gridStepText(Coord step);
+    // An error or a warning in a box as well (Alerts::show()).
+    void alert(const Alert &alert);
+
 protected:
     void closeEvent(QCloseEvent *event) override;
     // The swatches of the paper's colours: the mouse over one previews it.
@@ -312,8 +315,6 @@ private:
     // Puts 'text' into the status bar until the next one. Not
     // QStatusBar::showMessage(), which would hide the saved mark.
     void showStatus(const QString &text);
-    // An error or a warning in a box as well (Alerts::show()).
-    void alert(const Alert &alert);
 
     void chooseLibraryFile();
     void openLibraryFolder();

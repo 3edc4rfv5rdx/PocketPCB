@@ -2,6 +2,17 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="uk_UA">
 <context>
+    <name>ppcb::AppSettings</name>
+    <message>
+        <source>Your settings and library were moved to %1, the old folders removed</source>
+        <translation>Ваші налаштування і бібліотеку перенесено до %1, старі теки видалено</translation>
+    </message>
+    <message>
+        <source>Your settings and library could not be moved to %1</source>
+        <translation>Не вдалося перенести налаштування і бібліотеку до %1</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::DrcPanel</name>
     <message>
         <source>DRC</source>

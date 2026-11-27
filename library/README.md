@@ -9,7 +9,7 @@ without `.json`:
   the designator prefixes, the group and the name in every language.
 
 Several parts may share a symbol or a footprint. The built-in library is this folder;
-your own goes into `~/.local/share/PocketPCB/library` (File > Open library folder) in
+your own goes into `~/.PocketPCB/library` (File > Open library folder) in
 the same three folders, and a file there with the name of a built-in one takes its place.
 The program reads the folders again by the ⟳ button of the library panel.
 

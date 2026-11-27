@@ -3,8 +3,11 @@
 #include "gerberexport.h"
 #include "language.h"
 
+#include <QDir>
+#include <QFile>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QTemporaryDir>
 #include <QTranslator>
 #include <QtTest>
 
@@ -176,6 +179,53 @@ private slots:
         }
         QCOMPARE(AppSettings::gridStyle(), GridStyle::Lines);
         QCOMPARE(AppSettings::cursorStyle(), CursorStyle::SmallCross);
+    }
+
+    // The settings and the library of an earlier version's folders go into
+    // the one home folder, the settings naming the library there; the old
+    // folders are removed. Last: it takes the home folder away first.
+    void oldFoldersAreMovedHome()
+    {
+        QTemporaryDir root;
+        QVERIFY(root.isValid());
+        const QDir base(root.path());
+        const QString config = base.filePath(QStringLiteral("config/PocketPCB"));
+        const QString data = base.filePath(QStringLiteral("data/PocketPCB"));
+        const QString cache = base.filePath(QStringLiteral("cache/PocketPCB"));
+        const QString oldLibrary = QDir(data).filePath(QStringLiteral("library"));
+        QVERIFY(QDir().mkpath(config));
+        QVERIFY(QDir().mkpath(QDir(oldLibrary).filePath(QStringLiteral("parts"))));
+        QVERIFY(QDir().mkpath(QDir(cache).filePath(QStringLiteral("history"))));
+        {
+            QSettings old(QDir(config).filePath(QStringLiteral("pocketpcb.ini")),
+                          QSettings::IniFormat);
+            old.setValue(QStringLiteral("library/folder"), oldLibrary);
+            old.setValue(QStringLiteral("interface/language"), QStringLiteral("uk"));
+        }
+        QFile part(QDir(oldLibrary).filePath(QStringLiteral("parts/mine.json")));
+        QVERIFY(part.open(QIODevice::WriteOnly));
+        part.write("{}");
+        part.close();
+
+        QVERIFY(QDir(AppSettings::homeFolder()).removeRecursively());
+        QString error;
+        QCOMPARE(AppSettings::moveFolders(config, data, cache, error),
+                 AppSettings::OldFolders::Moved);
+        const QString library = QDir(AppSettings::homeFolder()).filePath(QStringLiteral("library"));
+        QVERIFY(QFileInfo::exists(QDir(library).filePath(QStringLiteral("parts/mine.json"))));
+        QCOMPARE(QDir::cleanPath(AppSettings::userLibraryFolder()), QDir::cleanPath(library));
+        QCOMPARE(QSettings(AppSettings::filePath(), QSettings::IniFormat)
+                     .value(QStringLiteral("interface/language"))
+                     .toString(),
+                 QStringLiteral("uk"));
+        for (const QString &folder : {config, data, cache})
+            QVERIFY2(!QFileInfo::exists(folder), qPrintable(folder));
+
+        // Once the home folder is there, nothing more is done.
+        QVERIFY(QDir().mkpath(config));
+        QCOMPARE(AppSettings::moveFolders(config, data, cache, error),
+                 AppSettings::OldFolders::None);
+        QVERIFY(QFileInfo::exists(config));
     }
 };
 
