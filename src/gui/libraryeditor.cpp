@@ -3,6 +3,7 @@
 #include "canvasview.h"
 #include "footprinteditor.h"
 #include "format.h"
+#include "graphicedit.h"
 #include "itemchooser.h"
 #include "parteditor.h"
 #include "symboleditor.h"
@@ -220,12 +221,18 @@ void LibraryEditor::setClearance(Coord clearance)
 
 FootprintEditor *LibraryEditor::openNewFootprint()
 {
-    return openFootprint(QString(), Footprint(), false);
+    Footprint footprint;
+    footprint.refAt = Point{0, -NEW_ITEM_TEXT_OFFSET};
+    footprint.valueAt = Point{0, NEW_ITEM_TEXT_OFFSET};
+    return openFootprint(QString(), footprint, false);
 }
 
 SymbolEditor *LibraryEditor::openNewSymbol()
 {
-    return openSymbol(QString(), Symbol(), false);
+    Symbol symbol;
+    symbol.refAt = Point{0, -NEW_ITEM_TEXT_OFFSET};
+    symbol.valueAt = Point{0, NEW_ITEM_TEXT_OFFSET};
+    return openSymbol(QString(), symbol, false);
 }
 
 PartEditor *LibraryEditor::openNewPart()

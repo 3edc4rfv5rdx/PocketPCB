@@ -722,6 +722,9 @@ private slots:
         FootprintEditor *editor = window.openFootprintEditor(true);
         QVERIFY(editor != nullptr);
         QVERIFY(editor->name().isEmpty());
+        // A new one has its designator and value apart, above and below.
+        QCOMPARE(editor->footprint().refAt, (Point{0, -2540000}));
+        QCOMPARE(editor->footprint().valueAt, (Point{0, 2540000}));
         editor->setMode(FootprintEditor::Mode::Place);
         editor->press(QPointF(0, 0), false);
         editor->release(QPointF(0, 0));
@@ -773,6 +776,9 @@ private slots:
         // The designator's place is dragged, taken beside pad 1 on the
         // origin: close in, the pad no longer reaches there.
         editor->canvas()->setView(QPointF(0, 0), 40);
+        Footprint onOrigin = editor->footprint();
+        onOrigin.refAt = Point();
+        editor->change(QStringLiteral("Designator on the origin"), onOrigin, {});
         const Point ref = editor->footprint().refAt;
         const QPointF beside = toMm(ref) + QPointF(1.4, 0);
         editor->press(beside, false);

@@ -16,6 +16,9 @@ namespace ppcb {
 
 // A text drawn on the silkscreen of a footprint at first, its height.
 constexpr Coord DEFAULT_TEXT_HEIGHT = 1000000;
+// How far above its origin a new footprint or symbol has its designator,
+// and below it its value: apart, on the grid of both editors.
+constexpr Coord NEW_ITEM_TEXT_OFFSET = 2540000;
 
 // 'point' turned a quarter clockwise on screen about 'center'.
 Point turnedQuarter(const Point &point, const Point &center);
