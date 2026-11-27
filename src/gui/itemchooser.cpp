@@ -234,13 +234,15 @@ QString ItemChooser::choose(QWidget *parent, const QString &title, const Library
     QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     QObject::connect(list, &QListWidget::itemActivated, &dialog, &QDialog::accept);
-    QVBoxLayout *listColumn = new QVBoxLayout;
-    listColumn->addWidget(list, 1);
-    if (remove != nullptr)
-        listColumn->addWidget(remove, 0, Qt::AlignLeft);
     QHBoxLayout *choice = new QHBoxLayout;
-    choice->addLayout(listColumn, 1);
+    choice->addWidget(list, 1);
     choice->addWidget(preview, 1);
+    // Delete at the left of the row of buttons, away from Open.
+    QHBoxLayout *buttonRow = new QHBoxLayout;
+    if (remove != nullptr)
+        buttonRow->addWidget(remove);
+    buttonRow->addStretch();
+    buttonRow->addWidget(buttons);
     QVBoxLayout *layout = new QVBoxLayout(&dialog);
     if (kinds.size() > 1 || sources != nullptr)
         layout->addLayout(kindRow);
@@ -248,7 +250,7 @@ QString ItemChooser::choose(QWidget *parent, const QString &title, const Library
         delete kindRow;
     layout->addWidget(search);
     layout->addLayout(choice, 1);
-    layout->addWidget(buttons);
+    layout->addLayout(buttonRow);
     search->setFocus();
     const bool accepted = dialog.exec() == QDialog::Accepted;
     const QString name = shown();
