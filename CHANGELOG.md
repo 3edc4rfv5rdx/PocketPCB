@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- I: Library test checks the pins of every unit of a part
 - F: Dual op amps LM358, TL072 and NE5532 in units A, B and power
 - N: Parts of several units, such as a dual op amp, made in the part editor and placed unit by unit
 - R: Units of a part are placed one after another, edited together and switched in the Properties panel

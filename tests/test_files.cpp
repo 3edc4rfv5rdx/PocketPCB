@@ -51,8 +51,9 @@ private slots:
         QVERIFY(count >= 2);
     }
 
-    // Every part of the library has its symbol and its footprints there,
-    // and its pins and pads match by number.
+    // Every part of the library has the symbols of its units and its
+    // footprints there, and the pins of all its units and its pads match by
+    // number.
     void everyLibraryPartIsComplete()
     {
         QStringList problems;
@@ -60,11 +61,14 @@ private slots:
         QVERIFY2(problems.isEmpty(), qPrintable(problems.join(QLatin1Char('\n'))));
         QVERIFY(!library.parts.isEmpty());
         for (auto it = library.parts.constBegin(); it != library.parts.constEnd(); ++it) {
-            const Symbol *symbol = library.findSymbolOfPart(it.key());
-            QVERIFY2(symbol != nullptr, qPrintable(it.key()));
             QStringList pins;
-            for (const Pin &pin : symbol->pins)
-                pins.append(pin.number);
+            for (int unit = 0; unit < it.value().unitCount(); ++unit) {
+                const Symbol *symbol = library.findSymbolOfPart(it.key(), unit);
+                QVERIFY2(symbol != nullptr, qPrintable(it.key() + QLatin1Char(' ')
+                                                       + QString::number(unit)));
+                for (const Pin &pin : symbol->pins)
+                    pins.append(pin.number);
+            }
             for (const QString &name : it.value().footprints) {
                 const Footprint *footprint = library.findFootprint(name);
                 QVERIFY2(footprint != nullptr, qPrintable(it.key() + QLatin1Char(' ') + name));
