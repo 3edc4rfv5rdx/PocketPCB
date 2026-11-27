@@ -90,6 +90,7 @@ QStringList describe(const QList<ErcProblem> &problems)
     static const QStringList kinds = {
         QStringLiteral("EmptyValue"),       QStringLiteral("DuplicateDesignator"),
         QStringLiteral("LinkDesignator"),   QStringLiteral("MissingUnit"),
+        QStringLiteral("MissingPowerUnit"),
         QStringLiteral("UnconnectedPin"),   QStringLiteral("MisplacedNoConnect"),
         QStringLiteral("LooseLabel"),       QStringLiteral("LooseWireEnd"),
         QStringLiteral("OverlappingWires"), QStringLiteral("WireLoop"),
@@ -199,6 +200,12 @@ private slots:
         for (const QString &line : describe(check(schematic, gost)))
             missing = missing || line == QStringLiteral("MissingUnit U2.1");
         QVERIFY(missing);
+        // The last unit is the power one.
+        schematic.sheets[0].components[2].unit = 0;
+        bool power = false;
+        for (const QString &line : describe(check(schematic)))
+            power = power || line == QStringLiteral("MissingPowerUnit U2B");
+        QVERIFY(power);
     }
 
     void pinsJoinedToNothingAndPiecesOfWire()

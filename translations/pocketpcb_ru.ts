@@ -618,6 +618,14 @@
         <translation>Секция %1 не поставлена</translation>
     </message>
     <message>
+        <source>tie its unused inputs</source>
+        <translation>подключите её неиспользуемые входы</translation>
+    </message>
+    <message>
+        <source>Power unit %1 is not placed</source>
+        <translation>Секция питания %1 не поставлена</translation>
+    </message>
+    <message>
         <source>Designator %1 repeats</source>
         <translation>Обозначение %1 повторяется</translation>
     </message>

@@ -618,6 +618,14 @@
         <translation>Секцію %1 не поставлено</translation>
     </message>
     <message>
+        <source>tie its unused inputs</source>
+        <translation>підключіть її невикористані входи</translation>
+    </message>
+    <message>
+        <source>Power unit %1 is not placed</source>
+        <translation>Секцію живлення %1 не поставлено</translation>
+    </message>
+    <message>
         <source>Designator %1 repeats</source>
         <translation>Позначення %1 повторюється</translation>
     </message>

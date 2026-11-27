@@ -26,7 +26,10 @@ enum class ErcKind {
     LinkDesignator,
     // A unit of a part of several that no component of its designator is:
     // marked at the group's leader (unitLeaders()), about the unit ("DA1.3").
+    // Its unused inputs still want tying.
     MissingUnit,
+    // The same for the last unit, its power pins by the rule of the library.
+    MissingPowerUnit,
     // A pin of a component joined to no other pin, with no name on its net
     // and no no-connect mark.
     UnconnectedPin,

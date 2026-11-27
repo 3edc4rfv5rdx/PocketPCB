@@ -114,7 +114,9 @@ void checkUnits(const Schematic &schematic, const Library &library, DesignatorSt
             const Part *part = library.findPart(component.part);
             for (int unit = 0; unit < part->unitCount(); ++unit) {
                 if (!unitsOf.value(component.id).contains(unit)) {
-                    problems.append(problem(ErcKind::MissingUnit, s, component.at, component.id,
+                    const ErcKind kind = unit + 1 == part->unitCount() ? ErcKind::MissingPowerUnit
+                                                                       : ErcKind::MissingUnit;
+                    problems.append(problem(kind, s, component.at, component.id,
                                             component.designator + unitSuffix(unit, style)));
                 }
             }

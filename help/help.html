@@ -224,8 +224,8 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
   <li><b>Symbol</b> picks the symbol from the library; under <b>Footprints</b>, <b>Add…</b> picks one more,
     <b>Remove</b> takes the chosen one out, the arrows move it. The first, in bold, is the one a new part gets.</li>
   <li><b>Other units</b> makes a part of several units, such as a dual op amp with its power pins apart: the symbol
-    is the first unit, <b>Add…</b> picks the symbol of each next one. The pins of all units together must match the
-    pads; a pin number in two units is a mistake.</li>
+    is the first unit, <b>Add…</b> picks the symbol of each next one; the power pins go into the last. The pins of all
+    units together must match the pads; a pin number in two units is a mistake.</li>
   <li>A designator prefix, international or GOST, is needed to save; one left empty takes the other. The value a new part starts with, its
     group in the library and the bill of materials, its rated power, <b>Connector</b> for parts that carry nets off
     the board, <b>Needs no value</b>, and its name, the language chosen beside the field: English is needed, the others may stay empty.</li>
@@ -251,8 +251,9 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
     as you need; <kbd>Esc</kbd> or a right click ends. The part is copied into the project and numbered on.</li>
   <li><kbd>R</kbd> and <kbd>M</kbd> turn and mirror the part while it is still being placed.</li>
   <li>A part of several units comes with all its units in a row under one designator: DA1.1, DA1.2 with GOST
-    designators, U1A, U1B with international ones; drag them apart. They are one part on the board and in the BOM;
-    ERC tells of a unit not placed, and <b>Place missing units</b> in the menu of a unit puts those back.</li>
+    designators, U1A, U1B with international ones; drag them apart. They are one part on the board and in the BOM.
+    A gate you do not need may be deleted: ERC then reminds you to tie its inputs, and tells apart a power unit not
+    placed. <b>Place missing units</b> in the menu of a unit puts them back.</li>
   <li>A double click on a part on the sheet shows it in the Library panel.</li>
 </ul>
 
