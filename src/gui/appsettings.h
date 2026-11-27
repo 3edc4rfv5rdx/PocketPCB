@@ -5,6 +5,7 @@
 
 #include <QByteArray>
 #include <QColor>
+#include <QDate>
 #include <QString>
 #include <QStringList>
 
@@ -96,6 +97,13 @@ public:
     // By default "library" in homeFolder(); set in the file by hand for
     // now, and the first read writes the default there.
     static QString userLibraryFolder();
+    // The user's library as an archive names it: its path from the home
+    // folder (.PocketPCB/library), so that unpacked there it is in place;
+    // its folder's name alone when it is not in the home folder.
+    static QString userLibraryArchiveFolder();
+    // The name an export of the user's library is offered, dated 'day':
+    // pocketpcb-library-20261127.zip.
+    static QString libraryArchiveName(const QDate &day);
     // Makes the user's library folder and its three folders when missing.
     static bool makeUserLibraryFolders(QString &error);
     // The built-in library, read only: beside the program in an AppImage

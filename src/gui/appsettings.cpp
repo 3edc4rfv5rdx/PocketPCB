@@ -54,6 +54,8 @@ const int DEFAULT_AUTOSAVE_MINUTES = 5;
 
 // Inside the home folder of the program (AppSettings::homeFolder()).
 const char USER_LIBRARY_FOLDER[] = "library";
+// What the name of an export of it starts with, the day following.
+const char LIBRARY_ARCHIVE_PREFIX[] = "pocketpcb-library-";
 // Beside the program (programFolder()).
 const char PROJECTS_FOLDER[] = "PocketPCB-Projects";
 // Names the AppImage file the program runs from.
@@ -398,6 +400,22 @@ QString AppSettings::userLibraryFolder()
     const QString byDefault = defaultLibraryFolder();
     const QString folder = readValueOrWriteDefault(KEY_USER_LIBRARY_FOLDER, byDefault).toString();
     return folder.isEmpty() ? byDefault : folder;
+}
+
+QString AppSettings::userLibraryArchiveFolder()
+{
+    const QString folder = QDir::cleanPath(userLibraryFolder());
+    // The real home folder, or the test one.
+    const QString home = QFileInfo(homeFolder()).absolutePath();
+    if (isInside(folder, home) && folder != QDir::cleanPath(home))
+        return QDir(home).relativeFilePath(folder);
+    return QFileInfo(folder).fileName();
+}
+
+QString AppSettings::libraryArchiveName(const QDate &day)
+{
+    return QLatin1String(LIBRARY_ARCHIVE_PREFIX) + day.toString(QStringLiteral("yyyyMMdd"))
+           + QLatin1String(".zip");
 }
 
 bool AppSettings::makeUserLibraryFolders(QString &error)

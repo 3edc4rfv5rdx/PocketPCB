@@ -3,6 +3,7 @@
 #include "footprint.h"
 #include "part.h"
 #include "symbol.h"
+#include "zipfile.h"
 
 #include <QCoreApplication>
 #include <QMap>
@@ -75,6 +76,13 @@ public:
     static QString itemPath(const QString &folder, const char *subfolder, const QString &name);
     // The subfolder of items of 'kind'.
     static const char *subfolder(LibraryKind kind);
+    // The library files of the folder 'folder', as they go into an archive:
+    // each named '<prefix>/<subfolder>/<name>.json', the symbols first,
+    // then the footprints and the parts, each in the order of their names.
+    // False, with a message for the user in 'error', when one cannot be
+    // read.
+    static bool archiveFiles(const QString &folder, const QString &prefix,
+                             QList<OutputFile> &files, QString &error);
     // Writes the items of 'library' that differ from those in 'saved', all
     // of them when 'everything', and those whose file is missing, making the
     // folders they need inside the folder that holds 'folder', which must be

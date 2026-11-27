@@ -2213,6 +2213,18 @@
         <source>%1 deleted from your library</source>
         <translation>%1 видалено з вашої бібліотеки</translation>
     </message>
+    <message>
+        <source>Export library</source>
+        <translation>Експорт бібліотеки</translation>
+    </message>
+    <message>
+        <source>Your library is empty</source>
+        <translation>Ваша бібліотека порожня</translation>
+    </message>
+    <message>
+        <source>Zip archives</source>
+        <translation>Архіви zip</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::ItemChooser</name>

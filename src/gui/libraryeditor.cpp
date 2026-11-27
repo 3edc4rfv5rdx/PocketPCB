@@ -8,6 +8,7 @@
 #include "format.h"
 #include "graphicedit.h"
 #include "itemchooser.h"
+#include "jsonio.h"
 #include "parteditor.h"
 #include "sheeteditor.h"
 #include "symboledit.h"
@@ -15,9 +16,11 @@
 #include "toolicons.h"
 
 #include <QCloseEvent>
+#include <QDateTime>
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QFile>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -85,10 +88,16 @@ LibraryEditor::LibraryEditor(QWidget *parent)
     QPushButton *startOpen = new QPushButton(tr("Open") + QStringLiteral("…"), m_start);
     startOpen->setObjectName(QStringLiteral("startOpenItem"));
     connect(startOpen, &QPushButton::clicked, this, &LibraryEditor::askOpen);
+    QPushButton *startExport = new QPushButton(exportLibraryTitle() + QStringLiteral("…"), m_start);
+    startExport->setObjectName(QStringLiteral("startExportLibrary"));
+    connect(startExport, &QPushButton::clicked, this, [this] {
+        Alerts::show(this, exportUserLibrary(this),
+                     [this](const QString &text) { m_status->setText(text); });
+    });
     QVBoxLayout *startLayout = new QVBoxLayout(m_start);
     startLayout->addStretch();
     // Symbols first, then footprints, then parts.
-    for (QPushButton *button : {startSymbol, startFootprint, startPart, startOpen}) {
+    for (QPushButton *button : {startSymbol, startFootprint, startPart, startOpen, startExport}) {
         button->setMinimumWidth(START_BUTTON_WIDTH);
         startLayout->addWidget(button, 0, Qt::AlignHCenter);
     }
@@ -147,6 +156,31 @@ LibraryEditor::LibraryEditor(QWidget *parent)
 QString LibraryEditor::libraryEditorTitle()
 {
     return tr("Library editor");
+}
+
+QString LibraryEditor::exportLibraryTitle()
+{
+    return tr("Export library");
+}
+
+Alert LibraryEditor::exportUserLibrary(QWidget *parent)
+{
+    QList<OutputFile> files;
+    QString error;
+    if (!LibraryFolder::archiveFiles(AppSettings::userLibraryFolder(),
+                                     AppSettings::userLibraryArchiveFolder(), files, error))
+        return Alert::error(error);
+    if (files.isEmpty())
+        return Alert::info(tr("Your library is empty"));
+    const QString offered = QDir(AppSettings::projectsFolder())
+                                .filePath(AppSettings::libraryArchiveName(QDate::currentDate()));
+    const QString path = QFileDialog::getSaveFileName(
+        parent, exportLibraryTitle(), offered, tr("Zip archives") + QStringLiteral(" (*.zip)"));
+    if (path.isEmpty())
+        return Alert::info(QString());
+    if (!JsonFile::writeData(path, zipArchive(files, QDateTime::currentDateTime()), error))
+        return Alert::error(error);
+    return Alert::info(writtenMessage(path));
 }
 
 void LibraryEditor::addEditorTab(LibraryTab *editor)

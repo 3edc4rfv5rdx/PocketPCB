@@ -32,6 +32,15 @@ private slots:
         QSettings(AppSettings::filePath(), QSettings::IniFormat).clear();
     }
 
+    // An export of the library is named with the day, and keeps its path
+    // from the home folder.
+    void libraryArchiveIsNamedAndPlaced()
+    {
+        QCOMPARE(AppSettings::libraryArchiveName(QDate(2026, 11, 27)),
+                 QStringLiteral("pocketpcb-library-20261127.zip"));
+        QCOMPARE(AppSettings::userLibraryArchiveFolder(), QStringLiteral(".PocketPCB/library"));
+    }
+
     void formatFixed()
     {
         QCOMPARE(formatMmFixed(0), QStringLiteral("0.000"));

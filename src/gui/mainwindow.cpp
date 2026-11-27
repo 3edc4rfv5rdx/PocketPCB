@@ -498,6 +498,11 @@ void MainWindow::createMenus()
     QAction *libraryFolderAction = fileMenu->addAction(tr("Open library folder"));
     libraryFolderAction->setObjectName(QStringLiteral("actionOpenLibraryFolder"));
     connect(libraryFolderAction, &QAction::triggered, this, &MainWindow::openLibraryFolder);
+    QAction *exportLibraryAction =
+        fileMenu->addAction(LibraryEditor::exportLibraryTitle() + QStringLiteral("…"));
+    exportLibraryAction->setObjectName(QStringLiteral("actionExportLibrary"));
+    connect(exportLibraryAction, &QAction::triggered, this,
+            [this] { alert(LibraryEditor::exportUserLibrary(this)); });
     fileMenu->addSeparator();
 
     QAction *quitAction = fileMenu->addAction(tr("&Quit"));

@@ -60,6 +60,36 @@ class TestLibraryFile : public QObject
     Q_OBJECT
 
 private slots:
+    // The library files of a folder go into an archive under the prefix,
+    // the symbols first, each kind in the order of names; other files stay
+    // out.
+    void libraryFilesAreArchivedUnderThePrefix()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QDir root(dir.path());
+        for (const QString &path :
+             {QStringLiteral("parts/b.json"), QStringLiteral("parts/a.json"),
+              QStringLiteral("symbols/s.json"), QStringLiteral("footprints/notes.txt")}) {
+            QVERIFY(root.mkpath(QFileInfo(root.filePath(path)).path()));
+            QFile file(root.filePath(path));
+            QVERIFY(file.open(QIODevice::WriteOnly));
+            file.write(path.toUtf8());
+        }
+        QList<OutputFile> files;
+        QString error;
+        QVERIFY2(LibraryFolder::archiveFiles(dir.path(), QStringLiteral(".PocketPCB/library"),
+                                             files, error),
+                 qPrintable(error));
+        QStringList names;
+        for (const OutputFile &file : files)
+            names.append(file.name);
+        QCOMPARE(names, QStringList({QStringLiteral(".PocketPCB/library/symbols/s.json"),
+                                     QStringLiteral(".PocketPCB/library/parts/a.json"),
+                                     QStringLiteral(".PocketPCB/library/parts/b.json")}));
+        QCOMPARE(files.first().data, QByteArray("symbols/s.json"));
+    }
+
     void everyKindSurvivesTheFile()
     {
         QTemporaryDir dir;

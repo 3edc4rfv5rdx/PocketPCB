@@ -1,7 +1,8 @@
 #pragma once
 
-#include "library.h"
+#include "alerts.h"
 #include "itemchooser.h"
+#include "library.h"
 #include "libraryfile.h"
 
 #include <QMainWindow>
@@ -36,6 +37,14 @@ public:
 
     // "Library editor".
     static QString libraryEditorTitle();
+    // "Export library".
+    static QString exportLibraryTitle();
+    // Writes the user's library into a zip file asked for, offered in the
+    // projects folder under a dated name, its files kept under their path
+    // from the home folder (AppSettings::userLibraryArchiveFolder()). What
+    // came of it, for the status bar or a box; empty when the user called
+    // it off.
+    static Alert exportUserLibrary(QWidget *parent);
 
     // Opens the footprint 'name' (see ItemEditor) in a new tab, or shows
     // the tab it is open in already; a new footprint for an empty name,

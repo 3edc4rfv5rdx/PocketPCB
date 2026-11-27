@@ -1,5 +1,6 @@
 #include "library.h"
 
+#include "jsonio.h"
 #include "libraryfile.h"
 
 #include <QDir>
@@ -16,6 +17,25 @@ QString LibraryFolder::itemPath(const QString &folder, const char *subfolder, co
 {
     return QDir(QDir(folder).filePath(QLatin1String(subfolder)))
         .filePath(name + QLatin1String(LIBRARY_FILE_EXT));
+}
+
+bool LibraryFolder::archiveFiles(const QString &folder, const QString &prefix,
+                                 QList<OutputFile> &files, QString &error)
+{
+    for (const char *kind :
+         {LIBRARY_SYMBOLS_FOLDER, LIBRARY_FOOTPRINTS_FOLDER, LIBRARY_PARTS_FOLDER}) {
+        const QDir dir(QDir(folder).filePath(QLatin1String(kind)));
+        const QStringList names = dir.entryList(
+            {QStringLiteral("*") + QLatin1String(LIBRARY_FILE_EXT)}, QDir::Files, QDir::Name);
+        for (const QString &name : names) {
+            QByteArray data;
+            if (!JsonFile::readData(dir.filePath(name), data, error))
+                return false;
+            files.append(
+                {prefix + QLatin1Char('/') + QLatin1String(kind) + QLatin1Char('/') + name, data});
+        }
+    }
+    return true;
 }
 
 const char *LibraryFolder::subfolder(LibraryKind kind)
