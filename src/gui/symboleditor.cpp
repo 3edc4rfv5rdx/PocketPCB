@@ -190,7 +190,7 @@ void SymbolEditor::addPlacingTools(QToolBar *bar)
     // Ready-made pieces drawn to the standards, and a chip of any size.
     // Its menu chooses what: the action itself only shows the mode.
     QAction *readyMade = addTool(bar, tr("Ready-made"), "actionReadyMade", QKeySequence(),
-                                 ToolIcon::PadRow, [] {});
+                                 ToolIcon::ReadyMade, [] {});
     m_modeActions.insert(int(Mode::Row), readyMade);
     QMenu *pieces = new QMenu(this);
     addPieceActions(

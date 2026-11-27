@@ -397,6 +397,12 @@ void draw(QPainter &painter, ToolIcon icon, const QColor &color)
         painter.drawLine(QPointF(4, 12), QPointF(14, 12));
         dot(painter, {4, 12}, color);
         break;
+    case ToolIcon::ReadyMade:
+        // A resistor: the simplest of the pieces drawn to the standards.
+        painter.drawRect(QRectF(7, 9, 10, 6));
+        painter.drawLine(QPointF(2, 12), QPointF(7, 12));
+        painter.drawLine(QPointF(17, 12), QPointF(22, 12));
+        break;
     }
 }
 
