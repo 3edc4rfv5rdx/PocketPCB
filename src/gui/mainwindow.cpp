@@ -2065,10 +2065,8 @@ void MainWindow::createToolBar()
     footprintTool->setObjectName(QStringLiteral("actionFootprintEditor"));
     footprintTool->setIcon(toolIcon(ToolIcon::FootprintEditor, color));
     connect(footprintTool, &QAction::triggered, this, [this] { openFootprintEditor(false); });
+    // Symbols first, then footprints, then parts.
     QMenu *footprintMenu = new QMenu(this);
-    QAction *newFootprint = footprintMenu->addAction(FootprintEditor::newFootprintTitle());
-    newFootprint->setObjectName(QStringLiteral("actionNewFootprint"));
-    connect(newFootprint, &QAction::triggered, this, [this] { openFootprintEditor(true); });
     QAction *newSymbol = footprintMenu->addAction(SymbolEditor::newSymbolTitle());
     newSymbol->setObjectName(QStringLiteral("actionNewSymbol"));
     connect(newSymbol, &QAction::triggered, this, [this] { openSymbolEditor(true); });
@@ -2078,6 +2076,10 @@ void MainWindow::createToolBar()
     QAction *editSymbol = footprintMenu->addAction(tr("Edit symbol of chosen part"));
     editSymbol->setObjectName(QStringLiteral("actionEditSymbol"));
     connect(editSymbol, &QAction::triggered, this, [this] { openSymbolEditor(false); });
+    footprintMenu->addSeparator();
+    QAction *newFootprint = footprintMenu->addAction(FootprintEditor::newFootprintTitle());
+    newFootprint->setObjectName(QStringLiteral("actionNewFootprint"));
+    connect(newFootprint, &QAction::triggered, this, [this] { openFootprintEditor(true); });
     footprintMenu->addSeparator();
     QAction *newPart = footprintMenu->addAction(PartEditor::newPartTitle());
     newPart->setObjectName(QStringLiteral("actionNewPart"));

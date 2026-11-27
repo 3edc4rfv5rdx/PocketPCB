@@ -105,7 +105,7 @@ private:
     const Library *m_library = nullptr;
     Coord m_clearance = 0;
     // What Open… lists.
-    LibraryKind m_openKind = LibraryKind::Footprint;
+    LibraryKind m_openKind = LibraryKind::Symbol;
     ItemChooser::Source m_openSource = ItemChooser::Source::All;
     QStackedWidget *m_pages = nullptr;
     QTabWidget *m_tabs = nullptr;

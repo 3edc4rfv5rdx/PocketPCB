@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Symbols come first, then footprints, then parts, in the buttons and menus of the library editor
 - N: Open in the library editor shows all, the built-in or your library, and deletes from yours
 - F: A new footprint or symbol starts with its designator above the origin and its value below, apart
 - F: Settings and your library live in one folder, ~/.PocketPCB; the old folders are moved there and removed

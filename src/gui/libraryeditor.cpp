@@ -87,7 +87,8 @@ LibraryEditor::LibraryEditor(QWidget *parent)
     connect(startOpen, &QPushButton::clicked, this, &LibraryEditor::askOpen);
     QVBoxLayout *startLayout = new QVBoxLayout(m_start);
     startLayout->addStretch();
-    for (QPushButton *button : {startFootprint, startSymbol, startPart, startOpen}) {
+    // Symbols first, then footprints, then parts.
+    for (QPushButton *button : {startSymbol, startFootprint, startPart, startOpen}) {
         button->setMinimumWidth(START_BUTTON_WIDTH);
         startLayout->addWidget(button, 0, Qt::AlignHCenter);
     }
@@ -102,7 +103,7 @@ LibraryEditor::LibraryEditor(QWidget *parent)
     corner->setStyleSheet(panelButtonStyle(QString()));
     QHBoxLayout *cornerLayout = new QHBoxLayout(corner);
     cornerLayout->setContentsMargins(2, 2, 2, 2);
-    // + offers a new footprint or a new symbol.
+    // + offers a new symbol, footprint or part, in that order.
     QToolButton *add = new QToolButton(corner);
     add->setObjectName(QStringLiteral("newItemTab"));
     add->setText(QStringLiteral("+"));
@@ -114,12 +115,12 @@ LibraryEditor::LibraryEditor(QWidget *parent)
         bold.setPointSizeF(bold.pointSizeF() * ADD_BUTTON_SCALE);
     add->setFont(bold);
     QMenu *addMenu = new QMenu(add);
-    connect(addMenu->addAction(FootprintEditor::newFootprintTitle()), &QAction::triggered, this,
-            &LibraryEditor::openNewFootprint);
     connect(addMenu->addAction(SymbolEditor::newSymbolTitle()), &QAction::triggered, this,
             &LibraryEditor::openNewSymbol);
     addNewSymbolFromActions(addMenu->addMenu(SymbolEditor::newSymbolFromTitle()),
                             [this] { return this; });
+    connect(addMenu->addAction(FootprintEditor::newFootprintTitle()), &QAction::triggered, this,
+            &LibraryEditor::openNewFootprint);
     connect(addMenu->addAction(PartEditor::newPartTitle()), &QAction::triggered, this,
             &LibraryEditor::openNewPart);
     add->setMenu(addMenu);
@@ -307,7 +308,7 @@ LibraryTab *LibraryEditor::askOpen()
     };
     const QString name = ItemChooser::choose(
         this, tr("Open"), *m_library,
-        {LibraryKind::Footprint, LibraryKind::Symbol, LibraryKind::Part}, m_openKind,
+        {LibraryKind::Symbol, LibraryKind::Footprint, LibraryKind::Part}, m_openKind,
         QDialogButtonBox::Open, QString(), &options);
     m_openSource = options.source;
     if (name.isEmpty())
