@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Name of a power symbol in each language editable in the symbol editor
 - F: Own icon, a resistor, for the Ready-made button in the symbol editor
 - F: Ground symbol widened and chassis line shortened, both to 6.35 mm
 - N: Bare four-lead Hall element in the library, drawn after GOST 2.730

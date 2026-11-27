@@ -2,6 +2,7 @@
 
 #include "format.h"
 #include "itempanels.h"
+#include "namefield.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -181,12 +182,16 @@ SymbolPanel::SymbolPanel(SymbolEditor *editor, QWidget *parent)
     m_power->setToolTip(tr("A power symbol joins every one of the same net; empty for a part"));
     m_hidePower = new QCheckBox(tr("Hide the net name"), this);
     m_hidePower->setObjectName(QStringLiteral("symbolHidePower"));
+    m_powerName = new NameField("symbolPowerName", this);
+    m_powerName->setToolTip(tr("The name of the power symbol in the library panel"));
+    m_powerName->field()->installEventFilter(this);
 
     QFormLayout *form = new QFormLayout;
     form->addRow(QString(), m_numbers);
     form->addRow(QString(), m_names);
     form->addRow(tr("Power net") + QLatin1Char(':'), m_power);
     form->addRow(QString(), m_hidePower);
+    form->addRow(NameField::title() + QLatin1Char(':'), m_powerName);
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(heading);
     layout->addLayout(form);
@@ -216,6 +221,14 @@ SymbolPanel::SymbolPanel(SymbolEditor *editor, QWidget *parent)
         changed.hidePowerName = on;
         commit(changed);
     });
+    connect(m_powerName, &NameField::edited, this, [this] {
+        Symbol changed = m_editor->symbol();
+        if (!changed.isPower())
+            return;
+        changed.name = m_powerName->taken(changed.name);
+        if (changed.name != m_editor->symbol().name)
+            commit(changed);
+    });
     refresh(true);
 }
 
@@ -239,6 +252,8 @@ void SymbolPanel::refresh(bool force)
         m_power->setText(symbol.power);
     m_hidePower->setEnabled(symbol.isPower());
     m_hidePower->setChecked(symbol.hidePowerName);
+    m_powerName->setEnabled(symbol.isPower());
+    m_powerName->setNames(symbol.name, force);
 }
 
 void SymbolPanel::commit(const Symbol &changed)

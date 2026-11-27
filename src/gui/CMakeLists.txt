@@ -20,6 +20,7 @@ add_library(pocketpcb_gui STATIC
     librarytab.h librarytab.cpp
     itempanels.h itempanels.cpp
     language.h language.cpp
+    namefield.h namefield.cpp
     libraryeditor.h libraryeditor.cpp
     librarypanel.h librarypanel.cpp
     libraryviewitem.h libraryviewitem.cpp

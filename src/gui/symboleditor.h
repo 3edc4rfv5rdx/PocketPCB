@@ -15,6 +15,8 @@ class QLineEdit;
 
 namespace ppcb {
 
+class NameField;
+
 // A tab of the library editor window editing one symbol of the library
 // (see ItemEditor): its pins placed, their point always on the pin grid
 // (2.54 mm) whatever the grid of the drawings, its body drawn, and whether
@@ -177,6 +179,8 @@ private:
     QCheckBox *m_names = nullptr;
     QLineEdit *m_power = nullptr;
     QCheckBox *m_hidePower = nullptr;
+    // The power symbol's name in the library panel, by language.
+    NameField *m_powerName = nullptr;
 };
 
 } // namespace ppcb

@@ -2,8 +2,8 @@
 
 #include "format.h"
 #include "itemchooser.h"
-#include "language.h"
 #include "librarypanel.h"
+#include "namefield.h"
 #include "partedit.h"
 #include "toolicons.h"
 
@@ -141,24 +141,11 @@ PartEditor::PartEditor(const QString &name, const Part &part, bool inUserLibrary
     fields->addRow(tr("Rated power") + QLatin1Char(':'), m_power);
     fields->addRow(QString(), m_connector);
     fields->addRow(QString(), m_noValue);
-    m_nameLanguage = new QComboBox(form);
-    m_nameLanguage->setObjectName(QStringLiteral("partNameLanguage"));
-    for (const QString &language : supportedLanguages())
-        m_nameLanguage->addItem(languageName(language), language);
-    m_nameShown = m_nameLanguage->itemData(0).toString();
-    m_name = formLineEdit(form, "partName");
-    QHBoxLayout *nameRow = new QHBoxLayout;
-    nameRow->addWidget(m_nameLanguage);
-    nameRow->addWidget(m_name, 1);
-    fields->addRow(tr("Name") + QLatin1Char(':'), nameRow);
-    for (QLineEdit *edit : {m_prefix, m_prefixGost, m_value, m_name})
+    m_name = new NameField("partName", form);
+    fields->addRow(NameField::title() + QLatin1Char(':'), m_name);
+    for (QLineEdit *edit : {m_prefix, m_prefixGost, m_value})
         connect(edit, &QLineEdit::editingFinished, this, &PartEditor::takeFields);
-    // What was typed for one language is kept before the field shows another.
-    connect(m_nameLanguage, &QComboBox::activated, this, [this](int index) {
-        takeFields();
-        m_nameShown = m_nameLanguage->itemData(index).toString();
-        m_name->setText(m_part.name.value(m_nameShown));
-    });
+    connect(m_name, &NameField::edited, this, &PartEditor::takeFields);
     connect(m_group, &QComboBox::activated, this, [this](int index) {
         Part changed = m_part;
         changed.group = m_group->itemData(index).toString();
@@ -354,7 +341,7 @@ void PartEditor::refresh()
     m_power->setCurrentIndex(itemFor(m_power, m_part.powerMw, formatPower(m_part.powerMw)));
     m_connector->setChecked(m_part.connector);
     m_noValue->setChecked(m_part.noValue);
-    m_name->setText(m_part.name.value(m_nameShown));
+    m_name->setNames(m_part.name);
     m_check->setText(checkText());
     showDrawings();
 }
@@ -383,11 +370,7 @@ void PartEditor::takeFields()
     changed.prefix = m_prefix->text().trimmed();
     changed.prefixGost = m_prefixGost->text().trimmed();
     changed.value = m_value->text().trimmed();
-    const QString name = m_name->text().trimmed();
-    if (name.isEmpty())
-        changed.name.remove(m_nameShown);
-    else
-        changed.name.insert(m_nameShown, name);
+    changed.name = m_name->taken(changed.name);
     change(changed);
 }
 

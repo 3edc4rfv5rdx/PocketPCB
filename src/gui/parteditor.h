@@ -11,6 +11,7 @@ class QPushButton;
 
 namespace ppcb {
 
+class NameField;
 class PartPreview;
 
 // A tab of the library editor window editing one part of the library (see
@@ -101,12 +102,7 @@ private:
     QComboBox *m_power = nullptr;
     QCheckBox *m_connector = nullptr;
     QCheckBox *m_noValue = nullptr;
-    // The name in the language chosen beside it, one of
-    // supportedLanguages(), English at first.
-    QComboBox *m_nameLanguage = nullptr;
-    QLineEdit *m_name = nullptr;
-    // The language whose name the field shows.
-    QString m_nameShown;
+    NameField *m_name = nullptr;
     QLabel *m_check = nullptr;
     PartPreview *m_preview = nullptr;
 };

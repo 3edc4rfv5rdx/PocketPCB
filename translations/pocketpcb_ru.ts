@@ -2305,6 +2305,13 @@
     </message>
 </context>
 <context>
+    <name>ppcb::NameField</name>
+    <message>
+        <source>Name</source>
+        <translation>Название</translation>
+    </message>
+</context>
+<context>
     <name>ppcb::PartEditor</name>
     <message>
         <source>Add</source>
@@ -2365,10 +2372,6 @@
     <message>
         <source>Rated power</source>
         <translation>Номинальная мощность</translation>
-    </message>
-    <message>
-        <source>Name</source>
-        <translation>Название</translation>
     </message>
     <message>
         <source>New part</source>
@@ -2971,6 +2974,10 @@
     <message>
         <source>Power net</source>
         <translation>Цепь питания</translation>
+    </message>
+    <message>
+        <source>The name of the power symbol in the library panel</source>
+        <translation>Название символа питания в панели библиотеки</translation>
     </message>
 </context>
 </TS>
