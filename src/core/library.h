@@ -20,6 +20,9 @@ extern const char LIBRARY_FOOTPRINTS_FOLDER[];
 extern const char LIBRARY_PARTS_FOLDER[];
 extern const char LIBRARY_FILE_EXT[];
 
+// What a library file holds.
+enum class LibraryKind { Symbol, Footprint, Part };
+
 // The content of one library folder, by name. A project keeps one of its
 // own (Design::library): what it uses, copied in so that it does not change
 // when the user's library does; it may hold items nothing uses any more.
@@ -67,6 +70,11 @@ public:
     // folder is for, is left out, and a message for the user about it goes
     // into 'problems'.
     static Library read(const QString &folder, QStringList &problems);
+    // The file of the item 'name' kept in 'subfolder' (LIBRARY_PARTS_FOLDER
+    // and so on) of the library folder 'folder'.
+    static QString itemPath(const QString &folder, const char *subfolder, const QString &name);
+    // The subfolder of items of 'kind'.
+    static const char *subfolder(LibraryKind kind);
     // Writes the items of 'library' that differ from those in 'saved', all
     // of them when 'everything', and those whose file is missing, making the
     // folders they need inside the folder that holds 'folder', which must be

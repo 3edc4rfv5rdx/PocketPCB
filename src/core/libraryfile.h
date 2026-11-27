@@ -1,12 +1,8 @@
 #pragma once
 
-#include "footprint.h"
-#include "part.h"
-#include "symbol.h"
+#include "library.h"
 
 namespace ppcb {
-
-enum class LibraryKind { Symbol, Footprint, Part };
 
 // The content of one library file. Only the member named by 'kind' is
 // meaningful; the others keep their defaults.

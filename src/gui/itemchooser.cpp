@@ -1,16 +1,22 @@
 #include "itemchooser.h"
 
 #include "librarypanel.h"
+#include "sheeteditor.h"
 
 #include <QAbstractButton>
 #include <QButtonGroup>
+#include <QComboBox>
 #include <QDialog>
 #include <QHash>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QPushButton>
 #include <QRadioButton>
 #include <QVBoxLayout>
+
+#include <algorithm>
 
 namespace ppcb {
 
@@ -60,14 +66,44 @@ QString ItemChooser::kindTitle(LibraryKind kind)
     return QString();
 }
 
+QString ItemChooser::sourceTitle(Source source)
+{
+    switch (source) {
+    case Source::All:
+        return tr("All");
+    case Source::BuiltIn:
+        return tr("Built-in");
+    case Source::User:
+        return tr("Mine");
+    }
+    return QString();
+}
+
 QString ItemChooser::choose(QWidget *parent, const QString &title, const Library &library,
                             const QList<LibraryKind> &kinds, LibraryKind &kind,
-                            QDialogButtonBox::StandardButton accept, const QString &current)
+                            QDialogButtonBox::StandardButton accept, const QString &current,
+                            Options *options)
 {
     if (kinds.isEmpty())
         return QString();
     if (!kinds.contains(kind))
         kind = kinds.first();
+    const bool switchable =
+        options != nullptr && options->builtIn != nullptr && options->user != nullptr;
+    Source source = switchable ? options->source : Source::All;
+    // The library the list shows now.
+    const auto shownLibrary = [&library, &source, options]() -> const Library & {
+        switch (source) {
+        case Source::All:
+            break;
+        case Source::BuiltIn:
+            return *options->builtIn;
+        case Source::User:
+            return *options->user;
+        }
+        return library;
+    };
+
     QDialog dialog(parent);
     dialog.setWindowTitle(title);
     QHBoxLayout *kindRow = new QHBoxLayout;
@@ -82,13 +118,30 @@ QString ItemChooser::choose(QWidget *parent, const QString &title, const Library
             kindOf.insert(button, each);
             kindRow->addWidget(button);
         }
-        kindRow->addStretch();
+    }
+    kindRow->addStretch();
+    QComboBox *sources = nullptr;
+    if (switchable) {
+        sources = new QComboBox(&dialog);
+        sources->setObjectName(QStringLiteral("chooseSource"));
+        for (const Source each : {Source::All, Source::BuiltIn, Source::User})
+            sources->addItem(sourceTitle(each), int(each));
+        sources->setCurrentIndex(sources->findData(int(source)));
+        kindRow->addWidget(new QLabel(tr("Library") + QLatin1Char(':'), &dialog));
+        kindRow->addWidget(sources);
     }
     QLineEdit *search = new QLineEdit(&dialog);
     search->setObjectName(QStringLiteral("chooseItemSearch"));
     search->setClearButtonEnabled(true);
     QListWidget *list = new QListWidget(&dialog);
     list->setObjectName(QStringLiteral("chooseItemList"));
+    QPushButton *remove = nullptr;
+    if (options != nullptr && options->remove) {
+        remove = new QPushButton(
+            SheetEditor::actionName(SheetEditor::Action::Delete) + QStringLiteral("…"), &dialog);
+        remove->setObjectName(QStringLiteral("chooseItemDelete"));
+        remove->setToolTip(tr("Deletes the one chosen from your library"));
+    }
     PartPreview *preview = new PartPreview(&dialog);
     preview->setObjectName(QStringLiteral("chooseItemPreview"));
     preview->setMinimumWidth(PREVIEW_SIZE);
@@ -96,25 +149,29 @@ QString ItemChooser::choose(QWidget *parent, const QString &title, const Library
         const QListWidgetItem *item = list->currentItem();
         return item != nullptr && !item->isHidden() ? item->text() : QString();
     };
-    // 'kind' is captured by reference: the switch keeps it up to date.
-    const auto draw = [preview, &library, &kind, shown] {
+    // 'kind' and 'source' are captured by reference: the switches keep them
+    // up to date.
+    const auto draw = [preview, &kind, &source, remove, shown, shownLibrary] {
         const QString name = shown();
+        const Library &from = shownLibrary();
+        if (remove != nullptr)
+            remove->setEnabled(source == Source::User && !name.isEmpty());
         switch (kind) {
         case LibraryKind::Symbol:
             preview->setAlone(true);
-            preview->setContent(library.findSymbol(name), nullptr);
+            preview->setContent(from.findSymbol(name), nullptr);
             break;
         case LibraryKind::Footprint:
             preview->setAlone(true);
-            preview->setContent(nullptr, library.findFootprint(name));
+            preview->setContent(nullptr, from.findFootprint(name));
             break;
         case LibraryKind::Part: {
-            const Part *part = library.findPart(name);
+            const Part *part = from.findPart(name);
             const Footprint *footprint = part != nullptr && !part->footprints.isEmpty()
-                                             ? library.findFootprint(part->footprints.first())
+                                             ? from.findFootprint(part->footprints.first())
                                              : nullptr;
             preview->setAlone(false);
-            preview->setContent(library.findSymbolOfPart(name), footprint);
+            preview->setContent(from.findSymbolOfPart(name), footprint);
             break;
         }
         }
@@ -135,9 +192,9 @@ QString ItemChooser::choose(QWidget *parent, const QString &title, const Library
         list->setCurrentItem(preferred != nullptr ? preferred : first);
         draw();
     };
-    const auto fill = [list, &library, &kind, filter](const QString &wanted) {
+    const auto fill = [list, &kind, filter, shownLibrary](const QString &wanted) {
         list->clear();
-        list->addItems(namesOf(library, kind));
+        list->addItems(namesOf(shownLibrary(), kind));
         filter(wanted);
     };
     QObject::connect(list, &QListWidget::currentItemChanged, &dialog, draw);
@@ -149,16 +206,43 @@ QString ItemChooser::choose(QWidget *parent, const QString &title, const Library
                          kind = kindOf.value(button);
                          fill(QString());
                      });
+    if (sources != nullptr) {
+        QObject::connect(sources, &QComboBox::activated, &dialog,
+                         [sources, &source, shown, fill](int index) {
+                             const QString was = shown();
+                             source = Source(sources->itemData(index).toInt());
+                             fill(was);
+                         });
+    }
+    if (remove != nullptr) {
+        QObject::connect(remove, &QPushButton::clicked, &dialog,
+                         [preview, &kind, options, shown, fill, list] {
+                             const QString name = shown();
+                             const int row = list->currentRow();
+                             // The drawing points into the libraries about to
+                             // be read again.
+                             preview->setContent(nullptr, nullptr);
+                             options->remove(kind, name);
+                             fill(QString());
+                             // The one after it chosen, as a list goes on.
+                             if (list->count() > 0)
+                                 list->setCurrentRow(std::min(row, list->count() - 1));
+                         });
+    }
     fill(current);
     QDialogButtonBox *buttons = new QDialogButtonBox(accept | QDialogButtonBox::Cancel, &dialog);
     QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     QObject::connect(list, &QListWidget::itemActivated, &dialog, &QDialog::accept);
+    QVBoxLayout *listColumn = new QVBoxLayout;
+    listColumn->addWidget(list, 1);
+    if (remove != nullptr)
+        listColumn->addWidget(remove, 0, Qt::AlignLeft);
     QHBoxLayout *choice = new QHBoxLayout;
-    choice->addWidget(list, 1);
+    choice->addLayout(listColumn, 1);
     choice->addWidget(preview, 1);
     QVBoxLayout *layout = new QVBoxLayout(&dialog);
-    if (kinds.size() > 1)
+    if (kinds.size() > 1 || sources != nullptr)
         layout->addLayout(kindRow);
     else
         delete kindRow;
@@ -170,6 +254,8 @@ QString ItemChooser::choose(QWidget *parent, const QString &title, const Library
     const QString name = shown();
     // The preview points into the library: nothing is drawn any more.
     preview->setContent(nullptr, nullptr);
+    if (options != nullptr)
+        options->source = source;
     return accepted ? name : QString();
 }
 

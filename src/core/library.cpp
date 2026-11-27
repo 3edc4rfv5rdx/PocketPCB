@@ -12,6 +12,25 @@ const char LIBRARY_FOOTPRINTS_FOLDER[] = "footprints";
 const char LIBRARY_PARTS_FOLDER[] = "parts";
 const char LIBRARY_FILE_EXT[] = ".json";
 
+QString LibraryFolder::itemPath(const QString &folder, const char *subfolder, const QString &name)
+{
+    return QDir(QDir(folder).filePath(QLatin1String(subfolder)))
+        .filePath(name + QLatin1String(LIBRARY_FILE_EXT));
+}
+
+const char *LibraryFolder::subfolder(LibraryKind kind)
+{
+    switch (kind) {
+    case LibraryKind::Symbol:
+        return LIBRARY_SYMBOLS_FOLDER;
+    case LibraryKind::Footprint:
+        return LIBRARY_FOOTPRINTS_FOLDER;
+    case LibraryKind::Part:
+        return LIBRARY_PARTS_FOLDER;
+    }
+    return LIBRARY_PARTS_FOLDER;
+}
+
 namespace {
 
 // Between the content of a library file and the item of one kind.

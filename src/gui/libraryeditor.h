@@ -1,6 +1,7 @@
 #pragma once
 
 #include "library.h"
+#include "itemchooser.h"
 #include "libraryfile.h"
 
 #include <QMainWindow>
@@ -71,8 +72,15 @@ public:
     // tab is shown.
     LibraryTab *openCopy();
     // Asks which footprint, symbol or part of the library to open
-    // (ItemChooser), and opens it; null when none is chosen.
+    // (ItemChooser), of all, of the built-in library or of the user's, and
+    // opens it; null when none is chosen. Items of the user's can be
+    // deleted there (deleteFromLibrary()).
     LibraryTab *askOpen();
+    // Deletes the item 'name' of 'kind' from the user's library once the
+    // user says so, told which parts list it and whether a built-in one of
+    // that name is seen again; its tab closes first, asking about unsaved
+    // changes. False when it is not deleted.
+    bool deleteFromLibrary(LibraryKind kind, const QString &name);
     // Closes tab 'index' once its changes are saved or dropped; false when
     // the user stays.
     bool closeTab(int index);
@@ -91,11 +99,14 @@ private:
     // The tabs, or the buttons of an empty window when there are none.
     void showTabsOrStart();
     void updateTab(QWidget *tab);
+    // The kind of item 'tab' edits.
+    static LibraryKind tabKind(const QWidget *tab);
 
     const Library *m_library = nullptr;
     Coord m_clearance = 0;
     // What Open… lists.
     LibraryKind m_openKind = LibraryKind::Footprint;
+    ItemChooser::Source m_openSource = ItemChooser::Source::All;
     QStackedWidget *m_pages = nullptr;
     QTabWidget *m_tabs = nullptr;
     QWidget *m_start = nullptr;

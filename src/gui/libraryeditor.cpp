@@ -1,19 +1,28 @@
 #include "libraryeditor.h"
 
+#include "alerts.h"
+#include "appsettings.h"
 #include "canvasview.h"
+#include "footprintedit.h"
 #include "footprinteditor.h"
 #include "format.h"
 #include "graphicedit.h"
 #include "itemchooser.h"
 #include "parteditor.h"
+#include "sheeteditor.h"
+#include "symboledit.h"
 #include "symboleditor.h"
 #include "toolicons.h"
 
 #include <QCloseEvent>
 #include <QDialogButtonBox>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMenu>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QStackedWidget>
 #include <QStatusBar>
@@ -282,32 +291,106 @@ LibraryTab *LibraryEditor::askOpen()
         m_openKind = LibraryKind::Footprint;
     else if (qobject_cast<PartEditor *>(m_tabs->currentWidget()) != nullptr)
         m_openKind = LibraryKind::Part;
+    QStringList problems;
+    const Library builtIn = LibraryFolder::read(AppSettings::builtInLibraryFolder(), problems);
+    Library user = LibraryFolder::read(AppSettings::userLibraryFolder(), problems);
+    ItemChooser::Options options;
+    options.builtIn = &builtIn;
+    options.user = &user;
+    options.source = m_openSource;
+    options.remove = [this, &user](LibraryKind kind, const QString &name) {
+        if (!deleteFromLibrary(kind, name))
+            return false;
+        QStringList ignored;
+        user = LibraryFolder::read(AppSettings::userLibraryFolder(), ignored);
+        return true;
+    };
     const QString name = ItemChooser::choose(
         this, tr("Open"), *m_library,
         {LibraryKind::Footprint, LibraryKind::Symbol, LibraryKind::Part}, m_openKind,
-        QDialogButtonBox::Open);
+        QDialogButtonBox::Open, QString(), &options);
+    m_openSource = options.source;
     if (name.isEmpty())
         return nullptr;
+    const Library &from = m_openSource == ItemChooser::Source::BuiltIn ? builtIn
+                          : m_openSource == ItemChooser::Source::User  ? user
+                                                                       : *m_library;
     switch (m_openKind) {
     case LibraryKind::Symbol: {
-        const Symbol *symbol = m_library->findSymbol(name);
+        const Symbol *symbol = from.findSymbol(name);
         return symbol == nullptr
                    ? nullptr
                    : openSymbol(name, *symbol, SymbolEditor::isInUserLibrary(name));
     }
     case LibraryKind::Footprint: {
-        const Footprint *footprint = m_library->findFootprint(name);
+        const Footprint *footprint = from.findFootprint(name);
         return footprint == nullptr
                    ? nullptr
                    : openFootprint(name, *footprint, FootprintEditor::isInUserLibrary(name));
     }
     case LibraryKind::Part: {
-        const Part *part = m_library->findPart(name);
+        const Part *part = from.findPart(name);
         return part == nullptr ? nullptr
                                : openPart(name, *part, PartEditor::isInUserLibrary(name));
     }
     }
     return nullptr;
+}
+
+bool LibraryEditor::deleteFromLibrary(LibraryKind kind, const QString &name)
+{
+    const char *subfolder = LibraryFolder::subfolder(kind);
+    const QString path = LibraryFolder::itemPath(AppSettings::userLibraryFolder(), subfolder, name);
+    if (name.isEmpty() || !QFileInfo::exists(path))
+        return false;
+    QStringList using_;
+    if (m_library != nullptr) {
+        if (kind == LibraryKind::Symbol)
+            using_ = partsUsingSymbol(*m_library, name);
+        else if (kind == LibraryKind::Footprint)
+            using_ = partsUsingFootprint(*m_library, name);
+    }
+    QString question = tr("Delete %1 from your library").arg(name);
+    if (!using_.isEmpty())
+        question += QStringLiteral(". ")
+                    + tr("These parts list it: %1").arg(using_.join(QStringLiteral(", ")));
+    if (QFileInfo::exists(
+            LibraryFolder::itemPath(AppSettings::builtInLibraryFolder(), subfolder, name)))
+        question += QStringLiteral(". ") + tr("The built-in one of that name is used again");
+    if (QMessageBox::warning(this, SheetEditor::actionName(SheetEditor::Action::Delete),
+                             question + QLatin1Char('?'),
+                             QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
+        != QMessageBox::Yes)
+        return false;
+    // Its tab closes first; unsaved changes are asked about.
+    for (int i = 0; i < m_tabs->count(); ++i) {
+        LibraryTab *tab = qobject_cast<LibraryTab *>(m_tabs->widget(i));
+        if (tab == nullptr || tab->name() != name || tabKind(tab) != kind)
+            continue;
+        if (!tab->confirmClose())
+            return false;
+        m_tabs->removeTab(i);
+        tab->deleteLater();
+        showTabsOrStart();
+        break;
+    }
+    if (!QFile::remove(path)) {
+        const Alert error = Alert::error(tr("Could not delete %1").arg(QDir::toNativeSeparators(path)));
+        Alerts::show(this, error, [this](const QString &text) { m_status->setText(text); });
+        return false;
+    }
+    m_status->setText(tr("%1 deleted from your library").arg(name));
+    emit saved();
+    return true;
+}
+
+LibraryKind LibraryEditor::tabKind(const QWidget *tab)
+{
+    if (qobject_cast<const SymbolEditor *>(tab) != nullptr)
+        return LibraryKind::Symbol;
+    if (qobject_cast<const FootprintEditor *>(tab) != nullptr)
+        return LibraryKind::Footprint;
+    return LibraryKind::Part;
 }
 
 ItemEditor *LibraryEditor::currentEditor() const

@@ -2193,6 +2193,26 @@
         <source>Copy</source>
         <translation>Копія</translation>
     </message>
+    <message>
+        <source>Delete %1 from your library</source>
+        <translation>Видалити %1 з вашої бібліотеки</translation>
+    </message>
+    <message>
+        <source>These parts list it: %1</source>
+        <translation>Його використовують деталі: %1</translation>
+    </message>
+    <message>
+        <source>The built-in one of that name is used again</source>
+        <translation>Знову використовуватиметься вбудований з тією ж назвою</translation>
+    </message>
+    <message>
+        <source>Could not delete %1</source>
+        <translation>Не вдалося видалити %1</translation>
+    </message>
+    <message>
+        <source>%1 deleted from your library</source>
+        <translation>%1 видалено з вашої бібліотеки</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::ItemChooser</name>
@@ -2207,6 +2227,26 @@
     <message>
         <source>Parts</source>
         <translation>Деталі</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>Усі</translation>
+    </message>
+    <message>
+        <source>Built-in</source>
+        <translation>Вбудована</translation>
+    </message>
+    <message>
+        <source>Mine</source>
+        <translation>Моя</translation>
+    </message>
+    <message>
+        <source>Library</source>
+        <translation>Бібліотека</translation>
+    </message>
+    <message>
+        <source>Deletes the one chosen from your library</source>
+        <translation>Видаляє вибране з вашої бібліотеки</translation>
     </message>
 </context>
 <context>

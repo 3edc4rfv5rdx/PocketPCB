@@ -6,7 +6,6 @@
 #include "sheeteditor.h"
 
 #include <QAction>
-#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QInputDialog>
@@ -28,13 +27,6 @@ const QRegularExpression &nameRule()
     return rule;
 }
 
-// The file of the item 'name' of the kind kept in 'subfolder'.
-QString itemPath(const QString &libraryFolder, const char *subfolder, const QString &name)
-{
-    return QDir(QDir(libraryFolder).filePath(QLatin1String(subfolder)))
-        .filePath(name + QLatin1String(LIBRARY_FILE_EXT));
-}
-
 } // namespace
 
 LibraryTab::LibraryTab(const QString &name, bool inUserLibrary, QWidget *parent)
@@ -54,7 +46,8 @@ LibraryTab::~LibraryTab()
 
 bool LibraryTab::userLibraryHas(const char *folder, const QString &name)
 {
-    return QFileInfo::exists(itemPath(AppSettings::userLibraryFolder(), folder, name));
+    return QFileInfo::exists(
+        LibraryFolder::itemPath(AppSettings::userLibraryFolder(), folder, name));
 }
 
 QAction *LibraryTab::addTool(QToolBar *bar, const QString &text, const char *name,
@@ -195,8 +188,10 @@ QString LibraryTab::askName(const QString &title)
     const char *folder = libraryFolder();
     const bool taken =
         name != m_name
-        && (QFileInfo::exists(itemPath(AppSettings::userLibraryFolder(), folder, name))
-            || QFileInfo::exists(itemPath(AppSettings::builtInLibraryFolder(), folder, name)));
+        && (QFileInfo::exists(
+                LibraryFolder::itemPath(AppSettings::userLibraryFolder(), folder, name))
+            || QFileInfo::exists(
+                LibraryFolder::itemPath(AppSettings::builtInLibraryFolder(), folder, name)));
     if (taken
         && QMessageBox::question(this, title, takenQuestion(name) + QLatin1Char('?'))
                != QMessageBox::Yes)
@@ -207,7 +202,8 @@ QString LibraryTab::askName(const QString &title)
 bool LibraryTab::saveAs(const QString &name, bool replace)
 {
     takeTyping();
-    const QString path = itemPath(AppSettings::userLibraryFolder(), libraryFolder(), name);
+    const QString path =
+        LibraryFolder::itemPath(AppSettings::userLibraryFolder(), libraryFolder(), name);
     if (!replace && QFileInfo::exists(path))
         return false;
     const QString problem = saveProblem();
@@ -278,13 +274,14 @@ bool LibraryTab::renameTo(const QString &name)
         item.kind = LibraryKind::Part;
         item.part = partRenamed(user.parts.value(partName), old, name);
         QString error;
-        if (!LibraryFile::write(itemPath(userFolder, LIBRARY_PARTS_FOLDER, partName), item, error)) {
+        const QString path = LibraryFolder::itemPath(userFolder, LIBRARY_PARTS_FOLDER, partName);
+        if (!LibraryFile::write(path, item, error)) {
             alert(Alert::error(error));
             emit saved(name);
             return false;
         }
     }
-    QFile::remove(itemPath(userFolder, libraryFolder(), old));
+    QFile::remove(LibraryFolder::itemPath(userFolder, libraryFolder(), old));
     showStatus(renamedMessage(old, name));
     emit saved(name);
     return true;
