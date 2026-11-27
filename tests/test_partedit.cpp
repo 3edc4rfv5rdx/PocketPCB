@@ -35,6 +35,7 @@ Part diode()
     part.footprints = {QStringLiteral("small"), QStringLiteral("large")};
     part.prefix = QStringLiteral("D");
     part.prefixGost = QStringLiteral("VD");
+    part.name.insert(QLatin1String(CODE_LANGUAGE), QStringLiteral("Diode"));
     return part;
 }
 
@@ -57,6 +58,30 @@ private slots:
                     .isEmpty());
     }
 
+    void padsWithoutPinAreListedOnceWithoutTheUnnumbered()
+    {
+        const Symbol symbol = symbolWithPins({QStringLiteral("1"), QStringLiteral("2")});
+        QCOMPARE(padsWithoutPin(symbol, footprintWithPads({QStringLiteral("1"), QStringLiteral("3"),
+                                                           QString(), QStringLiteral("3"),
+                                                           QStringLiteral("2")})),
+                 QStringList({QStringLiteral("3")}));
+    }
+
+    void extraPadsAreAMismatch()
+    {
+        Library library;
+        library.symbols.insert(QStringLiteral("diode"),
+                               symbolWithPins({QStringLiteral("A"), QStringLiteral("K")}));
+        library.footprints.insert(QStringLiteral("small"),
+                                  footprintWithPads({QStringLiteral("A"), QStringLiteral("K"),
+                                                     QStringLiteral("3")}));
+        Part part = diode();
+        part.footprints = {QStringLiteral("small")};
+        const QStringList problems = partMismatches(part, library);
+        QCOMPARE(problems.size(), 1);
+        QVERIFY(problems.first().contains(QStringLiteral("3")));
+    }
+
     void matchingPartHasNoMismatches()
     {
         Library library;
@@ -77,10 +102,12 @@ private slots:
         library.footprints.insert(QStringLiteral("small"),
                                   footprintWithPads({QStringLiteral("1"), QStringLiteral("2")}));
         const QStringList problems = partMismatches(diode(), library);
-        QCOMPARE(problems.size(), 2);
+        // Its pins without pads, its pads without pins, the footprint missing.
+        QCOMPARE(problems.size(), 3);
         QVERIFY(problems.at(0).contains(QStringLiteral("small")));
         QVERIFY(problems.at(0).contains(QStringLiteral("A, K")));
-        QVERIFY(problems.at(1).contains(QStringLiteral("large")));
+        QVERIFY(problems.at(1).contains(QStringLiteral("1, 2")));
+        QVERIFY(problems.at(2).contains(QStringLiteral("large")));
     }
 
     void missingSymbolIsToldOnceAndPadsAreNotChecked()
@@ -99,8 +126,21 @@ private slots:
         Part part = diode();
         part.symbol.clear();
         QVERIFY(!partProblem(part).isEmpty());
+        // One prefix is enough: the other takes it.
         part = diode();
         part.prefixGost.clear();
+        QVERIFY(partProblem(part).isEmpty());
+        QCOMPARE(withBothPrefixes(part).prefixGost, QStringLiteral("D"));
+        part.prefix.clear();
+        QVERIFY(!partProblem(part).isEmpty());
+        part = diode();
+        part.prefix.clear();
+        QCOMPARE(withBothPrefixes(part).prefix, QStringLiteral("VD"));
+        QCOMPARE(withBothPrefixes(diode()), diode());
+        // The English name is needed, the others not.
+        part = diode();
+        part.name.clear();
+        part.name.insert(QStringLiteral("ru"), QStringLiteral("Диод"));
         QVERIFY(!partProblem(part).isEmpty());
         // No footprints is a part never on the board.
         part = diode();

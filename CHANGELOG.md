@@ -3,6 +3,11 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The part editor takes the names in one field, the language chosen beside it
+- F: A part needs its English name to be saved; the other languages may stay empty
+- F: The part editor offers again a name it could not save under
+- F: The part editor tells of pads no pin has, and warns when such a part is saved
+- F: A part needs one designator prefix; the other style takes it
 - N: Place wire pads puts a wire pad on each net that goes from an off-board part to the board
 - N: Part editor in the library editor window: symbol, footprints, prefixes, value, group, power, names, and a check that every pin has a pad
 - R: The tabs of the library editor share saving, renaming and Undo through one base

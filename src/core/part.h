@@ -47,6 +47,9 @@ struct Part
 QList<int> standardPowersMw();
 // A rated power in watts, in the current locale: "0.125 W"; empty for 0.
 QString formatPower(int powerMw);
+// The language of the strings in the code ("en"): the one a part's name
+// must be given in, the others being optional.
+extern const char CODE_LANGUAGE[];
 // The largest power, in milliwatts, a component may be given.
 constexpr int MAX_POWER_MW = 1000000;
 // 'number' (1 to 3999) in Roman numerals: the mark of a power of 5 W and

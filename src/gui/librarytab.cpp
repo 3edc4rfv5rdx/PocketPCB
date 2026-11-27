@@ -160,20 +160,28 @@ bool LibraryTab::save()
     if (!m_name.isEmpty())
         return saveAs(m_name, true);
     const QString name = askName(MainWindow::saveTitle().remove(QLatin1Char('&')));
-    return !name.isEmpty() && saveAs(name, true);
+    return !name.isEmpty() && saveAsked(name);
 }
 
 bool LibraryTab::saveUnderNewName()
 {
     const QString name = askName(MainWindow::saveAsTitle().remove(QLatin1Char('&')));
-    return !name.isEmpty() && saveAs(name, true);
+    return !name.isEmpty() && saveAsked(name);
+}
+
+bool LibraryTab::saveAsked(const QString &name)
+{
+    const bool written = saveAs(name, true);
+    m_triedName = written ? QString() : name;
+    return written;
 }
 
 QString LibraryTab::askName(const QString &title)
 {
     bool ok = false;
+    const QString offered = m_triedName.isEmpty() ? m_name : m_triedName;
     const QString name = QInputDialog::getText(this, title, nameLabel() + QLatin1Char(':'),
-                                               QLineEdit::Normal, m_name, &ok)
+                                               QLineEdit::Normal, offered, &ok)
                              .trimmed();
     if (!ok || name.isEmpty())
         return QString();
@@ -221,6 +229,9 @@ bool LibraryTab::saveAs(const QString &name, bool replace)
     m_undoStack.setClean();
     emit titleChanged();
     showStatus(writtenMessage(path));
+    const QString warning = saveWarning();
+    if (!warning.isEmpty())
+        alert(Alert::warning(capitalized(warning), QStringLiteral("itemSavedWithWarning")));
     emit saved(name);
     return true;
 }

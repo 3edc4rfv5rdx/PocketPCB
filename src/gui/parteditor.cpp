@@ -141,16 +141,24 @@ PartEditor::PartEditor(const QString &name, const Part &part, bool inUserLibrary
     fields->addRow(tr("Rated power") + QLatin1Char(':'), m_power);
     fields->addRow(QString(), m_connector);
     fields->addRow(QString(), m_noValue);
-    for (const QString &language : supportedLanguages()) {
-        QLineEdit *edit = formLineEdit(form, "partName");
-        edit->setProperty("language", language);
-        m_names.append(edit);
-        fields->addRow(tr("Name, %1").arg(languageName(language)) + QLatin1Char(':'), edit);
-    }
-    for (QLineEdit *edit : {m_prefix, m_prefixGost, m_value})
+    m_nameLanguage = new QComboBox(form);
+    m_nameLanguage->setObjectName(QStringLiteral("partNameLanguage"));
+    for (const QString &language : supportedLanguages())
+        m_nameLanguage->addItem(languageName(language), language);
+    m_nameShown = m_nameLanguage->itemData(0).toString();
+    m_name = formLineEdit(form, "partName");
+    QHBoxLayout *nameRow = new QHBoxLayout;
+    nameRow->addWidget(m_nameLanguage);
+    nameRow->addWidget(m_name, 1);
+    fields->addRow(tr("Name") + QLatin1Char(':'), nameRow);
+    for (QLineEdit *edit : {m_prefix, m_prefixGost, m_value, m_name})
         connect(edit, &QLineEdit::editingFinished, this, &PartEditor::takeFields);
-    for (QLineEdit *edit : std::as_const(m_names))
-        connect(edit, &QLineEdit::editingFinished, this, &PartEditor::takeFields);
+    // What was typed for one language is kept before the field shows another.
+    connect(m_nameLanguage, &QComboBox::activated, this, [this](int index) {
+        takeFields();
+        m_nameShown = m_nameLanguage->itemData(index).toString();
+        m_name->setText(m_part.name.value(m_nameShown));
+    });
     connect(m_group, &QComboBox::activated, this, [this](int index) {
         Part changed = m_part;
         changed.group = m_group->itemData(index).toString();
@@ -346,8 +354,7 @@ void PartEditor::refresh()
     m_power->setCurrentIndex(itemFor(m_power, m_part.powerMw, formatPower(m_part.powerMw)));
     m_connector->setChecked(m_part.connector);
     m_noValue->setChecked(m_part.noValue);
-    for (QLineEdit *edit : std::as_const(m_names))
-        edit->setText(m_part.name.value(edit->property("language").toString()));
+    m_name->setText(m_part.name.value(m_nameShown));
     m_check->setText(checkText());
     showDrawings();
 }
@@ -376,14 +383,11 @@ void PartEditor::takeFields()
     changed.prefix = m_prefix->text().trimmed();
     changed.prefixGost = m_prefixGost->text().trimmed();
     changed.value = m_value->text().trimmed();
-    for (const QLineEdit *edit : std::as_const(m_names)) {
-        const QString language = edit->property("language").toString();
-        const QString text = edit->text().trimmed();
-        if (text.isEmpty())
-            changed.name.remove(language);
-        else
-            changed.name.insert(language, text);
-    }
+    const QString name = m_name->text().trimmed();
+    if (name.isEmpty())
+        changed.name.remove(m_nameShown);
+    else
+        changed.name.insert(m_nameShown, name);
     change(changed);
 }
 
@@ -396,13 +400,19 @@ LibraryItem PartEditor::libraryItem() const
 {
     LibraryItem item;
     item.kind = LibraryKind::Part;
-    item.part = m_part;
+    item.part = withBothPrefixes(m_part);
     return item;
 }
 
 QString PartEditor::saveProblem() const
 {
     return partProblem(m_part);
+}
+
+QString PartEditor::saveWarning() const
+{
+    return m_library != nullptr ? partMismatches(m_part, *m_library).join(QStringLiteral("; "))
+                                : QString();
 }
 
 QStringList PartEditor::partsUsing(const Library &library, const QString &name) const

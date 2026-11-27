@@ -8,6 +8,7 @@
 namespace ppcb {
 
 const char LINK_GROUP[] = "links";
+const char CODE_LANGUAGE[] = "en";
 
 namespace {
 

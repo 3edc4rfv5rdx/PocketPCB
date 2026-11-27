@@ -206,11 +206,12 @@ board, lay the tracks, and make the board at a factory or at home by toner trans
     in its list drawn beside it.</li>
   <li><b>Symbol</b> picks the symbol from the library; under <b>Footprints</b>, <b>Add…</b> picks one more,
     <b>Remove</b> takes the chosen one out, the arrows move it. The first, in bold, is the one a new part gets.</li>
-  <li>Designator prefixes, international and GOST, are both needed to save; the value a new part starts with, its
+  <li>A designator prefix, international or GOST, is needed to save; one left empty takes the other. The value a new part starts with, its
     group in the library and the bill of materials, its rated power, <b>Connector</b> for parts that carry nets off
-    the board, <b>Needs no value</b>, and its name in each language.</li>
-  <li>The line under the form says whether every pin of the symbol has a pad of its number in every footprint, and
-    names what is missing. Each change is a step of Undo; Save, Save as and Rename work as in the other tabs.</li>
+    the board, <b>Needs no value</b>, and its name, the language chosen beside the field: English is needed, the others may stay empty.</li>
+  <li>The line under the form says whether the pins of the symbol and the pads of every footprint match by
+    number, and names pins without a pad and pads without a pin; saving such a part warns. A name asked for and
+    not saved is offered again. Each change is a step of Undo; Save, Save as and Rename work as in the other tabs.</li>
 </ul>
 
 <h2 id="schematic">Schematic</h2>

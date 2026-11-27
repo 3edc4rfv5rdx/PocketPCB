@@ -24,6 +24,20 @@ QStringList pinsWithoutPad(const Symbol &symbol, const Footprint &footprint)
     return missing;
 }
 
+QStringList padsWithoutPin(const Symbol &symbol, const Footprint &footprint)
+{
+    QStringList extra;
+    for (const Pad &pad : footprint.pads) {
+        if (pad.number.isEmpty() || extra.contains(pad.number))
+            continue;
+        const bool found = std::any_of(symbol.pins.cbegin(), symbol.pins.cend(),
+                                       [&pad](const Pin &pin) { return pin.number == pad.number; });
+        if (!found)
+            extra.append(pad.number);
+    }
+    return extra;
+}
+
 QStringList partMismatches(const Part &part, const Library &library)
 {
     QStringList problems;
@@ -44,6 +58,10 @@ QStringList partMismatches(const Part &part, const Library &library)
         if (!missing.isEmpty())
             problems.append(QCoreApplication::translate(CONTEXT, "%1 has no pad for pins %2")
                                 .arg(name, missing.join(QStringLiteral(", "))));
+        const QStringList extra = padsWithoutPin(*symbol, *footprint);
+        if (!extra.isEmpty())
+            problems.append(QCoreApplication::translate(CONTEXT, "%1 has pads %2 for no pin")
+                                .arg(name, extra.join(QStringLiteral(", "))));
     }
     return problems;
 }
@@ -52,9 +70,21 @@ QString partProblem(const Part &part)
 {
     if (part.symbol.isEmpty())
         return QCoreApplication::translate(CONTEXT, "a part needs a symbol");
-    if (part.prefix.isEmpty() || part.prefixGost.isEmpty())
-        return QCoreApplication::translate(CONTEXT, "a part needs both designator prefixes");
+    if (part.prefix.isEmpty() && part.prefixGost.isEmpty())
+        return QCoreApplication::translate(CONTEXT, "a part needs a designator prefix");
+    if (part.name.value(QLatin1String(CODE_LANGUAGE)).trimmed().isEmpty())
+        return QCoreApplication::translate(CONTEXT, "a part needs an English name");
     return QString();
+}
+
+Part withBothPrefixes(const Part &part)
+{
+    Part result = part;
+    if (result.prefix.isEmpty())
+        result.prefix = result.prefixGost;
+    if (result.prefixGost.isEmpty())
+        result.prefixGost = result.prefix;
+    return result;
 }
 
 Part withFootprintMoved(const Part &part, int from, int to)

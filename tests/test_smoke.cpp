@@ -1045,6 +1045,22 @@ private slots:
         prefix->setText(QStringLiteral("D"));
         QLineEdit *prefixGost = editor->findChild<QLineEdit *>(QStringLiteral("partPrefixGost"));
         prefixGost->setText(QStringLiteral("VD"));
+        // The English name is needed to save.
+        QLineEdit *partName = editor->findChild<QLineEdit *>(QStringLiteral("partName"));
+        QVERIFY(partName != nullptr);
+        partName->setText(QStringLiteral("Test diode"));
+        // Another language: what was typed is kept, the field shows its own.
+        QComboBox *language = editor->findChild<QComboBox *>(QStringLiteral("partNameLanguage"));
+        QVERIFY(language != nullptr);
+        const int russian = language->findData(QStringLiteral("ru"));
+        language->setCurrentIndex(russian);
+        emit language->activated(russian);
+        QCOMPARE(partName->text(), QString());
+        partName->setText(QStringLiteral("Тестовый диод"));
+        language->setCurrentIndex(0);
+        emit language->activated(0);
+        QCOMPARE(partName->text(), QStringLiteral("Test diode"));
+        QCOMPARE(editor->part().name.value(QStringLiteral("ru")), QStringLiteral("Тестовый диод"));
 
         QVERIFY(editor->saveAs(name, true));
         QCOMPARE(editor->part().prefixGost, QStringLiteral("VD"));

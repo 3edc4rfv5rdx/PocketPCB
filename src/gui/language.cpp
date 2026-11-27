@@ -1,6 +1,7 @@
 #include "language.h"
 
 #include "appsettings.h"
+#include "part.h"
 
 #include <QCoreApplication>
 #include <QLibraryInfo>
@@ -33,7 +34,7 @@ QString languagePart(const QString &name)
 
 QStringList supportedLanguages()
 {
-    return {QStringLiteral("en"), QStringLiteral("uk"), QStringLiteral("ru")};
+    return {QLatin1String(CODE_LANGUAGE), QStringLiteral("uk"), QStringLiteral("ru")};
 }
 
 QString languageName(const QString &code)

@@ -114,6 +114,9 @@ protected:
     virtual LibraryItem libraryItem() const = 0;
     // Why the item cannot be written; empty when it can.
     virtual QString saveProblem() const = 0;
+    // What is wrong with the item, told once it is written all the same;
+    // empty for nothing.
+    virtual QString saveWarning() const { return QString(); }
     // The parts of 'library' that list the item 'name', and one of them
     // listing 'to' in its place; none for a part.
     virtual QStringList partsUsing(const Library &library, const QString &name) const = 0;
@@ -135,11 +138,18 @@ protected:
     QUndoStack m_undoStack;
 
 private:
-    // A name typed for the item, asked with 'title'; empty when none is or
-    // the user keeps it from replacing another.
+    // A name typed for the item, asked with 'title', the one tried last
+    // offered; empty when none is or the user keeps it from replacing
+    // another.
     QString askName(const QString &title);
+    // saveAs() under a name asked for, kept for the next time when the
+    // item is not written.
+    bool saveAsked(const QString &name);
 
     QString m_status;
+    // The name last asked for that the item could not be written under:
+    // offered again the next time.
+    QString m_triedName;
     QAction *m_renameAction = nullptr;
 };
 

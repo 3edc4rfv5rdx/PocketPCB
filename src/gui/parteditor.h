@@ -66,6 +66,7 @@ protected:
     const char *libraryFolder() const override;
     LibraryItem libraryItem() const override;
     QString saveProblem() const override;
+    QString saveWarning() const override;
     QStringList partsUsing(const Library &library, const QString &name) const override;
     Part partRenamed(const Part &part, const QString &from, const QString &to) const override;
     QString nameLabel() const override;
@@ -100,8 +101,12 @@ private:
     QComboBox *m_power = nullptr;
     QCheckBox *m_connector = nullptr;
     QCheckBox *m_noValue = nullptr;
-    // The name in each language, in the order of supportedLanguages().
-    QList<QLineEdit *> m_names;
+    // The name in the language chosen beside it, one of
+    // supportedLanguages(), English at first.
+    QComboBox *m_nameLanguage = nullptr;
+    QLineEdit *m_name = nullptr;
+    // The language whose name the field shows.
+    QString m_nameShown;
     QLabel *m_check = nullptr;
     PartPreview *m_preview = nullptr;
 };

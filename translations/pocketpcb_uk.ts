@@ -2217,8 +2217,16 @@
         <translation>деталі потрібен символ</translation>
     </message>
     <message>
-        <source>a part needs both designator prefixes</source>
-        <translation>деталі потрібні обидва префікси позначення</translation>
+        <source>a part needs a designator prefix</source>
+        <translation>деталі потрібен префікс позначення</translation>
+    </message>
+    <message>
+        <source>%1 has pads %2 for no pin</source>
+        <translation>у %1 площадки %2 не для жодного виводу</translation>
+    </message>
+    <message>
+        <source>a part needs an English name</source>
+        <translation>деталі потрібна англійська назва</translation>
     </message>
 </context>
 <context>
@@ -2284,8 +2292,8 @@
         <translation>Номінальна потужність</translation>
     </message>
     <message>
-        <source>Name, %1</source>
-        <translation>Назва, %1</translation>
+        <source>Name</source>
+        <translation>Назва</translation>
     </message>
     <message>
         <source>New part</source>
