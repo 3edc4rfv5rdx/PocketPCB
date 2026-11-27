@@ -48,7 +48,7 @@ target_link_libraries(pocketpcb_gui PUBLIC pocketpcb_core Qt6::Widgets Qt6::Prin
 # is not installed.
 target_compile_definitions(pocketpcb_gui PRIVATE
     PPCB_SOURCE_LIBRARY_DIR="${PROJECT_SOURCE_DIR}/library"
-    PPCB_SOURCE_HELP_FILE="${PROJECT_SOURCE_DIR}/help.html")
+    PPCB_SOURCE_HELP_FILE="${PROJECT_SOURCE_DIR}/help/help.html")
 
 # Translations: .ts files are compiled to .qm and embedded as resources under
 # :/i18n. "cmake --build build --target pocketpcb_gui_lupdate" refreshes the

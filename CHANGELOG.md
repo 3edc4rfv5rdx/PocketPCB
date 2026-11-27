@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- I: The user guide and its translations are kept in the help folder
 ## v0.16.412 (2026-11-27)
 - N: The user guide in Russian and Ukrainian, opened by F1 in the language of the interface
 - F: A measurement in the library editor shows on a dark plate, the length large, and Measure tells of Shift

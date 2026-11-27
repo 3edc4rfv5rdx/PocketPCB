@@ -63,7 +63,7 @@ const char APPIMAGE_VARIABLE[] = "APPIMAGE";
 // Where an AppImage keeps the built-in library, from the program's folder.
 const char INSTALLED_LIBRARY_FOLDER[] = "../share/pocketpcb/library";
 // The same for the user guide.
-const char INSTALLED_HELP_FILE[] = "../share/pocketpcb/help.html";
+const char INSTALLED_HELP_FILE[] = "../share/pocketpcb/help/help.html";
 const char KEY_WINDOW_GEOMETRY[] = "window/geometry";
 const char KEY_WINDOW_STATE[] = "window/state";
 

@@ -6,7 +6,7 @@ Written in C++ with Qt 6. Linux first; the code is kept portable. Text is drawn 
 
 ## Status
 
-Early development. What works now (the user guide, Help > User guide or [`help.html`](help.html), tells how):
+Early development. What works now (the user guide, Help > User guide or [`help/help.html`](help/help.html), tells how):
 
 - Projects: a folder each, JSON files, backups, autosave, recent projects.
 - Versions: numbered zips in `versions/`, a Versions panel, restore, a read-only copy.
