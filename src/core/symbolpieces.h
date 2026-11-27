@@ -36,8 +36,14 @@ enum class SymbolPiece {
 // Every piece, in the order the menus offer them.
 QList<SymbolPiece> symbolPieces();
 // The piece as a whole symbol: drawings, pins, the places of the
-// designator and the value, its origin in its middle.
+// designator and the value, its origin in its middle. An inductor has
+// four half circles.
 Symbol pieceSymbol(SymbolPiece piece);
+// The numbers of half circles an inductor is offered with.
+QList<int> inductorTurnChoices();
+// GOST 2.723: an inductor of 'turns' half circles of PIN_GRID radius over
+// its line, pins on either side.
+Symbol inductorSymbol(int turns);
 
 // A chip after GOST 2.743: a box 'width' wide, 'left' pins down its left
 // side and 'right' down its right one, CHIP_PIN_PITCH apart, numbered from

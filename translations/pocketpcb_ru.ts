@@ -2890,6 +2890,10 @@
         <source>Potentiometer</source>
         <translation>Переменный резистор</translation>
     </message>
+    <message>
+        <source>%1 turns</source>
+        <translation>%1 витка</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::PinPanel</name>

@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "inductor-2",
+  "footprints": ["resistor-10.16", "resistor-7.62", "resistor-12.7", "resistor-15.24", "resistor-20.32", "resistor-vertical"],
+  "prefix": "L",
+  "prefixGost": "L",
+  "value": "",
+  "connector": false,
+  "group": "inductors",
+  "name": {"en": "Inductor 2 turns", "uk": "Котушка індуктивності 2 витки", "ru": "Катушка индуктивности 2 витка"}
+}

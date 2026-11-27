@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "inductor-core-2",
+  "footprints": ["capacitor-5.08", "resistor-10.16", "resistor-7.62", "resistor-12.7", "resistor-15.24", "resistor-20.32", "resistor-vertical"],
+  "prefix": "L",
+  "prefixGost": "L",
+  "value": "",
+  "connector": false,
+  "group": "inductors",
+  "name": {"en": "Choke with a core 2 turns", "uk": "Дросель з осердям 2 витки", "ru": "Дроссель с сердечником 2 витка"}
+}

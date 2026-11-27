@@ -301,7 +301,7 @@ void LibraryEditor::addNewSymbolFromActions(QMenu *menu,
                                             const std::function<LibraryEditor *()> &window)
 {
     SymbolEditor::addPieceActions(
-        menu, [window](SymbolPiece piece) { window()->openSymbolFrom(pieceSymbol(piece)); },
+        menu, [window](const Symbol &piece) { window()->openSymbolFrom(piece); },
         [window] { window()->openNewSymbol()->askChip(); });
 }
 

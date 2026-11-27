@@ -160,26 +160,6 @@ Symbol potentiometer()
     return symbol;
 }
 
-// GOST 2.723: half circles of 2.54 mm radius, four of them.
-Symbol inductor()
-{
-    const int turns = 4;
-    Symbol symbol = twoPins(QStringLiteral("1"), QStringLiteral("2"), 5 * PIN_GRID, PIN_GRID);
-    for (int i = 0; i < turns; ++i) {
-        Graphic arc;
-        arc.kind = GraphicKind::Arc;
-        arc.a = Point{(2 * i - 3) * PIN_GRID, 0};
-        arc.radius = PIN_GRID;
-        // Over the line: from the left through the top to the right.
-        arc.startAngle = 180;
-        arc.spanAngle = 180;
-        symbol.graphics.append(arc);
-    }
-    symbol.refAt = Point{0, -2 * PIN_GRID};
-    symbol.valueAt = Point{0, PIN_GRID};
-    return symbol;
-}
-
 // GOST 2.730: a circle 12 mm across, the base 5 mm; the arrow of the
 // emitter out of it for NPN, into it for PNP.
 Symbol transistor(bool npn)
@@ -243,11 +223,36 @@ Symbol pieceSymbol(SymbolPiece piece)
     case SymbolPiece::PnpTransistor:
         return transistor(false);
     case SymbolPiece::Inductor:
-        return inductor();
+        return inductorSymbol(4);
     case SymbolPiece::Potentiometer:
         return potentiometer();
     }
     return Symbol();
+}
+
+QList<int> inductorTurnChoices()
+{
+    return {2, 3, 4};
+}
+
+Symbol inductorSymbol(int turns)
+{
+    turns = std::max(1, turns);
+    Symbol symbol =
+        twoPins(QStringLiteral("1"), QStringLiteral("2"), (turns + 1) * PIN_GRID, PIN_GRID);
+    for (int i = 0; i < turns; ++i) {
+        Graphic arc;
+        arc.kind = GraphicKind::Arc;
+        arc.a = Point{(2 * i - (turns - 1)) * PIN_GRID, 0};
+        arc.radius = PIN_GRID;
+        // Over the line: from the left through the top to the right.
+        arc.startAngle = 180;
+        arc.spanAngle = 180;
+        symbol.graphics.append(arc);
+    }
+    symbol.refAt = Point{0, -2 * PIN_GRID};
+    symbol.valueAt = Point{0, PIN_GRID};
+    return symbol;
 }
 
 Symbol chipSymbol(int left, int right, Coord width, const QString &function)

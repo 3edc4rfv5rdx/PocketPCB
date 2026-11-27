@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "transformer-dot-2",
+  "footprints": [],
+  "prefix": "T",
+  "prefixGost": "T",
+  "value": "",
+  "connector": false,
+  "group": "transformers",
+  "name": {"en": "Transformer with winding starts 2 turns", "uk": "Трансформатор з початками обмоток 2 витки", "ru": "Трансформатор с началами обмоток 2 витка"}
+}

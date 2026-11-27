@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "transformer-3",
+  "footprints": [],
+  "prefix": "T",
+  "prefixGost": "T",
+  "value": "",
+  "connector": false,
+  "group": "transformers",
+  "name": {"en": "Transformer 3 turns", "uk": "Трансформатор 3 витки", "ru": "Трансформатор 3 витка"}
+}

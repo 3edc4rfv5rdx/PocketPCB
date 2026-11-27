@@ -62,6 +62,21 @@ private slots:
         QCOMPARE(pinBodyEnd(npn.pins.at(1)), (Point{2540000, -3810000}));
     }
 
+    // An inductor of 2, 3 or 4 half circles of the pin grid's radius, its
+    // pins at their ends: the four of the ready-made one.
+    void anInductorHasAsManyHalfCirclesAsAsked()
+    {
+        QCOMPARE(inductorSymbol(4), pieceSymbol(SymbolPiece::Inductor));
+        for (const int turns : inductorTurnChoices()) {
+            const Symbol symbol = inductorSymbol(turns);
+            QVERIFY(symbolProblem(symbol).isEmpty());
+            QCOMPARE(symbol.graphics.size(), turns);
+            QCOMPARE(symbol.graphics.first().radius, PIN_GRID);
+            QCOMPARE(pinBodyEnd(symbol.pins.first()).x, -turns * PIN_GRID);
+            QCOMPARE(pinBodyEnd(symbol.pins.last()).x, turns * PIN_GRID);
+        }
+    }
+
     void aChipHasItsPinsDownBothSides()
     {
         const Symbol chip = chipSymbol(3, 2, 12000000, QStringLiteral("&"));

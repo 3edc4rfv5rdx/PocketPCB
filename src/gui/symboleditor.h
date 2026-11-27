@@ -36,9 +36,10 @@ public:
     static QString newSymbolFromTitle();
     // The name of a ready-made piece in a menu.
     static QString pieceTitle(SymbolPiece piece);
-    // An action in 'menu' for every ready-made piece, 'chosen' told which,
-    // and under them Chip…, which calls 'chip'.
-    static void addPieceActions(QMenu *menu, const std::function<void(SymbolPiece)> &chosen,
+    // An action in 'menu' for every ready-made piece, 'chosen' given its
+    // symbol, the inductor in a menu of its numbers of turns, and
+    // under them Chip…, which calls 'chip'.
+    static void addPieceActions(QMenu *menu, const std::function<void(const Symbol &)> &chosen,
                                 const std::function<void()> &chip);
     // True when the user's library has a symbol 'name' of its own.
     static bool isInUserLibrary(const QString &name);

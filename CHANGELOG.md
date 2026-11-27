@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Inductors, chokes and transformers of 2 and 3 turns in the library, and the ready-made inductor of 2, 3 or 4
 - F: The built-in inductors, transformers and ferrite bead are drawn to the ESKD size, windings of half circles 2.54 mm in radius
 - F: The built-in transistors, bipolar, field-effect, IGBT, unijunction and Darlington, are drawn to the ESKD size, in a circle 12 mm across
 - F: The built-in diodes, thyristors, triac, diac and diode bridge are drawn to the ESKD size, a triangle 4×4 mm

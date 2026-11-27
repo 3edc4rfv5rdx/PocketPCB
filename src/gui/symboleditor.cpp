@@ -108,12 +108,23 @@ QString SymbolEditor::pieceTitle(SymbolPiece piece)
     return QString();
 }
 
-void SymbolEditor::addPieceActions(QMenu *menu, const std::function<void(SymbolPiece)> &chosen,
+void SymbolEditor::addPieceActions(QMenu *menu,
+                                   const std::function<void(const Symbol &)> &chosen,
                                    const std::function<void()> &chip)
 {
     for (const SymbolPiece piece : symbolPieces()) {
+        if (piece == SymbolPiece::Inductor) {
+            QMenu *turns = menu->addMenu(pieceTitle(piece));
+            for (const int count : inductorTurnChoices()) {
+                QAction *action = turns->addAction(tr("%1 turns").arg(count));
+                QObject::connect(action, &QAction::triggered, menu,
+                                 [chosen, count] { chosen(inductorSymbol(count)); });
+            }
+            continue;
+        }
         QAction *action = menu->addAction(pieceTitle(piece));
-        QObject::connect(action, &QAction::triggered, menu, [chosen, piece] { chosen(piece); });
+        QObject::connect(action, &QAction::triggered, menu,
+                         [chosen, piece] { chosen(pieceSymbol(piece)); });
     }
     menu->addSeparator();
     QAction *chipAction = menu->addAction(tr("Chip") + QStringLiteral("…"));
@@ -183,7 +194,7 @@ void SymbolEditor::addPlacingTools(QToolBar *bar)
     m_modeActions.insert(int(Mode::Row), readyMade);
     QMenu *pieces = new QMenu(this);
     addPieceActions(
-        pieces, [this](SymbolPiece piece) { placePiece(pieceSymbol(piece)); },
+        pieces, [this](const Symbol &piece) { placePiece(piece); },
         [this] { askChip(); });
     // The button opens the menu: a click alone has nothing to place yet.
     bar->removeAction(readyMade);
