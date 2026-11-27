@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Ready-made zener and Schottky diodes, LED, photodiode and potentiometer in the symbol editor
 - F: The arrow of Pin in the symbol editor offers the usual pin lengths
 - F: Show label in the menu of a wire pad takes its label away
 - F: Parts on wire pads for their own wires, as potentiometers, have no wire pad label

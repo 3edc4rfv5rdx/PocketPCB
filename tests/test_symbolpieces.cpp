@@ -41,6 +41,22 @@ private slots:
         const Symbol diode = pieceSymbol(SymbolPiece::Diode);
         QCOMPARE(diode.graphics.at(1).b.y - diode.graphics.at(1).a.y, 4000000);
         QCOMPARE(pinBodyEnd(diode.pins.first()), (Point{-2000000, 0}));
+        // The kin of the diode draw it and add their marks.
+        for (const SymbolPiece kin : {SymbolPiece::ZenerDiode, SymbolPiece::SchottkyDiode,
+                                      SymbolPiece::Led, SymbolPiece::Photodiode}) {
+            const Symbol symbol = pieceSymbol(kin);
+            QCOMPARE(symbol.pins, diode.pins);
+            QVERIFY(symbol.graphics.size() > diode.graphics.size());
+            QCOMPARE(symbol.graphics.mid(0, diode.graphics.size()), diode.graphics);
+        }
+        // An LED's arrows point away from it, a photodiode's at it.
+        const Graphic ledArrow = pieceSymbol(SymbolPiece::Led).graphics.at(4);
+        const Graphic photoArrow = pieceSymbol(SymbolPiece::Photodiode).graphics.at(4);
+        QVERIFY(ledArrow.points.first().y < photoArrow.points.first().y);
+        // The potentiometer's wiper comes from below onto the body.
+        const Symbol potentiometer = pieceSymbol(SymbolPiece::Potentiometer);
+        QCOMPARE(potentiometer.pins.size(), 3);
+        QCOMPARE(pinBodyEnd(potentiometer.pins.at(2)), (Point{0, 2000000}));
         const Symbol npn = pieceSymbol(SymbolPiece::NpnTransistor);
         QCOMPARE(npn.graphics.first().radius, 6000000);
         QCOMPARE(pinBodyEnd(npn.pins.at(1)), (Point{2540000, -3810000}));

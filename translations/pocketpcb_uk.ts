@@ -2870,6 +2870,26 @@
         <source>Place ready-made</source>
         <translation>Поставити готовий</translation>
     </message>
+    <message>
+        <source>Zener diode</source>
+        <translation>Стабілітрон</translation>
+    </message>
+    <message>
+        <source>Schottky diode</source>
+        <translation>Діод Шотткі</translation>
+    </message>
+    <message>
+        <source>LED</source>
+        <translation>Світлодіод</translation>
+    </message>
+    <message>
+        <source>Photodiode</source>
+        <translation>Фотодіод</translation>
+    </message>
+    <message>
+        <source>Potentiometer</source>
+        <translation>Змінний резистор</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::PinPanel</name>

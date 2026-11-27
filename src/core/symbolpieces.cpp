@@ -80,6 +80,24 @@ Symbol electrolyticCapacitor()
     return symbol;
 }
 
+// The arrow on the line from 'from' to 'to': its point 'at' of the way
+// along, pointing towards 'to' or, with 'back', towards 'from'.
+Graphic arrowOn(const QPointF &from, const QPointF &to, double at, bool back)
+{
+    const double length = 1.5;
+    const double halfWidth = 0.5;
+    const QLineF line(from, to);
+    const QPointF unit = (to - from) / line.length();
+    const QPointF normal(-unit.y(), unit.x());
+    const QPointF tip = from + (to - from) * at;
+    const QPointF base = back ? tip + unit * length : tip - unit * length;
+    Graphic arrow = polygonOf({mm(tip.x(), tip.y()),
+                               mm(base.x() + normal.x() * halfWidth, base.y() + normal.y() * halfWidth),
+                               mm(base.x() - normal.x() * halfWidth, base.y() - normal.y() * halfWidth)});
+    arrow.filled = true;
+    return arrow;
+}
+
 // GOST 2.730: a triangle 4 x 4 mm, the bar as long, the line of the pins
 // through the triangle.
 Symbol diode()
@@ -90,6 +108,55 @@ Symbol diode()
                        lineBetween(mm(2, -2), mm(2, 2)), lineBetween(mm(-2, 0), mm(2, 0))};
     symbol.refAt = Point{0, -2 * PIN_GRID};
     symbol.valueAt = Point{0, 2 * PIN_GRID};
+    return symbol;
+}
+
+// GOST 2.730: the diode, its bar with a stroke 1 mm long at the top,
+// towards the anode.
+Symbol zenerDiode()
+{
+    Symbol symbol = diode();
+    symbol.graphics.append(lineBetween(mm(2, -2), mm(1, -2)));
+    return symbol;
+}
+
+// GOST 2.730: the diode, its bar's ends bent into an S, 0.75 mm each way.
+Symbol schottkyDiode()
+{
+    Symbol symbol = diode();
+    symbol.graphics.append(lineBetween(mm(2, -2), mm(2.75, -2)));
+    symbol.graphics.append(lineBetween(mm(2.75, -2), mm(2.75, -1.25)));
+    symbol.graphics.append(lineBetween(mm(2, 2), mm(1.25, 2)));
+    symbol.graphics.append(lineBetween(mm(1.25, 2), mm(1.25, 1.25)));
+    return symbol;
+}
+
+// GOST 2.730: two arrows 3 mm long at 45 degrees over the diode, out of
+// it for an LED, into it for a photodiode.
+Symbol diodeWithArrows(bool out)
+{
+    Symbol symbol = diode();
+    for (const double x : {-0.5, 1.0}) {
+        const QPointF near(x, -2.5);
+        const QPointF far(x + 2.1, -4.6);
+        const QPointF from = out ? near : far;
+        const QPointF to = out ? far : near;
+        symbol.graphics.append(lineBetween(mm(from.x(), from.y()), mm(to.x(), to.y())));
+        symbol.graphics.append(arrowOn(from, to, 1.0, false));
+    }
+    symbol.refAt = Point{0, -2 * PIN_GRID - PIN_GRID};
+    return symbol;
+}
+
+// GOST 2.728: the resistor with the wiper, pin 3 from below, its arrow
+// on the body.
+Symbol potentiometer()
+{
+    Symbol symbol = resistor();
+    symbol.pins.append(pinAt(QStringLiteral("3"), Point{0, 2 * PIN_GRID}, PinSide::Down,
+                             2 * PIN_GRID - mmToNm(2)));
+    symbol.graphics.append(arrowOn(QPointF(0, 4), QPointF(0, 2), 1.0, false));
+    symbol.valueAt = mm(3.81, 3.81);
     return symbol;
 }
 
@@ -111,24 +178,6 @@ Symbol inductor()
     symbol.refAt = Point{0, -2 * PIN_GRID};
     symbol.valueAt = Point{0, PIN_GRID};
     return symbol;
-}
-
-// The arrow on the line from 'from' to 'to': its point 'at' of the way
-// along, pointing towards 'to' or, with 'back', towards 'from'.
-Graphic arrowOn(const QPointF &from, const QPointF &to, double at, bool back)
-{
-    const double length = 1.5;
-    const double halfWidth = 0.5;
-    const QLineF line(from, to);
-    const QPointF unit = (to - from) / line.length();
-    const QPointF normal(-unit.y(), unit.x());
-    const QPointF tip = from + (to - from) * at;
-    const QPointF base = back ? tip + unit * length : tip - unit * length;
-    Graphic arrow = polygonOf({mm(tip.x(), tip.y()),
-                               mm(base.x() + normal.x() * halfWidth, base.y() + normal.y() * halfWidth),
-                               mm(base.x() - normal.x() * halfWidth, base.y() - normal.y() * halfWidth)});
-    arrow.filled = true;
-    return arrow;
 }
 
 // GOST 2.730: a circle 12 mm across, the base 5 mm; the arrow of the
@@ -164,9 +213,10 @@ Symbol transistor(bool npn)
 
 QList<SymbolPiece> symbolPieces()
 {
-    return {SymbolPiece::Resistor,      SymbolPiece::Capacitor,     SymbolPiece::ElectrolyticCapacitor,
-            SymbolPiece::Diode,         SymbolPiece::NpnTransistor, SymbolPiece::PnpTransistor,
-            SymbolPiece::Inductor};
+    return {SymbolPiece::Resistor,      SymbolPiece::Potentiometer, SymbolPiece::Capacitor,
+            SymbolPiece::ElectrolyticCapacitor, SymbolPiece::Diode,  SymbolPiece::ZenerDiode,
+            SymbolPiece::SchottkyDiode, SymbolPiece::Led,           SymbolPiece::Photodiode,
+            SymbolPiece::NpnTransistor, SymbolPiece::PnpTransistor, SymbolPiece::Inductor};
 }
 
 Symbol pieceSymbol(SymbolPiece piece)
@@ -180,12 +230,22 @@ Symbol pieceSymbol(SymbolPiece piece)
         return electrolyticCapacitor();
     case SymbolPiece::Diode:
         return diode();
+    case SymbolPiece::ZenerDiode:
+        return zenerDiode();
+    case SymbolPiece::SchottkyDiode:
+        return schottkyDiode();
+    case SymbolPiece::Led:
+        return diodeWithArrows(true);
+    case SymbolPiece::Photodiode:
+        return diodeWithArrows(false);
     case SymbolPiece::NpnTransistor:
         return transistor(true);
     case SymbolPiece::PnpTransistor:
         return transistor(false);
     case SymbolPiece::Inductor:
         return inductor();
+    case SymbolPiece::Potentiometer:
+        return potentiometer();
     }
     return Symbol();
 }

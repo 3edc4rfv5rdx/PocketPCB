@@ -23,9 +23,14 @@ enum class SymbolPiece {
     Capacitor,
     ElectrolyticCapacitor,
     Diode,
+    ZenerDiode,
+    SchottkyDiode,
+    Led,
+    Photodiode,
     NpnTransistor,
     PnpTransistor,
     Inductor,
+    Potentiometer,
 };
 
 // Every piece, in the order the menus offer them.

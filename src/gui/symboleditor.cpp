@@ -94,6 +94,16 @@ QString SymbolEditor::pieceTitle(SymbolPiece piece)
         return tr("PNP transistor");
     case SymbolPiece::Inductor:
         return tr("Inductor");
+    case SymbolPiece::ZenerDiode:
+        return tr("Zener diode");
+    case SymbolPiece::SchottkyDiode:
+        return tr("Schottky diode");
+    case SymbolPiece::Led:
+        return tr("LED");
+    case SymbolPiece::Photodiode:
+        return tr("Photodiode");
+    case SymbolPiece::Potentiometer:
+        return tr("Potentiometer");
     }
     return QString();
 }
