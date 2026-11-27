@@ -15,6 +15,7 @@
 
 #include <QAction>
 #include <QComboBox>
+#include <QFontMetricsF>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
@@ -47,8 +48,13 @@ const double NEW_TEXT_WIDTH_MM = 12.0;
 // The ends of a measurement, how far its text stands off its end, in
 // screen pixels, and how much its white back hides.
 const double MEASURE_END_PIXELS = 3.0;
-const int MEASURE_TEXT_OFFSET = 10;
-const int MEASURE_BACK_ALPHA = 220;
+// Its plate: how far from the far end, its padding and corners, and its
+// text this many times the usual size, the length larger still.
+const int MEASURE_PLATE_OFFSET = 14;
+const int MEASURE_PLATE_PADDING = 8;
+const int MEASURE_PLATE_RADIUS = 6;
+const double MEASURE_TEXT_SCALE = 1.15;
+const double MEASURE_LENGTH_SCALE = 1.5;
 // The cross of the origin, its arms and its ring, in screen pixels.
 const double ORIGIN_ARM_PIXELS = 14.0;
 const double ORIGIN_RING_PIXELS = 5.0;
@@ -469,9 +475,60 @@ Point ItemEditor::terminalSnapped(const QPointF &at) const
     return Point{snapToGrid(mmToNm(at.x()), step), snapToGrid(mmToNm(at.y()), step)};
 }
 
+void ItemEditor::paintMeasurePlate(QPainter &painter, const QLineF &line) const
+{
+    // The length large, under it the distances across and up and down.
+    const QString length = formatMmShortUnit(mmToNm(line.length()));
+    const QString across = QStringLiteral("ΔX  ") + formatMmShort(mmToNm(line.dx()));
+    const QString upDown = QStringLiteral("ΔY  ") + formatMmShort(mmToNm(line.dy()));
+    // Drawn in pixels of the screen, the same size at any zoom.
+    const QPointF end = painter.transform().map(line.p2());
+    painter.save();
+    painter.resetTransform();
+    QFont small = m_canvas->font();
+    small.setBold(true);
+    if (small.pointSizeF() > 0)
+        small.setPointSizeF(small.pointSizeF() * MEASURE_TEXT_SCALE);
+    QFont large = small;
+    if (large.pointSizeF() > 0)
+        large.setPointSizeF(small.pointSizeF() * MEASURE_LENGTH_SCALE / MEASURE_TEXT_SCALE);
+    const QFontMetricsF smallMetrics(small);
+    const QFontMetricsF largeMetrics(large);
+    const double width =
+        std::max({largeMetrics.horizontalAdvance(length), smallMetrics.horizontalAdvance(across),
+                  smallMetrics.horizontalAdvance(upDown)});
+    const double height = largeMetrics.height() + 2 * smallMetrics.height();
+    QRectF plate(0, 0, width + 2 * MEASURE_PLATE_PADDING, height + 2 * MEASURE_PLATE_PADDING);
+    // Right of the end and above it, or the other way where the window
+    // ends.
+    const QRectF view(0, 0, painter.device()->width(), painter.device()->height());
+    QPointF corner(end.x() + MEASURE_PLATE_OFFSET, end.y() - MEASURE_PLATE_OFFSET - plate.height());
+    if (corner.x() + plate.width() > view.right())
+        corner.setX(end.x() - MEASURE_PLATE_OFFSET - plate.width());
+    if (corner.y() < view.top())
+        corner.setY(end.y() + MEASURE_PLATE_OFFSET);
+    plate.moveTopLeft(corner);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(QPen(paintcolor::selection(), 1.5));
+    painter.setBrush(paintcolor::measureBack());
+    painter.drawRoundedRect(plate, MEASURE_PLATE_RADIUS, MEASURE_PLATE_RADIUS);
+    painter.setPen(paintcolor::measureText());
+    QPointF at = plate.topLeft() + QPointF(MEASURE_PLATE_PADDING, MEASURE_PLATE_PADDING);
+    painter.setFont(large);
+    painter.drawText(at + QPointF(0, largeMetrics.ascent()), length);
+    at.ry() += largeMetrics.height();
+    painter.setFont(small);
+    painter.drawText(at + QPointF(0, smallMetrics.ascent()), across);
+    at.ry() += smallMetrics.height();
+    painter.drawText(at + QPointF(0, smallMetrics.ascent()), upDown);
+    painter.restore();
+}
+
 void ItemEditor::setMode(Mode mode)
 {
     m_mode = mode;
+    if (mode == Mode::Measure)
+        showStatus(tr("Click two points, with Shift without snapping"));
     m_dragging = false;
     m_framing = false;
     m_drawPoints.clear();
@@ -1275,24 +1332,7 @@ void ItemEditorOf<Item>::paintEditor(QPainter &painter) const
         painter.setPen(cosmeticPen(paintcolor::selection()));
         for (const QPointF &end : {line.p1(), line.p2()})
             painter.drawEllipse(end, MEASURE_END_PIXELS * pixel, MEASURE_END_PIXELS * pixel);
-        const QString text = QStringLiteral("ΔX %1   ΔY %2   %3")
-                                 .arg(formatMmShort(mmToNm(line.dx())),
-                                      formatMmShort(mmToNm(line.dy())),
-                                      formatMmShortUnit(mmToNm(line.length())));
-        // Beside the far end, the same size at any zoom, on white.
-        painter.save();
-        painter.translate(line.p2());
-        painter.scale(pixel, pixel);
-        const QRectF box = painter.fontMetrics()
-                               .boundingRect(text)
-                               .translated(MEASURE_TEXT_OFFSET, -MEASURE_TEXT_OFFSET)
-                               .adjusted(-3, -2, 3, 2);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(255, 255, 255, MEASURE_BACK_ALPHA));
-        painter.drawRect(box);
-        painter.setPen(paintcolor::selection());
-        painter.drawText(QPointF(MEASURE_TEXT_OFFSET, -MEASURE_TEXT_OFFSET), text);
-        painter.restore();
+        paintMeasurePlate(painter, line);
     }
     // The origin, the point the item is held by and turns about, over all,
     // the same size on screen at any zoom.

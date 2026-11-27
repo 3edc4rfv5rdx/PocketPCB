@@ -230,6 +230,10 @@ protected:
     // The square on a point that can be dragged by itself, the same size
     // at any zoom.
     void paintHandle(QPainter &painter, const Point &at) const;
+    // The plate of what the Measure mode measures, 'line' in scene
+    // millimetres: a dark one beside its far end, inside the window, the
+    // length large and the distances across and up and down under it.
+    void paintMeasurePlate(QPainter &painter, const QLineF &line) const;
 
     CanvasView *m_canvas = nullptr;
     // A text typed on the canvas: a terminal's number, a drawn text.

@@ -32,6 +32,9 @@ inline QColor pinText() { return QColor(0, 100, 100); }
 inline QColor placeholder() { return QColor(140, 140, 140); }
 // The silkscreen of a footprint shown alone, on the paper.
 inline QColor silkscreen() { return QColor(0, 132, 132); }
+// The plate of a measurement in the library editor and its text.
+inline QColor measureBack() { return QColor(30, 34, 44, 235); }
+inline QColor measureText() { return QColor(255, 255, 255); }
 inline QColor padBoth() { return QColor(190, 150, 0); }
 inline QColor padFront() { return QColor(200, 50, 50); }
 inline QColor padBack() { return QColor(50, 90, 200); }

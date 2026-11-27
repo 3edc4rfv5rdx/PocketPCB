@@ -2744,6 +2744,10 @@
         <source>Nothing to paste here</source>
         <translation>Тут нічого вставити</translation>
     </message>
+    <message>
+        <source>Click two points, with Shift without snapping</source>
+        <translation>Клацніть дві точки, з Shift без прив’язки</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::LibraryTab</name>
