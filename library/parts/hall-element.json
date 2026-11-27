@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "hall-element",
+  "footprints": [],
+  "prefix": "U",
+  "prefixGost": "B",
+  "value": "HW-101A",
+  "connector": false,
+  "group": "sensors",
+  "name": {"en": "Hall element", "uk": "Елемент Холла", "ru": "Элемент Холла"}
+}

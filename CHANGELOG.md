@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Bare four-lead Hall element in the library, drawn after GOST 2.730
 - F: Connectors drawn with a cell per contact, chassis as a plain line
 - F: Crystal, battery and motor drawn to the capacitor scale, Hall sensor marked H
 - F: Switches, buttons, relay and reed switches drawn after ESKD
