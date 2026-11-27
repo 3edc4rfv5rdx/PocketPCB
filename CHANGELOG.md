@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The built-in inductors, transformers and ferrite bead are drawn to the ESKD size, windings of half circles 2.54 mm in radius
 - F: The built-in transistors, bipolar, field-effect, IGBT, unijunction and Darlington, are drawn to the ESKD size, in a circle 12 mm across
 - F: The built-in diodes, thyristors, triac, diac and diode bridge are drawn to the ESKD size, a triangle 4×4 mm
 - F: The built-in capacitors are drawn to the ESKD size: plates 8 mm long 1.5 mm apart, an electrolytic one's frames 1.5 mm thick

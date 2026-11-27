@@ -2,25 +2,25 @@
   "type": "pocketpcb-symbol",
   "format": 1,
   "graphics": [
-    {"kind": "arc", "center": [-1.905, -1.905], "radius": 0.635, "start": 270, "span": 180},
-    {"kind": "arc", "center": [-1.905, -0.635], "radius": 0.635, "start": 270, "span": 180},
-    {"kind": "arc", "center": [-1.905, 0.635], "radius": 0.635, "start": 270, "span": 180},
-    {"kind": "arc", "center": [-1.905, 1.905], "radius": 0.635, "start": 270, "span": 180},
-    {"kind": "arc", "center": [1.905, -1.905], "radius": 0.635, "start": 90, "span": 180},
-    {"kind": "arc", "center": [1.905, -0.635], "radius": 0.635, "start": 90, "span": 180},
-    {"kind": "arc", "center": [1.905, 0.635], "radius": 0.635, "start": 90, "span": 180},
-    {"kind": "arc", "center": [1.905, 1.905], "radius": 0.635, "start": 90, "span": 180},
-    {"kind": "line", "from": [-0.508, -2.54], "to": [-0.508, 2.54]},
-    {"kind": "line", "from": [0.508, -2.54], "to": [0.508, 2.54]}
+    {"kind": "arc", "center": [-4.5, -7.62], "radius": 2.54, "start": 270, "span": 180},
+    {"kind": "arc", "center": [-4.5, -2.54], "radius": 2.54, "start": 270, "span": 180},
+    {"kind": "arc", "center": [-4.5, 2.54], "radius": 2.54, "start": 270, "span": 180},
+    {"kind": "arc", "center": [-4.5, 7.62], "radius": 2.54, "start": 270, "span": 180},
+    {"kind": "arc", "center": [4.5, -7.62], "radius": 2.54, "start": 90, "span": 180},
+    {"kind": "arc", "center": [4.5, -2.54], "radius": 2.54, "start": 90, "span": 180},
+    {"kind": "arc", "center": [4.5, 2.54], "radius": 2.54, "start": 90, "span": 180},
+    {"kind": "arc", "center": [4.5, 7.62], "radius": 2.54, "start": 90, "span": 180},
+    {"kind": "line", "from": [-1, -10.16], "to": [-1, 10.16]},
+    {"kind": "line", "from": [1, -10.16], "to": [1, 10.16]}
   ],
   "pins": [
-    {"number": "1", "at": [-5.08, -2.54], "side": "left", "length": 3.175},
-    {"number": "2", "at": [-5.08, 2.54], "side": "left", "length": 3.175},
-    {"number": "3", "at": [5.08, -2.54], "side": "right", "length": 3.175},
-    {"number": "4", "at": [5.08, 2.54], "side": "right", "length": 3.175}
+    {"number": "1", "at": [-7.62, -10.16], "side": "left", "length": 3.12},
+    {"number": "2", "at": [-7.62, 10.16], "side": "left", "length": 3.12},
+    {"number": "3", "at": [7.62, -10.16], "side": "right", "length": 3.12},
+    {"number": "4", "at": [7.62, 10.16], "side": "right", "length": 3.12}
   ],
-  "refAt": [0, -3.81],
-  "valueAt": [0, 3.81],
+  "refAt": [0, -12.7],
+  "valueAt": [0, 12.7],
   "showPinNumbers": true,
   "showPinNames": false
 }
