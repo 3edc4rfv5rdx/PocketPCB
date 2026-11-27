@@ -2,7 +2,8 @@
   "type": "pocketpcb-symbol",
   "format": 1,
   "graphics": [
-    {"kind": "rect", "from": [-2.54, -1.27], "to": [0, 3.81]}
+    {"kind": "rect", "from": [-2.54, -1.27], "to": [0, 3.81]},
+    {"kind": "line", "from": [-2.54, 1.27], "to": [0, 1.27]}
   ],
   "pins": [
     {"number": "1", "at": [-5.08, 0.0], "side": "left"},

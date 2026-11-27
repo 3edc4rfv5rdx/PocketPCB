@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Connectors drawn with a cell per contact, chassis as a plain line
 - F: Crystal, battery and motor drawn to the capacitor scale, Hall sensor marked H
 - F: Switches, buttons, relay and reed switches drawn after ESKD
 - N: Power amplifiers TDA2030, TDA2050, LM1875 in Pentawatt and TDA7294 in Multiwatt15 in the library
