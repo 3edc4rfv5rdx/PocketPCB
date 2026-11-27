@@ -2,22 +2,21 @@
   "type": "pocketpcb-symbol",
   "format": 1,
   "graphics": [
-    {"kind": "rect", "from": [-6.35, -1.905], "to": [-3.81, 1.905]},
-    {"kind": "line", "from": [-3.81, 0], "to": [1.191, 0], "dashed": true},
-    {"kind": "line", "from": [2.54, 2.54], "to": [0.381, -1.524]},
-    {"kind": "line", "from": [0, -2.54], "to": [0, -1.27]},
-    {"kind": "line", "from": [5.08, -2.54], "to": [5.08, -1.27]},
-    {"kind": "line", "from": [5.08, -1.27], "to": [4.318, -1.27]}
+    {"kind": "rect", "from": [-9.62, -5.08], "to": [-5.62, 5.08]},
+    {"kind": "line", "from": [-5.62, 0], "to": [-0.39, 0], "dashed": true},
+    {"kind": "line", "from": [2.54, 5.08], "to": [-2.54, -3.72]},
+    {"kind": "line", "from": [-2.54, -5.08], "to": [-2.54, -3.72]},
+    {"kind": "line", "from": [7.62, -5.08], "to": [7.62, -3.81]}
   ],
   "pins": [
-    {"number": "1", "at": [-5.08, -5.08], "side": "up", "length": 3.175},
-    {"number": "2", "at": [-5.08, 5.08], "side": "down", "length": 3.175},
-    {"number": "NC", "name": "NC", "at": [0, -5.08], "side": "up", "length": 2.54},
-    {"number": "NO", "name": "NO", "at": [5.08, -5.08], "side": "up", "length": 2.54},
-    {"number": "COM", "name": "COM", "at": [2.54, 5.08], "side": "down", "length": 2.54}
+    {"number": "1", "at": [-7.62, -10.16], "side": "up", "length": 5.08},
+    {"number": "2", "at": [-7.62, 10.16], "side": "down", "length": 5.08},
+    {"number": "NC", "name": "NC", "at": [-2.54, -10.16], "side": "up", "length": 5.08},
+    {"number": "NO", "name": "NO", "at": [7.62, -10.16], "side": "up", "length": 5.08},
+    {"number": "COM", "name": "COM", "at": [2.54, 10.16], "side": "down", "length": 5.08}
   ],
-  "refAt": [-8.89, -1.27],
-  "valueAt": [-8.89, 1.27],
+  "refAt": [-12.7, -2.54],
+  "valueAt": [-12.7, 2.54],
   "showPinNumbers": false,
   "showPinNames": false
 }

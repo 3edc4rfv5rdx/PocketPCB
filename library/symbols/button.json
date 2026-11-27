@@ -2,17 +2,17 @@
   "type": "pocketpcb-symbol",
   "format": 1,
   "graphics": [
-    {"kind": "line", "from": [-2.54, 0], "to": [-2.54, -0.508]},
-    {"kind": "line", "from": [2.54, 0], "to": [2.54, -0.508]},
-    {"kind": "line", "from": [-2.54, -1.27], "to": [2.54, -1.27]},
-    {"kind": "line", "from": [0, -1.27], "to": [0, -3.048]},
-    {"kind": "line", "from": [-0.762, -3.048], "to": [0.762, -3.048]}
+    {"kind": "line", "from": [-5.08, 0], "to": [3.81, -5.08]},
+    {"kind": "line", "from": [-0.635, -2.54], "to": [-0.635, -7.62], "dashed": true},
+    {"kind": "line", "from": [-1.905, -7.62], "to": [0.635, -7.62]},
+    {"kind": "line", "from": [-1.905, -7.62], "to": [-1.905, -6.985]},
+    {"kind": "line", "from": [0.635, -7.62], "to": [0.635, -6.985]}
   ],
   "pins": [
-    {"number": "1", "at": [-5.08, 0], "side": "left"},
-    {"number": "2", "at": [5.08, 0], "side": "right"}
+    {"number": "1", "at": [-7.62, 0], "side": "left", "length": 2.54},
+    {"number": "2", "at": [7.62, 0], "side": "right", "length": 2.54}
   ],
-  "refAt": [0, -4.318],
+  "refAt": [0, -8.89],
   "valueAt": [0, 2.54],
   "showPinNumbers": false,
   "showPinNames": false
