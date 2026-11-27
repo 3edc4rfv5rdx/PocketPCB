@@ -2,20 +2,20 @@
   "type": "pocketpcb-symbol",
   "format": 1,
   "graphics": [
-    {"kind": "circle", "center": [1.27, 0], "radius": 3.3},
-    {"kind": "line", "from": [0.635, -1.905], "to": [0.635, 1.905], "width": 0.3},
-    {"kind": "line", "from": [0.635, -1.524], "to": [2.54, -1.524]},
-    {"kind": "line", "from": [0.635, 1.524], "to": [2.54, 1.524]},
-    {"kind": "line", "from": [-2.54, 2.54], "to": [0.635, 0]},
-    {"kind": "polygon", "points": [[0.318, 0.254], [-0.12, 0.988], [-0.495, 0.52]], "filled": true}
+    {"kind": "circle", "center": [0, 0], "radius": 6},
+    {"kind": "line", "from": [0, -3], "to": [0, 3]},
+    {"kind": "line", "from": [0, -2.3], "to": [2.54, -2.3]},
+    {"kind": "line", "from": [0, 2.3], "to": [2.54, 2.3]},
+    {"kind": "line", "from": [-5, 2.54], "to": [-1.337, 0.679]},
+    {"kind": "polygon", "points": [[0, 0], [-1.111, 1.125], [-1.564, 0.234]], "filled": true}
   ],
   "pins": [
-    {"number": "E", "name": "E", "at": [-5.08, 2.54], "side": "left", "length": 2.54},
-    {"number": "B2", "name": "B2", "at": [2.54, -5.08], "side": "up", "length": 3.556},
-    {"number": "B1", "name": "B1", "at": [2.54, 5.08], "side": "down", "length": 3.556}
+    {"number": "E", "name": "E", "at": [-7.62, 2.54], "side": "left", "length": 2.62},
+    {"number": "B2", "name": "B2", "at": [2.54, -7.62], "side": "up", "length": 5.32},
+    {"number": "B1", "name": "B1", "at": [2.54, 7.62], "side": "down", "length": 5.32}
   ],
-  "refAt": [5.08, -1.27],
-  "valueAt": [5.08, 1.27],
+  "refAt": [10.16, -1.27],
+  "valueAt": [10.16, 1.27],
   "showPinNumbers": false,
   "showPinNames": false
 }
