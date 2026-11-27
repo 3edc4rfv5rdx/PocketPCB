@@ -1262,6 +1262,18 @@
         <source>Bus</source>
         <translation>Шина</translation>
     </message>
+    <message>
+        <source>Place wire pads</source>
+        <translation>Розставити площадки під провід</translation>
+    </message>
+    <message>
+        <source>No net of an off-board part needs a wire pad</source>
+        <translation>Жодному колу деталі «не на платі» не потрібна площадка під провід</translation>
+    </message>
+    <message>
+        <source>Wire pads placed</source>
+        <translation>Поставлено площадок під провід</translation>
+    </message>
 </context>
 <context>
     <name>ppcb::SheetTabs</name>

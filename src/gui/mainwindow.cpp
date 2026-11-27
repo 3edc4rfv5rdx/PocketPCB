@@ -547,6 +547,13 @@ void MainWindow::createMenus()
     noConnectAction->setObjectName(QStringLiteral("actionPlaceNoConnect"));
     noConnectAction->setShortcut(QKeySequence(Qt::Key_X));
     connect(noConnectAction, &QAction::triggered, this, &MainWindow::placeNoConnect);
+    // Wire pads for the off-board parts, from the library when the project
+    // lacks the part.
+    QAction *contactsAction =
+        editMenu->addAction(SheetEditor::actionName(SheetEditor::Action::PlaceContacts));
+    contactsAction->setObjectName(QStringLiteral("actionPlaceContacts"));
+    connect(contactsAction, &QAction::triggered, this,
+            [this] { m_sheetEditor->placeContacts(m_library.items); });
     addEditAction(SheetEditor::actionName(SheetEditor::Action::Wire), "actionWire",
                   QKeySequence(Qt::Key_W), &SheetEditor::startWiring);
     addEditAction(tr("Draw bus"), "actionBus", QKeySequence(Qt::Key_B),
@@ -975,6 +982,19 @@ void MainWindow::showSheetMenu(const QPoint &globalPos)
                 connect(choice, &QAction::triggered, m_sheetEditor,
                         [this, ids, powerMw] { m_sheetEditor->setComponentPower(ids, powerMw); });
             }
+            menu.addSeparator();
+        }
+        // Contacts for the off-board parts chosen.
+        QSet<ObjectId> offBoard;
+        for (const Component &component : chosen) {
+            if (component.offBoard)
+                offBoard.insert(component.id);
+        }
+        if (!offBoard.isEmpty()) {
+            QAction *contacts =
+                menu.addAction(SheetEditor::actionName(SheetEditor::Action::PlaceContacts));
+            connect(contacts, &QAction::triggered, m_sheetEditor,
+                    [this, offBoard] { m_sheetEditor->placeContacts(m_library.items, offBoard); });
             menu.addSeparator();
         }
         add("actionRotate");

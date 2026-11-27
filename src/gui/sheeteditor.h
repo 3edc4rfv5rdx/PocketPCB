@@ -71,6 +71,7 @@ public:
         SeparateWires,
         Lock,
         Unlock,
+        PlaceContacts,
     };
     static QString actionName(Action action);
 
@@ -251,6 +252,11 @@ public:
     void setComponentOffBoard(const QSet<ObjectId> &ids, bool offBoard);
     void setComponentsLocked(const QSet<ObjectId> &ids, bool locked);
     void setComponentPower(const QSet<ObjectId> &ids, int powerMw);
+    // Wire pads put on the nets the off-board components among 'only', all
+    // when it is empty, take to the board (withContactsPlaced()), the part
+    // taken from 'source' when the project lacks it; one step, the contacts
+    // of the sheet shown chosen. The status bar tells how many.
+    void placeContacts(const Library &source, const QSet<ObjectId> &only = {});
     void setComponentComment(const QSet<ObjectId> &ids, const QString &comment);
     // The net name of the power symbols 'ids', as one step; nothing happens
     // when it changes nothing or 'name' is blank.

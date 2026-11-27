@@ -1,6 +1,7 @@
 #include "sheeteditor.h"
 
 #include "canvasview.h"
+#include "contacts.h"
 #include "format.h"
 #include "sheetedit.h"
 #include "trackedit.h"
@@ -650,6 +651,28 @@ void SheetEditor::setComponentPower(const QSet<ObjectId> &ids, int powerMw)
     if (const Sheet *sheet = currentSheet())
         applyToComponents(Action::Power, ids,
                           withComponentPower(*sheet, ids, powerMw, m_document->design().library));
+}
+
+void SheetEditor::placeContacts(const Library &source, const QSet<ObjectId> &only)
+{
+    const Sheet *sheet = currentSheet();
+    if (sheet == nullptr)
+        return;
+    const PlacedContacts placed = withContactsPlaced(m_document->design(), source, only);
+    if (placed.placed.isEmpty()) {
+        emit message(tr("No net of an off-board part needs a wire pad"));
+        return;
+    }
+    QSet<ObjectId> shown;
+    for (const Component &component : placed.design.schematic.sheets.at(m_sheet).components) {
+        if (placed.placed.contains(component.id))
+            shown.insert(component.id);
+    }
+    m_document->change(stepName(actionName(Action::PlaceContacts)), placed.design, m_sheet,
+                       shown);
+    m_selection = shown;
+    emit message(tr("Wire pads placed") + QStringLiteral(": ") + QString::number(placed.placed.size()));
+    emit changed();
 }
 
 void SheetEditor::applyToComponents(Action action, const QSet<ObjectId> &ids,
@@ -1558,6 +1581,8 @@ QString SheetEditor::actionName(Action action)
         return tr("Join wires");
     case Action::SeparateWires:
         return tr("Separate wires");
+    case Action::PlaceContacts:
+        return tr("Place wire pads");
     }
     return QString();
 }

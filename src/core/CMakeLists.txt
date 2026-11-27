@@ -10,6 +10,7 @@ add_library(pocketpcb_core STATIC
     boardupdate.h boardupdate.cpp
     trackedit.h trackedit.cpp
     bom.h bom.cpp
+    contacts.h contacts.cpp
     document.h document.cpp
     footprint.h footprint.cpp
     footprintedit.h footprintedit.cpp

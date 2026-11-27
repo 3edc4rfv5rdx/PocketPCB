@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Place wire pads puts a wire pad on each net that goes from an off-board part to the board
 - N: Part editor in the library editor window: symbol, footprints, prefixes, value, group, power, names, and a check that every pin has a pad
 - R: The tabs of the library editor share saving, renaming and Undo through one base
 - N: Pin headers and box headers 2×N in the common IDC sizes, 2×3 to 2×20, in the library
