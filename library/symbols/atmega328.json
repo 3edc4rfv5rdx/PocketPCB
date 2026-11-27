@@ -1,0 +1,42 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "rect", "from": [-10.16, -5.08], "to": [10.16, 71.12]},
+    {"kind": "text", "at": [0, -2.54], "text": "MCU", "height": 2.5}
+  ],
+  "pins": [
+    {"number": "2", "name": "PD0/RXD", "at": [-15.24, 0], "side": "left", "length": 5.08},
+    {"number": "3", "name": "PD1/TXD", "at": [-15.24, 5.08], "side": "left", "length": 5.08},
+    {"number": "4", "name": "PD2", "at": [-15.24, 10.16], "side": "left", "length": 5.08},
+    {"number": "5", "name": "PD3", "at": [-15.24, 15.24], "side": "left", "length": 5.08},
+    {"number": "6", "name": "PD4", "at": [-15.24, 20.32], "side": "left", "length": 5.08},
+    {"number": "11", "name": "PD5", "at": [-15.24, 25.4], "side": "left", "length": 5.08},
+    {"number": "12", "name": "PD6", "at": [-15.24, 30.48], "side": "left", "length": 5.08},
+    {"number": "13", "name": "PD7", "at": [-15.24, 35.56], "side": "left", "length": 5.08},
+    {"number": "23", "name": "PC0", "at": [-15.24, 40.64], "side": "left", "length": 5.08},
+    {"number": "24", "name": "PC1", "at": [-15.24, 45.72], "side": "left", "length": 5.08},
+    {"number": "25", "name": "PC2", "at": [-15.24, 50.8], "side": "left", "length": 5.08},
+    {"number": "26", "name": "PC3", "at": [-15.24, 55.88], "side": "left", "length": 5.08},
+    {"number": "27", "name": "PC4/SDA", "at": [-15.24, 60.96], "side": "left", "length": 5.08},
+    {"number": "28", "name": "PC5/SCL", "at": [-15.24, 66.04], "side": "left", "length": 5.08},
+    {"number": "14", "name": "PB0", "at": [15.24, 0], "side": "right", "length": 5.08},
+    {"number": "15", "name": "PB1", "at": [15.24, 5.08], "side": "right", "length": 5.08},
+    {"number": "16", "name": "PB2", "at": [15.24, 10.16], "side": "right", "length": 5.08},
+    {"number": "17", "name": "PB3/MOSI", "at": [15.24, 15.24], "side": "right", "length": 5.08},
+    {"number": "18", "name": "PB4/MISO", "at": [15.24, 20.32], "side": "right", "length": 5.08},
+    {"number": "19", "name": "PB5/SCK", "at": [15.24, 25.4], "side": "right", "length": 5.08},
+    {"number": "9", "name": "PB6/XTAL1", "at": [15.24, 30.48], "side": "right", "length": 5.08},
+    {"number": "10", "name": "PB7/XTAL2", "at": [15.24, 35.56], "side": "right", "length": 5.08},
+    {"number": "1", "name": "PC6/RESET", "at": [15.24, 40.64], "side": "right", "length": 5.08},
+    {"number": "7", "name": "VCC", "at": [-5.08, -10.16], "side": "up", "length": 5.08},
+    {"number": "20", "name": "AVCC", "at": [0, -10.16], "side": "up", "length": 5.08},
+    {"number": "21", "name": "AREF", "at": [5.08, -10.16], "side": "up", "length": 5.08},
+    {"number": "8", "name": "GND", "at": [-2.54, 76.2], "side": "down", "length": 5.08},
+    {"number": "22", "name": "GND", "at": [2.54, 76.2], "side": "down", "length": 5.08}
+  ],
+  "refAt": [12.7, -12.7],
+  "valueAt": [12.7, 78.74000000000001],
+  "showPinNumbers": true,
+  "showPinNames": true
+}

@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "atmega328",
+  "footprints": ["dip-28-7.62"],
+  "prefix": "U",
+  "prefixGost": "DD",
+  "value": "ATmega328P",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Microcontroller ATmega8/168/328", "uk": "Мікроконтролер ATmega8/168/328", "ru": "Микроконтроллер ATmega8/168/328"}
+}

@@ -1,0 +1,22 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "rect", "from": [-7.62, -5.08], "to": [7.62, 30.48]},
+    {"kind": "text", "at": [0, -2.54], "text": "MCU", "height": 2.5}
+  ],
+  "pins": [
+    {"number": "7", "name": "GP0", "at": [-12.7, 0], "side": "left", "length": 5.08},
+    {"number": "6", "name": "GP1", "at": [-12.7, 5.08], "side": "left", "length": 5.08},
+    {"number": "5", "name": "GP2", "at": [-12.7, 10.16], "side": "left", "length": 5.08},
+    {"number": "4", "name": "GP3/MCLR", "at": [-12.7, 15.24], "side": "left", "length": 5.08},
+    {"number": "3", "name": "GP4", "at": [-12.7, 20.32], "side": "left", "length": 5.08},
+    {"number": "2", "name": "GP5", "at": [-12.7, 25.4], "side": "left", "length": 5.08},
+    {"number": "1", "name": "VDD", "at": [0, -10.16], "side": "up", "length": 5.08},
+    {"number": "8", "name": "VSS", "at": [0, 35.56], "side": "down", "length": 5.08}
+  ],
+  "refAt": [10.16, -12.7],
+  "valueAt": [10.16, 38.1],
+  "showPinNumbers": true,
+  "showPinNames": true
+}

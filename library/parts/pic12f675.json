@@ -1,0 +1,12 @@
+{
+  "type": "pocketpcb-part",
+  "format": 1,
+  "symbol": "pic12f675",
+  "footprints": ["dip-8-7.62"],
+  "prefix": "U",
+  "prefixGost": "DD",
+  "value": "PIC12F675",
+  "connector": false,
+  "group": "chips",
+  "name": {"en": "Microcontroller PIC12F629/675", "uk": "Мікроконтролер PIC12F629/675", "ru": "Микроконтроллер PIC12F629/675"}
+}
