@@ -20,14 +20,14 @@ struct PlacedContacts
 };
 
 // 'design' with a contact (WIRE_PAD_PART, taken from 'source' into the
-// project's library when it lacks it) at a pin of an off-board component
-// on every net that reaches the board — holds a pin of a component on it —
-// and has no contact yet: no pin of a connector on the board. The pin is
-// the first of the net's off-board ones, among the components 'only' when
-// it is not empty; nets of off-board components alone, a battery and its
-// switch, are left. A contact joins its pin's point, its body further out
-// along the pin, on the wire that leaves it; it is numbered on after the
-// others. Nothing is placed when 'source' and the project lack the part.
+// project's library when it lacks it) on every pin of an off-board
+// component that has no wire pad on its end yet and no no-connect mark,
+// of the components 'only'
+// when it is not empty: a pad for the wire of each pin, whether the wire
+// is soldered to it or not is the user's to say. A contact joins its pin's
+// point, its body further out along the pin, on the wire that leaves it;
+// it is numbered on after the others. Nothing is placed when 'source' and
+// the project lack the part.
 PlacedContacts withContactsPlaced(const Design &design, const Library &source,
                                   const QSet<ObjectId> &only = {});
 

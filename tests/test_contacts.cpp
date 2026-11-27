@@ -132,12 +132,13 @@ class TestContacts : public QObject
     Q_OBJECT
 
 private slots:
-    void aContactGoesOnEveryOffBoardNetThatReachesTheBoard()
+    // Every pin of an off-board part gets a wire pad, whatever it is joined
+    // to: the two jacks and the switch, two pins each.
+    void everyPinOfAnOffBoardPartGetsAPad()
     {
         const Amplifier amp = amplifier();
         const PlacedContacts placed = withContactsPlaced(amp.design, source());
-        // The two nets reaching the resistor, not the jack's to the switch.
-        QCOMPARE(placed.placed.size(), 2);
+        QCOMPARE(placed.placed.size(), 6);
         QVERIFY(placed.design.library.parts.contains(QLatin1String(WIRE_PAD_PART)));
 
         // On the jack's pin, its body further left, on the wire.
@@ -155,13 +156,33 @@ private slots:
         QVERIFY(down != nullptr);
         QCOMPARE(down->rotation, 90);
 
-        // Numbered on: J1 and J2.
-        QStringList designators = {left->designator, down->designator};
-        designators.sort();
-        QCOMPARE(designators, QStringList({QStringLiteral("J1"), QStringLiteral("J2")}));
+        // Numbered on: J1 to J6.
+        QSet<QString> designators;
+        for (const Component &each : placed.design.schematic.sheets.first().components) {
+            if (placed.placed.contains(each.id))
+                designators.insert(each.designator);
+        }
+        QCOMPARE(designators, QSet<QString>({QStringLiteral("J1"), QStringLiteral("J2"),
+                                             QStringLiteral("J3"), QStringLiteral("J4"),
+                                             QStringLiteral("J5"), QStringLiteral("J6")}));
     }
 
-    void aNetWithAContactGetsNoMore()
+    // A pin marked not connected gets none.
+    void aPinMarkedNotConnectedGetsNone()
+    {
+        Amplifier amp = amplifier();
+        NoConnect mark;
+        mark.id = newObjectId();
+        // The turned jack's pin 1, joined to nothing.
+        mark.at = mm(-20, -15);
+        amp.design.schematic.sheets[0].noConnects.append(mark);
+        const PlacedContacts placed = withContactsPlaced(amp.design, source(), {amp.otherJack});
+        QCOMPARE(placed.placed.size(), 1);
+        QVERIFY(placedContact(placed.design, placed, mm(-20, -15)) == nullptr);
+    }
+
+    // A pin with a wire pad on its end gets no other.
+    void aPinWithAPadGetsNoMore()
     {
         const Amplifier amp = amplifier();
         const PlacedContacts once = withContactsPlaced(amp.design, source());
@@ -170,12 +191,17 @@ private slots:
         QCOMPARE(twice.design, once.design);
     }
 
+    // Only the parts asked for: the turned jack's two pins.
     void onlyTheChosenOffBoardPartsGetContacts()
     {
         const Amplifier amp = amplifier();
         const PlacedContacts placed = withContactsPlaced(amp.design, source(), {amp.otherJack});
-        QCOMPARE(placed.placed.size(), 1);
+        QCOMPARE(placed.placed.size(), 2);
         QVERIFY(placedContact(placed.design, placed, mm(-20, -5)) != nullptr);
+        QVERIFY(placedContact(placed.design, placed, mm(-20, -15)) != nullptr);
+        // Then the first jack: its own two, the other's kept.
+        const PlacedContacts then = withContactsPlaced(placed.design, source(), {amp.jack});
+        QCOMPARE(then.placed.size(), 2);
     }
 
     // A wire pad on the board is labelled with the off-board pins of its
