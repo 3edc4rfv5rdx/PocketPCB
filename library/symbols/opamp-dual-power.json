@@ -1,0 +1,15 @@
+{
+  "type": "pocketpcb-symbol",
+  "format": 1,
+  "graphics": [
+    {"kind": "rect", "from": [-2.54, -5.08], "to": [2.54, 5.08]}
+  ],
+  "pins": [
+    {"number": "8", "name": "V+", "at": [0, -10.16], "side": "up", "length": 5.08},
+    {"number": "4", "name": "V-", "at": [0, 10.16], "side": "down", "length": 5.08}
+  ],
+  "refAt": [5.08, -7.62],
+  "valueAt": [5.08, 7.62],
+  "showPinNumbers": true,
+  "showPinNames": true
+}

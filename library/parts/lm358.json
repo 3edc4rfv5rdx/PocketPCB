@@ -1,7 +1,8 @@
 {
   "type": "pocketpcb-part",
   "format": 1,
-  "symbol": "opamp-dual",
+  "symbol": "opamp-dual-a",
+  "units": ["opamp-dual-b", "opamp-dual-power"],
   "footprints": ["dip-8-7.62"],
   "prefix": "U",
   "prefixGost": "DA",
